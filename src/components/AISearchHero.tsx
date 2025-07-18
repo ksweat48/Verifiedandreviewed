@@ -761,10 +761,56 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
               <div className="md:hidden relative animate-in fade-in duration-500 overflow-hidden h-full" {...swipeHandlers}>
                 <div className="relative overflow-hidden" style={{ height: isAppModeActive ? 'calc(100vh - 128px)' : '480px' }}>
-                  {slots[currentCardIndex] && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
-                    <div className="flex flex-col gap-4 h-full">
+                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'platform' && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
+                    <PlatformBusinessCard
+                      business={slots[currentCardIndex].businesses[0] || {
+                        id: '',
+                        name: '',
+                        rating: { thumbsUp: 0, sentimentScore: 0 },
+                        image: '',
+                        isOpen: false,
+                        hours: '',
+                        address: '',
+                        reviews: [],
+                        isPlatformBusiness: true,
+                        tags: []
+                      }}
+                      onOpenReviewModal={handleCardClick}
+                      onRecommend={handleRecommend}
+                      onTakeMeThere={handleTakeMeThere}
+                    />
+                  )}
+                  
+                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'ai-stacked' && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
+                    <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
+                      <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4 text-center">
+                        AI Suggestions
+                      </h3>
+                      <div className="space-y-3 flex-1">
+                        {slots[currentCardIndex].businesses.map((business) => (
+                          <AIBusinessCard 
+                            key={`mobile-ai-stacked-${business.id}`}
+                            business={business}
+                            onRecommend={handleRecommend}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'empty' && (
+                    <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col items-center justify-center">
+                      <Icons.Search className="h-12 w-12 text-neutral-400 mb-4" />
+                      <p className="font-lora text-neutral-600 text-center">
+                        No results found for your search.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'dual' && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
+                    <div className="h-full space-y-4">
                       {slots[currentCardIndex].businesses.map((business, businessIndex) => (
-                        <div key={`mobile-${business.id}-${businessIndex}`} className="flex-1">
+                        <div key={`mobile-dual-${business.id}-${businessIndex}`} className="h-[calc(50%-8px)]">
                           {business.isPlatformBusiness ? (
                             <PlatformBusinessCard
                               business={business}
