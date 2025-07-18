@@ -500,6 +500,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   
   let slots = [];
   
+  // Add platform businesses (up to 3 individual slots)
   for (let i = 0; i < Math.min(platformBusinesses.length, 3); i++) {
     slots.push({
       type: 'platform',
@@ -507,25 +508,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     });
   }
   
-  const aiSlots = [];
-  
-  for (let i = 0; i < aiBusinesses.length; i += 2) {
-    const slotBusinesses = [aiBusinesses[i]];
-    
-    if (i + 1 < aiBusinesses.length) {
-      slotBusinesses.push(aiBusinesses[i + 1]);
-    }
-    
-    aiSlots.push({
-      type: 'ai',
-      businesses: slotBusinesses
+  // Add all AI businesses in a single stacked slot
+  if (aiBusinesses.length > 0) {
+    slots.push({
+      type: 'ai-stacked',
+      businesses: aiBusinesses.slice(0, 4) // Limit to 4 AI businesses
     });
-  }
-  
-  for (let i = 0; i < aiSlots.length; i++) {
-    if (slots.length < 6) {
-      slots.push(aiSlots[i]);
-    }
   }
 
   return (
@@ -753,18 +741,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       />
                     )}
                     
-                    {slot.type === 'ai' && slot.businesses.length > 0 && (
-                      <div className="h-full flex flex-col gap-2">
-                        {slot.businesses.slice(0, 2).map((business, businessIndex) => (
-                          <div key={`ai-card-${business.id}`} className="flex-1 min-h-0">
+                    {slot.type === 'ai-stacked' && slot.businesses.length > 0 && (
+                      <div className="h-full bg-neutral-50 rounded-2xl p-4 overflow-y-auto">
+                        <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4 text-center">
+                          AI Suggestions
+                        </h3>
+                        <div className="space-y-2">
+                          {slot.businesses.map((business) => (
                             <AIBusinessCard 
+                              key={`ai-stacked-${business.id}`}
                               business={business}
-                              onOpenReviewModal={handleCardClick}
                               onRecommend={handleRecommend}
-                              onTakeMeThere={handleTakeMeThere}
                             />
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     )}
                     
@@ -799,18 +789,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     />
                   )}
                   
-                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'ai' && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
-                    <div className="h-full flex flex-col gap-3">
-                      {slots[currentCardIndex].businesses.slice(0, 2).map((business) => (
-                        <div key={`mobile-ai-${business.id}`} className="flex-1 min-h-0 max-h-[235px]">
+                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'ai-stacked' && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
+                    <div className="h-full bg-neutral-50 rounded-2xl p-4 overflow-y-auto">
+                      <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4 text-center">
+                        AI Suggestions
+                      </h3>
+                      <div className="space-y-2">
+                        {slots[currentCardIndex].businesses.map((business) => (
                           <AIBusinessCard 
+                            key={`mobile-ai-stacked-${business.id}`}
                             business={business}
                             onRecommend={handleRecommend}
-                            onTakeMeThere={handleTakeMeThere}
-                            onOpenReviewModal={handleCardClick}
                           />
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
                   

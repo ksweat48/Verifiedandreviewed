@@ -61,7 +61,7 @@ export const handler = async (event, context) => {
     });
 
     // Enhanced system prompt for better business suggestions
-    const systemPrompt = `You are a local business discovery assistant. Generate ${6 - existingResultsCount} business suggestions that match the user's query.
+    const systemPrompt = `You are a local business discovery assistant. Generate exactly 4 business suggestions that match the user's query.
     
 Return ONLY valid JSON with this structure:
 {"results": [business_array]}
@@ -75,7 +75,7 @@ Each business:
     "thumbsDown": 2,
     "sentimentScore": 85
   },
-  "image": "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400",
+  "image": null,
   "isOpen": true,
   "hours": "Mon-Fri: 9AM-5PM",
   "address": "123 Main St, City, State",
@@ -84,7 +84,7 @@ Each business:
       "text": "Brief realistic review (50-80 words max)",
       "author": "Reviewer Name",
       "authorImage": "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100",
-      "images": [{"url": "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400"}],
+      "images": [],
       "thumbsUp": true or false
     }
   ],
@@ -94,7 +94,7 @@ Each business:
 
 Rules:
 - Use realistic business names and addresses
-- ONLY use Pexels image URLs
+- Set image field to null (no images needed)
 - 1 brief review per business (50-80 words)
 - 2-3 relevant tags max
 - Return ONLY JSON, no explanations`;
@@ -109,7 +109,7 @@ Rules:
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 1500, // Reduced from 3000 to speed up generation
+      max_tokens: 800, // Further reduced for 4 businesses without images
       response_format: { type: "json_object" }
     });
 
@@ -157,7 +157,7 @@ Rules:
     }
 
     // Ensure each business has required fields
-    const validatedResults = parsedResults.slice(0, 6 - existingResultsCount).map((business, index) => {
+    const validatedResults = parsedResults.slice(0, 4).map((business, index) => {
       // Quick validation - ensure required fields exist
       if (!business.name || !business.address) {
         console.warn(`⚠️ Business ${index} missing required fields, skipping`);
@@ -168,7 +168,7 @@ Rules:
         id: business.id || `ai-${Date.now()}-${index}`,
         name: business.name,
         rating: business.rating || { thumbsUp: 15, thumbsDown: 2, sentimentScore: 85 },
-        image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+        image: null, // No images for AI businesses
         isOpen: business.isOpen !== undefined ? business.isOpen : true,
         hours: business.hours || 'Mon-Fri: 9AM-5PM',
         address: business.address,
