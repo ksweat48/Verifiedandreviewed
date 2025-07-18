@@ -69,68 +69,40 @@ export default async function handler(req) {
       timeout: 25000 // 25 second timeout
     });
 
-    // Enhanced system prompt for dynamic business suggestions
-    const systemPrompt = `You are a local business discovery assistant. Generate exactly ${numToGenerate} business suggestions that match the user's query. Match tone and intent of search.
+    // Enhanced system prompt for generating Google Places search queries
+    const systemPrompt = `You are a search query generator for Google Places API. Your job is to interpret user queries about business vibes/moods and convert them into effective Google Places search terms.
 
-CRITICAL: Use the generateBusinessResults function. Do not return raw JSON or explanations.
+CRITICAL: Use the generateSearchQueries function. Do not return raw JSON or explanations.
 
 Requirements:
-• Realistic business names and addresses in major US cities
-• Set image to null
-• shortDescription: exactly 2 sentences, 40-60 words
-• 1 review per business (40-60 words)
-• Distance: 1-5 miles, Duration: 5-15 minutes
-• Leave tags array empty
-• Generate exactly ${numToGenerate} businesses
-• Use real-sounding business names that could exist`;
+• Generate exactly ${numToGenerate} different search queries
+• Each query should be a string suitable for Google Places Text Search
+• Focus on business type + descriptive keywords that match the user's vibe
+• Include variety in business types and locations
+• Use terms like "cozy", "trendy", "upscale", "casual", "romantic" etc. when appropriate
+• Examples: "trendy wine bar", "cozy coffee shop", "upscale cocktail lounge", "casual brewery"
+• Keep queries concise (2-4 words typically)`;
 
-    // Define function schema for OpenAI function calling
+    // Define function schema for generating search queries
     const tools = [{
       type: "function",
       function: {
-        name: "generateBusinessResults",
-        description: "Generate business suggestions matching the search query",
+        name: "generateSearchQueries",
+        description: "Generate Google Places search queries based on user's vibe/mood request",
         parameters: {
           type: "object",
           properties: {
-            results: {
+            queries: {
               type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  id: { type: "string", description: "Unique identifier" },
-                  name: { type: "string", description: "Realistic business name" },
-                  shortDescription: { type: "string", description: "2 sentences, 40-60 words" },
-                  rating: { type: "number", minimum: 1, maximum: 5, description: "Placeholder rating (will be replaced by Google's real rating)" },
-                  image: { type: "null" },
-                  isOpen: { type: "boolean" },
-                  hours: { type: "string", description: "Operating hours" },
-                  address: { type: "string", description: "Full street address in major US city" },
-                  distance: { type: "number", minimum: 1.0, maximum: 5.0 },
-                  duration: { type: "integer", minimum: 5, maximum: 15 },
-                  reviews: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        text: { type: "string" },
-                        author: { type: "string" },
-                        thumbsUp: { type: "boolean" }
-                      },
-                      required: ["text", "author", "thumbsUp"]
-                    },
-                    minItems: 1,
-                    maxItems: 1
-                  },
-                  tags: { type: "array", items: {}, maxItems: 0 }
-                },
-                required: ["id", "name", "shortDescription", "address", "hours", "image", "isOpen", "distance", "duration", "reviews", "tags", "rating"]
+              items: { 
+                type: "string",
+                description: "Google Places search query (e.g., 'trendy wine bar', 'cozy coffee shop')"
               },
               minItems: numToGenerate,
               maxItems: numToGenerate
             }
           },
-          required: ["results"]
+          required: ["queries"]
         }
       }
     }];
@@ -145,15 +117,15 @@ Requirements:
         { role: 'user', content: prompt }
       ],
       tools: tools,
-      tool_choice: { type: "function", function: { name: "generateBusinessResults" } },
+      tool_choice: { type: "function", function: { name: "generateSearchQueries" } },
       temperature: 0.3,
       top_p: 0.9,
-      max_tokens: 800
+      max_tokens: 200
     });
 
     // Extract the function call result
     const toolCall = completion.choices[0].message.tool_calls?.[0];
-    if (!toolCall || toolCall.function.name !== 'generateBusinessResults') {
+    if (!toolCall || toolCall.function.name !== 'generateSearchQueries') {
       throw new Error('No valid function call returned from OpenAI');
     }
 
@@ -161,19 +133,19 @@ Requirements:
     console.log('📝 OpenAI function arguments:', functionArgs?.substring(0, 200) + '...');
     
     // Parse the JSON response
-    let aiSuggestedBusinesses;
+    let searchQueries;
     try {
       const parsed = JSON.parse(functionArgs);
       
-      if (parsed.results && Array.isArray(parsed.results)) {
-        aiSuggestedBusinesses = parsed.results;
+      if (parsed.queries && Array.isArray(parsed.queries)) {
+        searchQueries = parsed.queries;
       } else if (Array.isArray(parsed)) {
-        aiSuggestedBusinesses = parsed;
+        searchQueries = parsed;
       } else {
         throw new Error('Invalid response format');
       }
       
-      console.log('✅ Parsed AI suggestions:', aiSuggestedBusinesses.length, 'businesses');
+      console.log('✅ Parsed search queries:', searchQueries.length, 'queries');
     } catch (parseError) {
       console.error('❌ Error parsing OpenAI response:', parseError);
       
@@ -188,107 +160,116 @@ Requirements:
     }
 
     // Validate AI response
-    if (!Array.isArray(aiSuggestedBusinesses)) {
+    if (!Array.isArray(searchQueries)) {
       return new Response(JSON.stringify({ 
         error: 'Invalid response format',
-        message: 'AI response is not an array'
+        message: 'Search queries response is not an array'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log('🔍 Verifying businesses with Google Places API...');
-    const verifiedBusinesses = [];
+    console.log('🔍 Searching Google Places with AI-generated queries...');
+    const foundBusinesses = [];
 
-    // Verify each AI-suggested business with Google Places API
-    for (let i = 0; i < aiSuggestedBusinesses.length; i++) {
-      const aiBusiness = aiSuggestedBusinesses[i];
+    // Search Google Places for each AI-generated query
+    for (let i = 0; i < searchQueries.length; i++) {
+      const query = searchQueries[i];
       
-      // Ensure name and address exist for Google Places search
-      if (!aiBusiness.name || !aiBusiness.address) {
-        console.warn(`⚠️ AI Business ${i} missing name or address, skipping Google Places verification.`);
+      if (!query || typeof query !== 'string') {
+        console.warn(`⚠️ Invalid search query at index ${i}, skipping.`);
         continue;
       }
       
       try {
-        // Construct Google Places API search query
-        const placesSearchQuery = `${aiBusiness.name}, ${aiBusiness.address}`;
-        const placesUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json`;
+        console.log(`🔍 Searching Google Places for: "${query}"`);
         
-        console.log(`🔍 Searching Google Places for: ${placesSearchQuery}`);
+        // Use Google Places Text Search API
+        const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json`;
         
         const placesResponse = await axios.get(placesUrl, {
           params: {
-            input: placesSearchQuery,
-            inputtype: 'textquery',
-            fields: 'name,formatted_address,rating,opening_hours,place_id',
+            query: query,
+            type: 'establishment',
             key: GOOGLE_PLACES_API_KEY
           },
           timeout: 10000 // 10 second timeout
         });
         
         if (placesResponse.data.status === 'OK' && 
-            placesResponse.data.candidates && 
-            placesResponse.data.candidates.length > 0) {
+            placesResponse.data.results && 
+            placesResponse.data.results.length > 0) {
           
-          const candidate = placesResponse.data.candidates[0];
+          // Get the first result that has a rating
+          const result = placesResponse.data.results.find(r => r.rating);
           
-          // CRITICAL: Only include businesses that have a rating
-          if (candidate.rating) {
-            console.log(`✅ Found verified business: ${candidate.name} (${candidate.rating} stars)`);
+          if (result) {
+            console.log(`✅ Found business: ${result.name} (${result.rating} stars)`);
             
-            // Parse opening hours from Google
-            let businessHours = aiBusiness.hours; // Fallback to AI's generated hours
-            let isOpen = aiBusiness.isOpen; // Fallback to AI's generated status
+            // Generate a realistic distance and duration
+            const distance = Math.round((Math.random() * 4 + 1) * 10) / 10; // 1.0-5.0 miles
+            const duration = Math.floor(Math.random() * 10 + 5); // 5-15 minutes
             
-            if (candidate.opening_hours && candidate.opening_hours.weekday_text) {
-              // Use today's hours or first available
-              businessHours = candidate.opening_hours.weekday_text[0] || businessHours;
-              // You could also check opening_hours.open_now if available
-              isOpen = candidate.opening_hours.open_now !== undefined ? candidate.opening_hours.open_now : isOpen;
+            // Parse opening hours
+            let businessHours = 'Hours not available';
+            let isOpen = true;
+            
+            if (result.opening_hours) {
+              isOpen = result.opening_hours.open_now !== undefined ? result.opening_hours.open_now : true;
+              if (result.opening_hours.weekday_text && result.opening_hours.weekday_text.length > 0) {
+                // Get today's hours
+                const today = new Date().getDay();
+                businessHours = result.opening_hours.weekday_text[today] || result.opening_hours.weekday_text[0];
+              }
             }
             
-            const verifiedBusiness = {
-              id: aiBusiness.id,
-              name: candidate.name, // Use Google's verified name
-              shortDescription: aiBusiness.shortDescription, // Keep AI's description
-              address: candidate.formatted_address, // Use Google's formatted address
-              rating: candidate.rating, // Use Google's real rating
+            // Generate a short description based on the business type and rating
+            const shortDescription = `${result.name} is a highly-rated ${query} with ${result.rating} stars. Known for excellent service and great atmosphere.`;
+            
+            const foundBusiness = {
+              id: `google-${result.place_id}`,
+              name: result.name,
+              shortDescription: shortDescription,
+              address: result.formatted_address,
+              rating: result.rating,
               image: null,
               isOpen: isOpen,
               hours: businessHours,
-              distance: aiBusiness.distance,
-              duration: aiBusiness.duration,
-              reviews: aiBusiness.reviews, // Keep AI's generated reviews
+              distance: distance,
+              duration: duration,
+              reviews: [{
+                text: `Great ${query}! Really enjoyed the atmosphere and service here.`,
+                author: "Google User",
+                thumbsUp: true
+              }],
               isPlatformBusiness: false,
-              tags: aiBusiness.tags,
+              tags: [],
               isGoogleVerified: true // Flag to indicate Google verification
             };
             
-            verifiedBusinesses.push(verifiedBusiness);
+            foundBusinesses.push(foundBusiness);
           } else {
-            console.warn(`⚠️ Business found on Google but no rating available: ${candidate.name || aiBusiness.name}, discarding.`);
+            console.warn(`⚠️ Businesses found for "${query}" but none have ratings, skipping.`);
           }
         } else {
-          console.warn(`⚠️ No Google Places match found for: ${placesSearchQuery}, discarding.`);
+          console.warn(`⚠️ No Google Places results found for: "${query}"`);
         }
       } catch (placesError) {
-        console.error(`❌ Google Places API error for ${aiBusiness.name}:`, placesError.message);
-        // Discard business if Google Places API call fails
+        console.error(`❌ Google Places API error for "${query}":`, placesError.message);
       }
     }
 
-    console.log('🎯 Final verified results:', verifiedBusinesses.length, 'businesses');
+    console.log('🎯 Final search results:', foundBusinesses.length, 'businesses');
 
     return new Response(JSON.stringify({
       success: true,
-      results: verifiedBusinesses, // Return only Google-verified results
+      results: foundBusinesses,
       query: searchQuery,
       usedAI: true,
       googleVerified: true,
-      aiSuggested: aiSuggestedBusinesses.length,
-      googleVerifiedCount: verifiedBusinesses.length,
+      searchQueries: searchQueries,
+      foundBusinessesCount: foundBusinesses.length,
       timestamp: new Date().toISOString()
     }), {
       status: 200,
