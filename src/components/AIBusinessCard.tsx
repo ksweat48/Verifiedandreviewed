@@ -5,6 +5,7 @@ import BusinessProfileModal from './BusinessProfileModal';
 interface BusinessCard {
   id: string;
   name: string;
+  shortDescription?: string;
   rating: {
     thumbsUp: number;
     thumbsDown?: number;
@@ -23,7 +24,6 @@ interface BusinessCard {
   isPlatformBusiness: boolean;
   distance?: number;
   duration?: number;
-  distance?: number;
 }
 
 // AI Business Card Component - Simplified card for AI-fetched businesses
@@ -35,12 +35,19 @@ const AIBusinessCard: React.FC<{
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-neutral-200 p-4 hover:shadow-md transition-all duration-200 mb-3">
+      <div className="bg-white rounded-lg border border-neutral-200 py-4 px-3 hover:shadow-md transition-all duration-200 mb-3">
         <div className="space-y-3">
           {/* Business Name - Large Bold Text */}
           <h3 className="font-poppins text-lg font-bold text-neutral-900 line-clamp-1">
             {business.name}
           </h3>
+          
+          {/* Short Description - 2 lines max */}
+          {business.shortDescription && (
+            <p className="font-lora text-sm text-neutral-600 line-clamp-2 leading-relaxed">
+              {business.shortDescription}
+            </p>
+          )}
           
           {/* Open/Close Status and Hours */}
           <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
@@ -63,7 +70,7 @@ const AIBusinessCard: React.FC<{
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
                 window.open(mapsUrl, '_blank');
               }}
-              className="flex-1 bg-primary-500 text-white py-2 px-3 rounded-lg font-poppins text-sm font-semibold hover:bg-primary-600 transition-all duration-200 whitespace-nowrap"
+              className="flex-1 bg-primary-500 text-white py-2 px-3 rounded-lg font-poppins text-sm font-semibold hover:bg-primary-600 transition-all duration-200 whitespace-nowrap flex-shrink-0"
             >
               Go {business.distance ? `${business.distance}mi` : ''} {business.duration ? `${business.duration}min` : ''}
             </button>

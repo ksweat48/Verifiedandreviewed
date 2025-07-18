@@ -70,6 +70,7 @@ Each business:
 {
   "id": "unique-id-string",
   "name": "Business Name",
+  "shortDescription": "Brief 2-line description of the business and what makes it special (50-80 words)",
   "rating": {
     "thumbsUp": 15,
     "thumbsDown": 2,
@@ -91,14 +92,16 @@ Each business:
     }
   ],
   "isPlatformBusiness": false,
-  "isPlatformBusiness": false
+  "tags": []
 }
 
 Rules:
 - Use realistic business names and addresses
 - Set image field to null (no images needed)
+- Include a compelling shortDescription that explains what makes each business special
 - 1 brief review per business (50-80 words)
 - Include realistic distance (1-5 miles) and duration (5-15 minutes)
+- Do not generate tags (leave tags array empty)
 - Generate exactly 3 businesses, no more, no less
 - Return ONLY JSON, no explanations`;
 

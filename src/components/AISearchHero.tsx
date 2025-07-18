@@ -157,11 +157,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         // Fetch real businesses from Supabase
         const realBusinesses = await BusinessService.getBusinesses({
           search: searchQuery,
-          verified_only: false // Include both verified and unverified
+        // Phase 1: Fast display - Get first 2 platform businesses immediately
         });
         
         // Transform the business data to match the expected format
-        transformedBusinesses = realBusinesses.map(business => ({
+        let needsAI = false;
           id: business.id,
           name: business.name,
           rating: {
@@ -305,13 +305,14 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             query: searchQuery, 
             used_ai: false, 
             credits_deducted: creditsRequired,
-            results_count: transformedBusinesses.length
+            error: 'Insufficient credits'
           });
         }
       } else {
         setShowCreditWarning(true);
         setResults([]);
         trackEvent('search_performed', { 
+            shortDescription: business.short_description || business.description?.substring(0, 120) + '...' || 'A great local business worth visiting.',
           query: searchQuery, 
           used_ai: false, 
           credits_deducted: creditsRequired,
@@ -500,21 +501,16 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
   
+  // Create slots with 2 businesses each (max 4 total businesses = 2 slots)
   let slots = [];
+  const allBusinesses = [...platformBusinesses, ...aiBusinesses].slice(0, 4);
   
-  // Add platform businesses (up to 3 individual slots)
-  for (let i = 0; i < Math.min(platformBusinesses.length, 3); i++) {
+  // Group businesses into slots of 2
+  for (let i = 0; i < allBusinesses.length; i += 2) {
+    const businessesInSlot = allBusinesses.slice(i, i + 2);
     slots.push({
-      type: 'platform',
-      businesses: [platformBusinesses[i]]
-    });
-  }
-  
-  // Add all AI businesses in a single stacked slot
-  if (aiBusinesses.length > 0) {
-    slots.push({
-      type: 'ai-stacked',
-      businesses: aiBusinesses.slice(0, 3) // Limit to 3 AI businesses
+      type: 'dual',
+      businesses: businessesInSlot
     });
   }
 
@@ -603,6 +599,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         <div className="fixed bottom-4 left-0 right-0 z-40 flex items-center justify-between px-4">
           {/* Pagination */}
           <div className="bg-white bg-opacity-80 px-3 py-1 rounded-full shadow-sm">
+            distance: Math.round((Math.random() * 4 + 1) * 10) / 10, // 1.0-5.0 miles
+            duration: Math.floor(Math.random() * 10 + 5), // 5-15 minutes
             <span className="font-poppins text-xs text-neutral-700">
               {`${currentCardIndex + 1} / ${slots.length}`}
             </span>
@@ -729,179 +727,170 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <div className="relative">
               <div
                 ref={scrollContainerRef}
-                className="hidden md:grid md:grid-flow-col md:auto-cols-max overflow-x-auto scrollbar-hide gap-4 pb-8 snap-x h-full"
+                className="hidden md:flex overflow-x-auto scrollbar-hide gap-4 pb-8 snap-x h-full"
                 style={{ height: isAppModeActive ? 'calc(100vh - 128px)' : 'auto' }}
               >
                 {slots.map((slot, slotIndex) => (
-                  <div key={`slot-${slotIndex}`} className="w-[416px] flex-shrink-0 snap-start h-full">
-                    {slot.type === 'platform' && slot.businesses.length > 0 && (
-                      <PlatformBusinessCard
-                        business={slot.businesses[0]}
-                        onRecommend={handleRecommend}
-                        onOpenReviewModal={handleCardClick}
-                        onTakeMeThere={handleTakeMeThere}
-                      />
-                    )}
-                    
-                    {slot.type === 'ai-stacked' && slot.businesses.length > 0 && (
-                      <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
-                        <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4 text-center">
-                          AI Suggestions
-                        </h3>
-                        <div className="space-y-3 flex-1">
-                          {slot.businesses.map((business) => (
-                            <AIBusinessCard 
-                              key={`ai-stacked-${business.id}`}
+                  <div key={`slot-${slotIndex}`} className="w-[616px] flex-shrink-0 snap-start h-full">
+                    <div className="flex gap-4 h-full">
+                      {slot.businesses.map((business, businessIndex) => (
+                        <div key={`${business.id}-${businessIndex}`} className="w-[300px] flex-shrink-0">
+                          {business.isPlatformBusiness ? (
+                            <PlatformBusinessCard
                               business={business}
                               onRecommend={handleRecommend}
+                              onOpenReviewModal={handleCardClick}
+                              onTakeMeThere={handleTakeMeThere}
                             />
-                          ))}
+                          ) : (
+                            <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
+                              <h3 className="font-poppins text-sm font-semibold text-neutral-700 mb-3 text-center">
+                                AI Suggestion
+                              </h3>
+                              <div className="flex-1">
+                                <AIBusinessCard 
+                                  business={business}
+                                  onRecommend={handleRecommend}
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
-                    
-                    {slot.type === 'empty' && (
-                      <div className="h-full bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-center">
-                        <p className="font-lora text-neutral-400">No more results</p>
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
 
               <div className="md:hidden relative animate-in fade-in duration-500 overflow-hidden h-full" {...swipeHandlers}>
                 <div className="relative overflow-hidden" style={{ height: isAppModeActive ? 'calc(100vh - 128px)' : '480px' }}>
-                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'platform' && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
-                    <PlatformBusinessCard
-                      business={slots[currentCardIndex].businesses[0] || {
-                        id: '',
-                        name: '',
-                        rating: { thumbsUp: 0, sentimentScore: 0 },
-                        image: '',
-                        isOpen: false,
-                        hours: '',
-                        address: '',
-                        reviews: [],
-                        isPlatformBusiness: true,
-                        tags: []
-                      }}
-                      onOpenReviewModal={handleCardClick}
-                      onRecommend={handleRecommend}
-                      onTakeMeThere={handleTakeMeThere}
-                    />
-                  )}
-                  
-                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'ai-stacked' && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
-                    <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
-                      <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4 text-center">
-                        AI Suggestions
-                      </h3>
-                      <div className="space-y-3 flex-1">
-                        {slots[currentCardIndex].businesses.map((business) => (
-                          <AIBusinessCard 
-                            key={`mobile-ai-stacked-${business.id}`}
-                            business={business}
-                            onRecommend={handleRecommend}
-                          />
-                        ))}
-                      </div>
+                  {slots[currentCardIndex] && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
+                    <div className="flex flex-col gap-4 h-full">
+                      {slots[currentCardIndex].businesses.map((business, businessIndex) => (
+                        <div key={`mobile-${business.id}-${businessIndex}`} className="flex-1">
+                          {business.isPlatformBusiness ? (
+                            <PlatformBusinessCard
+                              business={business}
+                              onRecommend={handleRecommend}
+                              onOpenReviewModal={handleCardClick}
+                              onTakeMeThere={handleTakeMeThere}
+                            />
+                          ) : (
+                            <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
+                              <h3 className="font-poppins text-sm font-semibold text-neutral-700 mb-3 text-center">
+                                AI Suggestion
+                              </h3>
+                              <div className="flex-1">
+                                <AIBusinessCard 
+                                  business={business}
+                                  onRecommend={handleRecommend}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  )}
+              let finalResults = [...platformBusinesses];
+              
+              if (needsAI) {
+                // Call OpenAI API through our serverless function
+                try {
+                  // Prepare the AI prompt with context about existing results
+                  const aiPrompt = transformedBusinesses.length > 0 
+                    ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide different but related businesses that match this search intent.`
+                    : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
+
+                  const response = await fetch('/.netlify/functions/ai-business-search', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                      prompt: aiPrompt,
+                      searchQuery: searchQuery,
+                      existingResultsCount: transformedBusinesses.length
+                    })
+                  });
                   
-                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'empty' && (
-                    <div className="h-full bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-center">
-                      <p className="font-lora text-neutral-400">No more results</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {results.length === 0 && !isSearching && showResults && (
-            <div className="text-center py-8 px-4">
-              <Icons.Search className="h-10 w-10 text-neutral-300 mx-auto mb-4" />
-              <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
-                No results found
-              </h3>
-              <p className="font-lora text-neutral-600 mb-4">
-                Try a different search term or browse our categories below
-              </p>
-              <button
-                onClick={() => setShowResults(false)}
-                className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
-              >
-                Back to Search
-              </button>
-            </div>
-          )}
-
-          {isSearching && (
-            <div className="text-center py-8 px-4">
-              <Icons.RefreshCw className="h-10 w-10 text-primary-500 mx-auto mb-4 animate-spin" />
-              <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
-                {usedAI ? 'AI is thinking...' : 'Searching...'}
-              </h3>
-              <p className="font-lora text-neutral-600">
-                {usedAI 
-                  ? `Using AI to find businesses that match "${searchQuery}"`
-                  : `Searching our database for "${searchQuery}"`
-                }
-              </p>
-              <div className="w-full max-w-md mx-auto mt-6">
-                <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-primary-500 to-accent-500 animate-pulse rounded-full" style={{ width: '70%' }}></div>
-                </div>
-                {usedAI && (
-                  <p className="font-lora text-xs text-neutral-500 mt-2">
-                    This may take a few moments while AI analyzes your request...
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    
-      <ReviewModal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-        business={selectedBusiness}
-        currentReviewIndex={currentReviewIndex}
-        onPrevReview={prevReview}
-        onNextReview={nextReview}
-        onOpenReviewerProfile={(index) => {
-          if (selectedBusiness) {
-            const review = selectedBusiness.reviews[index];
-            if (review) {
-              const reviewer = {
-                name: review.author,
-                image: review.authorImage || "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100",
-                level: Math.floor(Math.random() * 5) + 1,
-                reviewCount: Math.floor(Math.random() * 50) + 1,
-                joinDate: '2023-' + (Math.floor(Math.random() * 12) + 1) + '-' + (Math.floor(Math.random() * 28) + 1),
-                bio: `Food enthusiast and travel blogger. I love discovering hidden gems and sharing honest reviews about my experiences.`,
-                reviews: [
-                  {
-                    businessName: selectedBusiness.name,
-                    location: selectedBusiness.address,
-                    date: new Date().toLocaleDateString(),
-                    rating: review.thumbsUp ? 'thumbsUp' : 'thumbsDown',
-                    text: review.text
-                  },
-                  {
-                    businessName: 'Coastal Breeze Cafe',
-                    location: 'Santa Monica, CA',
-                    date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                    rating: 'thumbsUp',
-                    text: 'Fantastic ocean views and the freshest seafood. Highly recommended for sunset dining!'
+                  if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('AI search API error:', response.status, errorText);
+                    throw new Error(`AI search failed: ${response.status} - ${errorText}`);
                   }
-                ]
-              };
-              setSelectedReviewer(reviewer);
-              setReviewerProfileOpen(true);
+                  
+                  const data = await response.json();
+                  console.log('🎯 AI search response:', data);
+                  
+                  if (data.success && data.results) {
+                    // Transform AI-generated businesses
+                    const aiGeneratedBusinesses = data.results.map(business => ({
+                      ...business,
+                      // Ensure all required fields are present
+                      id: business.id || `ai-${Date.now()}-${Math.random()}`,
+                      shortDescription: business.shortDescription || 'A great local business worth visiting.',
+                      rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
+                      image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+                      isOpen: business.isOpen !== undefined ? business.isOpen : true,
+                      hours: business.hours || 'Hours unavailable',
+                      address: business.address || 'Address not available',
+                      distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10,
+                      duration: business.duration || Math.floor(Math.random() * 10 + 5),
+                      reviews: business.reviews || [],
+                      isPlatformBusiness: false,
+                      tags: []
+                    }));
+                    
+                    console.log('🤖 Using AI to enhance search results for:', searchQuery);
+                    finalResults = [...platformBusinesses, ...aiGeneratedBusinesses].slice(0, 4); // Max 4 total
+                    setResults(finalResults);
+                    console.log('✅ Final combined results:', finalResults.length, 'businesses');
+                    
+                    trackEvent('search_performed', { 
+                      query: searchQuery, 
+                      used_ai: true, 
+                      credits_deducted: creditsRequired,
+                      results_count: finalResults.length,
+                      platform_results: platformBusinesses.length,
+                      ai_results: aiGeneratedBusinesses.length
+                    });
+                  } else {
+                    console.error('AI search failed:', data);
+                    throw new Error(data.error || data.message || 'Failed to get AI business suggestions');
+                  }
+                } catch (aiError) {
+                  console.error('AI search error:', aiError);
+                  console.log('🔄 Falling back to platform-only results');
+                  
+                  // Fallback to platform businesses if AI search fails
+                  finalResults = transformedBusinesses.slice(0, 4);
+                  setResults(finalResults);
+                  trackEvent('search_performed', { 
+                    query: searchQuery, 
+                    used_ai: false, 
+                    credits_deducted: creditsRequired,
+                    results_count: finalResults.length,
+                    error: aiError.message,
+                    fallback: true
+                  });
+                }
+              } else {
+                // Just use the platform businesses (max 4)
+                finalResults = transformedBusinesses.slice(0, 4);
+                setResults(finalResults);
+                console.log('📊 Using platform-only results for:', searchQuery);
+                trackEvent('search_performed', { 
+                  query: searchQuery, 
+                  used_ai: false, 
+                  credits_deducted: creditsRequired,
+                  results_count: finalResults.length
+                });
+              }
+            } catch (error) {
+              console.error('Background search error:', error);
             }
-          }
+          }, 100); // Small delay to ensure initial results are displayed first
         }}
       />
 
