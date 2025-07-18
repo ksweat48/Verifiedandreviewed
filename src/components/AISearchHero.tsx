@@ -217,22 +217,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           setIsSearching(true);
           
           try {
-            // Prepare the AI prompt with context about existing results
-            const aiPrompt = transformedBusinesses.length > 0 
-              ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide different but related businesses that match this search intent.`
-              : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
-
             const response = await fetch('/.netlify/functions/ai-business-search', {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ 
-                prompt: aiPrompt,
-                searchQuery: searchQuery,
-                existingResultsCount: transformedBusinesses.length
-              })
+              body: JSON.stringify({ prompt: searchQuery })
             });
             
             if (!response.ok) {
@@ -262,8 +252,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               
               console.log('🤖 Using AI to enhance search results for:', searchQuery);
               const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
-              console.log('✅ Combined results:', combinedResults.length, 'businesses');
               setResults(combinedResults);
+              console.log('✅ Combined results:', combinedResults.length, 'businesses');
+              
+              // Prepare the AI prompt with context about existing results
+              const aiPrompt = transformedBusinesses.length > 0 
+                ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide different but related businesses that match this search intent.`
+                : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
               
               trackEvent('search_performed', { 
                 query: searchQuery, 
@@ -301,8 +296,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false, 
-            credits_deducted: creditsRequired,
-            results_count: transformedBusinesses.length
+            credits_deducted: creditsRequired 
           });
         }
       } else {
@@ -839,23 +833,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <div className="text-center py-8 px-4">
               <Icons.RefreshCw className="h-10 w-10 text-primary-500 mx-auto mb-4 animate-spin" />
               <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
-                {usedAI ? 'AI is thinking...' : 'Searching...'}
+                Searching...
               </h3>
               <p className="font-lora text-neutral-600">
-                {usedAI 
-                  ? `Using AI to find businesses that match "${searchQuery}"`
-                  : `Searching our database for "${searchQuery}"`
-                }
+                Finding the perfect match for "{searchQuery}"
               </p>
-              <div className="w-full max-w-md mx-auto mt-6">
-                <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-primary-500 to-accent-500 animate-pulse rounded-full" style={{ width: '70%' }}></div>
-                </div>
-                {usedAI && (
-                  <p className="font-lora text-xs text-neutral-500 mt-2">
-                    This may take a few moments while AI analyzes your request...
-                  </p>
-                )}
+              <div className="w-full max-w-md mx-auto mt-6 h-2 bg-neutral-200 rounded-full overflow-hidden">
+                <div className="h-full bg-primary-500 animate-pulse rounded-full" style={{ width: '60%' }}></div>
               </div>
             </div>
           )}
