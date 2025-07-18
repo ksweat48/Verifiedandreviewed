@@ -774,7 +774,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 ))}
               </div>
             </div>
-          ) : showResults && results.length === 0 && !isSearching && (
+          )}
+          
+          {showResults && results.length === 0 && !isSearching && (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Icons.Search className="h-8 w-8 text-neutral-400" />
