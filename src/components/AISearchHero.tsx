@@ -249,7 +249,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               // Combine platform businesses with AI-generated businesses
               const aiGeneratedBusinesses = data.results.map(business => ({
                 ...business,
-                isPlatformBusiness: false,
                 // Ensure all required fields are present
                 id: business.id || `ai-${Date.now()}-${Math.random()}`,
                 rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
@@ -257,8 +256,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 isOpen: business.isOpen !== undefined ? business.isOpen : true,
                 hours: business.hours || 'Hours unavailable',
                 address: business.address || 'Address not available',
+                distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10,
+                duration: business.duration || Math.floor(Math.random() * 10 + 5),
                 reviews: business.reviews || [],
-                tags: business.tags || []
+                isPlatformBusiness: false
               }));
               
               console.log('🤖 Using AI to enhance search results for:', searchQuery);
