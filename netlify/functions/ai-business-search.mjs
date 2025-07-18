@@ -37,8 +37,8 @@ export default async function handler(req) {
     console.log('🔍 AI Business Search Request:', { prompt, searchQuery, existingResultsCount, numToGenerate });
 
     // Check if required API keys are configured
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
     
     if (!OPENAI_API_KEY) {
       console.error('❌ OpenAI API key not configured');
