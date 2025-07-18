@@ -1,0 +1,267 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* WordPress Content Typography & Spacing */
+@layer components {
+  .prose {
+    @apply max-w-none;
+  }
+  
+  /* WordPress content styling with proper hierarchy and spacing */
+  .wordpress-content {
+    @apply font-lora text-neutral-700 leading-relaxed;
+  }
+  
+  .wordpress-content h1 {
+    @apply font-cinzel text-3xl md:text-4xl font-bold text-neutral-900 mt-12 mb-6 first:mt-0;
+    line-height: 1.2;
+  }
+  
+  .wordpress-content h2 {
+    @apply font-cinzel text-2xl md:text-3xl font-bold text-neutral-900 mt-10 mb-5;
+    line-height: 1.3;
+  }
+  
+  .wordpress-content h3 {
+    @apply font-poppins text-xl md:text-2xl font-semibold text-neutral-900 mt-8 mb-4;
+    line-height: 1.4;
+  }
+  
+  .wordpress-content h4 {
+    @apply font-poppins text-lg md:text-xl font-semibold text-neutral-900 mt-6 mb-3;
+    line-height: 1.4;
+  }
+  
+  .wordpress-content h5 {
+    @apply font-poppins text-base md:text-lg font-semibold text-neutral-900 mt-6 mb-3;
+    line-height: 1.5;
+  }
+  
+  .wordpress-content h6 {
+    @apply font-poppins text-sm md:text-base font-semibold text-neutral-900 mt-4 mb-2;
+    line-height: 1.5;
+  }
+  
+  /* Paragraph spacing for bite-sized content */
+  .wordpress-content p {
+    @apply mb-6 text-base md:text-lg leading-relaxed;
+  }
+  
+  /* List styling */
+  .wordpress-content ul,
+  .wordpress-content ol {
+    @apply mb-6 pl-6;
+  }
+  
+  .wordpress-content li {
+    @apply mb-2 text-base md:text-lg leading-relaxed;
+  }
+  
+  .wordpress-content ul li {
+    @apply list-disc;
+  }
+  
+  .wordpress-content ol li {
+    @apply list-decimal;
+  }
+  
+  /* Blockquote styling */
+  .wordpress-content blockquote {
+    @apply border-l-4 border-primary-500 pl-6 py-4 my-8 bg-neutral-50 rounded-r-lg;
+  }
+  
+  .wordpress-content blockquote p {
+    @apply text-lg italic text-neutral-600 mb-0;
+  }
+  
+  /* Link styling */
+  .wordpress-content a {
+    @apply text-primary-500 hover:text-primary-600 underline transition-colors duration-200;
+  }
+  
+  /* Strong/Bold text */
+  .wordpress-content strong,
+  .wordpress-content b {
+    @apply font-semibold text-neutral-900;
+  }
+  
+  /* Emphasis/Italic text */
+  .wordpress-content em,
+  .wordpress-content i {
+    @apply italic;
+  }
+  
+  /* Code styling */
+  .wordpress-content code {
+    @apply bg-neutral-100 text-neutral-800 px-2 py-1 rounded text-sm font-mono;
+  }
+  
+  .wordpress-content pre {
+    @apply bg-neutral-900 text-neutral-100 p-4 rounded-lg overflow-x-auto my-6;
+  }
+  
+  .wordpress-content pre code {
+    @apply bg-transparent text-neutral-100 p-0;
+  }
+  
+  /* Table styling */
+  .wordpress-content table {
+    @apply w-full border-collapse border border-neutral-200 my-6;
+  }
+  
+  .wordpress-content th,
+  .wordpress-content td {
+    @apply border border-neutral-200 px-4 py-2 text-left;
+  }
+  
+  .wordpress-content th {
+    @apply bg-neutral-50 font-semibold;
+  }
+  
+  /* Image styling */
+  .wordpress-content img {
+    @apply rounded-lg shadow-sm my-6 max-w-full h-auto;
+  }
+  
+  /* HR styling */
+  .wordpress-content hr {
+    @apply border-neutral-200 my-8;
+  }
+  
+  /* Ensure proper spacing between all elements */
+  .wordpress-content > *:not(:last-child) {
+    @apply mb-6;
+  }
+  
+  /* Special spacing for headings followed by paragraphs */
+  .wordpress-content h1 + p,
+  .wordpress-content h2 + p,
+  .wordpress-content h3 + p,
+  .wordpress-content h4 + p,
+  .wordpress-content h5 + p,
+  .wordpress-content h6 + p {
+    @apply mt-0;
+  }
+}
+
+/* Utility classes for line clamping */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+  
+  /* Add shadow to navigation buttons */
+  .shadow-md {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Animation classes for swipe transitions */
+  .swipe-enter {
+    transform: translateX(100%);
+  }
+  
+  .swipe-enter-active {
+    transform: translateX(0);
+    transition: transform 300ms ease-in-out;
+  }
+  
+  .swipe-exit {
+    transform: translateX(0);
+  }
+  
+  .swipe-exit-active {
+    transform: translateX(-100%);
+    transition: transform 300ms ease-in-out;
+  }
+  
+  .swipe-prev-enter {
+    transform: translateX(-100%);
+  }
+  
+  .swipe-prev-enter-active {
+    transform: translateX(0);
+    transition: transform 300ms ease-in-out;
+  }
+  
+  .swipe-prev-exit {
+    transform: translateX(0);
+  }
+  
+  .swipe-prev-exit-active {
+    transform: translateX(100%);
+    transition: transform 300ms ease-in-out;
+  }
+  
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* App Mode Styles */
+  .app-mode-active {
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    touch-action: pan-x;
+  }
+  
+  .search-bar-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+  }
+  
+  .back-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 100;
+    animation: fadeIn 0.3s, fadeOut 0.3s 1.7s;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, 20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; transform: translate(-50%, 0); }
+    to { opacity: 0; transform: translate(-50%, 20px); }
+  }
+}

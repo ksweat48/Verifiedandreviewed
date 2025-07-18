@@ -1,0 +1,17 @@
+Design Philosophy
+All designs must be beautiful, polished, and production-ready — never cookie-cutter or generic.
+
+Prioritize clean, modern layouts with thoughtful visual hierarchy, responsiveness, and user experience.
+
+Every UI section should feel purpose-built, not templated.
+
+🧩 Tech Stack Defaults
+Use JSX syntax.
+
+Style components using Tailwind CSS.
+
+Use React hooks and standard React component patterns.
+
+For icons and visual indicators, use Lucide React — no other icon libraries unless explicitly requested.
+
+Do not install additional UI libraries or themes unless approved.
