@@ -72,7 +72,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           if (user) {
             setUserCredits(user.credits || 0);
             setCurrentUser(user);
-          }
+          // Use AI if we have fewer than 6 total results (platform + unverified)
+          needsAI = transformedBusinesses.length < 6;
         } catch (error) {
           console.error('Error refreshing user credits:', error);
         }
@@ -223,46 +224,81 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               },
               body: JSON.stringify({ prompt: searchQuery })
             });
-            
+                const errorText = await response.text();
+                console.error('AI search API error:', response.status, errorText);
+                throw new Error(`AI search failed: ${response.status} - ${errorText}`);
             if (!response.ok) {
               throw new Error(`API responded with status: ${response.status}`);
             }
+              console.log('🎯 AI search response:', data);
             
             const data = await response.json();
             
             if (data.success && data.results) {
               // Combine platform businesses with AI-generated businesses
-              const aiGeneratedBusinesses = data.results.map(business => ({
+                  isPlatformBusiness: false,
+                  // Ensure all required fields are present
+                  id: business.id || `ai-${Date.now()}-${Math.random()}`,
+                  rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
+                  image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+                  isOpen: business.isOpen !== undefined ? business.isOpen : true,
+                  hours: business.hours || 'Hours unavailable',
+                  address: business.address || 'Address not available',
+                  reviews: business.reviews || [],
+                  tags: business.tags || []
                 ...business,
                 isPlatformBusiness: false
-              }));
-              
+            console.log('🤖 Using AI to enhance search results for:', searchQuery);
+                console.log('✅ Combined results:', combinedResults.length, 'businesses');
               const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
               setResults(combinedResults);
+              // Prepare the AI prompt with context about existing results
+              const aiPrompt = transformedBusinesses.length > 0 
+                ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide different but related businesses that match this search intent.`
+                : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
+                  results_count: combinedResults.length,
+                  platform_results: platformBusinesses.length,
+                  ai_results: aiGeneratedBusinesses.length
               
               trackEvent('search_performed', { 
-                query: searchQuery, 
-                used_ai: true, 
+                console.error('AI search failed:', data);
+                throw new Error(data.error || data.message || 'Failed to get AI business suggestions');
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
                 credits_deducted: creditsRequired,
-                results_count: combinedResults.length
+              console.log('🔄 Falling back to platform-only results');
+              
+              // Show error message to user
+              setShowCreditWarning(true);
+              
+              // Fallback to platform businesses if AI search fails
+                  prompt: aiPrompt,
+                  searchQuery: searchQuery,
+                  existingResultsCount: transformedBusinesses.length
+                })
               });
-            } else {
+                error: aiError.message,
+                fallback: true
               throw new Error(data.error || 'Failed to get AI business suggestions');
             }
           } catch (aiError) {
             console.error('AI search error:', aiError);
+            console.log('📊 Using platform-only results for:', searchQuery);
             // Fallback to just platform businesses if AI search fails
             setResults(transformedBusinesses);
             trackEvent('search_performed', { 
               query: searchQuery, 
               used_ai: false, 
-              credits_deducted: 1,
+              credits_deducted: creditsRequired,
+              results_count: transformedBusinesses.length
               error: aiError.message
             });
           }
         } else {
           // Just use the platform businesses
           setResults(transformedBusinesses);
+        setShowCreditWarning(true);
+        setResults([]);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false, 
@@ -629,29 +665,40 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             </div>
             <div className="ml-3">
               <h3 className="font-poppins text-sm font-semibold text-yellow-800">
-                Not enough credits
+                {userCredits < (usedAI ? 10 : 1) ? 'Not enough credits' : 'Search temporarily unavailable'}
               </h3>
               <p className="font-lora text-xs text-yellow-700 mt-1">
-                You need {usedAI ? '10 credits' : '1 credit'} for this search. 
-                Purchase more credits to continue searching.
+                {userCredits < (usedAI ? 10 : 1) 
+                  ? `You need ${usedAI ? '10 credits' : '1 credit'} for this search. Purchase more credits to continue searching.`
+                  : 'AI search is temporarily unavailable. Please try again in a moment.'
+                }
               </p>
               <div className="mt-2">
-                <button
-                  onClick={() => {
-                    // Navigate to credits page
-                    window.location.href = '/account';
-                  }}
-                  className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900"
-                >
-              <Icons.ChevronLeft className="h-6 w-6 text-neutral-600" />
-                </button>
+                {userCredits < (usedAI ? 10 : 1) ? (
+                  <button
+                    onClick={() => {
+                      // Navigate to credits page
+                      window.location.href = '/account';
+                    }}
+                    className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900 underline"
+                  >
+                    Get More Credits
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowCreditWarning(false)}
+                    className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900 underline"
+                  >
+                    Try Again
+                  </button>
+                )}
               </div>
             </div>
             <button
               onClick={() => setShowCreditWarning(false)}
               className="ml-auto flex-shrink-0 text-yellow-500 hover:text-yellow-700"
             >
-              <Icons.ChevronRight className="h-6 w-6 text-neutral-600" />
+              <Icons.X className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -789,13 +836,23 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <div className="text-center py-8 px-4">
               <Icons.RefreshCw className="h-10 w-10 text-primary-500 mx-auto mb-4 animate-spin" />
               <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
-                Searching...
+                {usedAI ? 'AI is thinking...' : 'Searching...'}
               </h3>
               <p className="font-lora text-neutral-600">
-                Finding the perfect match for "{searchQuery}"
+                {usedAI 
+                  ? `Using AI to find businesses that match "${searchQuery}"`
+                  : `Searching our database for "${searchQuery}"`
+                }
               </p>
-              <div className="w-full max-w-md mx-auto mt-6 h-2 bg-neutral-200 rounded-full overflow-hidden">
-                <div className="h-full bg-primary-500 animate-pulse rounded-full" style={{ width: '60%' }}></div>
+              <div className="w-full max-w-md mx-auto mt-6">
+                <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-primary-500 to-accent-500 animate-pulse rounded-full" style={{ width: '70%' }}></div>
+                </div>
+                {usedAI && (
+                  <p className="font-lora text-xs text-neutral-500 mt-2">
+                    This may take a few moments while AI analyzes your request...
+                  </p>
+                )}
               </div>
             </div>
           )}
