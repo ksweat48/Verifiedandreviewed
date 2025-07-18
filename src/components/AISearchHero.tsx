@@ -500,16 +500,21 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
   
-  // Create slots with 2 businesses each (max 4 total businesses = 2 slots)
   let slots = [];
-  const allBusinesses = [...platformBusinesses, ...aiBusinesses].slice(0, 4);
   
-  // Group businesses into slots of 2
-  for (let i = 0; i < allBusinesses.length; i += 2) {
-    const businessesInSlot = allBusinesses.slice(i, i + 2);
+  // Add platform businesses (up to 3 individual slots)
+  for (let i = 0; i < Math.min(platformBusinesses.length, 3); i++) {
     slots.push({
-      type: 'dual',
-      businesses: businessesInSlot
+      type: 'platform',
+      businesses: [platformBusinesses[i]]
+    });
+  }
+  
+  // Add all AI businesses in a single stacked slot
+  if (aiBusinesses.length > 0) {
+    slots.push({
+      type: 'ai-stacked',
+      businesses: aiBusinesses.slice(0, 3) // Limit to 3 AI businesses
     });
   }
 
@@ -724,69 +729,88 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <div className="relative">
               <div
                 ref={scrollContainerRef}
-                className="hidden md:flex overflow-x-auto scrollbar-hide gap-4 pb-8 snap-x h-full"
+                className="hidden md:grid md:grid-flow-col md:auto-cols-max overflow-x-auto scrollbar-hide gap-4 pb-8 snap-x h-full"
                 style={{ height: isAppModeActive ? 'calc(100vh - 128px)' : 'auto' }}
               >
                 {slots.map((slot, slotIndex) => (
-                  <div key={`slot-${slotIndex}`} className="w-[616px] flex-shrink-0 snap-start h-full">
-                    <div className="flex gap-4 h-full">
-                      {slot.businesses.map((business, businessIndex) => (
-                        <div key={`${business.id}-${businessIndex}`} className="w-[300px] flex-shrink-0">
-                          {business.isPlatformBusiness ? (
-                            <PlatformBusinessCard
+                  <div key={`slot-${slotIndex}`} className="w-[416px] flex-shrink-0 snap-start h-full">
+                    {slot.type === 'platform' && slot.businesses.length > 0 && (
+                      <PlatformBusinessCard
+                        business={slot.businesses[0]}
+                        onRecommend={handleRecommend}
+                        onOpenReviewModal={handleCardClick}
+                        onTakeMeThere={handleTakeMeThere}
+                      />
+                    )}
+                    
+                    {slot.type === 'ai-stacked' && slot.businesses.length > 0 && (
+                      <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
+                        <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4 text-center">
+                          AI Suggestions
+                        </h3>
+                        <div className="space-y-3 flex-1">
+                          {slot.businesses.map((business) => (
+                            <AIBusinessCard 
+                              key={`ai-stacked-${business.id}`}
                               business={business}
                               onRecommend={handleRecommend}
-                              onOpenReviewModal={handleCardClick}
-                              onTakeMeThere={handleTakeMeThere}
                             />
-                          ) : (
-                            <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
-                              <h3 className="font-poppins text-sm font-semibold text-neutral-700 mb-3 text-center">
-                                AI Suggestion
-                              </h3>
-                              <div className="flex-1">
-                                <AIBusinessCard 
-                                  business={business}
-                                  onRecommend={handleRecommend}
-                                />
-                              </div>
-                            </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )}
+                    
+                    {slot.type === 'empty' && (
+                      <div className="h-full bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-center">
+                        <p className="font-lora text-neutral-400">No more results</p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
               <div className="md:hidden relative animate-in fade-in duration-500 overflow-hidden h-full" {...swipeHandlers}>
                 <div className="relative overflow-hidden" style={{ height: isAppModeActive ? 'calc(100vh - 128px)' : '480px' }}>
-                  {slots[currentCardIndex] && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
-                    <div className="flex flex-col gap-4 h-full">
-                      {slots[currentCardIndex].businesses.map((business, businessIndex) => (
-                        <div key={`mobile-${business.id}-${businessIndex}`} className="flex-1">
-                          {business.isPlatformBusiness ? (
-                            <PlatformBusinessCard
-                              business={business}
-                              onRecommend={handleRecommend}
-                              onOpenReviewModal={handleCardClick}
-                              onTakeMeThere={handleTakeMeThere}
-                            />
-                          ) : (
-                            <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
-                              <h3 className="font-poppins text-sm font-semibold text-neutral-700 mb-3 text-center">
-                                AI Suggestion
-                              </h3>
-                              <div className="flex-1">
-                                <AIBusinessCard 
-                                  business={business}
-                                  onRecommend={handleRecommend}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'platform' && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
+                    <PlatformBusinessCard
+                      business={slots[currentCardIndex].businesses[0] || {
+                        id: '',
+                        name: '',
+                        rating: { thumbsUp: 0, sentimentScore: 0 },
+                        image: '',
+                        isOpen: false,
+                        hours: '',
+                        address: '',
+                        reviews: [],
+                        isPlatformBusiness: true,
+                        tags: []
+                      }}
+                      onOpenReviewModal={handleCardClick}
+                      onRecommend={handleRecommend}
+                      onTakeMeThere={handleTakeMeThere}
+                    />
+                  )}
+                  
+                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'ai-stacked' && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
+                    <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
+                      <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4 text-center">
+                        AI Suggestions
+                      </h3>
+                      <div className="space-y-3 flex-1">
+                        {slots[currentCardIndex].businesses.map((business) => (
+                          <AIBusinessCard 
+                            key={`mobile-ai-stacked-${business.id}`}
+                            business={business}
+                            onRecommend={handleRecommend}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {slots[currentCardIndex] && slots[currentCardIndex].type === 'empty' && (
+                    <div className="h-full bg-neutral-50 rounded-2xl border border-neutral-200 flex items-center justify-center">
+                      <p className="font-lora text-neutral-400">No more results</p>
                     </div>
                   )}
                 </div>
