@@ -79,6 +79,8 @@ Each business:
   "isOpen": true,
   "hours": "Mon-Fri: 9AM-5PM",
   "address": "123 Main St, City, State",
+  "distance": 2.5,
+  "duration": 8,
   "reviews": [
     {
       "text": "Brief realistic review (50-80 words max)",
@@ -89,14 +91,14 @@ Each business:
     }
   ],
   "isPlatformBusiness": false,
-  "tags": ["tag1", "tag2"]
+  "isPlatformBusiness": false
 }
 
 Rules:
 - Use realistic business names and addresses
 - Set image field to null (no images needed)
 - 1 brief review per business (50-80 words)
-- 2-3 relevant tags max
+- Include realistic distance (1-5 miles) and duration (5-15 minutes)
 - Generate exactly 3 businesses, no more, no less
 - Return ONLY JSON, no explanations`;
 
@@ -173,9 +175,11 @@ Rules:
         isOpen: business.isOpen !== undefined ? business.isOpen : true,
         hours: business.hours || 'Mon-Fri: 9AM-5PM',
         address: business.address,
+        distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10, // 1.0-5.0 miles
+        duration: business.duration || Math.floor(Math.random() * 10 + 5), // 5-15 minutes
         reviews: business.reviews || [],
         isPlatformBusiness: false,
-        tags: business.tags || ['business']
+        isPlatformBusiness: false
       };
     }).filter(Boolean); // Remove null entries
 

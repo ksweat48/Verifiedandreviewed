@@ -728,11 +728,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <div className="relative">
               <div
                 ref={scrollContainerRef}
-                className="hidden md:grid md:grid-flow-col md:auto-cols-max overflow-x-auto scrollbar-hide gap-6 pb-8 snap-x h-full"
+                className="hidden md:grid md:grid-flow-col md:auto-cols-max overflow-x-auto scrollbar-hide gap-4 pb-8 snap-x h-full"
                 style={{ height: isAppModeActive ? 'calc(100vh - 128px)' : 'auto' }}
               >
                 {slots.map((slot, slotIndex) => (
-                  <div key={`slot-${slotIndex}`} className="w-80 flex-shrink-0 snap-start h-full">
+                  <div key={`slot-${slotIndex}`} className="w-96 flex-shrink-0 snap-start h-full">
                     {slot.type === 'platform' && slot.businesses.length > 0 && (
                       <PlatformBusinessCard
                         business={slot.businesses[0]}
