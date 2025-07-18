@@ -174,12 +174,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           hours: business.hours || 'Hours unavailable',
           address: business.address || '',
           reviews: [], // We'll need to fetch reviews separately
-          isPlatformBusiness: business.is_verified || false,
+          isPlatformBusiness: true, // All businesses from Supabase are platform businesses
           tags: business.tags || []
         }));
         
-        platformBusinesses = transformedBusinesses.filter(b => b.isPlatformBusiness);
-        aiBusinesses = transformedBusinesses.filter(b => !b.isPlatformBusiness);
+        // All businesses from Supabase are platform businesses
+        platformBusinesses = transformedBusinesses;
+        aiBusinesses = []; // No AI businesses from Supabase
         
         // Use AI if we have fewer than 6 total results (platform + unverified)
         needsAI = transformedBusinesses.length < 6;

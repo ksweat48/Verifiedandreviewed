@@ -67,8 +67,7 @@ const ExploreArea = () => {
     try {
       // Fetch real businesses from Supabase
       const realBusinesses = await BusinessService.getBusinesses({
-        verified_only: false, // Show all businesses, not just verified ones
-        min_sentiment: 65 // Only show businesses with decent sentiment scores
+        verified_only: false // Show all businesses, not just verified ones
       });
       
       // Transform the business data to match the expected format

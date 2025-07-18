@@ -159,7 +159,6 @@ export class BusinessService {
     verified_only?: boolean;
     search?: string;
     tags?: string[];
-    min_sentiment?: number;
     adminView?: boolean;
   }): Promise<Business[]> {
     try {
@@ -185,15 +184,7 @@ export class BusinessService {
         query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,location.ilike.%${filters.search}%`);
       }
       
-      if (filters?.min_sentiment) {
-        query = query.gte('sentiment_score', filters.min_sentiment);
-      }
 
-      // Filter by verification status if specified
-      if (filters?.verified_only === true) {
-        query = query.eq('is_verified', true);
-      }
-      
       // Execute query
       const { data, error } = await query;
       
