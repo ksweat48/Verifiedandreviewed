@@ -110,7 +110,6 @@ Rules:
       ],
       temperature: 0.7,
       max_tokens: 1500, // Reduced from 3000 to speed up generation
-      timeout: 25000, // 25 second timeout to stay under Netlify's 30s limit
       response_format: { type: "json_object" }
     });
 
