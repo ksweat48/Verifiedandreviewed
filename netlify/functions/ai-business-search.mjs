@@ -1,71 +1,65 @@
-```javascript
-// AI Business Search Function
-import OpenAI from 'openai';
-import axios from 'axios';
+// AI Business Search Function with Google Places API Integration
+import OpenAI from 'npm:openai@4.104.0';
+import axios from 'npm:axios@1.6.0';
 
-export const handler = async (event, context) => {
-  // Set function timeout context
-  context.callbackWaitsForEmptyEventLoop = false;
-  
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+export default async function handler(req) {
   // Handle CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      },
-      body: ''
-    };
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 200,
+      headers: corsHeaders,
+    });
   }
 
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 
   try {
-    const { prompt, searchQuery, existingResultsCount = 0, numToGenerate = 3 } = JSON.parse(event.body || '{}');
+    const { prompt, searchQuery, existingResultsCount = 0, numToGenerate = 3 } = await req.json();
 
     if (!prompt) {
-      return {
-        statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'Prompt is required' })
-      };
+      return new Response(JSON.stringify({ error: 'Prompt is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     console.log('🔍 AI Business Search Request:', { prompt, searchQuery, existingResultsCount, numToGenerate });
-    // Check if OpenAI API key is configured
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-    const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+
+    // Check if required API keys are configured
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY');
     
     if (!OPENAI_API_KEY) {
       console.error('❌ OpenAI API key not configured');
-      return {
-        statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ 
-          error: 'OpenAI API key not configured',
-          message: 'Please set OPENAI_API_KEY in your environment variables'
-        })
-      };
+      return new Response(JSON.stringify({ 
+        error: 'OpenAI API key not configured',
+        message: 'Please set OPENAI_API_KEY in your environment variables'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     if (!GOOGLE_PLACES_API_KEY) {
       console.error('❌ Google Places API key not configured');
-      return {
-        statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ 
-          error: 'Google Places API key not configured',
-          message: 'Please set GOOGLE_PLACES_API_KEY in your environment variables'
-        })
-      };
+      return new Response(JSON.stringify({ 
+        error: 'Google Places API key not configured',
+        message: 'Please set GOOGLE_PLACES_API_KEY in your environment variables'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Initialize OpenAI client
@@ -76,18 +70,19 @@ export const handler = async (event, context) => {
     });
 
     // Enhanced system prompt for dynamic business suggestions
-    const systemPrompt = \`You are a local business discovery assistant. Generate exactly ${numToGenerate} business suggestions that match the user's query. Match tone and intent of search.
+    const systemPrompt = `You are a local business discovery assistant. Generate exactly ${numToGenerate} business suggestions that match the user's query. Match tone and intent of search.
 
 CRITICAL: Use the generateBusinessResults function. Do not return raw JSON or explanations.
 
 Requirements:
-• Realistic business names and addresses
+• Realistic business names and addresses in major US cities
 • Set image to null
 • shortDescription: exactly 2 sentences, 40-60 words
 • 1 review per business (40-60 words)
 • Distance: 1-5 miles, Duration: 5-15 minutes
 • Leave tags array empty
-• Generate exactly ${numToGenerate} businesses`;
+• Generate exactly ${numToGenerate} businesses
+• Use real-sounding business names that could exist`;
 
     // Define function schema for OpenAI function calling
     const tools = [{
@@ -104,14 +99,13 @@ Requirements:
                 type: "object",
                 properties: {
                   id: { type: "string", description: "Unique identifier" },
-                  name: { type: "string", description: "Business name" },
+                  name: { type: "string", description: "Realistic business name" },
                   shortDescription: { type: "string", description: "2 sentences, 40-60 words" },
-                  // The AI will generate a placeholder rating, which will be overwritten by Google's real rating
                   rating: { type: "number", minimum: 1, maximum: 5, description: "Placeholder rating (will be replaced by Google's real rating)" },
                   image: { type: "null" },
                   isOpen: { type: "boolean" },
                   hours: { type: "string", description: "Operating hours" },
-                  address: { type: "string", description: "Full street address" },
+                  address: { type: "string", description: "Full street address in major US city" },
                   distance: { type: "number", minimum: 1.0, maximum: 5.0 },
                   duration: { type: "integer", minimum: 5, maximum: 15 },
                   reviews: {
@@ -145,7 +139,7 @@ Requirements:
     console.log('🤖 Calling OpenAI with prompt:', prompt);
     
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini', // Reverted to mini for cost-efficiency
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
@@ -166,14 +160,9 @@ Requirements:
     const functionArgs = toolCall.function.arguments;
     console.log('📝 OpenAI function arguments:', functionArgs?.substring(0, 200) + '...');
     
-    // Try to parse the JSON response
+    // Parse the JSON response
     let aiSuggestedBusinesses;
     try {
-      // Quick validation before parsing
-      if (!functionArgs.trim().startsWith('{')) {
-        throw new Error('Invalid JSON: No opening brace');
-      }
-      
       const parsed = JSON.parse(functionArgs);
       
       if (parsed.results && Array.isArray(parsed.results)) {
@@ -187,134 +176,135 @@ Requirements:
       console.log('✅ Parsed AI suggestions:', aiSuggestedBusinesses.length, 'businesses');
     } catch (parseError) {
       console.error('❌ Error parsing OpenAI response:', parseError);
-      console.error('Raw function arguments:', functionArgs);
       
-      return {
-        statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ 
-          error: 'Failed to parse AI function response',
-          message: 'Invalid JSON format from AI function call',
-          details: parseError.message
-        })
-      };
+      return new Response(JSON.stringify({ 
+        error: 'Failed to parse AI function response',
+        message: 'Invalid JSON format from AI function call',
+        details: parseError.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Validate and verify businesses with Google Places API
+    // Validate AI response
     if (!Array.isArray(aiSuggestedBusinesses)) {
-      return {
-        statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ 
-          error: 'Invalid response format',
-          message: 'AI response is not an array'
-        })
-      };
+      return new Response(JSON.stringify({ 
+        error: 'Invalid response format',
+        message: 'AI response is not an array'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     console.log('🔍 Verifying businesses with Google Places API...');
-    const finalResults = [];
+    const verifiedBusinesses = [];
 
+    // Verify each AI-suggested business with Google Places API
     for (let i = 0; i < aiSuggestedBusinesses.length; i++) {
       const aiBusiness = aiSuggestedBusinesses[i];
       
-      // Crucial Check: Ensure name and address exist for Google Places search
+      // Ensure name and address exist for Google Places search
       if (!aiBusiness.name || !aiBusiness.address) {
-        console.warn(\`⚠️ AI Business ${i} missing name or address, skipping Google Places verification.`);
+        console.warn(`⚠️ AI Business ${i} missing name or address, skipping Google Places verification.`);
         continue;
       }
       
       try {
         // Construct Google Places API search query
-        const placesSearchQuery = \`${aiBusiness.name}, ${aiBusiness.address}`;
-        const placesUrl = \`https://maps.googleapis.com/maps/api/place/findplacefromtext/json`;
+        const placesSearchQuery = `${aiBusiness.name}, ${aiBusiness.address}`;
+        const placesUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json`;
         
-        console.log(\`🔍 Searching Google Places for: ${placesSearchQuery}`);
+        console.log(`🔍 Searching Google Places for: ${placesSearchQuery}`);
         
         const placesResponse = await axios.get(placesUrl, {
           params: {
             input: placesSearchQuery,
             inputtype: 'textquery',
-            fields: 'name,formatted_address,rating,opening_hours,place_id', // Requesting only necessary fields
+            fields: 'name,formatted_address,rating,opening_hours,place_id',
             key: GOOGLE_PLACES_API_KEY
           },
           timeout: 10000 // 10 second timeout
         });
         
-        if (placesResponse.data.status === 'OK' && placesResponse.data.candidates && placesResponse.data.candidates.length > 0) {
+        if (placesResponse.data.status === 'OK' && 
+            placesResponse.data.candidates && 
+            placesResponse.data.candidates.length > 0) {
+          
           const candidate = placesResponse.data.candidates[0];
           
           // CRITICAL: Only include businesses that have a rating
           if (candidate.rating) {
-            console.log(\`✅ Found verified business: ${candidate.name} (${candidate.rating} stars)`);
+            console.log(`✅ Found verified business: ${candidate.name} (${candidate.rating} stars)`);
             
-            // Attempt to get opening hours from Google, fallback to AI if not available
-            let businessHours = aiBusiness.hours; // Start with AI's generated hours
+            // Parse opening hours from Google
+            let businessHours = aiBusiness.hours; // Fallback to AI's generated hours
+            let isOpen = aiBusiness.isOpen; // Fallback to AI's generated status
+            
             if (candidate.opening_hours && candidate.opening_hours.weekday_text) {
-              // Simplify the hours display - just show today's hours or first available
+              // Use today's hours or first available
               businessHours = candidate.opening_hours.weekday_text[0] || businessHours;
+              // You could also check opening_hours.open_now if available
+              isOpen = candidate.opening_hours.open_now !== undefined ? candidate.opening_hours.open_now : isOpen;
             }
             
             const verifiedBusiness = {
-              id: aiBusiness.id, // Keep AI's generated ID
+              id: aiBusiness.id,
               name: candidate.name, // Use Google's verified name
-              shortDescription: aiBusiness.shortDescription,
+              shortDescription: aiBusiness.shortDescription, // Keep AI's description
               address: candidate.formatted_address, // Use Google's formatted address
               rating: candidate.rating, // Use Google's real rating
-              image: null, // No images for AI businesses
-              isOpen: aiBusiness.isOpen,
+              image: null,
+              isOpen: isOpen,
               hours: businessHours,
               distance: aiBusiness.distance,
               duration: aiBusiness.duration,
-              reviews: aiBusiness.reviews,
-              isPlatformBusiness: false, // These are AI-generated, not from our platform DB
+              reviews: aiBusiness.reviews, // Keep AI's generated reviews
+              isPlatformBusiness: false,
               tags: aiBusiness.tags,
               isGoogleVerified: true // Flag to indicate Google verification
             };
             
-            finalResults.push(verifiedBusiness);
+            verifiedBusinesses.push(verifiedBusiness);
           } else {
-            console.warn(\`⚠️ Business found on Google but no rating available: ${candidate.name || aiBusiness.name}, discarding.`);
+            console.warn(`⚠️ Business found on Google but no rating available: ${candidate.name || aiBusiness.name}, discarding.`);
           }
         } else {
-          console.warn(\`⚠️ No Google Places match found for: ${placesSearchQuery}, discarding.`);
+          console.warn(`⚠️ No Google Places match found for: ${placesSearchQuery}, discarding.`);
         }
       } catch (placesError) {
-        console.error(\`❌ Google Places API error for ${aiBusiness.name}:`, placesError.message);
+        console.error(`❌ Google Places API error for ${aiBusiness.name}:`, placesError.message);
         // Discard business if Google Places API call fails
       }
     }
 
-    console.log('🎯 Final verified results:', finalResults.length, 'businesses');
+    console.log('🎯 Final verified results:', verifiedBusinesses.length, 'businesses');
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        success: true,
-        results: finalResults, // Return only the Google-verified results
-        query: searchQuery,
-        usedAI: true,
-        googleVerified: true,
-        timestamp: new Date().toISOString()
-      })
-    };
+    return new Response(JSON.stringify({
+      success: true,
+      results: verifiedBusinesses, // Return only Google-verified results
+      query: searchQuery,
+      usedAI: true,
+      googleVerified: true,
+      aiSuggested: aiSuggestedBusinesses.length,
+      googleVerifiedCount: verifiedBusinesses.length,
+      timestamp: new Date().toISOString()
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
     console.error('❌ AI Business Search Error:', error);
     
-    return {
-      statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        error: 'Failed to generate business suggestions',
-        message: error.message,
-        timestamp: new Date().toISOString()
-      })
-    };
+    return new Response(JSON.stringify({
+      error: 'Failed to generate business suggestions',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
-};
-```
+}

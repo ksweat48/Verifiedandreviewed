@@ -762,15 +762,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                               onTakeMeThere={handleTakeMeThere}
                             />
                           ) : (
-                            <div className="bg-neutral-50 rounded-2xl p-4 flex flex-col">
-                              <h3 className="font-poppins text-sm font-semibold text-neutral-900 mb-3 text-center">
-                                AI Suggestion
-                              </h3>
-                              <AIBusinessCard
-                                business={business}
-                                onRecommend={handleRecommend}
-                              />
-                            </div>
+                            <AIBusinessCard
+                              business={business}
+                              onRecommend={handleRecommend}
+                            />
                           )}
                         </div>
                       ))}
