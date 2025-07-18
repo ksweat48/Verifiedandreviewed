@@ -733,7 +733,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 style={{ height: isAppModeActive ? 'calc(100vh - 128px)' : 'auto' }}
               >
                 {slots.map((slot, slotIndex) => (
-                  <div key={`slot-${slotIndex}`} className="w-96 flex-shrink-0 snap-start h-full">
+                  <div key={`slot-${slotIndex}`} className="w-[416px] flex-shrink-0 snap-start h-full">
                     {slot.type === 'platform' && slot.businesses.length > 0 && (
                       <PlatformBusinessCard
                         business={slot.businesses[0]}
