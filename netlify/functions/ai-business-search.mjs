@@ -76,7 +76,7 @@ export const handler = async (event, context) => {
     });
 
     // Enhanced system prompt for dynamic business suggestions
-    const systemPrompt = `You are a local business discovery assistant. Generate exactly ${numToGenerate} business suggestions that match the user's query. Match tone and intent of search.
+    const systemPrompt = \`You are a local business discovery assistant. Generate exactly ${numToGenerate} business suggestions that match the user's query. Match tone and intent of search.
 
 CRITICAL: Use the generateBusinessResults function. Do not return raw JSON or explanations.
 
@@ -220,16 +220,16 @@ Requirements:
       
       // Crucial Check: Ensure name and address exist for Google Places search
       if (!aiBusiness.name || !aiBusiness.address) {
-        console.warn(`⚠️ AI Business ${i} missing name or address, skipping Google Places verification.`);
+        console.warn(\`⚠️ AI Business ${i} missing name or address, skipping Google Places verification.`);
         continue;
       }
       
       try {
         // Construct Google Places API search query
-        const placesSearchQuery = `${aiBusiness.name}, ${aiBusiness.address}`;
-        const placesUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json`;
+        const placesSearchQuery = \`${aiBusiness.name}, ${aiBusiness.address}`;
+        const placesUrl = \`https://maps.googleapis.com/maps/api/place/findplacefromtext/json`;
         
-        console.log(`🔍 Searching Google Places for: ${placesSearchQuery}`);
+        console.log(\`🔍 Searching Google Places for: ${placesSearchQuery}`);
         
         const placesResponse = await axios.get(placesUrl, {
           params: {
@@ -246,7 +246,7 @@ Requirements:
           
           // CRITICAL: Only include businesses that have a rating
           if (candidate.rating) {
-            console.log(`✅ Found verified business: ${candidate.name} (${candidate.rating} stars)`);
+            console.log(\`✅ Found verified business: ${candidate.name} (${candidate.rating} stars)`);
             
             // Attempt to get opening hours from Google, fallback to AI if not available
             let businessHours = aiBusiness.hours; // Start with AI's generated hours
@@ -274,13 +274,13 @@ Requirements:
             
             finalResults.push(verifiedBusiness);
           } else {
-            console.warn(`⚠️ Business found on Google but no rating available: ${candidate.name || aiBusiness.name}, discarding.`);
+            console.warn(\`⚠️ Business found on Google but no rating available: ${candidate.name || aiBusiness.name}, discarding.`);
           }
         } else {
-          console.warn(`⚠️ No Google Places match found for: ${placesSearchQuery}, discarding.`);
+          console.warn(\`⚠️ No Google Places match found for: ${placesSearchQuery}, discarding.`);
         }
       } catch (placesError) {
-        console.error(`❌ Google Places API error for ${aiBusiness.name}:`, placesError.message);
+        console.error(\`❌ Google Places API error for ${aiBusiness.name}:`, placesError.message);
         // Discard business if Google Places API call fails
       }
     }
