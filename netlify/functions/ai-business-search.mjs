@@ -205,6 +205,9 @@ IMPORTANT GUIDELINES:
       isPlatformBusiness: false,
       tags: business.tags || ['business']
     }));
+
+    console.log('🎯 Final validated results:', validatedResults.length, 'businesses');
+
     return {
       statusCode: 200,
       headers: {
@@ -213,26 +216,24 @@ IMPORTANT GUIDELINES:
       },
       body: JSON.stringify({
         success: true,
-        results: parsedResults
-      })
-    };
-
-    console.log('🎯 Final validated results:', validatedResults.length, 'businesses');
-
-  } catch (error) {
-    console.error('AI Business Search Error:', error);
-    
-    return {
-    console.error('❌ AI Business Search Error:', error);
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        error: 'Failed to generate business suggestions',
-        message: error.message
-      })
-    };
-        message: error.message,
-        timestamp: new Date().toISOString()
+        results: validatedResults,
         query: searchQuery,
         usedAI: true,
         timestamp: new Date().toISOString()
+      })
+    };
+
+  } catch (error) {
+    console.error('❌ AI Business Search Error:', error);
+    
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({
+        error: 'Failed to generate business suggestions',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      })
+    };
+  }
 };
