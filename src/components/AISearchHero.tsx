@@ -255,11 +255,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               setResults(combinedResults);
               console.log('✅ Combined results:', combinedResults.length, 'businesses');
               
-              // Prepare the AI prompt with context about existing results
-              const aiPrompt = transformedBusinesses.length > 0 
-                ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide different but related businesses that match this search intent.`
-                : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
-              
               trackEvent('search_performed', { 
                 query: searchQuery, 
                 used_ai: true, 
@@ -285,6 +280,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               query: searchQuery, 
               used_ai: false, 
               credits_deducted: creditsRequired,
+              results_count: transformedBusinesses.length,
               error: aiError.message,
               fallback: true
             });
@@ -296,7 +292,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false, 
-            credits_deducted: creditsRequired 
+            credits_deducted: creditsRequired,
+            results_count: transformedBusinesses.length
           });
         }
       } else {
