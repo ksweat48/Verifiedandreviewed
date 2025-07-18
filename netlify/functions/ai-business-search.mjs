@@ -27,7 +27,7 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { prompt, searchQuery, existingResultsCount = 0 } = JSON.parse(event.body || '{}');
+    const { prompt, searchQuery, existingResultsCount = 0, numToGenerate = 3 } = JSON.parse(event.body || '{}');
 
     if (!prompt) {
       return {
@@ -37,7 +37,7 @@ export const handler = async (event, context) => {
       };
     }
 
-    console.log('🔍 AI Business Search Request:', { prompt, searchQuery, existingResultsCount });
+    console.log('🔍 AI Business Search Request:', { prompt, searchQuery, existingResultsCount, numToGenerate });
     // Check if OpenAI API key is configured
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     
@@ -60,8 +60,8 @@ export const handler = async (event, context) => {
       timeout: 25000 // 25 second timeout
     });
 
-    // Enhanced system prompt for better business suggestions
-    const systemPrompt = `You are a local business discovery assistant. Generate exactly 3 business suggestions that match the user's query.
+    // Enhanced system prompt for dynamic business suggestions
+    const systemPrompt = `You are a local business discovery assistant. Generate exactly ${numToGenerate} business suggestions that match the user's query.
     
 Return ONLY valid JSON with this structure:
 {"results": [business_array]}
@@ -102,7 +102,7 @@ Rules:
 - 1 brief review per business (50-80 words)
 - Include realistic distance (1-5 miles) and duration (5-15 minutes)
 - Do not generate tags (leave tags array empty)
-- Generate exactly 3 businesses, no more, no less
+ - Generate exactly ${numToGenerate} businesses, no more, no less
 - Return ONLY JSON, no explanations`;
 
     // Call OpenAI API
@@ -115,7 +115,7 @@ Rules:
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 600, // Reduced for 3 businesses without images
+      max_tokens: 1200, // Increased to accommodate up to 4 businesses with descriptions
       response_format: { type: "json_object" }
     });
 
@@ -162,8 +162,8 @@ Rules:
       };
     }
 
-    // Ensure each business has required fields
-    const validatedResults = parsedResults.slice(0, 3).map((business, index) => {
+    // Ensure each business has required fields and slice to requested number
+    const validatedResults = parsedResults.slice(0, numToGenerate).map((business, index) => {
       // Quick validation - ensure required fields exist
       if (!business.name || !business.address) {
         console.warn(`⚠️ Business ${index} missing required fields, skipping`);
@@ -173,6 +173,7 @@ Rules:
       return {
         id: business.id || `ai-${Date.now()}-${index}`,
         name: business.name,
+        shortDescription: business.shortDescription || 'A great local business worth visiting.',
         rating: business.rating || { thumbsUp: 15, thumbsDown: 2, sentimentScore: 85 },
         image: null, // No images for AI businesses
         isOpen: business.isOpen !== undefined ? business.isOpen : true,
@@ -182,7 +183,7 @@ Rules:
         duration: business.duration || Math.floor(Math.random() * 10 + 5), // 5-15 minutes
         reviews: business.reviews || [],
         isPlatformBusiness: false,
-        isPlatformBusiness: false
+        tags: [] // Empty tags for AI businesses
       };
     }).filter(Boolean); // Remove null entries
 
