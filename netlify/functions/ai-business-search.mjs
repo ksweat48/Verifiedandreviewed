@@ -61,72 +61,115 @@ export const handler = async (event, context) => {
     });
 
     // Enhanced system prompt for dynamic business suggestions
-    const systemPrompt = `You are a local business discovery assistant. Generate exactly ${numToGenerate} business suggestions that match the user's query.
-    
-Return ONLY valid JSON with this structure:
-{"results": [business_array]}
+    const systemPrompt = `You are a local business discovery assistant. Generate exactly ${numToGenerate} business suggestions that match the user's query. Match tone and intent of search.
 
-Each business:
-{
-  "id": "unique-id-string",
-  "name": "Business Name",
-  "shortDescription": "Brief 2-line description of the business and what makes it special (50-80 words)",
-  "rating": {
-    "thumbsUp": 15,
-    "thumbsDown": 2,
-    "sentimentScore": 85
-  },
-  "image": null,
-  "isOpen": true,
-  "hours": "Mon-Fri: 9AM-5PM",
-  "address": "123 Main St, City, State",
-  "distance": 2.5,
-  "duration": 8,
-  "reviews": [
-    {
-      "text": "Brief realistic review (50-80 words max)",
-      "author": "Reviewer Name",
-      "authorImage": "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100",
-      "images": [],
-      "thumbsUp": true or false
-    }
-  ],
-  "isPlatformBusiness": false,
-  "tags": []
-}
+CRITICAL: Use the generateBusinessResults function. Do not return raw JSON or explanations.
 
-Rules:
-- Use realistic business names and addresses
-- Set image field to null (no images needed)
-- Include a compelling shortDescription that explains what makes each business special
-- 1 brief review per business (50-80 words)
-- Include realistic distance (1-5 miles) and duration (5-15 minutes)
-- Do not generate tags (leave tags array empty)
- - Generate exactly ${numToGenerate} businesses, no more, no less
-- Return ONLY JSON, no explanations`;
+Requirements:
+• Realistic business names and addresses
+• Set image to null
+• shortDescription: exactly 2 sentences, 40-60 words
+• 1 review per business (40-60 words)
+• Distance: 1-5 miles, Duration: 5-15 minutes
+• Leave tags array empty
+• Generate exactly ${numToGenerate} businesses`;
+
+    // Define function schema for OpenAI function calling
+    const tools = [{
+      type: "function",
+      function: {
+        name: "generateBusinessResults",
+        description: "Generate business suggestions matching the search query",
+        parameters: {
+          type: "object",
+          properties: {
+            results: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string", description: "Unique identifier" },
+                  name: { type: "string", description: "Business name" },
+                  shortDescription: { type: "string", description: "2 sentences, 40-60 words" },
+                  rating: {
+                    type: "object",
+                    properties: {
+                      thumbsUp: { type: "integer", minimum: 5, maximum: 50 },
+                      thumbsDown: { type: "integer", minimum: 0, maximum: 10 },
+                      sentimentScore: { type: "integer", minimum: 60, maximum: 95 }
+                    },
+                    required: ["thumbsUp", "thumbsDown", "sentimentScore"]
+                  },
+                  image: { type: "null" },
+                  isOpen: { type: "boolean" },
+                  hours: { type: "string", description: "Operating hours" },
+                  address: { type: "string", description: "Full street address" },
+                  distance: { type: "number", minimum: 1.0, maximum: 5.0 },
+                  duration: { type: "integer", minimum: 5, maximum: 15 },
+                  reviews: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        text: { type: "string", description: "Review text, 40-60 words" },
+                        author: { type: "string", description: "Reviewer name" },
+                        authorImage: { type: "string", format: "uri" },
+                        images: { type: "array", items: {} },
+                        thumbsUp: { type: "boolean" }
+                      },
+                      required: ["text", "author", "authorImage", "images", "thumbsUp"]
+                    },
+                    minItems: 1,
+                    maxItems: 1
+                  },
+                  isPlatformBusiness: { type: "boolean", enum: [false] },
+                  tags: { type: "array", items: {}, maxItems: 0 }
+                },
+                required: ["id", "name", "shortDescription", "rating", "image", "isOpen", "hours", "address", "distance", "duration", "reviews", "isPlatformBusiness", "tags"]
+              },
+              minItems: numToGenerate,
+              maxItems: numToGenerate
+            }
+          },
+          required: ["results"]
+        }
+      }
+    }];
 
     // Call OpenAI API
     console.log('🤖 Calling OpenAI with prompt:', prompt);
     
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.7,
-      max_tokens: 1200, // Increased to accommodate up to 4 businesses with descriptions
-      response_format: { type: "json_object" }
+      tools: tools,
+      tool_choice: { type: "function", function: { name: "generateBusinessResults" } },
+      temperature: 0.3,
+      top_p: 0.9,
+      max_tokens: 800
     });
 
-    // Extract the response content
-    const responseContent = completion.choices[0].message.content;
-    console.log('📝 OpenAI raw response:', responseContent?.substring(0, 200) + '...');
+    // Extract the function call result
+    const toolCall = completion.choices[0].message.tool_calls?.[0];
+    if (!toolCall || toolCall.function.name !== 'generateBusinessResults') {
+      throw new Error('No valid function call returned from OpenAI');
+    }
+
+    const functionArgs = toolCall.function.arguments;
+    console.log('📝 OpenAI function arguments:', functionArgs?.substring(0, 200) + '...');
     
     // Try to parse the JSON response
     let parsedResults;
     try {
-      const parsed = JSON.parse(responseContent);
+      // Quick validation before parsing
+      if (!functionArgs.trim().startsWith('{')) {
+        throw new Error('Invalid JSON: No opening brace');
+      }
+      
+      const parsed = JSON.parse(functionArgs);
       
       if (parsed.results && Array.isArray(parsed.results)) {
         parsedResults = parsed.results;
@@ -139,13 +182,15 @@ Rules:
       console.log('✅ Parsed results:', parsedResults.length, 'businesses');
     } catch (parseError) {
       console.error('❌ Error parsing OpenAI response:', parseError);
+      console.error('Raw function arguments:', functionArgs);
       
       return {
         statusCode: 500,
         headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({ 
-          error: 'Failed to parse AI response',
-          message: 'Invalid JSON format from AI'
+          error: 'Failed to parse AI function response',
+          message: 'Invalid JSON format from AI function call',
+          details: parseError.message
         })
       };
     }
