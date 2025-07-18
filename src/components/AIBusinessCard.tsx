@@ -5,6 +5,7 @@ import BusinessProfileModal from './BusinessProfileModal';
 interface BusinessCard {
   id: string;
   name: string;
+  address: string;
   shortDescription?: string;
   rating: {
     thumbsUp: number;
@@ -48,6 +49,14 @@ const AIBusinessCard: React.FC<{
               {business.shortDescription}
             </p>
           )}
+          
+          {/* Address */}
+          <div className="flex items-center gap-1 text-neutral-500">
+            <Icons.MapPin className="h-3 w-3 flex-shrink-0" />
+            <span className="font-lora text-xs truncate">
+              {business.address}
+            </span>
+          </div>
           
           {/* Open/Close Status and Hours */}
           <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
