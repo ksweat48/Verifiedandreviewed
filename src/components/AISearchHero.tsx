@@ -11,6 +11,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { UserService } from '../services/userService';
 import { CreditService } from '../services/creditService';
 import { BusinessService } from '../services/businessService';
+import { useGeolocation } from '../hooks/useGeolocation';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -46,6 +47,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const scrollContainerRef = useRef(null);
   const searchInputRef = useRef(null);
   const [currentUser, setCurrentUser] = useState(null);
+  
+  // Call the useGeolocation hook
+  const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
   
   // Listen for popstate events to handle back button in app mode
   useEffect(() => {
@@ -132,6 +136,19 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       setShowSignupPrompt(true);
       // Do not proceed with search or show loading state
       return;
+    }
+    
+    // Check if geolocation is still loading or has an error
+    if (geoLoading) {
+      // Optionally show a message to the user that location is still being fetched
+      console.warn("Geolocation is still loading. Please wait.");
+      return;
+    }
+    if (geoError) {
+      // Optionally show a message to the user about the geolocation error
+      console.error("Geolocation error:", geoError);
+      // Decide whether to proceed with a default location or stop the search
+      // For now, we'll proceed with the default location in the Netlify function
     }
     
     setIsSearching(true);
@@ -252,6 +269,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 searchQuery: searchQuery,
                 existingResultsCount: transformedBusinesses.length,
                 numToGenerate: numAINeeded
+                latitude: latitude,   // Pass user's latitude from hook
+                longitude: longitude  // Pass user's longitude from hook
               })
             });
             
@@ -587,7 +606,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 {/* Free trial credits for non-logged-in users */}
                 <button
                   type="submit"
-                  disabled={isSearching}
+                  disabled={isSearching || geoLoading} // Disable search if geolocation is loading
                   className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
                   aria-label="Search"
                 >
@@ -595,6 +614,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     <span className="flex items-center">
                       <Icons.Loader2 className="h-5 w-5 animate-spin sm:mr-2" />
                       <span className="hidden sm:inline">Thinking...</span>
+                    </span>
+                  ) : geoLoading ? ( // Show loading state for geolocation
+                    <span className="flex items-center">
+                      <Icons.MapPin className="h-5 w-5 animate-pulse sm:mr-2" />
+                      <span className="hidden sm:inline">Locating...</span>
                     </span>
                   ) : (
                     <span className="flex items-center">
@@ -671,6 +695,33 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         </div>
       )}
 
+      {geoError && ( // Display geolocation error
+        <div className="max-w-md mx-auto mt-4 bg-red-50 border border-red-200 rounded-xl p-4 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <Icons.AlertCircle className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="ml-3">
+              <h3 className="font-poppins text-sm font-semibold text-red-800">
+                Location Error
+              </h3>
+              <p className="font-lora text-xs text-red-700 mt-1">
+                {geoError}
+              </p>
+              <p className="font-lora text-xs text-red-700 mt-1">
+                Search results might be less relevant without your precise location.
+              </p>
+            </div>
+            <button
+              onClick={() => { /* Optionally clear error or provide retry */ }}
+              className="ml-auto flex-shrink-0 text-red-500 hover:text-red-700"
+            >
+              <Icons.X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {showCreditWarning && (
         <div className="max-w-md mx-auto mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4 animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-start">
@@ -726,6 +777,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             onLogin={handleLogin}
           />
         </div>
+      )}
       )}
 
       <div
