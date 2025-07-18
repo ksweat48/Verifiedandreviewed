@@ -124,10 +124,12 @@ Requirements:
                     type: "array",
                     items: {
                       type: "object",
+                    }
                     address: { type: "string", description: "Full street address with city and state" },
                     hours: { type: "string", description: "Operating hours" },
                     minItems: 1,
                     maxItems: 1
+                  }
                   tags: { type: "array", items: {}, maxItems: 0 }
                 },
                 required: ["id", "name", "shortDescription", "address", "hours", "image", "isOpen", "distance", "duration", "reviews", "isPlatformBusiness", "tags"]

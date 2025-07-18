@@ -779,6 +779,28 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 ))}
               </div>
             </div>
+          ) : showResults && results.length === 0 && !isSearching && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icons.Search className="h-8 w-8 text-neutral-400" />
+              </div>
+              <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
+                No businesses found
+              </h3>
+              <p className="font-lora text-neutral-600 mb-4">
+                We couldn't find any businesses matching "{searchQuery}" in your area.
+              </p>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowResults(false);
+                  setIsAppModeActive(false);
+                }}
+                className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
+              >
+                Try Another Search
+              </button>
+            </div>
           )}
         </div>
       </div>
