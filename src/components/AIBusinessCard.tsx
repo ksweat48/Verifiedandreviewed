@@ -7,11 +7,7 @@ interface BusinessCard {
   name: string;
   address: string;
   shortDescription?: string;
-  rating: {
-    thumbsUp: number;
-    thumbsDown?: number;
-    sentimentScore: number;
-  };
+  rating: number; // Google rating (e.g., 4.5)
   image: string;
   isOpen: boolean;
   hours: string;
@@ -25,6 +21,7 @@ interface BusinessCard {
   isPlatformBusiness: boolean;
   distance?: number;
   duration?: number;
+  isGoogleVerified?: boolean;
 }
 
 // AI Business Card Component - Simplified card for AI-fetched businesses
@@ -43,6 +40,32 @@ const AIBusinessCard: React.FC<{
             {business.name}
           </h3>
           
+          {/* Google Rating */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Icons.Star
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < Math.floor(business.rating)
+                      ? 'text-yellow-400 fill-current'
+                      : i < business.rating
+                      ? 'text-yellow-400 fill-current opacity-50'
+                      : 'text-neutral-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="font-poppins text-sm font-semibold text-neutral-700">
+              {business.rating}
+            </span>
+            {business.isGoogleVerified && (
+              <span className="font-poppins text-xs text-green-600 font-semibold">
+                Google
+              </span>
+            )}
+          </div>
+          
           {/* Short Description - 2 lines max */}
           {business.shortDescription && (
             <p className="font-lora text-sm text-neutral-600 line-clamp-2 leading-relaxed">
@@ -51,13 +74,6 @@ const AIBusinessCard: React.FC<{
           )}
           
           {/* Address */}
-          <div className="flex items-center gap-1 text-neutral-500">
-            <Icons.MapPin className="h-3 w-3 flex-shrink-0" />
-            <span className="font-lora text-xs truncate">
-              {business.address}
-            </span>
-          </div>
-          
           {/* Open/Close Status and Hours */}
           <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
             <div className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
@@ -69,6 +85,14 @@ const AIBusinessCard: React.FC<{
             </div>
             <span className="font-lora text-sm text-neutral-600 truncate">
               {business.hours || 'Hours unavailable'}
+            </span>
+          </div>
+          
+          {/* Address - Just above buttons */}
+          <div className="flex items-center gap-1 text-neutral-500">
+            <Icons.MapPin className="h-3 w-3 flex-shrink-0" />
+            <span className="font-lora text-xs truncate">
+              {business.address}
             </span>
           </div>
           
