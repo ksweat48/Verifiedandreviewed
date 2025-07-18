@@ -1,6 +1,6 @@
 // AI Business Search Function with Google Places API Integration
-import OpenAI from 'npm:openai@4.104.0';
-import axios from 'npm:axios@1.6.0';
+import OpenAI from 'openai';
+import axios from 'axios';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
