@@ -513,7 +513,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   if (aiBusinesses.length > 0) {
     slots.push({
       type: 'ai-stacked',
-      businesses: aiBusinesses.slice(0, 4) // Limit to 4 AI businesses
+      businesses: aiBusinesses.slice(0, 3) // Limit to 3 AI businesses
     });
   }
 
@@ -743,11 +743,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     )}
                     
                     {slot.type === 'ai-stacked' && slot.businesses.length > 0 && (
-                      <div className="h-full bg-neutral-50 rounded-2xl p-4 overflow-y-auto">
+                      <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
                         <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4 text-center">
                           AI Suggestions
                         </h3>
-                        <div className="space-y-2">
+                        <div className="space-y-3 flex-1">
                           {slot.businesses.map((business) => (
                             <AIBusinessCard 
                               key={`ai-stacked-${business.id}`}
@@ -791,11 +791,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   )}
                   
                   {slots[currentCardIndex] && slots[currentCardIndex].type === 'ai-stacked' && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
-                    <div className="h-full bg-neutral-50 rounded-2xl p-4 overflow-y-auto">
+                    <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
                       <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4 text-center">
                         AI Suggestions
                       </h3>
-                      <div className="space-y-2">
+                      <div className="space-y-3 flex-1">
                         {slots[currentCardIndex].businesses.map((business) => (
                           <AIBusinessCard 
                             key={`mobile-ai-stacked-${business.id}`}

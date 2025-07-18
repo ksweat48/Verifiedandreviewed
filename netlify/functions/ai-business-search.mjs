@@ -61,7 +61,7 @@ export const handler = async (event, context) => {
     });
 
     // Enhanced system prompt for better business suggestions
-    const systemPrompt = `You are a local business discovery assistant. Generate exactly 4 business suggestions that match the user's query.
+    const systemPrompt = `You are a local business discovery assistant. Generate exactly 3 business suggestions that match the user's query.
     
 Return ONLY valid JSON with this structure:
 {"results": [business_array]}
@@ -97,6 +97,7 @@ Rules:
 - Set image field to null (no images needed)
 - 1 brief review per business (50-80 words)
 - 2-3 relevant tags max
+- Generate exactly 3 businesses, no more, no less
 - Return ONLY JSON, no explanations`;
 
     // Call OpenAI API
@@ -109,7 +110,7 @@ Rules:
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 800, // Further reduced for 4 businesses without images
+      max_tokens: 600, // Reduced for 3 businesses without images
       response_format: { type: "json_object" }
     });
 
@@ -157,7 +158,7 @@ Rules:
     }
 
     // Ensure each business has required fields
-    const validatedResults = parsedResults.slice(0, 4).map((business, index) => {
+    const validatedResults = parsedResults.slice(0, 3).map((business, index) => {
       // Quick validation - ensure required fields exist
       if (!business.name || !business.address) {
         console.warn(`⚠️ Business ${index} missing required fields, skipping`);
