@@ -287,8 +287,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           }
         } else {
           // Just use the platform businesses
-          console.log('📊 Using platform-only results for:', searchQuery);
           setResults(transformedBusinesses);
+          console.log('📊 Using platform-only results for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false, 
@@ -335,7 +335,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       setSearchQuery(transcript);
-      handleSearch(transcript);
+      handleSearch();
       setIsListening(false);
     };
 
@@ -454,7 +454,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.key === 'Enter' && searchInputRef.current === document.activeElement) {
-        handleSearch(searchQuery);
+        handleSearch();
       }
     };
 
@@ -535,7 +535,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
             <div className="relative bg-white rounded-xl shadow-md border border-neutral-200 p-2 w-full">
-              <form onSubmit={(e) => {e.preventDefault(); handleSearch(searchQuery);}} className="flex items-center w-full">
+              <form onSubmit={(e) => {e.preventDefault(); handleSearch();}} className="flex items-center w-full">
                 <Icons.Sparkles className="h-5 w-5 text-primary-500 ml-2 sm:ml-4 mr-2 sm:mr-3 flex-shrink-0" />
                 <input
                   ref={searchInputRef}
@@ -659,33 +659,22 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             </div>
             <div className="ml-3">
               <h3 className="font-poppins text-sm font-semibold text-yellow-800">
-                {userCredits < (usedAI ? 10 : 1) ? 'Not enough credits' : 'Search temporarily unavailable'}
+                Not enough credits
               </h3>
               <p className="font-lora text-xs text-yellow-700 mt-1">
-                {userCredits < (usedAI ? 10 : 1) 
-                  ? `You need ${usedAI ? '10 credits' : '1 credit'} for this search. Purchase more credits to continue searching.`
-                  : 'AI search is temporarily unavailable. Please try again in a moment.'
-                }
+                You need {usedAI ? '10 credits' : '1 credit'} for this search. 
+                Purchase more credits to continue searching.
               </p>
               <div className="mt-2">
-                {userCredits < (usedAI ? 10 : 1) ? (
-                  <button
-                    onClick={() => {
-                      // Navigate to credits page
-                      window.location.href = '/account';
-                    }}
-                    className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900 underline"
-                  >
-                    Get More Credits
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setShowCreditWarning(false)}
-                    className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900 underline"
-                  >
-                    Try Again
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    // Navigate to credits page
+                    window.location.href = '/account';
+                  }}
+                  className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900"
+                >
+                  Buy Credits →
+                </button>
               </div>
             </div>
             <button
