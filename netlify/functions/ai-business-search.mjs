@@ -2,6 +2,9 @@
 import OpenAI from 'openai';
 
 export const handler = async (event, context) => {
+  // Set function timeout context
+  context.callbackWaitsForEmptyEventLoop = false;
+  
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -51,68 +54,64 @@ export const handler = async (event, context) => {
     }
 
     // Initialize OpenAI client
+    console.log('🔧 Initializing OpenAI client...');
     const openai = new OpenAI({
-      apiKey: OPENAI_API_KEY
+      apiKey: OPENAI_API_KEY,
+      timeout: 25000 // 25 second timeout
     });
 
     // Enhanced system prompt for better business suggestions
-    const systemPrompt = `You are an expert local business discovery assistant that helps users find businesses based on their mood, vibe, or specific needs. You understand nuanced search terms and can interpret what people really want.
+    const systemPrompt = `You are a local business discovery assistant. Generate ${6 - existingResultsCount} business suggestions that match the user's query.
     
-IMPORTANT: Return ONLY a valid JSON array of ${6 - existingResultsCount} business suggestions that match the user's query. Each business should have this EXACT structure:
+Return ONLY valid JSON with this structure:
+{"results": [business_array]}
 
+Each business:
 {
   "id": "unique-id-string",
   "name": "Business Name",
   "rating": {
-    "thumbsUp": number between 8-45,
-    "thumbsDown": number between 0-10,
-    "sentimentScore": number between 70-95
+    "thumbsUp": 15,
+    "thumbsDown": 2,
+    "sentimentScore": 85
   },
   "image": "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400",
-  "isOpen": true or false,
-  "hours": "realistic hours like Mon-Fri: 9AM-5PM, Sat-Sun: 10AM-6PM",
-  "address": "Full address with city and state",
+  "isOpen": true,
+  "hours": "Mon-Fri: 9AM-5PM",
+  "address": "123 Main St, City, State",
   "reviews": [
     {
-      "text": "Detailed, realistic review text about the experience (100-150 words)",
+      "text": "Brief realistic review (50-80 words max)",
       "author": "Reviewer Name",
       "authorImage": "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100",
-      "images": [
-        {"url": "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400"}
-      ],
+      "images": [{"url": "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400"}],
       "thumbsUp": true or false
     }
   ],
   "isPlatformBusiness": false,
-  "tags": ["tag1", "tag2", "tag3"]
+  "tags": ["tag1", "tag2"]
 }
 
-IMPORTANT GUIDELINES:
-1. Use realistic business names and addresses that sound authentic
-2. ONLY use Pexels image URLs (https://images.pexels.com/photos/...)
-3. Provide 1-2 realistic, detailed reviews per business
-4. Include 3-5 relevant tags based on the business type and search query
-5. Make sentiment scores realistic (70-95 range)
-6. Interpret search queries intelligently:
-   - "peaceful brunch spot" = quiet, relaxing cafes with good breakfast
-   - "vibe-y wine bar" = trendy, atmospheric wine bars
-   - "cozy coffee for work" = cafes with wifi, quiet atmosphere
-   - "romantic dinner place" = upscale restaurants with ambiance
-7. Return ONLY valid JSON array, no markdown, no explanations
-8. Ensure all required fields are present and properly formatted`;
+Rules:
+- Use realistic business names and addresses
+- ONLY use Pexels image URLs
+- 1 brief review per business (50-80 words)
+- 2-3 relevant tags max
+- Return ONLY JSON, no explanations`;
 
     // Call OpenAI API
     console.log('🤖 Calling OpenAI with prompt:', prompt);
     
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini', // Use faster, cheaper model for business suggestions
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.8, // Slightly more creative
-      max_tokens: 3000, // Increased for detailed reviews
-      response_format: { type: "json_object" } // Ensure JSON response
+      temperature: 0.7,
+      max_tokens: 1500, // Reduced from 3000 to speed up generation
+      timeout: 25000, // 25 second timeout to stay under Netlify's 30s limit
+      response_format: { type: "json_object" }
     });
 
     // Extract the response content
@@ -122,58 +121,28 @@ IMPORTANT GUIDELINES:
     // Try to parse the JSON response
     let parsedResults;
     try {
-      // First try to parse as direct JSON
       const parsed = JSON.parse(responseContent);
       
-      // Check if it's wrapped in an object with a results key
       if (parsed.results && Array.isArray(parsed.results)) {
         parsedResults = parsed.results;
       } else if (Array.isArray(parsed)) {
         parsedResults = parsed;
       } else {
-        // Try to extract array from object
-        const arrayKey = Object.keys(parsed).find(key => Array.isArray(parsed[key]));
-        if (arrayKey) {
-          parsedResults = parsed[arrayKey];
-        } else {
-          throw new Error('No array found in response');
-        }
+        throw new Error('Invalid response format');
       }
       
       console.log('✅ Parsed results:', parsedResults.length, 'businesses');
     } catch (parseError) {
       console.error('❌ Error parsing OpenAI response:', parseError);
-      console.error('Raw response:', responseContent);
       
-      // Try to extract JSON array with regex as fallback
-      const jsonMatch = responseContent.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        try {
-          parsedResults = JSON.parse(jsonMatch[0]);
-          console.log('🔄 Fallback parsing successful');
-        } catch (fallbackError) {
-          console.error('❌ Fallback parsing also failed:', fallbackError);
-          return {
-            statusCode: 500,
-            headers: { 'Access-Control-Allow-Origin': '*' },
-            body: JSON.stringify({ 
-              error: 'Failed to parse AI response',
-              message: 'The AI returned invalid JSON format',
-              rawResponse: responseContent?.substring(0, 500)
-            })
-          };
-        }
-      } else {
-        return {
-          statusCode: 500,
-          headers: { 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ 
-            error: 'Failed to parse AI response',
-            message: 'No valid JSON found in AI response',
-            rawResponse: responseContent?.substring(0, 500)
-          })
-        };
-      }
+      return {
+        statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ 
+          error: 'Failed to parse AI response',
+          message: 'Invalid JSON format from AI'
+        })
+      };
     }
 
     // Validate the results
@@ -189,22 +158,26 @@ IMPORTANT GUIDELINES:
     }
 
     // Ensure each business has required fields
-    const validatedResults = parsedResults.map((business, index) => ({
-      id: business.id || `ai-${Date.now()}-${index}`,
-      name: business.name || `Business ${index + 1}`,
-      rating: {
-        thumbsUp: business.rating?.thumbsUp || Math.floor(Math.random() * 30) + 10,
-        thumbsDown: business.rating?.thumbsDown || Math.floor(Math.random() * 5),
-        sentimentScore: business.rating?.sentimentScore || Math.floor(Math.random() * 25) + 70
-      },
-      image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      isOpen: business.isOpen !== undefined ? business.isOpen : Math.random() > 0.3,
-      hours: business.hours || 'Mon-Fri: 9AM-5PM',
-      address: business.address || 'Address not available',
-      reviews: business.reviews || [],
-      isPlatformBusiness: false,
-      tags: business.tags || ['business']
-    }));
+    const validatedResults = parsedResults.slice(0, 6 - existingResultsCount).map((business, index) => {
+      // Quick validation - ensure required fields exist
+      if (!business.name || !business.address) {
+        console.warn(`⚠️ Business ${index} missing required fields, skipping`);
+        return null;
+      }
+      
+      return {
+        id: business.id || `ai-${Date.now()}-${index}`,
+        name: business.name,
+        rating: business.rating || { thumbsUp: 15, thumbsDown: 2, sentimentScore: 85 },
+        image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+        isOpen: business.isOpen !== undefined ? business.isOpen : true,
+        hours: business.hours || 'Mon-Fri: 9AM-5PM',
+        address: business.address,
+        reviews: business.reviews || [],
+        isPlatformBusiness: false,
+        tags: business.tags || ['business']
+      };
+    }).filter(Boolean); // Remove null entries
 
     console.log('🎯 Final validated results:', validatedResults.length, 'businesses');
 
