@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import BusinessProfileModal from './BusinessProfileModal';
+import { Star } from 'lucide-react';
 
 interface BusinessCard {
   id: string;
@@ -8,10 +9,6 @@ interface BusinessCard {
   address: string;
   shortDescription?: string;
   rating: number; // Google rating (e.g., 4.5)
-  image: string;
-  isOpen: boolean;
-  hours: string;
-  address: string;
   reviews: Array<{
     text: string;
     author: string;
@@ -34,34 +31,30 @@ const AIBusinessCard: React.FC<{
   return (
     <>
       <div className="bg-white rounded-lg border border-neutral-200 py-4 px-4 hover:shadow-md transition-all duration-200 mb-3">
-        <div className="space-y-3">
+        <div className="space-y-2">
           {/* Business Name - Large Bold Text */}
           <h3 className="font-poppins text-lg font-bold text-neutral-900 line-clamp-1">
             {business.name}
           </h3>
           
           {/* Google Rating */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center">
-              {[...Array(5)].map((_, i) => (
-                <Icons.Star
-                  key={i}
-                  className={`h-4 w-4 ${
-                    i < Math.floor(business.rating)
-                      ? 'text-yellow-400 fill-current'
-                      : i < business.rating
-                      ? 'text-yellow-400 fill-current opacity-50'
-                      : 'text-neutral-300'
-                  }`}
-                />
-              ))}
-            </div>
-            <span className="font-poppins text-sm font-semibold text-neutral-700">
-              {business.rating}
+          <div className="flex items-center gap-1">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                className={`h-4 w-4 ${
+                  i < Math.floor(business.rating)
+                    ? 'text-yellow-400 fill-current'
+                    : 'text-neutral-300'
+                }`}
+              />
+            ))}
+            <span className="font-poppins text-sm font-semibold text-neutral-700 ml-1">
+              {business.rating.toFixed(1)}
             </span>
             {business.isGoogleVerified && (
-              <span className="font-poppins text-xs text-green-600 font-semibold">
-                Google
+              <span className="font-poppins text-xs text-green-600 font-semibold ml-2">
+                Google Verified
               </span>
             )}
           </div>
@@ -88,13 +81,11 @@ const AIBusinessCard: React.FC<{
             </span>
           </div>
           
-          {/* Address - Just above buttons */}
-          <div className="flex items-center gap-1 text-neutral-500">
-            <Icons.MapPin className="h-3 w-3 flex-shrink-0" />
-            <span className="font-lora text-xs truncate">
-              {business.address}
-            </span>
-          </div>
+          {/* Address - More prominent, just above buttons */}
+          <p className="font-lora text-sm text-neutral-600 flex items-center gap-1">
+            <Icons.MapPin className="h-4 w-4 flex-shrink-0 text-neutral-500" />
+            {business.address}
+          </p>
           
           {/* Go and Recommend Buttons */}
           <div className="flex items-center gap-2">

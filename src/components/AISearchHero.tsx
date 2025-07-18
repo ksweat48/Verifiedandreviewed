@@ -766,7 +766,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                               <h3 className="font-poppins text-sm font-semibold text-neutral-900 mb-3 text-center">
                                 AI Suggestion
                               </h3>
-                              <AIBusinessCard 
+                              <AIBusinessCard
                                 business={business}
                                 onRecommend={handleRecommend}
                               />

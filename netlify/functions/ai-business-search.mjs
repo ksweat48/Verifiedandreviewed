@@ -1,3 +1,4 @@
+```javascript
 // AI Business Search Function
 import OpenAI from 'openai';
 import axios from 'axios';
@@ -105,15 +106,8 @@ Requirements:
                   id: { type: "string", description: "Unique identifier" },
                   name: { type: "string", description: "Business name" },
                   shortDescription: { type: "string", description: "2 sentences, 40-60 words" },
-                  rating: {
-                    type: "object",
-                    properties: {
-                      thumbsUp: { type: "integer", minimum: 5, maximum: 50 },
-                      thumbsDown: { type: "integer", minimum: 0, maximum: 10 },
-                      sentimentScore: { type: "integer", minimum: 60, maximum: 95 }
-                    },
-                    required: ["thumbsUp", "thumbsDown", "sentimentScore"]
-                  },
+                  // The AI will generate a placeholder rating, which will be overwritten by Google's real rating
+                  rating: { type: "number", minimum: 1, maximum: 5, description: "Placeholder rating (will be replaced by Google's real rating)" },
                   image: { type: "null" },
                   isOpen: { type: "boolean" },
                   hours: { type: "string", description: "Operating hours" },
@@ -124,15 +118,19 @@ Requirements:
                     type: "array",
                     items: {
                       type: "object",
-                    }
-                    address: { type: "string", description: "Full street address with city and state" },
-                    hours: { type: "string", description: "Operating hours" },
+                      properties: {
+                        text: { type: "string" },
+                        author: { type: "string" },
+                        thumbsUp: { type: "boolean" }
+                      },
+                      required: ["text", "author", "thumbsUp"]
+                    },
                     minItems: 1,
                     maxItems: 1
-                  }
+                  },
                   tags: { type: "array", items: {}, maxItems: 0 }
                 },
-                required: ["id", "name", "shortDescription", "address", "hours", "image", "isOpen", "distance", "duration", "reviews", "isPlatformBusiness", "tags"]
+                required: ["id", "name", "shortDescription", "address", "hours", "image", "isOpen", "distance", "duration", "reviews", "tags", "rating"]
               },
               minItems: numToGenerate,
               maxItems: numToGenerate
@@ -147,7 +145,7 @@ Requirements:
     console.log('🤖 Calling OpenAI with prompt:', prompt);
     
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o-mini', // Reverted to mini for cost-efficiency
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
@@ -169,7 +167,7 @@ Requirements:
     console.log('📝 OpenAI function arguments:', functionArgs?.substring(0, 200) + '...');
     
     // Try to parse the JSON response
-    let parsedResults;
+    let aiSuggestedBusinesses;
     try {
       // Quick validation before parsing
       if (!functionArgs.trim().startsWith('{')) {
@@ -179,14 +177,14 @@ Requirements:
       const parsed = JSON.parse(functionArgs);
       
       if (parsed.results && Array.isArray(parsed.results)) {
-        parsedResults = parsed.results;
+        aiSuggestedBusinesses = parsed.results;
       } else if (Array.isArray(parsed)) {
-        parsedResults = parsed;
+        aiSuggestedBusinesses = parsed;
       } else {
         throw new Error('Invalid response format');
       }
       
-      console.log('✅ Parsed results:', parsedResults.length, 'businesses');
+      console.log('✅ Parsed AI suggestions:', aiSuggestedBusinesses.length, 'businesses');
     } catch (parseError) {
       console.error('❌ Error parsing OpenAI response:', parseError);
       console.error('Raw function arguments:', functionArgs);
@@ -203,7 +201,7 @@ Requirements:
     }
 
     // Validate and verify businesses with Google Places API
-    if (!Array.isArray(parsedResults)) {
+    if (!Array.isArray(aiSuggestedBusinesses)) {
       return {
         statusCode: 500,
         headers: { 'Access-Control-Allow-Origin': '*' },
@@ -215,29 +213,29 @@ Requirements:
     }
 
     console.log('🔍 Verifying businesses with Google Places API...');
-    const verifiedBusinesses = [];
+    const finalResults = [];
 
-    for (let i = 0; i < Math.min(parsedResults.length, numToGenerate); i++) {
-      const aiSuggestedBusiness = parsedResults[i];
+    for (let i = 0; i < aiSuggestedBusinesses.length; i++) {
+      const aiBusiness = aiSuggestedBusinesses[i];
       
-      // Quick validation - ensure required fields exist
-      if (!aiSuggestedBusiness.name || !aiSuggestedBusiness.address) {
-        console.warn(`⚠️ AI Business ${i} missing required fields, skipping`);
+      // Crucial Check: Ensure name and address exist for Google Places search
+      if (!aiBusiness.name || !aiBusiness.address) {
+        console.warn(`⚠️ AI Business ${i} missing name or address, skipping Google Places verification.`);
         continue;
       }
       
       try {
         // Construct Google Places API search query
-        const searchQuery = `${aiSuggestedBusiness.name} ${aiSuggestedBusiness.address}`;
+        const placesSearchQuery = `${aiBusiness.name}, ${aiBusiness.address}`;
         const placesUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json`;
         
-        console.log(`🔍 Searching Google Places for: ${searchQuery}`);
+        console.log(`🔍 Searching Google Places for: ${placesSearchQuery}`);
         
         const placesResponse = await axios.get(placesUrl, {
           params: {
-            input: searchQuery,
+            input: placesSearchQuery,
             inputtype: 'textquery',
-            fields: 'name,formatted_address,rating,opening_hours,place_id',
+            fields: 'name,formatted_address,rating,opening_hours,place_id', // Requesting only necessary fields
             key: GOOGLE_PLACES_API_KEY
           },
           timeout: 10000 // 10 second timeout
@@ -246,48 +244,48 @@ Requirements:
         if (placesResponse.data.status === 'OK' && placesResponse.data.candidates && placesResponse.data.candidates.length > 0) {
           const candidate = placesResponse.data.candidates[0];
           
-          // Only include businesses that have a rating
+          // CRITICAL: Only include businesses that have a rating
           if (candidate.rating) {
             console.log(`✅ Found verified business: ${candidate.name} (${candidate.rating} stars)`);
             
-            // Parse opening hours if available
-            let businessHours = aiSuggestedBusiness.hours || 'Hours available on Google';
+            // Attempt to get opening hours from Google, fallback to AI if not available
+            let businessHours = aiBusiness.hours; // Start with AI's generated hours
             if (candidate.opening_hours && candidate.opening_hours.weekday_text) {
               // Simplify the hours display - just show today's hours or first available
               businessHours = candidate.opening_hours.weekday_text[0] || businessHours;
             }
             
             const verifiedBusiness = {
-              id: aiSuggestedBusiness.id || `verified-${Date.now()}-${i}`,
+              id: aiBusiness.id, // Keep AI's generated ID
               name: candidate.name, // Use Google's verified name
-              shortDescription: aiSuggestedBusiness.shortDescription || 'A great local business worth visiting.',
+              shortDescription: aiBusiness.shortDescription,
               address: candidate.formatted_address, // Use Google's formatted address
-              rating: candidate.rating, // Real Google rating (e.g., 4.5)
+              rating: candidate.rating, // Use Google's real rating
               image: null, // No images for AI businesses
-              isOpen: aiSuggestedBusiness.isOpen !== undefined ? aiSuggestedBusiness.isOpen : true,
+              isOpen: aiBusiness.isOpen,
               hours: businessHours,
-              distance: aiSuggestedBusiness.distance || Math.round((Math.random() * 4 + 1) * 10) / 10,
-              duration: aiSuggestedBusiness.duration || Math.floor(Math.random() * 10 + 5),
-              reviews: aiSuggestedBusiness.reviews || [],
-              isPlatformBusiness: false,
-              tags: [],
-              placeId: candidate.place_id, // Store for potential future use
-              isGoogleVerified: true
+              distance: aiBusiness.distance,
+              duration: aiBusiness.duration,
+              reviews: aiBusiness.reviews,
+              isPlatformBusiness: false, // These are AI-generated, not from our platform DB
+              tags: aiBusiness.tags,
+              isGoogleVerified: true // Flag to indicate Google verification
             };
             
-            verifiedBusinesses.push(verifiedBusiness);
+            finalResults.push(verifiedBusiness);
           } else {
-            console.warn(`⚠️ Business found but no rating available: ${candidate.name || aiSuggestedBusiness.name}`);
+            console.warn(`⚠️ Business found on Google but no rating available: ${candidate.name || aiBusiness.name}, discarding.`);
           }
         } else {
-          console.warn(`⚠️ No Google Places match found for: ${searchQuery}`);
+          console.warn(`⚠️ No Google Places match found for: ${placesSearchQuery}, discarding.`);
         }
       } catch (placesError) {
-        console.error(`❌ Google Places API error for ${aiSuggestedBusiness.name}:`, placesError.message);
+        console.error(`❌ Google Places API error for ${aiBusiness.name}:`, placesError.message);
+        // Discard business if Google Places API call fails
       }
     }
 
-    console.log('🎯 Final verified results:', verifiedBusinesses.length, 'businesses');
+    console.log('🎯 Final verified results:', finalResults.length, 'businesses');
 
     return {
       statusCode: 200,
@@ -297,7 +295,7 @@ Requirements:
       },
       body: JSON.stringify({
         success: true,
-        results: verifiedBusinesses,
+        results: finalResults, // Return only the Google-verified results
         query: searchQuery,
         usedAI: true,
         googleVerified: true,
@@ -319,3 +317,4 @@ Requirements:
     };
   }
 };
+```
