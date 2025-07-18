@@ -183,7 +183,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         aiBusinesses = []; // No AI businesses from Supabase
         
         // Use AI if we have fewer than 6 total results (platform + unverified)
-        let needsAI = false;
         needsAI = transformedBusinesses.length < 6;
       } catch (error) {
         console.error('Error fetching businesses from Supabase:', error);
@@ -501,16 +500,21 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
   
-  // Create slots with 2 businesses each (max 4 total businesses = 2 slots)
   let slots = [];
-  const allBusinesses = [...platformBusinesses, ...aiBusinesses].slice(0, 4);
   
-  // Group businesses into slots of 2
-  for (let i = 0; i < allBusinesses.length; i += 2) {
-    const businessesInSlot = allBusinesses.slice(i, i + 2);
+  // Add platform businesses (up to 3 individual slots)
+  for (let i = 0; i < Math.min(platformBusinesses.length, 3); i++) {
     slots.push({
-      type: 'dual',
-      businesses: businessesInSlot
+      type: 'platform',
+      businesses: [platformBusinesses[i]]
+    });
+  }
+  
+  // Add all AI businesses in a single stacked slot
+  if (aiBusinesses.length > 0) {
+    slots.push({
+      type: 'ai-stacked',
+      businesses: aiBusinesses.slice(0, 3) // Limit to 3 AI businesses
     });
   }
 
