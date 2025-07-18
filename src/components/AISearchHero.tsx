@@ -519,15 +519,14 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
   
-  // Create slots with 2 cards each (max 4 total cards = 2 slots)
+  // Create slots with 2 cards stacked vertically (max 4 total cards = 2 slots)
   const allBusinesses = [...platformBusinesses, ...aiBusinesses].slice(0, 4);
   const slots = [];
   
-  // Create slots with 2 businesses each
+  // Create slots with 2 businesses stacked vertically in each slot
   for (let i = 0; i < allBusinesses.length; i += 2) {
     const slotBusinesses = allBusinesses.slice(i, i + 2);
     slots.push({
-      type: 'mixed',
       businesses: slotBusinesses
     });
   }
@@ -741,16 +740,19 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         <div className="max-w-7xl mx-auto px-4 relative z-20">
           {results.length > 0 && showResults && (
             <div className="relative">
+              {/* Unified layout for both desktop and mobile - swipeable slots with 2 cards stacked vertically */}
               <div
                 ref={scrollContainerRef}
-                className="hidden md:flex overflow-x-auto scrollbar-hide gap-4 pb-8 snap-x h-full"
+                className="flex overflow-x-auto scrollbar-hide gap-4 pb-8 snap-x h-full"
                 style={{ height: isAppModeActive ? 'calc(100vh - 128px)' : 'auto' }}
+                {...swipeHandlers}
               >
                 {slots.map((slot, slotIndex) => (
-                  <div key={`slot-${slotIndex}`} className="w-[616px] flex-shrink-0 snap-start h-full">
-                    <div className="flex gap-4 h-full">
-                      {slot.businesses.map((business, businessIndex) => (
-                        <div key={`${business.id}-${businessIndex}`} className="w-[300px] flex-shrink-0">
+                  <div key={`slot-${slotIndex}`} className="w-[calc(100vw-32px)] flex-shrink-0 snap-start h-full">
+                    {/* 2 cards stacked vertically in each slot */}
+                    <div className="flex flex-col gap-4 h-full">
+                      {slots[currentCardIndex].businesses.map((business, businessIndex) => (
+                        <div key={`${business.id}-${businessIndex}`} className="flex-1">
                           {business.isPlatformBusiness ? (
                             <PlatformBusinessCard
                               business={business}
@@ -759,16 +761,14 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                               onTakeMeThere={handleTakeMeThere}
                             />
                           ) : (
-                            <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
+                            <div className="bg-neutral-50 rounded-2xl p-4 flex flex-col">
                               <h3 className="font-poppins text-sm font-semibold text-neutral-900 mb-3 text-center">
                                 AI Suggestion
                               </h3>
-                              <div className="flex-1">
-                                <AIBusinessCard 
-                                  business={business}
-                                  onRecommend={handleRecommend}
-                                />
-                              </div>
+                              <AIBusinessCard 
+                                business={business}
+                                onRecommend={handleRecommend}
+                              />
                             </div>
                           )}
                         </div>
@@ -776,39 +776,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     </div>
                   </div>
                 ))}
-              </div>
-
-              <div className="md:hidden relative animate-in fade-in duration-500 overflow-hidden h-full" {...swipeHandlers}>
-                <div className="relative overflow-hidden" style={{ height: isAppModeActive ? 'calc(100vh - 128px)' : '480px' }}>
-                  {slots[currentCardIndex] && slots[currentCardIndex].businesses && slots[currentCardIndex].businesses.length > 0 && (
-                    <div className="space-y-4 h-full">
-                      {slots[currentCardIndex].businesses.map((business, businessIndex) => (
-                        <div key={`mobile-${business.id}-${businessIndex}`} className="h-full">
-                          {business.isPlatformBusiness ? (
-                            <PlatformBusinessCard
-                              business={business}
-                              onOpenReviewModal={handleCardClick}
-                              onRecommend={handleRecommend}
-                              onTakeMeThere={handleTakeMeThere}
-                            />
-                          ) : (
-                            <div className="h-full bg-neutral-50 rounded-2xl p-4 flex flex-col">
-                              <h3 className="font-poppins text-sm font-semibold text-neutral-900 mb-3 text-center">
-                                AI Suggestion
-                              </h3>
-                              <div className="flex-1">
-                                <AIBusinessCard 
-                                  business={business}
-                                  onRecommend={handleRecommend}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           )}

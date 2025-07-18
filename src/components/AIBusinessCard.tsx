@@ -35,7 +35,7 @@ const AIBusinessCard: React.FC<{
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-neutral-200 py-4 px-2 hover:shadow-md transition-all duration-200 mb-3">
+      <div className="bg-white rounded-lg border border-neutral-200 py-4 px-4 hover:shadow-md transition-all duration-200 mb-3">
         <div className="space-y-3">
           {/* Business Name - Large Bold Text */}
           <h3 className="font-poppins text-lg font-bold text-neutral-900 line-clamp-1">
