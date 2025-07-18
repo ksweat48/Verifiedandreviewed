@@ -73,6 +73,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             setUserCredits(user.credits || 0);
             setCurrentUser(user);
           }
+          // Use AI if we have fewer than 6 total results (platform + unverified)
+          // needsAI = transformedBusinesses.length < 6;
         } catch (error) {
           console.error('Error refreshing user credits:', error);
         }
@@ -181,8 +183,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         platformBusinesses = transformedBusinesses.filter(b => b.isPlatformBusiness);
         aiBusinesses = transformedBusinesses.filter(b => !b.isPlatformBusiness);
         
-        // Use AI if we have fewer than 6 total results (platform + unverified)
-        needsAI = transformedBusinesses.length < 6;
+        needsAI = platformBusinesses.length < 6;
       } catch (error) {
         console.error('Error fetching businesses from Supabase:', error);
         needsAI = true;
@@ -252,8 +253,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               
               console.log('🤖 Using AI to enhance search results for:', searchQuery);
               const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
-              setResults(combinedResults);
               console.log('✅ Combined results:', combinedResults.length, 'businesses');
+              setResults(combinedResults);
+              // Prepare the AI prompt with context about existing results
+              // const aiPrompt = transformedBusinesses.length > 0 
+              //   ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide different but related businesses that match this search intent.`
+              //   : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
               
               trackEvent('search_performed', { 
                 query: searchQuery, 
@@ -659,33 +664,22 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             </div>
             <div className="ml-3">
               <h3 className="font-poppins text-sm font-semibold text-yellow-800">
-                {userCredits < (usedAI ? 10 : 1) ? 'Not enough credits' : 'Search temporarily unavailable'}
+                Not enough credits
               </h3>
               <p className="font-lora text-xs text-yellow-700 mt-1">
-                {userCredits < (usedAI ? 10 : 1) 
-                  ? `You need ${usedAI ? '10 credits' : '1 credit'} for this search. Purchase more credits to continue searching.`
-                  : 'AI search is temporarily unavailable. Please try again in a moment.'
-                }
+                You need {usedAI ? '10 credits' : '1 credit'} for this search. 
+                Purchase more credits to continue searching.
               </p>
               <div className="mt-2">
-                {userCredits < (usedAI ? 10 : 1) ? (
-                  <button
-                    onClick={() => {
-                      // Navigate to credits page
-                      window.location.href = '/account';
-                    }}
-                    className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900 underline"
-                  >
-                    Get More Credits
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setShowCreditWarning(false)}
-                    className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900 underline"
-                  >
-                    Try Again
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    // Navigate to credits page
+                    window.location.href = '/account';
+                  }}
+                  className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900"
+                >
+                  Buy Credits →
+                </button>
               </div>
             </div>
             <button
