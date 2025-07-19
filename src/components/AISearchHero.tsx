@@ -527,14 +527,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   return (
     <div 
       className={`relative flex flex-col h-screen ${isAppModeActive ? 'overflow-hidden' : ''}`}
-      style={{
-        backgroundImage: 'url("/ChatGPT Image Jul 12, 2025, 05_41_06 AM.png")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        filter: 'blur(2px)'
-      }}
     >
+      {/* Blurred Background Layer */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'url("/ChatGPT Image Jul 12, 2025, 05_41_06 AM.png")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(2px)'
+        }}
+      ></div>
+      
       {/* Dark overlay for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
       
       {!showResults && (
         <div className="flex flex-col justify-center items-center flex-grow z-10 px-4 sm:px-6 lg:px-8">
