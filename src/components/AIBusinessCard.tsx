@@ -33,7 +33,7 @@ const AIBusinessCard: React.FC<{
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group">
-        <div className="p-2">
+        <div className="p-1">
           {/* Business Name - Large Bold Text */}
           <h3 className="font-poppins text-base font-bold text-neutral-900 line-clamp-1 mb-1">
             {business.name}

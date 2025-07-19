@@ -191,7 +191,7 @@ const PlatformBusinessCard: React.FC<{
           </div>
         </div>
         
-        <div className="bg-neutral-50 rounded-lg p-2 flex flex-col">
+        <div className="bg-neutral-50 rounded-lg p-1 flex flex-col">
             {business.reviews && business.reviews.length > 0 ? (
               <div className="flex flex-col">
                 {/* Review Images */}
