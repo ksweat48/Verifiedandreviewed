@@ -1,6 +1,4 @@
-// This file has been emptied to remove all mock data
-// Utility functions have been moved to their respective components
-
+// Utility functions for health scores and sentiment ratings
 export const getHealthScoreColor = (score: number) => {
   if (score >= 90) return { bg: 'bg-green-500', text: 'text-green-700', bgLight: 'bg-green-100' };
   if (score >= 70) return { bg: 'bg-yellow-500', text: 'text-yellow-700', bgLight: 'bg-yellow-100' };
