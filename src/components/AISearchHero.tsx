@@ -27,7 +27,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
-  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [initialResultsLoaded, setInitialResultsLoaded] = useState(false);
   const [reviewerProfileOpen, setReviewerProfileOpen] = useState(false);
@@ -44,7 +43,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const searchBarRef = useRef(null);
   const { trackEvent } = useAnalytics();
   const resultsRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef(null);
   const searchInputRef = useRef(null);
   const [currentUser, setCurrentUser] = useState(null);
   
@@ -324,27 +322,54 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             
             // Show error message to user
             setShowCreditWarning(true);
+            // Sort and limit results: Platform businesses first, then open businesses first, limit to 5 total
+            const sortedResults = combinedResults.sort((a, b) => {
+              // First priority: Platform businesses
+              if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+              if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+              
+              // Second priority: Open businesses
+              if (a.isOpen && !b.isOpen) return -1;
+              if (!a.isOpen && b.isOpen) return 1;
+              
+              return 0;
+            }).slice(0, 5);
             
+            setResults(sortedResults);
             // Fallback to platform businesses if AI search fails
-            setResults(transformedBusinesses.slice(0, 4));
+            const sortedPlatformResults = transformedBusinesses.sort((a, b) => {
+              // Open businesses first
+              if (a.isOpen && !b.isOpen) return -1;
+              if (!a.isOpen && b.isOpen) return 1;
+              return 0;
+            }).slice(0, 5);
+            
+            setResults(sortedPlatformResults);
             trackEvent('search_performed', { 
               query: searchQuery, 
               used_ai: false, 
               credits_deducted: creditsRequired,
-              results_count: Math.min(transformedBusinesses.length, 4),
+              results_count: sortedPlatformResults.length,
               error: aiError.message,
               fallback: true
             });
           }
         } else {
           // Just use the platform businesses
-          setResults(transformedBusinesses.slice(0, 4));
+          const sortedPlatformResults = transformedBusinesses.sort((a, b) => {
+            // Open businesses first
+            if (a.isOpen && !b.isOpen) return -1;
+            if (!a.isOpen && b.isOpen) return 1;
+            return 0;
+          }).slice(0, 5);
+          
+          setResults(sortedPlatformResults);
           console.log('📊 Using platform-only results for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false, 
             credits_deducted: creditsRequired,
-            results_count: Math.min(transformedBusinesses.length, 4)
+            results_count: sortedPlatformResults.length
           });
         }
       } else {
@@ -407,45 +432,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
     recognition.start();
   };
-  const nextCard = () => {
-    setCurrentCardIndex((prev) => (prev + 1) % slots.length);
-  };
-  
-  const prevCard = () => {
-    setCurrentCardIndex((prev) => (prev - 1 + slots.length) % slots.length);
-  };
 
   const handleCardClick = (business) => {
     setSelectedBusiness(business);
-    setCurrentReviewIndex(0);
     setModalOpen(true);
   };
   
-  // Swipe handlers for mobile
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: nextCard,
-    onSwipedRight: prevCard,
-    trackMouse: true,
-    preventDefaultTouchmoveEvent: true,
-    trackTouch: true
-  });
-
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedBusiness(null);
-    setCurrentReviewIndex(0);
-  };
-
-  const nextReview = () => {
-    if (selectedBusiness && currentReviewIndex < selectedBusiness.reviews.length - 1) {
-      setCurrentReviewIndex(prev => prev + 1);
-    }
-  };
-
-  const prevReview = () => {
-    if (currentReviewIndex > 0) {
-      setCurrentReviewIndex(prev => prev - 1);
-    }
   };
 
   const openReviewerProfile = (reviewer) => {
@@ -539,28 +534,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
   
-  // Deduplicate businesses by name and create slots with 2 cards stacked vertically (max 4 total cards = 2 slots)
-  const combinedBusinesses = [...platformBusinesses, ...aiBusinesses];
-  const seenNames = new Set();
-  const deduplicatedBusinesses = combinedBusinesses.filter(business => {
-    const normalizedName = business.name.toLowerCase().trim();
-    if (seenNames.has(normalizedName)) {
-      return false;
-    }
-    seenNames.add(normalizedName);
-    return true;
-  });
-  const allBusinesses = deduplicatedBusinesses.slice(0, 4);
-  const slots = [];
-  
-  // Create slots with 2 businesses stacked vertically in each slot
-  for (let i = 0; i < allBusinesses.length; i += 2) {
-    const slotBusinesses = allBusinesses.slice(i, i + 2);
-    slots.push({
-      businesses: slotBusinesses
-    });
-  }
-
   return (
     <div className={`relative bg-gradient-to-br from-purple-50 via-white to-blue-50 pb-10 pt-4 ${isAppModeActive ? 'h-screen overflow-hidden' : ''}`}>
       {!showResults && (
@@ -644,46 +617,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         </div>
       </div>
       
-      {/* Exit App Mode Button */}
-      
-      {/* Unified Bottom Navigation Bar */}
-      {isAppModeActive && (
-        <div className="fixed bottom-4 left-0 right-0 z-40 flex items-center justify-between px-4">
-          {/* Pagination */}
-          <div className="bg-white bg-opacity-80 px-3 py-1 rounded-full shadow-sm">
-            <span className="font-poppins text-xs text-neutral-700">
-              {`${currentCardIndex + 1} / ${slots.length}`}
-            </span>
-          </div>
-          
-          {/* Navigation Arrows */}
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={prevCard}
-              className="w-10 h-10 bg-white bg-opacity-80 rounded-full shadow-lg flex items-center justify-center border border-neutral-100"
-              aria-label="Previous card"
-            >
-              <Icons.ChevronLeft className="h-4 w-4 text-neutral-600" />
-            </button>
-            <button
-              onClick={nextCard}
-              className="w-10 h-10 bg-white bg-opacity-80 rounded-full shadow-lg flex items-center justify-center border border-neutral-100"
-              aria-label="Next card"
-            >
-              <Icons.ChevronRight className="h-4 w-4 text-neutral-600" />
-            </button>
-          </div>
-        </div>
-      )}
-      
-      {/* Centered Exit Button */}
+      {/* Exit Search Button */}
       {isAppModeActive && (
         <button 
           onClick={exitAppMode}
-          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-10 h-10 bg-white bg-opacity-80 rounded-full shadow-lg flex items-center justify-center border border-neutral-100"
+          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-auto px-4 py-2 bg-white bg-opacity-80 rounded-full shadow-lg flex items-center justify-center border border-neutral-100"
           aria-label="Exit search mode"
         >
-          <Icons.LogOut className="h-4 w-4 text-neutral-600" />
+          <Icons.LogOut className="h-4 w-4 mr-2 text-neutral-600" />
+          <span className="font-poppins text-sm text-neutral-600">Exit Search</span>
         </button>
       )}
       
@@ -802,35 +744,25 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         <div className="max-w-7xl mx-auto px-4 relative z-20">
           {results.length > 0 && showResults && (
             <div className="relative">
-              {/* Unified layout for both desktop and mobile - swipeable slots with 2 cards stacked vertically */}
+              {/* Vertical scrollable layout */}
               <div
-                ref={scrollContainerRef}
-                className="flex overflow-x-auto scrollbar-hide gap-4 pb-8 snap-x h-full"
-                style={{ height: isAppModeActive ? 'calc(100vh - 128px)' : 'auto' }}
-                {...swipeHandlers}
+                className="space-y-0 pb-8"
               >
-                {slots.map((slot, slotIndex) => (
-                  <div key={`slot-${slotIndex}`} className="w-[calc(100vw-32px)] flex-shrink-0 snap-start h-full">
-                    {/* 2 cards stacked vertically in each slot */}
-                    <div className="flex flex-col gap-1 h-full">
-                      {slots[currentCardIndex].businesses.map((business, businessIndex) => (
-                        <div key={`${business.id}-${businessIndex}`}>
-                          {business.isPlatformBusiness ? (
-                            <PlatformBusinessCard
-                              business={business}
-                              onRecommend={handleRecommend}
-                              onOpenReviewModal={handleCardClick}
-                              onTakeMeThere={handleTakeMeThere}
-                            />
-                          ) : (
-                            <AIBusinessCard
-                              business={business}
-                              onRecommend={handleRecommend}
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                {results.map((business, businessIndex) => (
+                  <div key={`${business.id}-${businessIndex}`} className="mb-1">
+                    {business.isPlatformBusiness ? (
+                      <PlatformBusinessCard
+                        business={business}
+                        onRecommend={handleRecommend}
+                        onOpenReviewModal={handleCardClick}
+                        onTakeMeThere={handleTakeMeThere}
+                      />
+                    ) : (
+                      <AIBusinessCard
+                        business={business}
+                        onRecommend={handleRecommend}
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -867,9 +799,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         isOpen={modalOpen}
         onClose={handleCloseModal}
         business={selectedBusiness}
-        currentReviewIndex={currentReviewIndex}
-        onNextReview={nextReview}
-        onPrevReview={prevReview}
         onOpenReviewerProfile={openReviewerProfile}
         onOpenImageGallery={openImageGallery}
         onRecommend={handleRecommend}
