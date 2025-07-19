@@ -561,18 +561,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
                 <div className="relative bg-white rounded-xl shadow-md border border-neutral-200 p-2 w-full">
                   <form onSubmit={(e) => {e.preventDefault(); handleSearch();}} className="flex items-center w-full">
-                    <Icons.Sparkles className="h-5 w-5 text-primary-500 ml-2 sm:ml-4 mr-2 sm:mr-3 flex-shrink-0" />
+                    <Icons.Sparkles className="h-5 w-5 text-primary-500 ml-1 sm:ml-4 mr-1 sm:mr-3 flex-shrink-0" />
                     <input
                       ref={searchInputRef}
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="peaceful brunch spot, vibe-y wine bar, cozy coffee for work..."
-                      className="flex-1 py-2 sm:py-3 px-2 text-base font-lora text-neutral-700 placeholder-neutral-400 bg-transparent border-none outline-none min-w-0"
+                      className="flex-1 py-2 sm:py-3 px-1 text-base font-lora text-neutral-700 placeholder-neutral-400 bg-transparent border-none outline-none min-w-0"
                     />
                     <button
                       onClick={startVoiceRecognition}
-                      className={`p-2 rounded-full ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200 flex-shrink-0`}
+                      className={`p-1 rounded-full ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200 flex-shrink-0`}
                       aria-label="Voice search"
                       type="button"
                     >
@@ -593,7 +593,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     <button
                       type="submit"
                       disabled={isSearching || geoLoading} // Disable search if geolocation is loading
-                      className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+                      className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
                       aria-label="Search"
                     >
                       {isSearching ? (
@@ -619,7 +619,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             </div>
             
             {/* Sample Prompts */}
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
               {samplePrompts.map((prompt) => (
                 <button
                   key={prompt}
