@@ -132,8 +132,8 @@ const PlatformBusinessCard: React.FC<{
 
   return (
     <>
-      <div className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 snap-start flex flex-col bg-white z-0 mt-2 min-h-[480px] h-[480px]" onClick={(e) => e.stopPropagation()}>
-        <div className="relative h-36 flex-shrink-0 cursor-pointer" onClick={handleBusinessClick}>
+      <div className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 snap-start flex flex-col bg-white z-0" onClick={(e) => e.stopPropagation()}>
+        <div className="relative h-32 flex-shrink-0 cursor-pointer" onClick={handleBusinessClick}>
           <img
             src={business.image}
             alt={business.name}
@@ -150,11 +150,11 @@ const PlatformBusinessCard: React.FC<{
 
           <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80"></div>
           <div className="absolute bottom-0 left-0 right-0 p-2 text-white">
-            <h3 className="font-poppins text-lg font-bold mb-1 text-shadow line-clamp-1 cursor-pointer" onClick={handleBusinessClick}>
+            <h3 className="font-poppins text-base font-bold mb-1 text-shadow line-clamp-1 cursor-pointer" onClick={handleBusinessClick}>
               {business.name}
             </h3>
             
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-0.5">
               <div className="flex items-center">
                 <Icons.Clock className="h-3 w-3 mr-1" />
                 <span className="font-lora text-xs">{business.hours || 'Hours unavailable'}</span>
@@ -191,9 +191,9 @@ const PlatformBusinessCard: React.FC<{
           </div>
         </div>
         
-        <div className="bg-neutral-50 rounded-lg p-2 flex-grow flex flex-col overflow-hidden">
+        <div className="bg-neutral-50 rounded-lg p-2 flex flex-col">
             {business.reviews && business.reviews.length > 0 ? (
-              <div className="flex flex-col flex-grow">
+              <div className="flex flex-col">
                 {/* Review Images */}
                 {business.reviews[currentReviewIndex]?.images && business.reviews[currentReviewIndex].images.length > 0 && (
                   <div className="review-images-row flex gap-1 mb-1">
@@ -202,7 +202,7 @@ const PlatformBusinessCard: React.FC<{
                         key={index}
                         src={image.url} 
                         alt={image.alt || `Review image ${index + 1}`}
-                        className="review-image w-[32%] aspect-square object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                        className="review-image w-[32%] h-16 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={(e) => {
                           e.stopPropagation();
                           openImageGallery(index);
@@ -212,7 +212,7 @@ const PlatformBusinessCard: React.FC<{
                   </div>
                 )}
                 
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-0.5">
                   <div className="flex items-center cursor-pointer" onClick={(e) => {e.stopPropagation(); onOpenReviewModal(business);}}>
                     <Icons.ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-neutral-400'}`} />
                     <span className="font-poppins text-xs font-semibold text-neutral-700">Review</span>
@@ -222,7 +222,7 @@ const PlatformBusinessCard: React.FC<{
                   </span>
                 </div>
                 
-                <div className="flex items-start justify-between flex-grow">
+                <div className="flex items-start justify-between">
                   <div 
                     className="flex-1 pr-2 cursor-pointer"
                     onClick={(e) => {e.stopPropagation(); onOpenReviewModal(business);}}
@@ -230,7 +230,7 @@ const PlatformBusinessCard: React.FC<{
                     <p className="font-lora text-xs text-neutral-700 line-clamp-2 break-words">
                       "{business.reviews[currentReviewIndex]?.text || 'No review text available'}"
                     </p>
-                    <div className="flex items-center mt-1">
+                    <div className="flex items-center mt-0.5">
                       <div 
                         className="w-6 h-6 rounded-full overflow-hidden mr-2 flex-shrink-0 cursor-pointer"
                         onClick={(e) => {e.stopPropagation(); openReviewerProfile(e);}}
@@ -250,7 +250,7 @@ const PlatformBusinessCard: React.FC<{
                     </div>
                     
                     {business.reviews.length > 1 && (
-                      <div className="flex space-x-2 mt-1">
+                      <div className="flex space-x-2 mt-0.5">
                         <button onClick={() => prevReview()} className="text-neutral-400 hover:text-neutral-600 text-xs">←</button>
                         <button onClick={() => nextReview()} className="text-neutral-400 hover:text-neutral-600 text-xs">→</button>
                       </div>
@@ -258,14 +258,14 @@ const PlatformBusinessCard: React.FC<{
                   </div>
                   <button
                     onClick={(e) => {e.stopPropagation(); onTakeMeThere(business);}}
-                    className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center flex-shrink-0 self-end text-xs"
+                    className="w-7 h-7 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center flex-shrink-0 self-end text-xs"
                   >
                     GO
                   </button>
                 </div>
               </div>
             ) : (
-              <p className="font-lora text-xs text-neutral-500 text-center py-2 flex-grow cursor-not-allowed">No reviews available</p>
+              <p className="font-lora text-xs text-neutral-500 text-center py-2 cursor-not-allowed">No reviews available</p>
             )}
           </div>
           

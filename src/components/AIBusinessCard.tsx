@@ -32,16 +32,15 @@ const AIBusinessCard: React.FC<{
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col min-h-[480px]">
-        <div className="p-3 flex-grow flex flex-col">
-        <div className="space-y-1">
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group">
+        <div className="p-3">
           {/* Business Name - Large Bold Text */}
-          <h3 className="font-poppins text-lg font-bold text-neutral-900 line-clamp-1">
+          <h3 className="font-poppins text-base font-bold text-neutral-900 line-clamp-1 mb-1">
             {business.name}
           </h3>
           
           {/* Google Rating */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 mb-2">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
@@ -64,15 +63,67 @@ const AIBusinessCard: React.FC<{
           
           {/* Short Description - 2 lines max */}
           {business.shortDescription && (
-            <p className="font-lora text-xs text-neutral-600 line-clamp-2 leading-relaxed">
+            <p className="font-lora text-xs text-neutral-600 line-clamp-2 leading-relaxed mb-2">
               {business.shortDescription}
             </p>
           )}
           
-          {/* Open/Close Status and Hours */}
+          {/* Address */}
+          <div className="mb-2">
+            <p className="font-lora text-xs text-neutral-600 flex items-center gap-1">
+              <Icons.MapPin className="h-3 w-3 flex-shrink-0 text-neutral-500" />
+              <span className="line-clamp-1">{business.address}</span>
+            </p>
+          </div>
+          
+          {/* Open/Close Status and Hours - Compact */}
           {business.hours && (
-            <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
-            <div className={`px-2 py-0.5 rounded-full text-xs font-poppins font-semibold ${
+            <div className="flex items-center gap-2 mb-3">
+              <div className={`px-2 py-0.5 rounded-full text-xs font-poppins font-semibold ${
+                business.isOpen 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-red-100 text-red-700'
+              }`}>
+                {business.isOpen ? 'Open' : 'Closed'}
+              </div>
+              <span className="font-lora text-xs text-neutral-600 truncate">
+                {business.hours}
+              </span>
+            </div>
+          )}
+          
+          {/* Go and Recommend Buttons */}
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+                window.open(mapsUrl, '_blank');
+              }}
+              className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"
+            >
+              <Icons.Navigation className="h-4 w-4 mr-1" />
+              GO
+              {business.distance && business.duration && (
+                <span className="ml-1 text-xs opacity-90">
+                  {business.distance}mi
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={() => onRecommend(business)}
+              className="p-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-red-500 rounded-lg transition-all duration-200 flex items-center justify-center flex-shrink-0"
+              title="Recommend for Verification"
+            >
+              <Icons.Heart className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default AIBusinessCard;
               business.isOpen 
                 ? 'bg-green-100 text-green-700' 
                 : 'bg-red-100 text-red-700'

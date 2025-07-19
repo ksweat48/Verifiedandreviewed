@@ -802,9 +802,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 {slots.map((slot, slotIndex) => (
                   <div key={`slot-${slotIndex}`} className="w-[calc(100vw-32px)] flex-shrink-0 snap-start h-full">
                     {/* 2 cards stacked vertically in each slot */}
-                    <div className="flex flex-col gap-4 h-full">
+                    <div className="flex flex-col gap-2 h-full">
                       {slots[currentCardIndex].businesses.map((business, businessIndex) => (
-                        <div key={`${business.id}-${businessIndex}`} className="flex-1 max-h-[350px]">
+                        <div key={`${business.id}-${businessIndex}`} className="flex-1">
                           {business.isPlatformBusiness ? (
                             <PlatformBusinessCard
                               business={business}
