@@ -33,7 +33,7 @@ const AIBusinessCard: React.FC<{
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group">
-        <div className="p-3">
+        <div className="p-2">
           {/* Business Name - Large Bold Text */}
           <h3 className="font-poppins text-base font-bold text-neutral-900 line-clamp-1 mb-1">
             {business.name}
@@ -63,13 +63,13 @@ const AIBusinessCard: React.FC<{
           
           {/* Short Description - 2 lines max */}
           {business.shortDescription && (
-            <p className="font-lora text-xs text-neutral-600 line-clamp-2 leading-relaxed mb-2">
+            <p className="font-lora text-xs text-neutral-600 line-clamp-2 leading-relaxed mb-1">
               {business.shortDescription}
             </p>
           )}
           
           {/* Address */}
-          <div className="mb-2">
+          <div className="mb-1">
             <p className="font-lora text-xs text-neutral-600 flex items-center gap-1">
               <Icons.MapPin className="h-3 w-3 flex-shrink-0 text-neutral-500" />
               <span className="line-clamp-1">{business.address}</span>
@@ -78,7 +78,7 @@ const AIBusinessCard: React.FC<{
           
           {/* Open/Close Status and Hours - Compact */}
           {business.hours && (
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-2">
               <div className={`px-2 py-0.5 rounded-full text-xs font-poppins font-semibold ${
                 business.isOpen 
                   ? 'bg-green-100 text-green-700' 
@@ -93,7 +93,7 @@ const AIBusinessCard: React.FC<{
           )}
           
           {/* Go and Recommend Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-2">
             <button 
               onClick={() => {
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;

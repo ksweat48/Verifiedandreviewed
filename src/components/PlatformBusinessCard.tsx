@@ -202,7 +202,7 @@ const PlatformBusinessCard: React.FC<{
                         key={index}
                         src={image.url} 
                         alt={image.alt || `Review image ${index + 1}`}
-                        className="review-image w-[32%] h-16 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                        className="review-image w-[32%] h-12 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={(e) => {
                           e.stopPropagation();
                           openImageGallery(index);
@@ -265,7 +265,7 @@ const PlatformBusinessCard: React.FC<{
                 </div>
               </div>
             ) : (
-              <p className="font-lora text-xs text-neutral-500 text-center py-2 cursor-not-allowed">No reviews available</p>
+              <p className="font-lora text-xs text-neutral-500 text-center py-1 cursor-not-allowed">No reviews available</p>
             )}
           </div>
           

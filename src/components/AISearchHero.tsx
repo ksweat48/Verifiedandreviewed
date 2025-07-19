@@ -539,8 +539,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
   
-  // Create slots with 2 cards stacked vertically (max 4 total cards = 2 slots)
-  const allBusinesses = [...platformBusinesses, ...aiBusinesses].slice(0, 4);
+  // Deduplicate businesses by name and create slots with 2 cards stacked vertically (max 4 total cards = 2 slots)
+  const combinedBusinesses = [...platformBusinesses, ...aiBusinesses];
+  const seenNames = new Set();
+  const deduplicatedBusinesses = combinedBusinesses.filter(business => {
+    const normalizedName = business.name.toLowerCase().trim();
+    if (seenNames.has(normalizedName)) {
+      return false;
+    }
+    seenNames.add(normalizedName);
+    return true;
+  });
+  const allBusinesses = deduplicatedBusinesses.slice(0, 4);
   const slots = [];
   
   // Create slots with 2 businesses stacked vertically in each slot
@@ -781,7 +791,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       <div
         ref={resultsRef} 
-        className={`transition-all duration-500 overflow-hidden z-10 w-full ${
+        className={`transition-all duration-500 overflow-hidden z-10 w-full ${isAppModeActive ? 'pt-20' : ''} ${
           showResults && results.length > 0 ? 'opacity-100 mt-0' : 'max-h-0 opacity-0'
         }`}
         style={{
@@ -802,7 +812,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 {slots.map((slot, slotIndex) => (
                   <div key={`slot-${slotIndex}`} className="w-[calc(100vw-32px)] flex-shrink-0 snap-start h-full">
                     {/* 2 cards stacked vertically in each slot */}
-                    <div className="flex flex-col gap-2 h-full">
+                    <div className="flex flex-col gap-1 h-full">
                       {slots[currentCardIndex].businesses.map((business, businessIndex) => (
                         <div key={`${business.id}-${businessIndex}`} className="flex-1">
                           {business.isPlatformBusiness ? (
