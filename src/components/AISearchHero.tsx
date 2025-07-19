@@ -268,7 +268,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 prompt: aiPrompt,
                 searchQuery: searchQuery,
                 existingResultsCount: transformedBusinesses.length,
-                numToGenerate: numAINeeded
+                numToGenerate: numAINeeded,
                 latitude: latitude,   // Pass user's latitude from hook
                 longitude: longitude  // Pass user's longitude from hook
               })
@@ -777,7 +777,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             onLogin={handleLogin}
           />
         </div>
-      )}
       )}
 
       <div
