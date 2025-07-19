@@ -295,7 +295,7 @@ const ExploreArea = () => {
                                 <p 
                                   className="font-poppins text-xs text-neutral-500"
                                 >
-                          <div className="flex justify-between h-full">
+                                  {business.reviews[currentReviewIndex]?.author || 'Anonymous'}
                                 </p>
                               </div>
                               
