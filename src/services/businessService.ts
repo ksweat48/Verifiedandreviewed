@@ -7,11 +7,31 @@ export class BusinessService {
     ownerUserId: string
   ): Promise<{ success: boolean; businessId?: string; error?: string }> {
     try {
+      // Geocode the address if provided and coordinates are missing
+      let finalBusinessData = { ...businessData };
+      
+      if (businessData.address && (!businessData.latitude || !businessData.longitude)) {
+        try {
+          const coordinates = await this.geocodeAddress(businessData.address);
+          if (coordinates) {
+            finalBusinessData.latitude = coordinates.latitude;
+            finalBusinessData.longitude = coordinates.longitude;
+            // Optionally update the address with the formatted version
+            if (coordinates.formattedAddress) {
+              finalBusinessData.address = coordinates.formattedAddress;
+            }
+          }
+        } catch (geocodeError) {
+          console.warn('Geocoding failed, proceeding without coordinates:', geocodeError);
+          // Continue without coordinates - not a blocking error
+        }
+      }
+
       // Insert the new business
       const { data: newBusiness, error: businessError } = await supabase
         .from('businesses')
         .insert({
-          ...businessData,
+          ...finalBusinessData,
           days_closed: businessData.days_closed || null,
           owner_user_id: ownerUserId,
           is_verified: false, // New businesses start as unverified
@@ -68,10 +88,30 @@ export class BusinessService {
     businessData: Partial<Business>
   ): Promise<{ success: boolean; error?: string }> {
     try {
+      // Geocode the address if it has changed and coordinates are missing
+      let finalBusinessData = { ...businessData };
+      
+      if (businessData.address && (!businessData.latitude || !businessData.longitude)) {
+        try {
+          const coordinates = await this.geocodeAddress(businessData.address);
+          if (coordinates) {
+            finalBusinessData.latitude = coordinates.latitude;
+            finalBusinessData.longitude = coordinates.longitude;
+            // Optionally update the address with the formatted version
+            if (coordinates.formattedAddress) {
+              finalBusinessData.address = coordinates.formattedAddress;
+            }
+          }
+        } catch (geocodeError) {
+          console.warn('Geocoding failed during update, proceeding without coordinates:', geocodeError);
+          // Continue without coordinates - not a blocking error
+        }
+      }
+
       const { error } = await supabase
         .from('businesses')
         .update({
-          ...businessData,
+          ...finalBusinessData,
           updated_at: new Date().toISOString()
         })
         .eq('id', businessId);
@@ -87,6 +127,43 @@ export class BusinessService {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update business'
       };
+    }
+  }
+
+  // Geocode an address to get latitude and longitude
+  private static async geocodeAddress(address: string): Promise<{
+    latitude: number;
+    longitude: number;
+    formattedAddress?: string;
+  } | null> {
+    try {
+      const response = await fetch('/.netlify/functions/geocode-address', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ address })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Geocoding failed');
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        return {
+          latitude: data.latitude,
+          longitude: data.longitude,
+          formattedAddress: data.formattedAddress
+        };
+      } else {
+        throw new Error(data.error || 'Geocoding failed');
+      }
+    } catch (error) {
+      console.error('Error geocoding address:', error);
+      return null;
     }
   }
 
