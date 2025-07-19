@@ -223,18 +223,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           
           try {
             // Calculate how many AI businesses we need (max 4 total cards)
-            const numAINeeded = Math.max(0, 4 - transformedBusinesses.length);
+            const numAINeeded = Math.max(0, 5 - transformedBusinesses.length);
             
             if (numAINeeded === 0) {
-              // We already have 4 or more platform businesses, no AI needed
-              setResults(transformedBusinesses.slice(0, 4));
-              console.log('📊 Using platform-only results (4+ available):', searchQuery);
+              // We already have 5 or more platform businesses, no AI needed
+              setResults(transformedBusinesses.slice(0, 5));
+              console.log('📊 Using platform-only results (5+ available):', searchQuery);
               trackEvent('search_performed', { 
                 query: searchQuery, 
                 used_ai: false, 
                 credits_deducted: creditsRequired,
-                results_count: Math.min(transformedBusinesses.length, 4),
-                platform_results: Math.min(transformedBusinesses.length, 4),
+                results_count: Math.min(transformedBusinesses.length, 5),
+                platform_results: Math.min(transformedBusinesses.length, 5),
                 ai_results: 0
               });
               return;
@@ -289,10 +289,14 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               }));
               
               console.log(`🤖 Using AI to enhance search results for: ${searchQuery} (${numAINeeded} AI businesses)`);
-              const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses].slice(0, 4);
+              const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
               
-              // Sort and limit results: Open businesses first, then closest, then platform businesses first, limit to 5 total
+              // Sort and limit results: Platform businesses first, then open businesses, then closest, limit to 5 total
               const sortedResults = combinedResults.sort((a, b) => {
+                // First priority: Platform businesses
+                if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+                if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+                
                 // First priority: Open businesses
                 if (a.isOpen && !b.isOpen) return -1;
                 if (!a.isOpen && b.isOpen) return 1;
@@ -302,10 +306,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   if (a.distance < b.distance) return -1;
                   if (a.distance > b.distance) return 1;
                 }
-                
-                // Third priority: Platform businesses
-                if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-                if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
                 
                 return 0;
               });
@@ -337,7 +337,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             // Show error message to user
             setShowCreditWarning(true);
             // Sort and limit results: Platform businesses first, then open businesses first, limit to 5 total
-            const sortedResults = combinedResults.sort((a, b) => {
+            const sortedResults = transformedBusinesses.sort((a, b) => {
               // First priority: Platform businesses
               if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
               if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
@@ -346,27 +346,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               if (a.isOpen && !b.isOpen) return -1;
               if (!a.isOpen && b.isOpen) return 1;
               
-              return 0;
-            }).slice(0, 5);
-            
-            setResults(sortedResults);
-            // Fallback to platform businesses if AI search fails
-            const sortedPlatformResults = transformedBusinesses.sort((a, b) => {
-              // First priority: Open businesses
-              if (a.isOpen && !b.isOpen) return -1;
-              if (!a.isOpen && b.isOpen) return 1;
-              
-              // Second priority: Closest businesses (by distance)
+              // Third priority: Closest businesses (by distance)
               if (a.distance && b.distance) {
                 if (a.distance < b.distance) return -1;
                 if (a.distance > b.distance) return 1;
               }
               
               return 0;
-            });
+            }).slice(0, 5);
             
+            // Fallback to platform businesses if AI search fails
             // Remove duplicates by ID and limit to 5
-            const uniquePlatformResults = sortedPlatformResults.filter((business, index, self) => 
+            const uniquePlatformResults = sortedResults.filter((business, index, self) => 
               index === self.findIndex(b => b.id === business.id)
             ).slice(0, 5);
             
@@ -382,12 +373,16 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           }
         } else {
           // Just use the platform businesses
-          const sortedPlatformResults = transformedBusinesses.sort((a, b) => {
-            // First priority: Open businesses
+          const sortedResults = transformedBusinesses.sort((a, b) => {
+            // First priority: Platform businesses (all are platform businesses here)
+            if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+            if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+            
+            // Second priority: Open businesses
             if (a.isOpen && !b.isOpen) return -1;
             if (!a.isOpen && b.isOpen) return 1;
             
-            // Second priority: Closest businesses (by distance)
+            // Third priority: Closest businesses (by distance)
             if (a.distance && b.distance) {
               if (a.distance < b.distance) return -1;
               if (a.distance > b.distance) return 1;
@@ -397,7 +392,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           });
           
           // Remove duplicates by ID and limit to 5
-          const uniquePlatformResults = sortedPlatformResults.filter((business, index, self) => 
+          const uniquePlatformResults = sortedResults.filter((business, index, self) => 
             index === self.findIndex(b => b.id === business.id)
           ).slice(0, 5);
           
