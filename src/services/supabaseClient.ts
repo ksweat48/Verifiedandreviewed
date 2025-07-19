@@ -74,6 +74,10 @@ export type Business = {
   price_range?: string;
   service_area?: string;
   owner_user_id?: string;
+  latitude?: number;
+  longitude?: number;
+  distance?: number;
+  duration?: number;
 };
 
 export type BusinessRating = {

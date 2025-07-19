@@ -158,7 +158,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         // Fetch real businesses from Supabase
         const realBusinesses = await BusinessService.getBusinesses({
           search: searchQuery,
-        // Phase 1: Fast display - Get first 2 platform businesses immediately
+          userLatitude: latitude || undefined,
+          userLongitude: longitude || undefined
         });
         
         // Transform the business data to match the expected format
@@ -177,8 +178,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           reviews: [], // We'll need to fetch reviews separately
           isPlatformBusiness: true, // All businesses from Supabase are platform businesses
           tags: business.tags || [],
-          distance: Math.round((Math.random() * 4 + 1) * 10) / 10, // Placeholder miles
-          duration: Math.floor(Math.random() * 10 + 5) // Placeholder minutes
+          distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10,
+          duration: business.duration || Math.floor(Math.random() * 10 + 5)
         }));
         
         // All businesses from Supabase are platform businesses
