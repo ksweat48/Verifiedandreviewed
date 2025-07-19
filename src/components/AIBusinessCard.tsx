@@ -95,7 +95,7 @@ const AIBusinessCard: React.FC<{
           {/* Go and Recommend Buttons */}
           <div className="flex items-center gap-2">
             <button 
-              onClick={\() => {
+              onClick={() => {
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
                 window.open(mapsUrl, '_blank');
               }}
