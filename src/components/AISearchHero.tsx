@@ -542,10 +542,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
             {/* Title and Subtitle */}
             <div className="mb-8">
-              <h1 className="font-cinzel text-3xl md:text-6xl lg:text-7xl font-bold text-neutral-900 mb-6 mx-auto">
+              <h1 className="font-cinzel text-4xl md:text-7xl lg:text-8xl font-bold text-neutral-900 mb-6 mx-auto">
                 <span className="text-white drop-shadow-lg">Discover what matters</span>
               </h1>
-              <p className="font-lora text-lg md:text-2xl text-neutral-600 mb-4 max-w-2xl mx-auto">
+              <p className="font-lora text-xl md:text-3xl text-neutral-600 mb-4 max-w-2xl mx-auto">
                 <span className="text-white drop-shadow-md">
                 Find places with a vibe, a feeling, or just a word.
                 </span>
