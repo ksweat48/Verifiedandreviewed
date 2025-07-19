@@ -528,6 +528,105 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     <div className={`relative bg-gradient-to-br from-purple-50 via-white to-blue-50 flex flex-col h-screen ${isAppModeActive ? 'overflow-hidden' : ''}`}>
       {!showResults && (
         <div className="flex flex-col justify-center items-center px-4 py-6 flex-grow">
+          {/* Centered Hero Content Container */}
+          <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
+            {/* Title and Subtitle */}
+            <div className="mb-8">
+              <h1 className="font-cinzel text-3xl md:text-6xl lg:text-7xl font-bold text-neutral-900 mb-6 mx-auto">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-accent-500">Discover what matters</span>
+              </h1>
+              <p className="font-lora text-lg md:text-2xl text-neutral-600 mb-4 max-w-2xl mx-auto">
+                Find places with a vibe, a feeling, or just a word.
+              </p>
+            </div>
+            
+            {/* Search Bar */}
+            <div className="w-full max-w-2xl mx-auto mb-6">
+              <div 
+                ref={searchRef}
+                className="relative w-full"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
+                <div className="relative bg-white rounded-xl shadow-md border border-neutral-200 p-2 w-full">
+                  <form onSubmit={(e) => {e.preventDefault(); handleSearch();}} className="flex items-center w-full">
+                    <Icons.Sparkles className="h-5 w-5 text-primary-500 ml-2 sm:ml-4 mr-2 sm:mr-3 flex-shrink-0" />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="peaceful brunch spot, vibe-y wine bar, cozy coffee for work..."
+                      className="flex-1 py-2 sm:py-3 px-2 text-base font-lora text-neutral-700 placeholder-neutral-400 bg-transparent border-none outline-none min-w-0"
+                    />
+                    <button
+                      onClick={startVoiceRecognition}
+                      className={`p-2 rounded-full ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200 flex-shrink-0`}
+                      aria-label="Voice search"
+                      type="button"
+                    >
+                      <Icons.Mic className="h-5 w-5" />
+                    </button>
+                    
+                    {/* Credit display for logged-in users */}
+                   {isAuthenticated && userCredits > 0 && (
+                      <div className="hidden sm:flex items-center mr-2 bg-primary-50 px-2 py-1 rounded-lg">
+                        <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
+                        <span className="font-poppins text-xs font-semibold text-primary-700">
+                          {userCredits} credits
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Free trial credits for non-logged-in users */}
+                    <button
+                      type="submit"
+                      disabled={isSearching || geoLoading} // Disable search if geolocation is loading
+                      className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+                      aria-label="Search"
+                    >
+                      {isSearching ? (
+                        <span className="flex items-center">
+                          <Icons.Loader2 className="h-5 w-5 animate-spin sm:mr-2" />
+                          <span className="hidden sm:inline">Thinking...</span>
+                        </span>
+                      ) : geoLoading ? ( // Show loading state for geolocation
+                        <span className="flex items-center">
+                          <Icons.MapPin className="h-5 w-5 animate-pulse sm:mr-2" />
+                          <span className="hidden sm:inline">Locating...</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          <Icons.Search className="h-5 w-5 sm:mr-2" />
+                          <span className="hidden sm:inline">Search</span>
+                        </span>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            
+            {/* Sample Prompts */}
+            <div className="flex flex-wrap justify-center gap-2">
+              {samplePrompts.map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => {
+                    setSearchQuery(prompt);
+                    handleSearch();
+                  }}
+                  className="bg-white border border-neutral-200 text-neutral-600 px-3 py-1 rounded-full text-sm font-lora hover:bg-neutral-50 hover:border-primary-300 transition-colors duration-200"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} ${showResults ? 'mb-1' : ''} ${showResults ? '' : 'hidden'}`}>
+        <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div className="text-center">
             <h1 className="font-cinzel text-3xl md:text-6xl lg:text-7xl font-bold text-neutral-900 mb-6 mx-auto">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-accent-500">Discover what matters</span>
@@ -543,6 +642,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div 
             ref={searchRef}
+            className="relative w-full"
             className="relative w-full"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
@@ -589,22 +689,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       <span className="hidden sm:inline">Thinking...</span>
                     </span>
                   ) : geoLoading ? ( // Show loading state for geolocation
-                    <span className="flex items-center">
-                      <Icons.MapPin className="h-5 w-5 animate-pulse sm:mr-2" />
-                      <span className="hidden sm:inline">Locating...</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <Icons.Search className="h-5 w-5 sm:mr-2" />
-                      <span className="hidden sm:inline">Search</span>
-                    </span>
-                  )}
-                </button>
-              </form>
-            </div>
-
-          </div>
-        </div>
       </div>
       
       {/* Exit Search Button */}
@@ -619,24 +703,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         </button>
       )}
       
-      {/* Sample Prompts */}
-      {!showResults && (
-        <div className="flex flex-wrap justify-center gap-2 mt-4 mb-8">
-          {samplePrompts.map((prompt) => (
-            <button
-              key={prompt}
-              onClick={() => {
-                setSearchQuery(prompt);
-                handleSearch();
-              }}
-              className="bg-white border border-neutral-200 text-neutral-600 px-3 py-1 rounded-full text-sm font-lora hover:bg-neutral-50 hover:border-primary-300 transition-colors duration-200"
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
-      )}
-
       {geoError && ( // Display geolocation error
         <div className="max-w-md mx-auto mt-4 bg-red-50 border border-red-200 rounded-xl p-4 animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-start">
