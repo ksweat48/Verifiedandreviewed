@@ -525,9 +525,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
   
   return (
-    <div className={`relative bg-gradient-to-br from-purple-50 via-white to-blue-50 pb-10 pt-4 ${isAppModeActive ? 'h-screen overflow-hidden' : ''}`}>
+    <div className={`relative bg-gradient-to-br from-purple-50 via-white to-blue-50 flex flex-col h-screen ${isAppModeActive ? 'overflow-hidden' : ''}`}>
       {!showResults && (
-        <div className="flex flex-col justify-center items-center px-4 py-6 min-h-[30vh]">
+        <div className="flex flex-col justify-center items-center px-4 py-6 flex-grow">
           <div className="text-center">
             <h1 className="font-cinzel text-3xl md:text-6xl lg:text-7xl font-bold text-neutral-900 mb-6 mx-auto">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-accent-500">Discover what matters</span>
@@ -539,7 +539,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         </div>
       )}
 
-      <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} ${showResults ? 'mb-1' : ''} -mt-3`}>
+      <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} ${showResults ? 'mb-1' : ''} ${!showResults ? 'mt-auto' : ''}`}>
         <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div 
             ref={searchRef}
@@ -621,7 +621,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       
       {/* Sample Prompts */}
       {!showResults && (
-        <div className="flex flex-wrap justify-center gap-2 mt-4">
+        <div className="flex flex-wrap justify-center gap-2 mt-4 mb-8">
           {samplePrompts.map((prompt) => (
             <button
               key={prompt}
