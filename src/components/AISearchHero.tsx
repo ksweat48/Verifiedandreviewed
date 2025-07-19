@@ -525,18 +525,30 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
   
   return (
-    <div className={`relative bg-gradient-to-br from-purple-50 via-white to-blue-50 flex flex-col h-screen ${isAppModeActive ? 'overflow-hidden' : ''}`}>
+    <div 
+      className={`relative flex flex-col h-screen ${isAppModeActive ? 'overflow-hidden' : ''}`}
+      style={{
+        backgroundImage: 'url("/ChatGPT Image Jul 12, 2025, 05_41_06 AM.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
+      {/* Dark overlay for text readability */}
+      <div className="absolute inset-0 bg-black opacity-50 z-0"></div>
+      
       {!showResults && (
-        <div className="flex flex-col justify-center items-center px-4 py-6 flex-grow">
+        <div className="flex flex-col justify-center items-center flex-grow z-10">
           {/* Centered Hero Content Container */}
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
             {/* Title and Subtitle */}
             <div className="mb-8">
               <h1 className="font-cinzel text-3xl md:text-6xl lg:text-7xl font-bold text-neutral-900 mb-6 mx-auto">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-accent-500">Discover what matters</span>
+                <span className="text-white drop-shadow-lg">Discover what matters</span>
               </h1>
               <p className="font-lora text-lg md:text-2xl text-neutral-600 mb-4 max-w-2xl mx-auto">
+                <span className="text-white drop-shadow-md">
                 Find places with a vibe, a feeling, or just a word.
+                </span>
               </p>
             </div>
             
