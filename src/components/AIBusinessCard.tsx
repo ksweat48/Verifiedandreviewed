@@ -21,6 +21,7 @@ interface BusinessCard {
   distance?: number;
   duration?: number;
   isGoogleVerified?: boolean;
+  placeId?: string; // Google Place ID for direct linking to Google Business Profile
 }
 
 // AI Business Card Component - Simplified card for AI-fetched businesses
@@ -96,7 +97,10 @@ const AIBusinessCard: React.FC<{
           <div className="flex items-center gap-2 mt-2">
             <button 
               onClick={() => {
-                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+                // For AI businesses, link to Google Business Profile if placeId exists, otherwise use address
+                const mapsUrl = business.placeId 
+                  ? `https://www.google.com/maps/place/?q=place_id:${business.placeId}`
+                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
                 window.open(mapsUrl, '_blank');
               }}
               className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"
@@ -105,7 +109,7 @@ const AIBusinessCard: React.FC<{
               GO
               {business.distance && business.duration && (
                 <span className="ml-1 text-xs opacity-90">
-                  {business.distance}mi • {business.duration} min
+                  {business.distance.toFixed(1)}mi • {business.duration} min
                 </span>
               )}
             </button>

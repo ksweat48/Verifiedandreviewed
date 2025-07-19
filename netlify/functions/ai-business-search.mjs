@@ -261,6 +261,7 @@ Requirements:
               hours: businessHours,
               distance: distance,
               duration: duration,
+              placeId: result.place_id, // Add place_id for Google Business Profile linking
               reviews: [{
                 text: `Great ${query}! Really enjoyed the atmosphere and service here.`,
                 author: "Google User",
