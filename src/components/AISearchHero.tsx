@@ -636,13 +636,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             </p>
           </div>
         </div>
-      )}
+      </div>
 
       <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} ${showResults ? 'mb-1' : ''} ${!showResults ? 'mt-auto' : ''}`}>
         <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div 
             ref={searchRef}
-            className="relative w-full"
             className="relative w-full"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
@@ -689,6 +688,21 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       <span className="hidden sm:inline">Thinking...</span>
                     </span>
                   ) : geoLoading ? ( // Show loading state for geolocation
+                    <span className="flex items-center">
+                      <Icons.MapPin className="h-5 w-5 animate-pulse sm:mr-2" />
+                      <span className="hidden sm:inline">Locating...</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <Icons.Search className="h-5 w-5 sm:mr-2" />
+                      <span className="hidden sm:inline">Search</span>
+                    </span>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
       
       {/* Exit Search Button */}
