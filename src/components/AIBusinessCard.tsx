@@ -33,10 +33,10 @@ const AIBusinessCard: React.FC<{
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col min-h-[480px]">
-        <div className="p-4 flex-grow flex flex-col">
-        <div className="space-y-2">
+        <div className="p-3 flex-grow flex flex-col">
+        <div className="space-y-1">
           {/* Business Name - Large Bold Text */}
-          <h3 className="font-poppins text-xl font-bold text-neutral-900 line-clamp-1">
+          <h3 className="font-poppins text-lg font-bold text-neutral-900 line-clamp-1">
             {business.name}
           </h3>
           
@@ -45,14 +45,14 @@ const AIBusinessCard: React.FC<{
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
-                className={`h-4 w-4 ${
+                className={`h-3 w-3 ${
                   i < Math.floor(business.rating)
                     ? 'text-yellow-400 fill-current'
                     : 'text-neutral-300'
                 }`}
               />
             ))}
-            <span className="font-poppins text-sm font-semibold text-neutral-700 ml-1">
+            <span className="font-poppins text-xs font-semibold text-neutral-700 ml-1">
               {business.rating.toFixed(1)}
             </span>
             {business.isGoogleVerified && (
@@ -64,7 +64,7 @@ const AIBusinessCard: React.FC<{
           
           {/* Short Description - 2 lines max */}
           {business.shortDescription && (
-            <p className="font-lora text-sm text-neutral-600 line-clamp-2 leading-relaxed">
+            <p className="font-lora text-xs text-neutral-600 line-clamp-2 leading-relaxed">
               {business.shortDescription}
             </p>
           )}
@@ -72,14 +72,14 @@ const AIBusinessCard: React.FC<{
           {/* Open/Close Status and Hours */}
           {business.hours && (
             <div className="flex items-center gap-2 whitespace-nowrap overflow-hidden">
-            <div className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
+            <div className={`px-2 py-0.5 rounded-full text-xs font-poppins font-semibold ${
               business.isOpen 
                 ? 'bg-green-100 text-green-700' 
                 : 'bg-red-100 text-red-700'
             }`}>
               {business.isOpen ? 'Open' : 'Closed'}
             </div>
-            <span className="font-lora text-sm text-neutral-600 truncate">
+            <span className="font-lora text-xs text-neutral-600 truncate">
               {business.hours || 'Hours unavailable'}
             </span>
             </div>
@@ -88,8 +88,8 @@ const AIBusinessCard: React.FC<{
         
         {/* Address - More prominent, just above buttons */}
         <div className="mt-auto">
-          <div className="mb-3">
-            <p className="font-lora text-sm text-neutral-600 flex items-center gap-1">
+          <div className="mb-2">
+            <p className="font-lora text-xs text-neutral-600 flex items-center gap-1">
               <Icons.MapPin className="h-4 w-4 flex-shrink-0 text-neutral-500" />
               {business.address}
             </p>
@@ -102,22 +102,22 @@ const AIBusinessCard: React.FC<{
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
                 window.open(mapsUrl, '_blank');
               }}
-              className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-3 px-4 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+              className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"
             >
               <Icons.Navigation className="h-4 w-4 mr-2" />
               GO
               {business.distance && business.duration && (
-                <span className="ml-2 text-sm opacity-90">
+                <span className="ml-2 text-xs opacity-90">
                   {business.distance}mi • {business.duration}min
                 </span>
               )}
             </button>
             <button 
               onClick={() => onRecommend(business)}
-              className="p-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-red-500 rounded-lg transition-all duration-200 flex items-center justify-center flex-shrink-0"
+              className="p-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-red-500 rounded-lg transition-all duration-200 flex items-center justify-center flex-shrink-0"
               title="Recommend for Verification"
             >
-              <Icons.Heart className="h-5 w-5" />
+              <Icons.Heart className="h-4 w-4" />
             </button>
           </div>
         </div>
