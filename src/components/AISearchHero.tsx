@@ -530,11 +530,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       style={{
         backgroundImage: 'url("/ChatGPT Image Jul 12, 2025, 05_41_06 AM.png")',
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
+        filter: 'blur(2px)'
       }}
     >
       {/* Dark overlay for text readability */}
-      <div className="absolute inset-0 bg-black opacity-50 z-0"></div>
       
       {!showResults && (
         <div className="flex flex-col justify-center items-center flex-grow z-10 px-4 sm:px-6 lg:px-8">

@@ -264,4 +264,10 @@
     from { opacity: 1; transform: translate(-50%, 0); }
     to { opacity: 0; transform: translate(-50%, 20px); }
   }
+
+  /* Hero background blur effect */
+  .hero-background-blur {
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
 }
