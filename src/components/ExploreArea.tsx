@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import ReviewModal from './ReviewModal';
-import ReviewerProfile from './ReviewerProfile';
-import ImageGalleryPopup from './ImageGalleryPopup';
 import BusinessProfileModal from './BusinessProfileModal';
 import { BusinessService } from '../services/businessService';
 
@@ -46,16 +43,9 @@ const ExploreArea = () => {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentReviewIndices, setCurrentReviewIndices] = useState<{ [key: string]: number }>({});
-  const [reviewerProfileOpen, setReviewerProfileOpen] = useState(false);
-  const [selectedReviewer, setSelectedReviewer] = useState<any>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [galleryOpen, setGalleryOpen] = useState(false);
   const [businessProfileOpen, setBusinessProfileOpen] = useState(false);
   const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
-  const [galleryImages, setGalleryImages] = useState<Array<{url: string; alt?: string}>>([]);
-  const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
   
   useEffect(() => {
     loadNearbyBusinesses();
@@ -102,44 +92,20 @@ const ExploreArea = () => {
     const business = businesses.find(b => b.id === businessId);
     if (!business || !business.reviews || business.reviews.length === 0) return;
     
-    if (modalOpen && selectedBusiness?.id === businessId) {
-      // For modal navigation
-      setCurrentReviewIndices(prev => ({
-        ...prev,
-        [businessId]: ((prev[businessId] || 0) + 1) % business.reviews.length
-      }));
-    } else {
-      // For card navigation
-      setCurrentReviewIndices(prev => ({
-        ...prev,
-        [businessId]: ((prev[businessId] || 0) + 1) % business.reviews.length
-      }));
-    }
+    setCurrentReviewIndices(prev => ({
+      ...prev,
+      [businessId]: ((prev[businessId] || 0) + 1) % business.reviews.length
+    }));
   };
   
   const prevReview = (businessId: string) => {
     const business = businesses.find(b => b.id === businessId);
     if (!business || !business.reviews || business.reviews.length === 0) return;
     
-    if (modalOpen && selectedBusiness?.id === businessId) {
-      // For modal navigation
-      setCurrentReviewIndices(prev => ({
-        ...prev,
-        [businessId]: ((prev[businessId] || 0) - 1 + business.reviews.length) % business.reviews.length
-      }));
-    } else {
-      // For card navigation
-      setCurrentReviewIndices(prev => ({
-        ...prev,
-        [businessId]: ((prev[businessId] || 0) - 1 + business.reviews.length) % business.reviews.length
-      }));
-    }
-  };
-
-  // Open review modal
-  const openReviewModal = (business: Business) => {
-    setSelectedBusiness(business);
-    setModalOpen(true);
+    setCurrentReviewIndices(prev => ({
+      ...prev,
+      [businessId]: ((prev[businessId] || 0) - 1 + business.reviews.length) % business.reviews.length
+    }));
   };
 
   const handleRefresh = () => {
@@ -150,63 +116,6 @@ const ExploreArea = () => {
   const handleTakeMeThere = (business: Business) => {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
     window.open(mapsUrl, '_blank');
-    setModalOpen(false);
-  };
-
-  // Open reviewer profile
-  const openReviewerProfile = (business: Business, reviewIndex: number) => {
-    const review = business.reviews[reviewIndex];
-    if (!review) return;
-    
-    // Create mock reviewer data based on the review
-    const reviewer = {
-      name: review.author,
-      image: review.authorImage || "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100",
-      level: Math.floor(Math.random() * 5) + 1, // Random level 1-5
-      reviewCount: Math.floor(Math.random() * 50) + 1, // Random count 1-50
-      joinDate: '2023-' + (Math.floor(Math.random() * 12) + 1) + '-' + (Math.floor(Math.random() * 28) + 1),
-      bio: `Food enthusiast and travel blogger. I love discovering hidden gems and sharing honest reviews about my experiences.`,
-      reviews: [
-        {
-          businessName: business.name,
-          location: business.address,
-          date: new Date().toLocaleDateString(),
-          rating: review.thumbsUp ? 'thumbsUp' as const : 'thumbsDown' as const,
-          text: review.text
-        },
-        // Add some mock previous reviews
-        {
-          businessName: 'Coastal Breeze Cafe',
-          location: 'Santa Monica, CA',
-          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-          rating: 'thumbsUp' as const,
-          text: 'Fantastic ocean views and the freshest seafood. Highly recommended for sunset dining!'
-        },
-        {
-          businessName: 'Mountain Lodge Restaurant',
-          location: 'Denver, CO',
-          date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-          rating: 'thumbsUp' as const,
-          text: 'Cozy atmosphere with amazing comfort food. Perfect after a day of hiking.'
-        }
-      ]
-    };
-    
-    setSelectedReviewer(reviewer);
-    setReviewerProfileOpen(true);
-  };
-
-  const openImageGallery = (business: Business, reviewIndex: number, imageIndex: number = 0) => {
-    if (!business.reviews || 
-        !business.reviews[reviewIndex] || 
-        !business.reviews[reviewIndex].images || 
-        business.reviews[reviewIndex].images.length === 0) {
-      return;
-    }
-    
-    setGalleryImages(business.reviews[reviewIndex].images || []);
-    setGalleryInitialIndex(imageIndex);
-    setGalleryOpen(true);
   };
 
   const openBusinessProfile = (business: Business) => {
@@ -358,7 +267,7 @@ const ExploreArea = () => {
                         <div className="flex justify-between h-full">
                           <div 
                             className="flex-1 pr-2 cursor-pointer" 
-                            onClick={(e) => {e.stopPropagation(); openReviewModal(business);}}
+                            onClick={(e) => {e.stopPropagation(); openBusinessProfile(business);}}
                           >
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center">
@@ -378,17 +287,15 @@ const ExploreArea = () => {
                               <div className="flex items-center">
                                 <div className="w-6 h-6 rounded-full overflow-hidden mr-2 flex-shrink-0">
                                   <img 
-                                    onClick={(e) => {e.stopPropagation(); openReviewerProfile(business, currentReviewIndex);}}
                                     src={business.reviews[currentReviewIndex]?.authorImage || "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100"} 
                                     alt={business.reviews[currentReviewIndex]?.author || 'Anonymous'} 
-                                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                    className="w-full h-full object-cover"
                                   />
                                 </div>
                                 <p 
-                                  className="font-poppins text-xs text-neutral-500 cursor-pointer hover:text-primary-500 transition-colors"
-                                  onClick={(e) => {e.stopPropagation(); openReviewerProfile(business, currentReviewIndex);}}
+                                  className="font-poppins text-xs text-neutral-500"
                                 >
-                                  {business.reviews[currentReviewIndex]?.author || 'Anonymous'}
+                          <div className="flex justify-between h-full">
                                 </p>
                               </div>
                               
@@ -433,60 +340,6 @@ const ExploreArea = () => {
           )}
         </div>
       </div>
-      
-      {/* Review Modal */}
-      <ReviewModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        business={selectedBusiness}
-        currentReviewIndex={selectedBusiness ? currentReviewIndices[selectedBusiness.id] || 0 : 0}
-        onPrevReview={() => selectedBusiness && prevReview(selectedBusiness.id)}
-        onNextReview={() => selectedBusiness && nextReview(selectedBusiness.id)}
-      />
-      
-      {/* Reviewer Profile Modal */}
-      {selectedReviewer && (
-        <ReviewerProfile
-          isOpen={reviewerProfileOpen}
-          onClose={() => setReviewerProfileOpen(false)}
-          reviewer={selectedReviewer}
-        />
-      )}
-      
-      {/* Image Gallery Popup */}
-      <ImageGalleryPopup
-        isOpen={galleryOpen}
-        onClose={() => setGalleryOpen(false)}
-        images={galleryImages}
-        initialIndex={galleryInitialIndex}
-      />
-      
-      {/* Business Profile Modal */}
-      {selectedBusinessForProfile && (
-        <BusinessProfileModal
-          isOpen={businessProfileOpen}
-          onClose={() => setBusinessProfileOpen(false)}
-          business={{
-            id: selectedBusinessForProfile.id,
-            name: selectedBusinessForProfile.name,
-            category: selectedBusinessForProfile.tags?.[0],
-            description: selectedBusinessForProfile.reviews?.[0]?.text,
-            address: selectedBusinessForProfile.address,
-            location: selectedBusinessForProfile.address,
-            image_url: selectedBusinessForProfile.image,
-            gallery_urls: selectedBusinessForProfile.reviews && selectedBusinessForProfile.reviews.length > 0 && selectedBusinessForProfile.reviews[0].images
-              ? selectedBusinessForProfile.reviews[0].images.map(img => img.url)
-              : [],
-            hours: selectedBusinessForProfile.hours,
-            tags: selectedBusinessForProfile.tags,
-            is_verified: true,
-            thumbs_up: selectedBusinessForProfile.rating?.thumbsUp,
-            thumbs_down: selectedBusinessForProfile.rating?.thumbsDown,
-            sentiment_score: selectedBusinessForProfile.rating?.sentimentScore,
-            isOpen: selectedBusinessForProfile.isOpen
-          }}
-        />
-      )}
       
       {/* Business Profile Modal */}
       {selectedBusinessForProfile && (

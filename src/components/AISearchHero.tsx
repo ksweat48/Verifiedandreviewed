@@ -2,10 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import PlatformBusinessCard from './PlatformBusinessCard';
 import AIBusinessCard from './AIBusinessCard';
-import { useSwipeable } from 'react-swipeable';
-import ReviewModal from './ReviewModal';
-import ReviewerProfile from './ReviewerProfile';
-import ImageGalleryPopup from './ImageGalleryPopup';
 import SignupPrompt from './SignupPrompt';
 import { useAnalytics } from '../hooks/useAnalytics'; 
 import { UserService } from '../services/userService';
@@ -23,22 +19,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [isListening, setIsListening] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState([]);
-  const [isSticky, setIsSticky] = useState(false);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [showResults, setShowResults] = useState(false);
   const [initialResultsLoaded, setInitialResultsLoaded] = useState(false);
-  const [reviewerProfileOpen, setReviewerProfileOpen] = useState(false);
-  const [selectedReviewer, setSelectedReviewer] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [usedAI, setUsedAI] = useState(false);
   const [userCredits, setUserCredits] = useState(0);
   const [showCreditWarning, setShowCreditWarning] = useState(false);
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  const [galleryImages, setGalleryImages] = useState([]);
-  const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
   const searchRef = useRef(null);
   const searchBarRef = useRef(null);
   const { trackEvent } = useAnalytics();
@@ -150,7 +137,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     }
     
     setIsSearching(true);
-    setIsSticky(true);
     
     // Enter app mode
     setIsAppModeActive(true);
@@ -484,45 +470,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     recognition.start();
   };
 
-  const handleCardClick = (business) => {
-    setSelectedBusiness(business);
-    setModalOpen(true);
-  };
-  
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setSelectedBusiness(null);
-  };
-
-  const openReviewerProfile = (reviewer) => {
-    setSelectedReviewer(reviewer);
-    setReviewerProfileOpen(true);
-  };
-  
-  const openImageGallery = (business, reviewIndex, imageIndex = 0) => {
-    if (!business.reviews || 
-        !business.reviews[reviewIndex] || 
-        !business.reviews[reviewIndex].images || 
-        business.reviews[reviewIndex].images.length === 0) {
-      return;
-    }
-    
-    setGalleryImages(business.reviews[reviewIndex].images || []);
-    setGalleryInitialIndex(imageIndex);
-    setGalleryOpen(true);
-  };
-
   const handleRecommend = async (business) => {
     // Log to Supabase for admin approval
     console.log('Recommending business:', business.name);
-    setModalOpen(false);
     alert(`Thanks! We'll review ${business.name} for addition to our platform.`);
   };
 
   const handleTakeMeThere = (business) => {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
     window.open(mapsUrl, '_blank');
-    if (modalOpen) setModalOpen(false);
   };
 
   const handleSignup = () => {
@@ -568,19 +524,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   useEffect(() => {
     // Results will be populated when search is performed
   }, [showResults, results.length]);
-
-  const scrollToCard = (direction) => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const scrollAmount = 350; // Adjust based on card width + gap
-      
-      if (direction === 'left') {
-        container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-      } else {
-        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-      }
-    }
-  };
 
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
@@ -805,7 +748,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       <PlatformBusinessCard
                         business={business}
                         onRecommend={handleRecommend}
-                        onOpenReviewModal={handleCardClick}
                         onTakeMeThere={handleTakeMeThere}
                       />
                     ) : (
@@ -846,29 +788,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         </div>
       </div>
 
-      <ReviewModal
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-        business={selectedBusiness}
-        onOpenReviewerProfile={openReviewerProfile}
-        onOpenImageGallery={openImageGallery}
-        onRecommend={handleRecommend}
-        onTakeMeThere={handleTakeMeThere}
-      />
-
-      <ReviewerProfile
-        isOpen={reviewerProfileOpen}
-        onClose={() => setReviewerProfileOpen(false)}
-        reviewer={selectedReviewer}
-      />
-      
-      {/* Image Gallery Popup */}
-      <ImageGalleryPopup
-        isOpen={galleryOpen}
-        onClose={() => setGalleryOpen(false)}
-        images={galleryImages}
-        initialIndex={galleryInitialIndex}
-      />
     </div>
   );
 };

@@ -31,16 +31,15 @@ interface BusinessCard {
   isPlatformBusiness: boolean;
   tags?: string[];
   distance?: number;
+  duration?: number;
 }
 
 // Platform Business Card Component - Full featured card for verified businesses
 const PlatformBusinessCard: React.FC<{
   business: BusinessCard;
   onRecommend: (business: BusinessCard) => void;
-  onOpenReviewModal: (business: BusinessCard) => void;
   onTakeMeThere: (business: BusinessCard) => void;
-  onOpenBusinessProfile?: (business: BusinessCard) => void;
-}> = ({ business, onRecommend, onOpenReviewModal, onTakeMeThere }) => {
+}> = ({ business, onRecommend, onTakeMeThere }) => {
   const getSentimentRating = (score: number) => {
     if (score >= 80) return { text: 'Great', color: 'bg-green-500' };
     if (score >= 70 && score < 80) return { text: 'Good', color: 'bg-blue-500' };
@@ -158,8 +157,8 @@ const PlatformBusinessCard: React.FC<{
               <div className="flex items-center">
                 <Icons.Clock className="h-3 w-3 mr-1" />
                 <span className="font-lora text-xs">{business.hours || 'Hours unavailable'}</span>
-                {business.distance && (
-                  <span className="font-lora text-xs ml-2">• {business.distance.toFixed(1)} mi • {business.duration || 10} min</span>
+                {business.distance && business.duration && (
+                  <span className="font-lora text-xs ml-2">• {business.distance.toFixed(1)} mi • {business.duration} min</span>
                 )}
               </div>
             </div>
@@ -213,7 +212,7 @@ const PlatformBusinessCard: React.FC<{
                 )}
                 
                 <div className="flex items-center justify-between mb-0.5">
-                  <div className="flex items-center cursor-pointer" onClick={(e) => {e.stopPropagation(); onOpenReviewModal(business);}}>
+                  <div className="flex items-center cursor-pointer" onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}>
                     <Icons.ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-neutral-400'}`} />
                     <span className="font-poppins text-xs font-semibold text-neutral-700">Review</span>
                   </div>
@@ -225,7 +224,7 @@ const PlatformBusinessCard: React.FC<{
                 <div className="flex items-start justify-between">
                   <div 
                     className="flex-1 pr-2 cursor-pointer"
-                    onClick={(e) => {e.stopPropagation(); onOpenReviewModal(business);}}
+                    onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}
                   >
                     <p className="font-lora text-xs text-neutral-700 line-clamp-2 break-words">
                       "{business.reviews[currentReviewIndex]?.text || 'No review text available'}"
@@ -265,7 +264,7 @@ const PlatformBusinessCard: React.FC<{
                 </div>
               </div>
             ) : (
-              <p className="font-lora text-xs text-neutral-500 text-center py-1 cursor-not-allowed">No reviews available</p>
+              <p className="font-lora text-xs text-neutral-500 text-center py-1">No reviews available</p>
             )}
           </div>
           
