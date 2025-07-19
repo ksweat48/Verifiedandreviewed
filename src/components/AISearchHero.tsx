@@ -637,20 +637,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         </div>
       )}
 
-      <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} ${showResults ? 'mb-1' : ''} ${showResults ? '' : 'hidden'}`}>
-        <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-          <div className="text-center">
-            <h1 className="font-cinzel text-3xl md:text-6xl lg:text-7xl font-bold text-neutral-900 mb-6 mx-auto">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-accent-500">Discover what matters</span>
-            </h1>
-            <p className="font-lora text-lg md:text-2xl text-neutral-600 mb-4 max-w-2xl mx-auto">
-              Find places with a vibe, a feeling, or just a word.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} ${showResults ? 'mb-1' : ''} ${!showResults ? 'mt-auto' : ''}`}>
+      {showResults && (
+        <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} mb-1`}>
         <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div 
             ref={searchRef}
@@ -715,7 +703,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
       
       {/* Exit Search Button */}
       {isAppModeActive && (
