@@ -260,7 +260,7 @@ export class BusinessService {
       }
       
       if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,location.ilike.%${filters.search}%,category.ilike.%${filters.search}%,short_description.ilike.%${filters.search}%`);
+        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,location.ilike.%${filters.search}%,category.ilike.%${filters.search}%,short_description.ilike.%${filters.search}%,array_to_string(tags, ' ').ilike.%${filters.search}%`);
       }
       
 
