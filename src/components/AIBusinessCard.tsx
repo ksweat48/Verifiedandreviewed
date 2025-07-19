@@ -95,7 +95,7 @@ const AIBusinessCard: React.FC<{
           {/* Go and Recommend Buttons */}
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => {
+              onClick={\() => {
                 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
                 window.open(mapsUrl, '_blank');
               }}
@@ -117,61 +117,6 @@ const AIBusinessCard: React.FC<{
               <Icons.Heart className="h-4 w-4" />
             </button>
           </div>
-        </div>
-      </div>
-    </>
-  );
-};
-
-export default AIBusinessCard;
-              business.isOpen 
-                ? 'bg-green-100 text-green-700' 
-                : 'bg-red-100 text-red-700'
-            }`}>
-              {business.isOpen ? 'Open' : 'Closed'}
-            </div>
-            <span className="font-lora text-xs text-neutral-600 truncate">
-              {business.hours || 'Hours unavailable'}
-            </span>
-            </div>
-          )}
-        </div>
-        
-        {/* Address - More prominent, just above buttons */}
-        <div className="mt-auto">
-          <div className="mb-2">
-            <p className="font-lora text-xs text-neutral-600 flex items-center gap-1">
-              <Icons.MapPin className="h-4 w-4 flex-shrink-0 text-neutral-500" />
-              {business.address}
-            </p>
-          </div>
-          
-          {/* Go and Recommend Buttons */}
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => {
-                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
-                window.open(mapsUrl, '_blank');
-              }}
-              className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"
-            >
-              <Icons.Navigation className="h-4 w-4 mr-2" />
-              GO
-              {business.distance && business.duration && (
-                <span className="ml-2 text-xs opacity-90">
-                  {business.distance}mi • {business.duration}min
-                </span>
-              )}
-            </button>
-            <button 
-              onClick={() => onRecommend(business)}
-              className="p-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-red-500 rounded-lg transition-all duration-200 flex items-center justify-center flex-shrink-0"
-              title="Recommend for Verification"
-            >
-              <Icons.Heart className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
         </div>
       </div>
     </>
