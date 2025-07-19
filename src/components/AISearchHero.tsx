@@ -537,7 +537,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       <div className="absolute inset-0 bg-black opacity-50 z-0"></div>
       
       {!showResults && (
-        <div className="flex flex-col justify-center items-center flex-grow z-10">
+        <div className="flex flex-col justify-center items-center flex-grow z-10 px-4 sm:px-6 lg:px-8">
           {/* Centered Hero Content Container */}
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
             {/* Title and Subtitle */}
