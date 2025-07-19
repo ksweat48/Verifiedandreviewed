@@ -33,6 +33,7 @@ export default {
           800: '#4A2762',
           900: '#3B1F51',
         },
+        'header-bg': '#0F3D3E',
         neutral: {
           50: '#F8F9FA',
           100: '#F1F3F4',

@@ -76,7 +76,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-3 p-2 rounded-lg hover:bg-neutral-50 transition-colors duration-200"
+        className="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
       >
         <img
           src={user.avatar || 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100'}
@@ -92,7 +92,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
             Level {user.level}
           </div>
         </div>
-        <Icons.ChevronDown className={`h-4 w-4 text-neutral-500 transition-transform duration-200 ${
+        <Icons.ChevronDown className={`h-4 w-4 text-white transition-transform duration-200 ${
           isOpen ? 'rotate-180' : ''
         }`} />
       </button>
