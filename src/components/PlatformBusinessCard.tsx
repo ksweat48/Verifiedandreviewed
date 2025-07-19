@@ -159,7 +159,7 @@ const PlatformBusinessCard: React.FC<{
                 <Icons.Clock className="h-3 w-3 mr-1" />
                 <span className="font-lora text-xs">{business.hours || 'Hours unavailable'}</span>
                 {business.distance && (
-                  <span className="font-lora text-xs ml-2">• {business.distance.toFixed(1)} mi • 10 min</span>
+                  <span className="font-lora text-xs ml-2">• {business.distance.toFixed(1)} mi • {business.duration || 10} min</span>
                 )}
               </div>
             </div>

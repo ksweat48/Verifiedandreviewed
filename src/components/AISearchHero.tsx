@@ -190,7 +190,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           address: business.address || '',
           reviews: [], // We'll need to fetch reviews separately
           isPlatformBusiness: true, // All businesses from Supabase are platform businesses
-          tags: business.tags || []
+          tags: business.tags || [],
+          distance: Math.round((Math.random() * 4 + 1) * 10) / 10, // Placeholder miles
+          duration: Math.floor(Math.random() * 10 + 5) // Placeholder minutes
         }));
         
         // All businesses from Supabase are platform businesses
@@ -293,22 +295,47 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 isOpen: business.isOpen !== undefined ? business.isOpen : true,
                 hours: business.hours || 'Hours unavailable',
                 address: business.address || 'Address not available',
-                distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10,
-                duration: business.duration || Math.floor(Math.random() * 10 + 5),
+                distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10, // Ensure distance is present
+                duration: business.duration || Math.floor(Math.random() * 10 + 5), // Ensure duration is present
                 reviews: business.reviews || [],
                 isPlatformBusiness: false
               }));
               
               console.log(`🤖 Using AI to enhance search results for: ${searchQuery} (${numAINeeded} AI businesses)`);
               const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses].slice(0, 4);
-              setResults(combinedResults);
+              
+              // Sort and limit results: Open businesses first, then closest, then platform businesses first, limit to 5 total
+              const sortedResults = combinedResults.sort((a, b) => {
+                // First priority: Open businesses
+                if (a.isOpen && !b.isOpen) return -1;
+                if (!a.isOpen && b.isOpen) return 1;
+                
+                // Second priority: Closest businesses (by distance)
+                if (a.distance && b.distance) {
+                  if (a.distance < b.distance) return -1;
+                  if (a.distance > b.distance) return 1;
+                }
+                
+                // Third priority: Platform businesses
+                if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+                if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+                
+                return 0;
+              });
+              
+              // Remove duplicates by ID and limit to 5
+              const uniqueResults = sortedResults.filter((business, index, self) => 
+                index === self.findIndex(b => b.id === business.id)
+              ).slice(0, 5);
+              
+              setResults(uniqueResults);
               console.log('✅ Combined results:', combinedResults.length, 'businesses');
               
               trackEvent('search_performed', { 
                 query: searchQuery, 
                 used_ai: true, 
                 credits_deducted: creditsRequired,
-                results_count: combinedResults.length,
+                results_count: uniqueResults.length,
                 platform_results: platformBusinesses.length,
                 ai_results: aiGeneratedBusinesses.length
               });
@@ -338,18 +365,30 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             setResults(sortedResults);
             // Fallback to platform businesses if AI search fails
             const sortedPlatformResults = transformedBusinesses.sort((a, b) => {
-              // Open businesses first
+              // First priority: Open businesses
               if (a.isOpen && !b.isOpen) return -1;
               if (!a.isOpen && b.isOpen) return 1;
+              
+              // Second priority: Closest businesses (by distance)
+              if (a.distance && b.distance) {
+                if (a.distance < b.distance) return -1;
+                if (a.distance > b.distance) return 1;
+              }
+              
               return 0;
-            }).slice(0, 5);
+            });
             
-            setResults(sortedPlatformResults);
+            // Remove duplicates by ID and limit to 5
+            const uniquePlatformResults = sortedPlatformResults.filter((business, index, self) => 
+              index === self.findIndex(b => b.id === business.id)
+            ).slice(0, 5);
+            
+            setResults(uniquePlatformResults);
             trackEvent('search_performed', { 
               query: searchQuery, 
               used_ai: false, 
               credits_deducted: creditsRequired,
-              results_count: sortedPlatformResults.length,
+              results_count: uniquePlatformResults.length,
               error: aiError.message,
               fallback: true
             });
@@ -357,19 +396,31 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         } else {
           // Just use the platform businesses
           const sortedPlatformResults = transformedBusinesses.sort((a, b) => {
-            // Open businesses first
+            // First priority: Open businesses
             if (a.isOpen && !b.isOpen) return -1;
             if (!a.isOpen && b.isOpen) return 1;
+            
+            // Second priority: Closest businesses (by distance)
+            if (a.distance && b.distance) {
+              if (a.distance < b.distance) return -1;
+              if (a.distance > b.distance) return 1;
+            }
+            
             return 0;
-          }).slice(0, 5);
+          });
           
-          setResults(sortedPlatformResults);
+          // Remove duplicates by ID and limit to 5
+          const uniquePlatformResults = sortedPlatformResults.filter((business, index, self) => 
+            index === self.findIndex(b => b.id === business.id)
+          ).slice(0, 5);
+          
+          setResults(uniquePlatformResults);
           console.log('📊 Using platform-only results for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false, 
             credits_deducted: creditsRequired,
-            results_count: sortedPlatformResults.length
+            results_count: uniquePlatformResults.length
           });
         }
       } else {
@@ -733,12 +784,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       <div
         ref={resultsRef} 
-        className={`transition-all duration-500 overflow-hidden z-10 w-full ${isAppModeActive ? 'pt-20' : ''} ${
-          showResults && results.length > 0 ? 'opacity-100 mt-0' : 'max-h-0 opacity-0'
+        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-20' : ''} ${
+          showResults && results.length > 0 ? 'opacity-100 mt-0 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'
         }`}
         style={{
           height: isAppModeActive ? 'calc(100vh - 60px)' : 'auto',
-          maxHeight: isAppModeActive ? 'none' : showResults ? '800px' : '0'
+          maxHeight: isAppModeActive ? 'calc(100vh - 60px)' : showResults ? '800px' : '0'
         }}
       >
         <div className="max-w-7xl mx-auto px-4 relative z-20">

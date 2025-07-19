@@ -105,7 +105,7 @@ const AIBusinessCard: React.FC<{
               GO
               {business.distance && business.duration && (
                 <span className="ml-1 text-xs opacity-90">
-                  {business.distance}mi
+                  {business.distance}mi • {business.duration} min
                 </span>
               )}
             </button>
