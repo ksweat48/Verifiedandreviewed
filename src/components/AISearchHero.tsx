@@ -627,7 +627,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     setSearchQuery(prompt);
                     handleSearch();
                   }}
-                  className="bg-white border border-neutral-200 text-neutral-600 px-3 py-1 rounded-full text-sm font-lora hover:bg-neutral-50 hover:border-primary-300 transition-colors duration-200"
+                  className="bg-white/10 border border-white/30 text-white px-3 py-1 rounded-full text-sm font-lora hover:bg-white/20 hover:border-white transition-colors duration-200"
                 >
                   {prompt}
                 </button>
