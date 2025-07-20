@@ -72,17 +72,16 @@ export class BusinessService {
       
       // Generate embedding for the new business
       console.log(`🧠 Triggering embedding generation for new business: ${newBusiness.id}`);
-      SemanticSearchService.generateEmbeddings({ businessId: newBusiness.id })
-        .then(result => {
-          if (result && result.success) {
-            console.log(`✅ Embedding generated successfully for business: ${newBusiness.id}`);
-          } else {
-            console.warn(`⚠️ Embedding generation skipped for business: ${newBusiness.id}`, result?.message || 'Service unavailable');
-          }
-        })
-        .catch(error => {
-          console.warn(`⚠️ Embedding generation failed for new business ${newBusiness.id}:`, error.message);
-        });
+      try {
+        const embeddingResult = await SemanticSearchService.generateEmbeddings({ businessId: newBusiness.id });
+        if (embeddingResult && embeddingResult.success) {
+          console.log(`✅ Embedding generated successfully for business: ${newBusiness.id}`);
+        } else {
+          console.warn(`⚠️ Embedding generation skipped for business: ${newBusiness.id}`, embeddingResult?.message || 'Service unavailable');
+        }
+      } catch (error) {
+        console.warn(`⚠️ Embedding generation failed for new business ${newBusiness.id}:`, error.message);
+      }
       
       return {
         success: true,
@@ -135,17 +134,16 @@ export class BusinessService {
       
       // Generate embedding for the updated business
       console.log(`🧠 Triggering embedding generation for updated business: ${businessId}`);
-      SemanticSearchService.generateEmbeddings({ businessId })
-        .then(result => {
-          if (result && result.success) {
-            console.log(`✅ Embedding updated successfully for business: ${businessId}`);
-          } else {
-            console.warn(`⚠️ Embedding update skipped for business: ${businessId}`, result?.message || 'Service unavailable');
-          }
-        })
-        .catch(error => {
-          console.warn(`⚠️ Embedding update failed for business ${businessId}:`, error.message);
-        });
+      try {
+        const embeddingResult = await SemanticSearchService.generateEmbeddings({ businessId });
+        if (embeddingResult && embeddingResult.success) {
+          console.log(`✅ Embedding updated successfully for business: ${businessId}`);
+        } else {
+          console.warn(`⚠️ Embedding update skipped for business: ${businessId}`, embeddingResult?.message || 'Service unavailable');
+        }
+      } catch (error) {
+        console.warn(`⚠️ Embedding update failed for business ${businessId}:`, error.message);
+      }
       
       return {
         success: true
