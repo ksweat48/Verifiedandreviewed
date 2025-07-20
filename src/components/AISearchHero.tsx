@@ -169,11 +169,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // Try semantic search first if available and user prefers it
       if (semanticSearchAvailable && useSemanticSearch) {
         console.log('🧠 Attempting semantic search...');
+        console.log('🔍 Search query:', searchQuery);
         
         const semanticResult = await SemanticSearchService.searchByVibe(searchQuery, {
           latitude,
           longitude,
-          matchThreshold: 0.6, // Lower threshold for more results
+          matchThreshold: 0.5, // Lower threshold for more results
           matchCount: 8
         });
         
@@ -181,8 +182,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           searchResults = semanticResult.results;
           usedSemanticSearch = true;
           console.log('✅ Semantic search successful:', searchResults.length, 'results');
+          console.log('🏢 Platform businesses found:', searchResults.filter(r => r.isPlatformBusiness).length);
         } else {
           console.log('⚠️ Semantic search failed or no results, falling back to traditional search');
+          console.log('Semantic search error:', semanticResult.error);
         }
       }
       

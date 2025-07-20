@@ -93,6 +93,9 @@ export const handler = async (event, context) => {
 
     // Perform semantic search using the RPC function
     console.log('🔍 Performing semantic search...');
+    console.log('🎯 Match threshold:', matchThreshold);
+    console.log('🎯 Match count:', matchCount);
+    
     const { data: searchResults, error: searchError } = await supabase.rpc(
       'search_businesses_by_vibe',
       {
@@ -108,6 +111,14 @@ export const handler = async (event, context) => {
     }
 
     console.log('✅ Found', searchResults?.length || 0, 'semantic matches');
+    if (searchResults && searchResults.length > 0) {
+      console.log('📊 Sample result:', {
+        name: searchResults[0].name,
+        category: searchResults[0].category,
+        similarity: searchResults[0].similarity,
+        hasEmbedding: !!searchResults[0].embedding
+      });
+    }
 
     // Transform results to match expected format
     const formattedResults = (searchResults || []).map(business => ({
