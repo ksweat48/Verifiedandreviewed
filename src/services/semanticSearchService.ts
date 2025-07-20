@@ -34,11 +34,23 @@ export class SemanticSearchService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}`);
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          console.error('Failed to parse error response:', jsonError);
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse semantic search response:', jsonError);
+        throw new Error('Invalid response from semantic search service');
+      }
       
       if (!data.success) {
         throw new Error(data.message || 'Semantic search failed');
@@ -94,11 +106,23 @@ export class SemanticSearchService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}`);
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          console.error('Failed to parse error response:', jsonError);
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse embedding generation response:', jsonError);
+        throw new Error('Invalid response from embedding generation service');
+      }
       
       console.log('✅ Embedding generation completed:', data.message);
 

@@ -175,11 +175,24 @@ export class BusinessService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Geocoding failed');
+        let errorMessage = 'Geocoding failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          console.error('Failed to parse error response:', jsonError);
+          errorMessage = `Geocoding failed with status ${response.status}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse geocoding response:', jsonError);
+        throw new Error('Invalid response from geocoding service');
+      }
       
       if (data.success) {
         return {

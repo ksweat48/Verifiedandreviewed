@@ -166,7 +166,17 @@ export default function AddBusinessPage() {
         body: JSON.stringify({ address: formData.address })
       });
       
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`Geocoding service unavailable (${response.status})`);
+      }
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse geocoding response:', jsonError);
+        throw new Error('Geocoding service returned invalid response');
+      }
       
       if (data.success) {
         // Optionally update the address with the formatted version
@@ -186,7 +196,7 @@ export default function AddBusinessPage() {
       }
     } catch (error) {
       console.error('Geocoding error:', error);
-      setGeocodingError('Could not verify address location');
+      setGeocodingError(error instanceof Error ? error.message : 'Could not verify address location');
     } finally {
       setIsGeocodingAddress(false);
     }
