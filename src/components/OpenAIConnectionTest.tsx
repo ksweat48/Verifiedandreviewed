@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshCw, CheckCircle, XCircle, Zap, Code } from 'lucide-react';
+import * as Icons from 'lucide-react';
 
 const OpenAIConnectionTest = () => {
   const [status, setStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
@@ -81,10 +81,10 @@ const OpenAIConnectionTest = () => {
 
   const getStatusIcon = () => {
     switch (status) {
-      case 'testing': return <RefreshCw className="h-6 w-6 text-blue-500 animate-spin" />;
-      case 'success': return <CheckCircle className="h-6 w-6 text-green-500" />;
-      case 'error': return <XCircle className="h-6 w-6 text-red-500" />;
-      default: return <Zap className="h-6 w-6 text-neutral-500" />;
+      case 'testing': return <Icons.RefreshCw className="h-6 w-6 text-blue-500 animate-spin" />;
+      case 'success': return <Icons.CheckCircle className="h-6 w-6 text-green-500" />;
+      case 'error': return <Icons.XCircle className="h-6 w-6 text-red-500" />;
+      default: return <Icons.Zap className="h-6 w-6 text-neutral-500" />;
     }
   };
 
