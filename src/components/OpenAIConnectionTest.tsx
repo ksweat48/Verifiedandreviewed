@@ -85,10 +85,6 @@ const OpenAIConnectionTest = () => {
       case 'success': return <CheckCircle className="h-6 w-6 text-green-500" />;
       case 'error': return <XCircle className="h-6 w-6 text-red-500" />;
       default: return <Zap className="h-6 w-6 text-neutral-500" />;
-      case 'error':
-        return <Icons.XCircle className="h-6 w-6 text-red-500" />;
-      default:
-        return <Icons.Zap className="h-6 w-6 text-neutral-500" />;
     }
   };
 

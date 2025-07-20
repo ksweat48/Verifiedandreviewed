@@ -330,7 +330,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 ...business,
                 // Ensure all required fields are present
                 id: business.id || `ai-${Date.now()}-${Math.random()}`,
-                address: business.address || 'Address not available',
                 rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
                 image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
                 isOpen: business.isOpen !== undefined ? business.isOpen : true,
