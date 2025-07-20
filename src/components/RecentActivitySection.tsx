@@ -36,38 +36,54 @@ const RecentActivitySection: React.FC = () => {
     setLoading(true);
     try {
       // Fetch user's visited businesses with business details
-      const { data, error } = await supabase
+      const { data: visitsData, error: visitsError } = await supabase
         .from('business_visits')
         .select(`
           id,
           visited_at,
-          businesses:business_id (
+          business_id,
+          businesses!inner (
             id,
             name,
             image_url,
             address
-          ),
-          user_reviews!inner (
-            id,
-            rating
           )
         `)
         .eq('user_id', user.id)
         .order('visited_at', { ascending: false })
         .limit(5);
       
-      if (error) throw error;
+      if (visitsError) throw visitsError;
       
-      if (data) {
-        const formattedBusinesses: VisitedBusiness[] = data.map(visit => ({
+      // Fetch user's reviews separately
+      const { data: userReviewsData, error: reviewsError } = await supabase
+        .from('user_reviews')
+        .select('business_id, rating')
+        .eq('user_id', user.id);
+      
+      if (reviewsError) throw reviewsError;
+      
+      if (visitsData) {
+        // Create a map of business_id to review data for quick lookup
+        const reviewsMap = new Map();
+        if (userReviewsData) {
+          userReviewsData.forEach(review => {
+            reviewsMap.set(review.business_id, review);
+          });
+        }
+        
+        const formattedBusinesses: VisitedBusiness[] = visitsData.map(visit => {
+          const review = reviewsMap.get(visit.business_id);
+          return {
           id: visit.businesses.id,
           name: visit.businesses.name,
           image: visit.businesses.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
           address: visit.businesses.address || 'No address available',
           visitDate: new Date(visit.visited_at).toLocaleDateString(),
-          hasReviewed: visit.user_reviews && visit.user_reviews.length > 0,
-          rating: visit.user_reviews && visit.user_reviews.length > 0 ? visit.user_reviews[0].rating : undefined
-        }));
+          hasReviewed: !!review,
+          rating: review ? review.rating : undefined
+          };
+        });
         
         setVisitedBusinesses(formattedBusinesses);
       } else {
