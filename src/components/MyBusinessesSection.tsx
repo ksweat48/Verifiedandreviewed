@@ -58,6 +58,24 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
     navigate(`/add-business?edit=${business.id}`);
   };
 
+  const handleDeleteBusiness = async (businessId: string) => {
+    if (!confirm('Are you sure you want to delete this business? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeletingBusinessId(businessId);
+    try {
+      await BusinessService.deleteBusiness(businessId);
+      // Remove the business from the local state
+      setBusinesses(prev => prev.filter(business => business.id !== businessId));
+    } catch (err) {
+      console.error('Error deleting business:', err);
+      setError('Failed to delete business. Please try again.');
+    } finally {
+      setDeletingBusinessId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 text-center">
