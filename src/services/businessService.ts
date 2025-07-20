@@ -74,14 +74,14 @@ export class BusinessService {
       console.log(`🧠 Triggering embedding generation for new business: ${newBusiness.id}`);
       SemanticSearchService.generateEmbeddings({ businessId: newBusiness.id })
         .then(result => {
-          if (result.success) {
+          if (result && result.success) {
             console.log(`✅ Embedding generated successfully for business: ${newBusiness.id}`);
           } else {
-            console.error(`❌ Failed to generate embedding for business: ${newBusiness.id}`, result.message);
+            console.warn(`⚠️ Embedding generation skipped for business: ${newBusiness.id}`, result?.message || 'Service unavailable');
           }
         })
         .catch(error => {
-          console.error(`❌ Error generating embedding for new business ${newBusiness.id}:`, error);
+          console.warn(`⚠️ Embedding generation failed for new business ${newBusiness.id}:`, error.message);
         });
       
       return {
@@ -135,16 +135,16 @@ export class BusinessService {
       
       // Generate embedding for the updated business
       console.log(`🧠 Triggering embedding generation for updated business: ${businessId}`);
-      SemanticSearchService.generateEmbeddings({ businessId: businessId })
+      SemanticSearchService.generateEmbeddings({ businessId })
         .then(result => {
-          if (result.success) {
+          if (result && result.success) {
             console.log(`✅ Embedding updated successfully for business: ${businessId}`);
           } else {
-            console.error(`❌ Failed to update embedding for business: ${businessId}`, result.message);
+            console.warn(`⚠️ Embedding update skipped for business: ${businessId}`, result?.message || 'Service unavailable');
           }
         })
         .catch(error => {
-          console.error(`❌ Error updating embedding for business ${businessId}:`, error);
+          console.warn(`⚠️ Embedding update failed for business ${businessId}:`, error.message);
         });
       
       return {

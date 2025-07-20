@@ -35,7 +35,13 @@ export class SemanticSearchService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error('Semantic search service not available. The semantic-search Netlify Function may not be deployed or running. If developing locally, make sure to run "netlify dev" instead of "npm run dev".');
+          return {
+            success: false,
+            processed: 0,
+            successCount: 0,
+            errorCount: 0,
+            message: 'Embedding generation service not available. The generate-embeddings Netlify Function may not be deployed or running. If developing locally, make sure to run "netlify dev" instead of "npm run dev".'
+          };
         }
         
         let errorMessage = `HTTP ${response.status}`;
@@ -44,9 +50,15 @@ export class SemanticSearchService {
           errorMessage = errorData.message || errorMessage;
         } catch (jsonError) {
           console.error('Failed to parse error response:', jsonError);
-          errorMessage = `Semantic search service error (${response.status})`;
         }
-        throw new Error(errorMessage);
+        
+        return {
+          success: false,
+          processed: 0,
+          successCount: 0,
+          errorCount: 0,
+          message: errorMessage
+        };
       }
 
       let data;
