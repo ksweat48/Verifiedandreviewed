@@ -270,6 +270,9 @@ export class BusinessService {
           `address.ilike.%${filters.search}%`
         ];
         
+        console.log('🔍 Supabase OR filter string:', searchConditions.join(','));
+        console.log('🔍 Search term:', filters.search);
+        
         query = query.or(searchConditions.join(','));
       }
       
