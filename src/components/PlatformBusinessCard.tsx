@@ -257,7 +257,7 @@ const PlatformBusinessCard: React.FC<{
                   </div>
                   <button
                     onClick={(e) => {e.stopPropagation(); onTakeMeThere(business);}}
-                    className="w-7 h-7 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center flex-shrink-0 self-end text-xs"
+                    className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center flex-shrink-0 self-end"
                   >
                     GO
                   </button>
