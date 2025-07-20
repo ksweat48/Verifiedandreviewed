@@ -48,16 +48,18 @@ export const handler = async (event, context) => {
     let queryBuilder = supabase
       .from('businesses')
       .select('id, name, description, short_description, category, location, tags')
+      .not('id', 'is', null)
       .eq('is_visible_on_platform', true);
 
     if (businessId) {
       // If a specific businessId is provided, process only that one
-      queryBuilder = queryBuilder.eq('id', businessId).limit(1);
+      queryBuilder = queryBuilder.eq('id', businessId).not('id', 'is', null).limit(1);
       console.log(`🎯 Processing single business: ${businessId}`);
     } else {
       // Otherwise, use the batch processing logic
       queryBuilder = queryBuilder
         .or(forceRegenerate ? 'id.neq.null' : 'embedding.is.null')
+        .not('id', 'is', null)
         .limit(batchSize);
       console.log(`📦 Processing batch of ${batchSize} businesses`);
     }
@@ -88,6 +90,12 @@ export const handler = async (event, context) => {
     // Process each business
     for (const business of businesses) {
       try {
+        // Validate business has required fields
+        if (!business.id || business.id === 'null' || business.id.trim() === '') {
+          console.warn(`⚠️ Skipping business with invalid ID: ${JSON.stringify(business)}`);
+          continue;
+        }
+        
         // Generate search text for embedding
         const searchText = [
           business.name,
@@ -121,7 +129,8 @@ export const handler = async (event, context) => {
             embedding: embedding,
             updated_at: new Date().toISOString()
           })
-          .eq('id', business.id);
+          .eq('id', business.id)
+          .not('id', 'is', null);
 
         if (updateError) throw updateError;
 
