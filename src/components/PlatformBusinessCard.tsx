@@ -131,7 +131,7 @@ const PlatformBusinessCard: React.FC<{
 
   return (
     <>
-      <div className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 snap-start flex flex-col bg-white z-0" onClick={(e) => e.stopPropagation()}>
+      <div className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 snap-start flex flex-col bg-white z-0 min-h-[calc(100vh-200px)] sm:min-h-[480px]" onClick={(e) => e.stopPropagation()}>
         <div className="relative h-60 flex-shrink-0 cursor-pointer" onClick={handleBusinessClick}>
           <img
             src={business.image}
@@ -190,7 +190,7 @@ const PlatformBusinessCard: React.FC<{
           </div>
         </div>
         
-        <div className="relative bg-neutral-50 rounded-lg p-3 pr-14">
+        <div className="relative bg-neutral-50 rounded-lg p-4 pr-14 flex-grow flex flex-col">
             {business.reviews && business.reviews.length > 0 ? (
               <div>
                 {/* Review Images */}
@@ -221,12 +221,9 @@ const PlatformBusinessCard: React.FC<{
                   </span>
                 </div>
                 
-                <div className="flex items-start">
-                  <div 
-                    className="flex-1 cursor-pointer"
-                    onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}
-                  >
-                    <p className="font-lora text-xs text-neutral-700 line-clamp-2 break-words">
+                <div className="flex-grow">
+                  <div className="cursor-pointer" onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}>
+                    <p className="font-lora text-xs text-neutral-700 line-clamp-none break-words flex-grow">
                       "{business.reviews[currentReviewIndex]?.text || 'No review text available'}"
                     </p>
                     <div className="flex items-center mt-0.5">
@@ -258,19 +255,19 @@ const PlatformBusinessCard: React.FC<{
                 </div>
               </div>
             ) : (
-              <div>
+              <div className="flex-grow">
                 <p className="font-lora text-xs text-neutral-500 text-center py-1">No reviews available</p>
               </div>
             )}
             
-            {/* Absolutely positioned GO button */}
+            {/* GO button positioned at bottom right */}
             <button
               onClick={(e) => {e.stopPropagation(); onTakeMeThere(business);}}
               className="absolute bottom-3 right-3 w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
             >
               GO
             </button>
-          </div>
+        </div>
           
           {/* Image Gallery Popup */}
           {business.reviews && 
@@ -283,7 +280,7 @@ const PlatformBusinessCard: React.FC<{
               initialIndex={galleryInitialIndex}
             />
            )}
-        </div>
+      </div>
       
       {/* Reviewer Profile Modal */}
       {selectedReviewer && (
