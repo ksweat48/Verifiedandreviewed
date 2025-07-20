@@ -162,6 +162,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           userLongitude: longitude || undefined
         });
         
+        // Debug logging to see what businesses are returned from Supabase
+        console.log('🔍 Supabase realBusinesses:', realBusinesses);
+        console.log('🔍 Search query:', searchQuery);
+        console.log('🔍 Number of businesses found:', realBusinesses.length);
+        
         // Transform the business data to match the expected format
         transformedBusinesses = realBusinesses.map(business => ({
           id: business.id,
@@ -823,7 +828,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <div className="relative">
               {/* Vertical scrollable layout */}
               <div
-                className="space-y-0 pb-8"
+                className="space-y-4 pb-8"
               >
                 {results.map((business, businessIndex) => (
                   <div key={`${business.id}-${businessIndex}`} className="mb-1">
