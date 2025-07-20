@@ -68,6 +68,7 @@ export class SemanticSearchService {
 
   // Generate embeddings for existing businesses (admin function)
   static async generateEmbeddings(options: {
+    businessId?: string;
     batchSize?: number;
     forceRegenerate?: boolean;
   } = {}): Promise<{
@@ -78,7 +79,7 @@ export class SemanticSearchService {
     message: string;
   }> {
     try {
-      console.log('🔄 Starting embedding generation...');
+      console.log('🔄 Starting embedding generation...', options.businessId ? `for business ${options.businessId}` : 'batch mode');
 
       const response = await fetch('/.netlify/functions/generate-embeddings', {
         method: 'POST',
@@ -86,6 +87,7 @@ export class SemanticSearchService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          businessId: options.businessId,
           batchSize: options.batchSize || 10,
           forceRegenerate: options.forceRegenerate || false
         })

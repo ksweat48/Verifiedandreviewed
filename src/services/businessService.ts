@@ -1,4 +1,5 @@
 import { supabase, type Business, type BusinessRating } from './supabaseClient';
+import { SemanticSearchService } from './semanticSearchService';
 
 export class BusinessService {
   // Create a new business
@@ -69,6 +70,20 @@ export class BusinessService {
       
       if (updateError) throw updateError;
       
+      // Generate embedding for the new business
+      console.log(`🧠 Triggering embedding generation for new business: ${newBusiness.id}`);
+      SemanticSearchService.generateEmbeddings({ businessId: newBusiness.id })
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ Embedding generated successfully for business: ${newBusiness.id}`);
+          } else {
+            console.error(`❌ Failed to generate embedding for business: ${newBusiness.id}`, result.message);
+          }
+        })
+        .catch(error => {
+          console.error(`❌ Error generating embedding for new business ${newBusiness.id}:`, error);
+        });
+      
       return {
         success: true,
         businessId: newBusiness.id
@@ -117,6 +132,20 @@ export class BusinessService {
         .eq('id', businessId);
       
       if (error) throw error;
+      
+      // Generate embedding for the updated business
+      console.log(`🧠 Triggering embedding generation for updated business: ${businessId}`);
+      SemanticSearchService.generateEmbeddings({ businessId: businessId })
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ Embedding updated successfully for business: ${businessId}`);
+          } else {
+            console.error(`❌ Failed to update embedding for business: ${businessId}`, result.message);
+          }
+        })
+        .catch(error => {
+          console.error(`❌ Error updating embedding for business ${businessId}:`, error);
+        });
       
       return {
         success: true

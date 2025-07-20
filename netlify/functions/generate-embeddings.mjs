@@ -27,9 +27,9 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { batchSize = 10, forceRegenerate = false } = JSON.parse(event.body || '{}');
+    const { businessId, batchSize = 10, forceRegenerate = false } = JSON.parse(event.body || '{}');
 
-    console.log('🔄 Starting embedding generation process...');
+    console.log('🔄 Starting embedding generation process...', businessId ? `for business ${businessId}` : `batch of ${batchSize}`);
 
     // Check required environment variables
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -45,12 +45,24 @@ export const handler = async (event, context) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Get businesses that need embeddings
-    const { data: businesses, error: fetchError } = await supabase
+    let queryBuilder = supabase
       .from('businesses')
       .select('id, name, description, short_description, category, location, tags')
-      .or(forceRegenerate ? 'id.neq.null' : 'embedding.is.null')
-      .eq('is_visible_on_platform', true)
-      .limit(batchSize);
+      .eq('is_visible_on_platform', true);
+
+    if (businessId) {
+      // If a specific businessId is provided, process only that one
+      queryBuilder = queryBuilder.eq('id', businessId).limit(1);
+      console.log(`🎯 Processing single business: ${businessId}`);
+    } else {
+      // Otherwise, use the batch processing logic
+      queryBuilder = queryBuilder
+        .or(forceRegenerate ? 'id.neq.null' : 'embedding.is.null')
+        .limit(batchSize);
+      console.log(`📦 Processing batch of ${batchSize} businesses`);
+    }
+
+    const { data: businesses, error: fetchError } = await queryBuilder;
 
     if (fetchError) throw fetchError;
 
