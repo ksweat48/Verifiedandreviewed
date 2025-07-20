@@ -132,7 +132,7 @@ const PlatformBusinessCard: React.FC<{
   return (
     <>
       <div className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 snap-start flex flex-col bg-white z-0" onClick={(e) => e.stopPropagation()}>
-        <div className="relative h-32 flex-shrink-0 cursor-pointer" onClick={handleBusinessClick}>
+        <div className="relative h-60 flex-shrink-0 cursor-pointer" onClick={handleBusinessClick}>
           <img
             src={business.image}
             alt={business.name}
@@ -190,7 +190,7 @@ const PlatformBusinessCard: React.FC<{
           </div>
         </div>
         
-        <div className="bg-neutral-50 rounded-lg p-2 flex flex-col">
+        <div className="bg-neutral-50 rounded-lg p-3 flex-grow flex flex-col">
             {business.reviews && business.reviews.length > 0 ? (
               <div className="flex flex-col">
                 {/* Review Images */}
