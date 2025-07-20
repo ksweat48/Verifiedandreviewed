@@ -75,7 +75,6 @@ export const handler = async (event, context) => {
       .not('id', 'eq', 'undefined')
       .eq('is_visible_on_platform', true);
 
-    if (businessId) {
     if (effectiveBusinessId) {
       // If a valid businessId is provided, process only that one
       queryBuilder = queryBuilder.eq('id', effectiveBusinessId).limit(1);
@@ -102,11 +101,8 @@ export const handler = async (event, context) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           success: true,
-          message: effectiveBusinessId 
-            ? `Generated embedding for business ${effectiveBusinessId}`
-            : `Generated embeddings for ${successCount} businesses`,
+          message: message,
           processed: 0,
-          businessId: effectiveBusinessId,
           businessId: effectiveBusinessId,
           timestamp: new Date().toISOString()
         })
