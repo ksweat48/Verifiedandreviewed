@@ -316,14 +316,14 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!rating || isSubmitting}
+            disabled={!rating || isSubmitting || uploadingImages}
             className={`flex-1 font-poppins py-3 px-4 rounded-lg font-semibold transition-colors duration-200 ${
-              !rating || isSubmitting
+              !rating || isSubmitting || uploadingImages
                 ? 'bg-neutral-300 text-neutral-600 cursor-not-allowed'
                 : 'bg-primary-500 text-white hover:bg-primary-600'
             }`}
           >
-            {isSubmitting ? 'Submitting...' : 'Post Review'}
+            {isSubmitting ? 'Submitting...' : uploadingImages ? 'Uploading...' : 'Post Review'}
           </button>
         </div>
       </div>
