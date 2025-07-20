@@ -254,11 +254,11 @@ Requirements:
               id: `google-${result.place_id}`,
               name: result.name,
               shortDescription: shortDescription,
-              address: result.formatted_address,
               rating: result.rating,
               image: null,
               isOpen: isOpen,
               hours: businessHours,
+              address: result.formatted_address,
               distance: distance,
               duration: duration,
               placeId: result.place_id, // Add place_id for Google Business Profile linking
