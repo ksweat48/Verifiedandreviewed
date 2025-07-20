@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, Users, Building, Search, Filter, 
+  LayoutDashboard, Users, Building, Search, Filter, Brain,
   Settings, ChevronDown, Eye, Edit, Trash2, 
   Shield, AlertTriangle, CheckCircle, XCircle, 
   RefreshCw, BarChart2, TrendingUp, Calendar, 
@@ -12,9 +12,13 @@ import { supabase } from '../services/supabaseClient';
 import type { Business } from '../services/supabaseClient';
 import BusinessProfileModal from './BusinessProfileModal';
 
+// Lazy load AI integration test components
+const OpenAIConnectionTest = React.lazy(() => import('./OpenAIConnectionTest'));
+const EmbeddingGenerationTest = React.lazy(() => import('./EmbeddingGenerationTest'));
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'businesses' | 'users' | 'analytics' | 'settings'>('businesses');
+  const [activeTab, setActiveTab] = useState<'overview' | 'businesses' | 'users' | 'analytics' | 'ai-integrations' | 'settings'>('businesses');
   const [allBusinesses, setAllBusinesses] = useState<Business[]>([]);
   const [pendingBusinesses, setPendingBusinesses] = useState<Business[]>([]);
   const [verifiedBusinesses, setVerifiedBusinesses] = useState<Business[]>([]);
@@ -372,6 +376,17 @@ const AdminDashboard = () => {
               Analytics
             </button>
             <button
+              onClick={() => setActiveTab('ai-integrations')}
+              className={`px-6 py-4 font-poppins font-medium whitespace-nowrap ${
+                activeTab === 'ai-integrations'
+                  ? 'text-primary-500 border-b-2 border-primary-500'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <Brain className="h-5 w-5 inline mr-2" />
+              AI Integrations
+            </button>
+            <button
               onClick={() => setActiveTab('settings')}
               className={`px-6 py-4 font-poppins font-medium whitespace-nowrap ${
                 activeTab === 'settings'
@@ -704,6 +719,51 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {activeTab === 'ai-integrations' && (
+          <div>
+            <h2 className="font-cinzel text-2xl font-bold text-neutral-900 mb-6">
+              AI Integrations
+            </h2>
+            
+            <div className="space-y-8">
+              {/* OpenAI Connection Test */}
+              <div>
+                <h3 className="font-poppins text-xl font-semibold text-neutral-900 mb-4">
+                  OpenAI API Connection
+                </h3>
+                <React.Suspense fallback={
+                  <div className="bg-white rounded-lg p-6 shadow-sm border border-neutral-200">
+                    <div className="animate-pulse">
+                      <div className="h-8 bg-neutral-200 rounded w-1/3 mb-4"></div>
+                      <div className="h-4 bg-neutral-200 rounded w-full mb-2"></div>
+                      <div className="h-4 bg-neutral-200 rounded w-2/3"></div>
+                    </div>
+                  </div>
+                }>
+                  <OpenAIConnectionTest />
+                </React.Suspense>
+              </div>
+              
+              {/* Embedding Generation Test */}
+              <div>
+                <h3 className="font-poppins text-xl font-semibold text-neutral-900 mb-4">
+                  Embedding Generation
+                </h3>
+                <React.Suspense fallback={
+                  <div className="bg-white rounded-lg p-6 shadow-sm border border-neutral-200">
+                    <div className="animate-pulse">
+                      <div className="h-8 bg-neutral-200 rounded w-1/3 mb-4"></div>
+                      <div className="h-4 bg-neutral-200 rounded w-full mb-2"></div>
+                      <div className="h-4 bg-neutral-200 rounded w-2/3"></div>
+                    </div>
+                  </div>
+                }>
+                  <EmbeddingGenerationTest />
+                </React.Suspense>
+              </div>
+            </div>
+          </div>
+        )}
         {activeTab === 'settings' && (
           <div>
             <h2 className="font-cinzel text-2xl font-bold text-neutral-900 mb-6">
