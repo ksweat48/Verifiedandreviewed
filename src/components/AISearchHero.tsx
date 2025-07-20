@@ -240,11 +240,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               return;
             }
             
-            console.log('🔍 Supabase realBusinesses:', realBusinesses);
-            console.log('🔄 Transformed businesses:', transformedBusinesses);
-            console.log('📍 Search query:', searchQuery);
-            console.log('📍 User location:', { latitude, longitude });
-            
             // Prepare the AI prompt with context about existing results
             const aiPrompt = transformedBusinesses.length > 0 
               ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide ${numAINeeded} different but related businesses that match this search intent.`
@@ -828,10 +823,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <div className="relative">
               {/* Vertical scrollable layout */}
               <div
-                className="space-y-4 pb-8"
+                className="space-y-0 pb-8"
               >
                 {results.map((business, businessIndex) => (
-                  <div key={`${business.id}-${businessIndex}`}>
+                  <div key={`${business.id}-${businessIndex}`} className="mb-1">
                     {business.isPlatformBusiness ? (
                       <PlatformBusinessCard
                         business={business}
