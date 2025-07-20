@@ -530,6 +530,21 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleTakeMeThere = (business) => {
+    // Record the business visit for platform businesses
+    if (business.isPlatformBusiness && currentUser && currentUser.id) {
+      BusinessService.recordBusinessVisit(business.id, currentUser.id)
+        .then(success => {
+          if (success) {
+            console.log('✅ Business visit recorded for:', business.name);
+            // Dispatch event to update visited businesses list
+            window.dispatchEvent(new CustomEvent('visited-businesses-updated'));
+          }
+        })
+        .catch(error => {
+          console.error('❌ Error recording business visit:', error);
+        });
+    }
+    
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
     window.open(mapsUrl, '_blank');
   };

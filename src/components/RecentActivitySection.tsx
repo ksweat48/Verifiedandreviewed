@@ -30,6 +30,21 @@ const RecentActivitySection: React.FC = () => {
     }
   }, [user]);
   
+  // Listen for visited businesses updates
+  useEffect(() => {
+    const handleVisitedBusinessesUpdate = () => {
+      if (user) {
+        fetchVisitedBusinesses();
+      }
+    };
+    
+    window.addEventListener('visited-businesses-updated', handleVisitedBusinessesUpdate);
+    
+    return () => {
+      window.removeEventListener('visited-businesses-updated', handleVisitedBusinessesUpdate);
+    };
+  }, [user]);
+  
   const fetchVisitedBusinesses = async () => {
     if (!user) return;
     

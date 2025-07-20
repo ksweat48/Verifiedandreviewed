@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { X, Camera, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { supabase } from '../services/supabaseClient';
+import { CreditService } from '../services/creditService';
+import { UserService } from '../services/userService';
 
 interface ReviewImage {
   file: File;
@@ -34,6 +37,39 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
   const [reviewText, setReviewText] = useState('');
   const [images, setImages] = useState<ReviewImage[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
+
+  // Helper function to upload image to Supabase Storage
+  const uploadImageToSupabase = async (file: File): Promise<string | null> => {
+    try {
+      const user = await UserService.getCurrentUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+      const filePath = `review-images/${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('user-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('user-images')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -45,16 +81,26 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
     const remainingSlots = 3 - images.length;
     if (remainingSlots <= 0) return;
 
-    const newImages: ReviewImage[] = [];
+    setUploadingImages(true);
     
-    Array.from(files).slice(0, remainingSlots).forEach(file => {
-      newImages.push({
-        file,
-        preview: URL.createObjectURL(file)
-      });
-    });
-
-    setImages([...images, ...newImages]);
+    const uploadImages = async () => {
+      const newImages: ReviewImage[] = [];
+      
+      for (const file of Array.from(files).slice(0, remainingSlots)) {
+        const url = await uploadImageToSupabase(file);
+        if (url) {
+          newImages.push({
+            file,
+            preview: url // Use the uploaded URL as preview
+          });
+        }
+      }
+      
+      setImages([...images, ...newImages]);
+      setUploadingImages(false);
+    };
+    
+    uploadImages();
   };
 
   const removeImage = (index: number) => {
@@ -68,22 +114,70 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
     if (!rating) return;
     
     setIsSubmitting(true);
-    
-    onSubmitReview({
-      businessId: business.id,
-      rating,
-      text: reviewText,
-      images: images.map(img => img.file)
-    });
         
-    // Reset form
-    setTimeout(() => {
-      setRating(null);
-      setReviewText('');
-      setImages([]);
-      setIsSubmitting(false);
-      onClose();
-    }, 1000);
+    const submitReview = async () => {
+      try {
+        const user = await UserService.getCurrentUser();
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+
+        // Collect image URLs (already uploaded during image selection)
+        const imageUrls = images.map(img => img.preview);
+
+        // Insert review into database
+        const { data, error } = await supabase
+          .from('user_reviews')
+          .insert({
+            user_id: user.id,
+            business_id: business.id,
+            review_text: reviewText,
+            rating: rating === 'thumbsUp' ? 5 : 1,
+            image_urls: imageUrls,
+            status: 'pending'
+          })
+          .select('*')
+          .single();
+
+        if (error) throw error;
+
+        // Check if review qualifies for credit reward (rating + 3+ photos + text)
+        const qualifiesForCredit = rating && imageUrls.length >= 3 && reviewText.trim().length > 0;
+
+        if (qualifiesForCredit) {
+          await CreditService.addReviewCredits(user.id, {
+            hasRating: true,
+            photoCount: imageUrls.length,
+            hasText: reviewText.trim().length > 0
+          });
+        }
+
+        // Dispatch event to update visited businesses list
+        window.dispatchEvent(new CustomEvent('visited-businesses-updated'));
+
+        // Call the original onSubmitReview for any additional handling
+        onSubmitReview({
+          businessId: business.id,
+          rating,
+          text: reviewText,
+          images: images.map(img => img.file)
+        });
+        
+        // Reset form
+        setRating(null);
+        setReviewText('');
+        setImages([]);
+        setIsSubmitting(false);
+        onClose();
+        
+      } catch (error) {
+        console.error('Error submitting review:', error);
+        alert('Failed to submit review. Please try again.');
+        setIsSubmitting(false);
+      }
+    };
+    
+    submitReview();
   };
 
   return (
