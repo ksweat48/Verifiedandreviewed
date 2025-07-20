@@ -28,6 +28,10 @@ const CreditUsageInfo: React.FC<CreditUsageInfoProps> = ({ className = '' }) => 
           <span>Platform-only searches:</span>
           <span className="font-semibold">1 credit</span>
         </div>
+        <div className="flex justify-between mb-2">
+          <span>Semantic vibe searches:</span>
+          <span className="font-semibold">5 credits</span>
+        </div>
         <div className="flex justify-between">
           <span>AI-assisted searches:</span>
           <span className="font-semibold">10 credits</span>
@@ -36,7 +40,7 @@ const CreditUsageInfo: React.FC<CreditUsageInfoProps> = ({ className = '' }) => 
       
       {isExpanded && (
         <div className="mt-3 pt-3 border-t border-primary-200 font-lora text-xs text-primary-600 space-y-2 animate-in slide-in-from-top-4 duration-300">
-          <p>AI is used when fewer than 6 platform matches are found.</p>
+          <p>Semantic search understands vibe and mood. AI is used when fewer than 6 platform matches are found.</p>
           <p className="font-semibold">Earn credits by:</p>
           <ul className="space-y-1 pl-4">
             <li>• Reviews (1 credit each)</li>

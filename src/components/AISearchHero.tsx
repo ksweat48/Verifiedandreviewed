@@ -8,6 +8,7 @@ import { UserService } from '../services/userService';
 import { CreditService } from '../services/creditService';
 import { BusinessService } from '../services/businessService';
 import { useGeolocation } from '../hooks/useGeolocation';
+import { SemanticSearchService } from '../services/semanticSearchService';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -28,6 +29,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [showCreditWarning, setShowCreditWarning] = useState(false);
   const searchRef = useRef(null);
   const searchBarRef = useRef(null);
+  const [useSemanticSearch, setUseSemanticSearch] = useState(true);
+  const [semanticSearchAvailable, setSemanticSearchAvailable] = useState(false);
   const { trackEvent } = useAnalytics();
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef(null);
@@ -35,6 +38,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   
   // Call the useGeolocation hook
   const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
+  
+  // Check if semantic search is available
+  useEffect(() => {
+    const checkSemanticSearch = async () => {
+      const available = await SemanticSearchService.isSemanticSearchAvailable();
+      setSemanticSearchAvailable(available);
+      console.log('🧠 Semantic search available:', available);
+    };
+    
+    checkSemanticSearch();
+  }, []);
   
   // Listen for popstate events to handle back button in app mode
   useEffect(() => {
@@ -148,60 +162,92 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       setShowResults(true);
       setInitialResultsLoaded(true);
       
-      // First, try to get businesses from Supabase
+      // Determine search strategy: semantic vs traditional
+      let searchResults = [];
+      let usedSemanticSearch = false;
+      
+      // Try semantic search first if available and user prefers it
+      if (semanticSearchAvailable && useSemanticSearch) {
+        console.log('🧠 Attempting semantic search...');
+        
+        const semanticResult = await SemanticSearchService.searchByVibe(searchQuery, {
+          latitude,
+          longitude,
+          matchThreshold: 0.6, // Lower threshold for more results
+          matchCount: 8
+        });
+        
+        if (semanticResult.success && semanticResult.results.length > 0) {
+          searchResults = semanticResult.results;
+          usedSemanticSearch = true;
+          console.log('✅ Semantic search successful:', searchResults.length, 'results');
+        } else {
+          console.log('⚠️ Semantic search failed or no results, falling back to traditional search');
+        }
+      }
+      
+      // Fallback to traditional search if semantic search failed or unavailable
       let transformedBusinesses = [];
       let platformBusinesses = [];
       let aiBusinesses = [];
-      let needsAI = true;
+      let needsAI = !usedSemanticSearch; // Only use AI if semantic search wasn't successful
 
-      try {
-        // Fetch real businesses from Supabase
-        const realBusinesses = await BusinessService.getBusinesses({
-          search: searchQuery,
-          userLatitude: latitude || undefined,
-          userLongitude: longitude || undefined
-        });
-        
-        // Debug logging to see what businesses are returned from Supabase
-        console.log('🔍 Supabase realBusinesses:', realBusinesses);
-        console.log('🔍 Search query:', searchQuery);
-        console.log('🔍 Number of businesses found:', realBusinesses.length);
-        
-        // Transform the business data to match the expected format
-        transformedBusinesses = realBusinesses.map(business => ({
-          id: business.id,
-          name: business.name,
-          rating: {
-            thumbsUp: business.thumbs_up || 0,
-            thumbsDown: business.thumbs_down || 0,
-            sentimentScore: business.sentiment_score || 0
-          },
-          image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-          isOpen: true, // Default to open since we don't have real-time status
-          hours: business.hours || 'Hours unavailable',
-          address: business.address || '',
-          reviews: [], // We'll need to fetch reviews separately
-          isPlatformBusiness: true, // All businesses from Supabase are platform businesses
-          tags: business.tags || [],
-          distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10,
-          duration: business.duration || Math.floor(Math.random() * 10 + 5)
-        }));
-        
-        // All businesses from Supabase are platform businesses
-        platformBusinesses = transformedBusinesses;
-        aiBusinesses = []; // No AI businesses from Supabase
-        
-        // Use AI if we have fewer than 6 total results (platform + unverified)
-        needsAI = transformedBusinesses.length < 6;
-      } catch (error) {
-        console.error('Error fetching businesses from Supabase:', error);
-        needsAI = true;
+      if (usedSemanticSearch) {
+        // Use semantic search results
+        transformedBusinesses = searchResults;
+        platformBusinesses = searchResults;
+        needsAI = searchResults.length < 6;
+      } else {
+        // Traditional keyword search fallback
+        try {
+          // Fetch real businesses from Supabase
+          const realBusinesses = await BusinessService.getBusinesses({
+            search: searchQuery,
+            userLatitude: latitude || undefined,
+            userLongitude: longitude || undefined
+          });
+          
+          // Debug logging to see what businesses are returned from Supabase
+          console.log('🔍 Supabase realBusinesses:', realBusinesses);
+          console.log('🔍 Search query:', searchQuery);
+          console.log('🔍 Number of businesses found:', realBusinesses.length);
+          
+          // Transform the business data to match the expected format
+          transformedBusinesses = realBusinesses.map(business => ({
+            id: business.id,
+            name: business.name,
+            rating: {
+              thumbsUp: business.thumbs_up || 0,
+              thumbsDown: business.thumbs_down || 0,
+              sentimentScore: business.sentiment_score || 0
+            },
+            image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+            isOpen: true, // Default to open since we don't have real-time status
+            hours: business.hours || 'Hours unavailable',
+            address: business.address || '',
+            reviews: [], // We'll need to fetch reviews separately
+            isPlatformBusiness: true, // All businesses from Supabase are platform businesses
+            tags: business.tags || [],
+            distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10,
+            duration: business.duration || Math.floor(Math.random() * 10 + 5)
+          }));
+          
+          // All businesses from Supabase are platform businesses
+          platformBusinesses = transformedBusinesses;
+          aiBusinesses = []; // No AI businesses from Supabase
+          
+          // Use AI if we have fewer than 6 total results (platform + unverified)
+          needsAI = transformedBusinesses.length < 6;
+        } catch (error) {
+          console.error('Error fetching businesses from Supabase:', error);
+          needsAI = true;
+        }
       }
 
-      setUsedAI(needsAI);
+      setUsedAI(needsAI && !usedSemanticSearch);
 
       let canProceed = true;
-      const creditsRequired = needsAI ? 10 : 1;
+      const creditsRequired = usedSemanticSearch ? 5 : (needsAI ? 10 : 1); // Semantic search costs 5 credits
       
       if (currentUser && currentUser.id) {
         // Check credit balance for all users
@@ -210,7 +256,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           canProceed = false;
         } else {
           // Deduct credits
-          const success = await CreditService.deductSearchCredits(currentUser.id, needsAI); // Fix: use currentUser.id
+          const success = await CreditService.deductSearchCredits(currentUser.id, usedSemanticSearch ? 'semantic' : (needsAI ? 'ai' : 'platform')); // Fix: use currentUser.id
           if (success) {
             // Update local credit count
             setUserCredits(prev => prev - creditsRequired);
@@ -325,7 +371,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               
               trackEvent('search_performed', { 
                 query: searchQuery, 
-                used_ai: true, 
+                used_ai: needsAI,
+                used_semantic: usedSemanticSearch,
                 credits_deducted: creditsRequired,
                 results_count: uniqueResults.length,
                 platform_results: platformBusinesses.length,
@@ -405,7 +452,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           console.log('📊 Using platform-only results for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
-            used_ai: false, 
+            used_ai: false,
+            used_semantic: usedSemanticSearch,
             credits_deducted: creditsRequired,
             results_count: uniquePlatformResults.length
           });
@@ -415,7 +463,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         setResults([]);
         trackEvent('search_performed', { 
           query: searchQuery, 
-          used_ai: false, 
+          used_ai: false,
+          used_semantic: false,
           credits_deducted: 0,
           error: 'Insufficient credits'
         });
@@ -593,7 +642,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     {/* Credit display for logged-in users */}
                    {isAuthenticated && userCredits > 0 && (
                       <div className="hidden sm:flex items-center mr-2 bg-primary-50 px-2 py-1 rounded-lg">
-                        <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
+                        {semanticSearchAvailable && useSemanticSearch ? (
+                          <Icons.Brain className="h-3 w-3 text-purple-500 mr-1" />
+                        ) : (
+                          <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
+                        )}
                         <span className="font-poppins text-xs font-semibold text-primary-700">
                           {userCredits} credits
                         </span>
@@ -679,7 +732,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 {/* Credit display for logged-in users */}
                {isAuthenticated && userCredits > 0 && (
                   <div className="hidden sm:flex items-center mr-2 bg-primary-50 px-2 py-1 rounded-lg">
-                    <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
+                    {semanticSearchAvailable && useSemanticSearch ? (
+                      <Icons.Brain className="h-3 w-3 text-purple-500 mr-1" />
+                    ) : (
+                      <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
+                    )}
                     <span className="font-poppins text-xs font-semibold text-primary-700">
                       {userCredits} credits
                     </span>

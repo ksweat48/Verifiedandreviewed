@@ -12,7 +12,7 @@ export interface CreditTransaction {
 
 export class CreditService {
   // Deduct credits for a search
-  static async deductSearchCredits(userId: string, usedAI: boolean): Promise<boolean> {
+  static async deductSearchCredits(userId: string, searchType: 'platform' | 'ai' | 'semantic'): Promise<boolean> {
     try {
       const user = await UserService.getCurrentUser();
       if (!user) return false;
@@ -22,7 +22,7 @@ export class CreditService {
         return true;
       }
       
-      const creditsToDeduct = usedAI ? 10 : 1;
+      const creditsToDeduct = searchType === 'semantic' ? 5 : (searchType === 'ai' ? 10 : 1);
       
       if ((user.credits || 0) < creditsToDeduct) {
         return false; // Not enough credits
@@ -36,8 +36,8 @@ export class CreditService {
           .insert({
             user_id: userId,
             amount: -creditsToDeduct,
-            type: usedAI ? 'ai-search' : 'search',
-            description: usedAI ? 'AI-assisted search' : 'Platform-only search'
+            type: searchType === 'semantic' ? 'semantic-search' : (searchType === 'ai' ? 'ai-search' : 'search'),
+            description: searchType === 'semantic' ? 'Semantic vibe search' : (searchType === 'ai' ? 'AI-assisted search' : 'Platform-only search')
           });
           
         if (error) throw error;
@@ -57,8 +57,8 @@ export class CreditService {
           id: Date.now().toString(),
           userId,
           amount: -creditsToDeduct,
-          type: usedAI ? 'ai-search' : 'search',
-          description: usedAI ? 'AI-assisted search' : 'Platform-only search',
+          type: searchType === 'semantic' ? 'semantic-search' : (searchType === 'ai' ? 'ai-search' : 'search'),
+          description: searchType === 'semantic' ? 'Semantic vibe search' : (searchType === 'ai' ? 'AI-assisted search' : 'Platform-only search'),
           timestamp: new Date().toISOString()
         });
         
@@ -313,7 +313,7 @@ export class CreditService {
   }
   
   // Check if user has enough credits for a search
-  static hasEnoughCreditsForSearch(userId: string, willUseAI: boolean): Promise<boolean> {
+  static hasEnoughCreditsForSearch(userId: string, searchType: 'platform' | 'ai' | 'semantic'): Promise<boolean> {
     return new Promise(async (resolve) => {
       const user = await UserService.getCurrentUser();
       if (!user) {
@@ -327,7 +327,7 @@ export class CreditService {
        return;
      }
      
-      const requiredCredits = willUseAI ? 10 : 1;
+      const requiredCredits = searchType === 'semantic' ? 5 : (searchType === 'ai' ? 10 : 1);
       resolve((user.credits || 0) >= requiredCredits);
     });
   }
