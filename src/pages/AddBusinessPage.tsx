@@ -167,6 +167,11 @@ export default function AddBusinessPage() {
       });
       
       if (!response.ok) {
+        if (response.status === 404) {
+          console.warn('Geocoding service not available in current environment. Run "netlify dev" to enable Netlify Functions.');
+          setGeocodingError('Address verification unavailable in development mode');
+          return;
+        }
         throw new Error(`Geocoding service unavailable (${response.status})`);
       }
       

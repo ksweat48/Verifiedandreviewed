@@ -176,7 +176,8 @@ export class BusinessService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error('Geocoding service not available. The geocode-address Netlify Function may not be deployed or running. If developing locally, make sure to run "netlify dev" instead of "npm run dev".');
+          console.warn('Geocoding service not available in current environment. Run "netlify dev" to enable Netlify Functions.');
+          return null;
         }
         
         let errorMessage = 'Geocoding failed';
