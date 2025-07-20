@@ -190,9 +190,9 @@ const PlatformBusinessCard: React.FC<{
           </div>
         </div>
         
-        <div className="bg-neutral-50 rounded-lg p-3 flex-grow flex flex-col">
+        <div className="relative bg-neutral-50 rounded-lg p-3 pr-14">
             {business.reviews && business.reviews.length > 0 ? (
-              <div className="flex flex-col">
+              <div>
                 {/* Review Images */}
                 {business.reviews[currentReviewIndex]?.images && business.reviews[currentReviewIndex].images.length > 0 && (
                   <div className="review-images-row flex gap-1 mb-1">
@@ -221,9 +221,9 @@ const PlatformBusinessCard: React.FC<{
                   </span>
                 </div>
                 
-                <div className="flex items-start justify-between">
+                <div className="flex items-start">
                   <div 
-                    className="flex-1 pr-2 cursor-pointer"
+                    className="flex-1 cursor-pointer"
                     onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}
                   >
                     <p className="font-lora text-xs text-neutral-700 line-clamp-2 break-words">
@@ -255,17 +255,21 @@ const PlatformBusinessCard: React.FC<{
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={(e) => {e.stopPropagation(); onTakeMeThere(business);}}
-                    className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center flex-shrink-0 self-end"
-                  >
-                    GO
-                  </button>
                 </div>
               </div>
             ) : (
-              <p className="font-lora text-xs text-neutral-500 text-center py-1">No reviews available</p>
+              <div>
+                <p className="font-lora text-xs text-neutral-500 text-center py-1">No reviews available</p>
+              </div>
             )}
+            
+            {/* Absolutely positioned GO button */}
+            <button
+              onClick={(e) => {e.stopPropagation(); onTakeMeThere(business);}}
+              className="absolute bottom-3 right-3 w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+            >
+              GO
+            </button>
           </div>
           
           {/* Image Gallery Popup */}

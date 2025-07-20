@@ -888,10 +888,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <div className="relative">
               {/* Vertical scrollable layout */}
               <div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-8"
               >
                 {results.map((business, businessIndex) => (
-                  <div key={`${business.id}-${businessIndex}`} className={business.isPlatformBusiness ? "md:col-span-2" : ""}>
+                  <div key={`${business.id}-${businessIndex}`} className={business.isPlatformBusiness ? "sm:col-span-2 lg:col-span-2" : ""}>
                     {business.isPlatformBusiness ? (
                       <PlatformBusinessCard
                         business={business}
