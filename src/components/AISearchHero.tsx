@@ -545,7 +545,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       ></div>
       
       {/* Dark overlay for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+      <div className="absolute inset-0 bg-black/50"></div>
       
       {!showResults && (
         <div className="flex flex-col justify-center items-center flex-grow z-10 px-4 sm:px-6 lg:px-8">
