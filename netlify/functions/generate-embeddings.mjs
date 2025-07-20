@@ -29,7 +29,27 @@ export const handler = async (event, context) => {
   try {
     const { businessId, batchSize = 10, forceRegenerate = false } = JSON.parse(event.body || '{}');
 
-    console.log('🔄 Starting embedding generation process...', businessId ? `for business ${businessId}` : `batch of ${batchSize}`);
+    // Robust businessId sanitization to prevent UUID syntax errors
+    let effectiveBusinessId = businessId;
+    
+    // Check if businessId is invalid and should be treated as undefined
+    if (businessId) {
+      const businessIdStr = String(businessId).trim().toLowerCase();
+      const invalidValues = ['null', 'undefined', '', 'none', 'empty'];
+      
+      if (invalidValues.includes(businessIdStr)) {
+        console.warn(`⚠️ Invalid businessId received: "${businessId}" - falling back to batch processing`);
+        effectiveBusinessId = undefined;
+      } else {
+        // Validate UUID format (basic check)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(businessIdStr)) {
+          console.warn(`⚠️ Invalid UUID format for businessId: "${businessId}" - falling back to batch processing`);
+          effectiveBusinessId = undefined;
+        }
+      }
+    }
+    console.log('🔄 Starting embedding generation process...', effectiveBusinessId ? `for business ${effectiveBusinessId}` : `batch of ${batchSize}`);
 
     // Check required environment variables
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -56,9 +76,10 @@ export const handler = async (event, context) => {
       .eq('is_visible_on_platform', true);
 
     if (businessId) {
-      // If a specific businessId is provided, process only that one
-      queryBuilder = queryBuilder.eq('id', businessId).limit(1);
-      console.log(`🎯 Processing single business: ${businessId}`);
+    if (effectiveBusinessId) {
+      // If a valid businessId is provided, process only that one
+      queryBuilder = queryBuilder.eq('id', effectiveBusinessId).limit(1);
+      console.log(`🎯 Processing single business: ${effectiveBusinessId}`);
     } else {
       // Otherwise, use the batch processing logic
       queryBuilder = queryBuilder
@@ -72,13 +93,21 @@ export const handler = async (event, context) => {
     if (fetchError) throw fetchError;
 
     if (!businesses || businesses.length === 0) {
+      const message = effectiveBusinessId 
+        ? `No business found with ID: ${effectiveBusinessId}`
+        : 'No businesses need embedding generation';
+        
       return {
         statusCode: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           success: true,
-          message: 'No businesses need embedding generation',
+          message: effectiveBusinessId 
+            ? `Generated embedding for business ${effectiveBusinessId}`
+            : `Generated embeddings for ${successCount} businesses`,
           processed: 0,
+          businessId: effectiveBusinessId,
+          businessId: effectiveBusinessId,
           timestamp: new Date().toISOString()
         })
       };
@@ -200,6 +229,7 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         error: 'Failed to generate embeddings',
         message: error.message,
+        businessId: effectiveBusinessId,
         timestamp: new Date().toISOString()
       })
     };
