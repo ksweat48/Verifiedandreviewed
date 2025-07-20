@@ -34,12 +34,17 @@ export class SemanticSearchService {
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Semantic search service not available. The semantic-search Netlify Function may not be deployed or running. If developing locally, make sure to run "netlify dev" instead of "npm run dev".');
+        }
+        
         let errorMessage = `HTTP ${response.status}`;
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
         } catch (jsonError) {
           console.error('Failed to parse error response:', jsonError);
+          errorMessage = `Semantic search service error (${response.status})`;
         }
         throw new Error(errorMessage);
       }
