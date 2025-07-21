@@ -66,7 +66,7 @@ export const handler = async (event, context) => {
 
     let queryBuilder = supabase
       .from('businesses')
-      .select('id, name, description, short_description, category, location, tags')
+      .select('id') // Only select ID for testing
       .eq('is_visible_on_platform', true);
 
     if (effectiveBusinessId) {
@@ -136,19 +136,24 @@ export const handler = async (event, context) => {
         console.log(`🔧 DEBUG: About to update business with ID: "${String(business.id).trim()}" (raw: ${JSON.stringify(business.id)})`);
         // --- END ADDITION ---
         
+        // NOTE: searchText will be empty if only 'id' is selected, this is expected for this test.
         const searchText = [
-          business.name,
-          business.description,
-          business.short_description,
-          business.category,
-          business.location,
-          Array.isArray(business.tags) ? business.tags.join(' ') : ''
+          business.name, // This will be undefined
+          business.description, // This will be undefined
+          business.short_description, // This will be undefined
+          business.category, // This will be undefined
+          business.location, // This will be undefined
+          Array.isArray(business.tags) ? business.tags.join(' ') : '' // This will be undefined
         ].filter(Boolean).join(' ').trim();
 
         if (!searchText) {
           console.warn(`⚠️ Skipping ${business.id} – no text for embedding`);
-          errorCount++;
-          continue;
+          // For this test, we expect searchText to be empty, so we'll just log and continue
+          // In a real scenario, this would be an error or a different flow.
+          // We'll simulate success for the purpose of this test to see if the query itself works.
+          results.push({ businessId: business.id, success: true, message: "Skipped due to empty searchText (expected for this test)" });
+          successCount++;
+          continue; 
         }
 
         const embeddingResponse = await openai.embeddings.create({
