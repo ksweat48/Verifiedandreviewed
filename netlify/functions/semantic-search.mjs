@@ -27,7 +27,7 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { query, latitude, longitude, matchThreshold = 0.7, matchCount = 10 } = JSON.parse(event.body);
+    const { query, latitude, longitude, matchThreshold = 0.5, matchCount = 10 } = JSON.parse(event.body);
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return {
