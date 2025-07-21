@@ -1,4 +1,6 @@
 // Semantic Search Service for Vibe-Based Business Discovery
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+
 export class SemanticSearchService {
   // Perform semantic search using vector embeddings
   static async searchByVibe(
@@ -19,7 +21,7 @@ export class SemanticSearchService {
     try {
       console.log('🔍 Performing semantic search for:', query);
 
-      const response = await fetch('/.netlify/functions/semantic-search', {
+      const response = await fetchWithTimeout('/.netlify/functions/semantic-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,7 +32,8 @@ export class SemanticSearchService {
           longitude: options.longitude,
           matchThreshold: options.matchThreshold || 0.7,
           matchCount: options.matchCount || 10
-        })
+        }),
+        timeout: 20000 // 20 second timeout for semantic search
       });
 
       if (!response.ok) {
@@ -110,7 +113,7 @@ export class SemanticSearchService {
     try {
       console.log('🔄 Starting embedding generation...', options.businessId ? `for business ${options.businessId}` : 'batch mode');
 
-      const response = await fetch('/.netlify/functions/generate-embeddings', {
+      const response = await fetchWithTimeout('/.netlify/functions/generate-embeddings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -119,7 +122,8 @@ export class SemanticSearchService {
           businessId: options.businessId,
           batchSize: options.batchSize || 10,
           forceRegenerate: options.forceRegenerate || false
-        })
+        }),
+        timeout: 30000 // 30 second timeout for embedding generation (longer process)
       });
 
       if (!response.ok) {
@@ -167,14 +171,15 @@ export class SemanticSearchService {
   // Check if semantic search is available
   static async isSemanticSearchAvailable(): Promise<boolean> {
     try {
-      const response = await fetch('/.netlify/functions/semantic-search', {
+      const response = await fetchWithTimeout('/.netlify/functions/semantic-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           query: 'test'
-        })
+        }),
+        timeout: 10000 // 10 second timeout for availability check
       });
 
       // Even if the search fails, if we get a response, the function is available

@@ -9,6 +9,7 @@ import { CreditService } from '../services/creditService';
 import { BusinessService } from '../services/businessService';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { SemanticSearchService } from '../services/semanticSearchService';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -411,7 +412,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             
             // Fallback to platform businesses if AI search fails
             // Remove duplicates by ID and limit to 5
-            const uniquePlatformResults = sortedResults.filter((business, index, self) => 
+              const response = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
               index === self.findIndex(b => b.id === business.id)
             ).slice(0, 5);
             
@@ -424,7 +425,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               error: aiError.message,
               fallback: true
             });
-          }
+                }),
+                timeout: 25000 // 25 second timeout for AI business search
         } else {
           // Just use the platform businesses
           const sortedResults = transformedBusinesses.sort((a, b) => {

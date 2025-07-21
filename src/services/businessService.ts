@@ -1,5 +1,6 @@
 import { supabase, type Business, type BusinessRating } from './supabaseClient';
 import { SemanticSearchService } from './semanticSearchService';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 export class BusinessService {
   // Create a new business
@@ -164,12 +165,13 @@ export class BusinessService {
     formattedAddress?: string;
   } | null> {
     try {
-      const response = await fetch('/.netlify/functions/geocode-address', {
+      const response = await fetchWithTimeout('/.netlify/functions/geocode-address', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ address })
+        body: JSON.stringify({ address }),
+        timeout: 15000 // 15 second timeout for geocoding
       });
 
       if (!response.ok) {
