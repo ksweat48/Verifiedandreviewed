@@ -901,7 +901,7 @@ const AdminDashboard = () => {
                               ? 'bg-red-100 text-red-700'
                               : 'bg-neutral-100 text-neutral-700'
                           }`}>
-                            {review.status}
+                            {review.status === 'approved' ? 'Visible' : review.status === 'pending' ? 'Pending' : 'Hidden'}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -920,33 +920,36 @@ const AdminDashboard = () => {
                               <Eye className="h-4 w-4" />
                             </button>
                             
-                            {review.status === 'pending' && (
-                              <>
-                                <button
-                                  onClick={() => handleApproveReview(review.id)}
-                                  disabled={processingReviewId === review.id}
-                                  className="p-1 bg-green-500 text-white rounded hover:bg-green-600"
-                                  title="Approve Review"
-                                >
-                                  {processingReviewId === review.id ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <CheckCircle className="h-4 w-4" />
-                                  )}
-                                </button>
-                                <button
-                                  onClick={() => handleRejectReview(review.id)}
-                                  disabled={processingReviewId === review.id}
-                                  className="p-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                                  title="Reject Review"
-                                >
-                                  {processingReviewId === review.id ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <XCircle className="h-4 w-4" />
-                                  )}
-                                </button>
-                              </>
+                            {/* Show "Show" button for hidden/rejected reviews */}
+                            {review.status !== 'approved' && (
+                              <button
+                                onClick={() => handleApproveReview(review.id)}
+                                disabled={processingReviewId === review.id}
+                                className="p-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                title="Show Review"
+                              >
+                                {processingReviewId === review.id ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </button>
+                            )}
+                            
+                            {/* Show "Hide" button for visible/approved reviews */}
+                            {review.status === 'approved' && (
+                              <button
+                                onClick={() => handleRejectReview(review.id)}
+                                disabled={processingReviewId === review.id}
+                                className="p-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                title="Hide Review"
+                              >
+                                {processingReviewId === review.id ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <EyeOff className="h-4 w-4" />
+                                )}
+                              </button>
                             )}
                             
                             <button

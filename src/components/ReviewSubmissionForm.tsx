@@ -3,6 +3,7 @@ import { Camera, Upload, Star, MapPin, Tag, ChevronRight, ChevronLeft, Check, X,
 import { CreditService } from '../services/creditService';
 import { supabase } from '../services/supabaseClient';
 import { UserService } from '../services/userService';
+import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
 import type { UserReview } from '../services/supabaseClient';
 
@@ -151,7 +152,7 @@ const ReviewSubmissionForm = () => {
         review_text: formData.content,
         rating: formData.rating,
         image_urls: allImageUrls,
-        status: 'pending' // Reviews start as pending
+        status: 'approved' // Reviews now auto-post as approved
       };
 
       const { data, error: insertError } = await supabase
@@ -225,7 +226,7 @@ const ReviewSubmissionForm = () => {
         <div className="bg-white p-8 rounded-xl shadow-lg text-center">
           <Check className="h-12 w-12 text-green-500 mx-auto mb-4" />
           <h2 className="font-cinzel text-2xl font-bold text-neutral-900 mb-4">Review Submitted!</h2>
-          <p className="font-lora text-neutral-600 mb-6">Your review is pending approval and will appear shortly.</p>
+          <p className="font-lora text-neutral-600 mb-6">Your review has been published and is now live!</p>
           <button
             onClick={() => navigate('/dashboard')}
             className="font-poppins bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
@@ -345,7 +346,10 @@ const ReviewSubmissionForm = () => {
                       />
                       <button
                         type="button"
-                        onClick={() => removeGalleryImage(index)}
+                        onClick={() => setFormData(prev => ({ 
+                          ...prev, 
+                          galleryImages: prev.galleryImages.filter((_, i) => i !== index) 
+                        }))}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
                       >
                         <X className="h-3 w-3" />
