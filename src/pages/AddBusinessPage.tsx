@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Upload, X, Plus, MapPin, Clock, Phone, Globe, DollarSign, Tag } from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import { useAuth } from '../hooks/useAuth';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 interface UploadedImage {
   file: File | null;
@@ -158,12 +159,13 @@ export default function AddBusinessPage() {
     setGeocodingError('');
     
     try {
-      const response = await fetch('/.netlify/functions/geocode-address', {
+      const response = await fetchWithTimeout('/.netlify/functions/geocode-address', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ address: formData.address })
+        body: JSON.stringify({ address: formData.address }),
+        timeout: 15000 // 15 second timeout for geocoding
       });
       
       if (!response.ok) {
