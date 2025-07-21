@@ -312,7 +312,8 @@ export class BusinessService {
           `location.ilike.%${filters.search}%`,
           `category.ilike.%${filters.search}%`,
           `short_description.ilike.%${filters.search}%`,
-          `address.ilike.%${filters.search}%`
+          `address.ilike.%${filters.search}%`,
+          `tags.cs.{${filters.search}}`
         ];
         
         console.log('🔍 Supabase OR filter string:', searchConditions.join(','));
