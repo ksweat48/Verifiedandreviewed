@@ -72,11 +72,6 @@ export const handler = async (event, context) => {
     let queryBuilder = supabase
       .from('businesses')
       .select('id, name, description, short_description, category, location, tags')
-      .not('id', 'is', null)
-      .not('id', 'eq', 'null')
-      .not('id', 'eq', '')
-      .not('id', 'eq', 'NULL')
-      .not('id', 'eq', 'undefined')
       .eq('is_visible_on_platform', true);
 
     if (effectiveBusinessId) {
