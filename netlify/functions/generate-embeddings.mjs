@@ -66,19 +66,12 @@ export const handler = async (event, context) => {
 
     let queryBuilder = supabase
       .from('businesses')
-      .select('id') // Only select ID for testing
-      .eq('is_visible_on_platform', true);
+      .select('id, is_visible_on_platform'); // Select both ID and visibility
 
     if (effectiveBusinessId) {
       queryBuilder = queryBuilder.eq('id', effectiveBusinessId).limit(1);
     } else {
-      // --- MODIFIED SECTION START ---
-      // Removed: queryBuilder = queryBuilder.is('embedding', null);
-      // This filter is being removed to test if it's causing the UUID error.
-      // If forceRegenerate is true, we simply fetch all visible businesses.
-      // If forceRegenerate is false, we would normally filter by embedding.is.null,
-      // but for this test, we're removing that filter entirely.
-      // --- MODIFIED SECTION END ---
+      // Removed .eq('is_visible_on_platform', true) from here
       queryBuilder = queryBuilder.limit(batchSize);
       console.log(`📦 Processing batch of ${batchSize} businesses`);
     }
@@ -88,7 +81,11 @@ export const handler = async (event, context) => {
 
     console.log('👁️ DEBUG: Raw fetched businesses (before filtering):', JSON.stringify(businesses, null, 2));
 
-    const validBusinesses = (businesses || []).filter(business => {
+    // Filter businesses in JavaScript
+    const filteredBusinesses = (businesses || []).filter(business => business.is_visible_on_platform);
+    console.log('👁️ DEBUG: Businesses after is_visible_on_platform filter:', JSON.stringify(filteredBusinesses, null, 2));
+
+    const validBusinesses = filteredBusinesses.filter(business => {
       const rawId = business?.id;
       const idStr = String(rawId ?? '').trim().toLowerCase();
 
@@ -136,7 +133,7 @@ export const handler = async (event, context) => {
         console.log(`🔧 DEBUG: About to update business with ID: "${String(business.id).trim()}" (raw: ${JSON.stringify(business.id)})`);
         // --- END ADDITION ---
         
-        // NOTE: searchText will be empty if only 'id' is selected, this is expected for this test.
+        // NOTE: searchText will be empty if only 'id' and 'is_visible_on_platform' are selected, this is expected for this test.
         const searchText = [
           business.name, // This will be undefined
           business.description, // This will be undefined
