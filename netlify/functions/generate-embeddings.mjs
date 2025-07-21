@@ -47,9 +47,10 @@ export const handler = async (event, context) => {
         } else {
           console.warn(`⚠️ DEBUG: Invalid UUID format for input: "${cleanBusinessId}" – falling back to batch`);
             .or(forceRegenerate ? 'id.not.is.null' : 'embedding.is.null')
-      } else {
+              } else {
         console.warn(`⚠️ DEBUG: Invalid businessId string: "${cleanBusinessId}" – falling back to batch`);
       }
+          }
     }
 
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
