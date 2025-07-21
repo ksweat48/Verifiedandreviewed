@@ -66,12 +66,16 @@ export const handler = async (event, context) => {
 
     let queryBuilder = supabase
       .from('businesses')
-      .select('id, is_visible_on_platform'); // Select both ID and visibility
+      .select('id, name, description, short_description, category, location, tags, embedding, is_visible_on_platform'); // Select all relevant fields
 
     if (effectiveBusinessId) {
       queryBuilder = queryBuilder.eq('id', effectiveBusinessId).limit(1);
     } else {
-      // Removed .eq('is_visible_on_platform', true) from here
+      queryBuilder = queryBuilder.eq('is_visible_on_platform', true); // Only process visible businesses
+      if (!forceRegenerate) {
+        // If not forcing regeneration, only select businesses without embeddings
+        queryBuilder = queryBuilder.is('embedding', null);
+      }
       queryBuilder = queryBuilder.limit(batchSize);
       console.log(`📦 Processing batch of ${batchSize} businesses`);
     }
@@ -81,11 +85,7 @@ export const handler = async (event, context) => {
 
     console.log('👁️ DEBUG: Raw fetched businesses (before filtering):', JSON.stringify(businesses, null, 2));
 
-    // Filter businesses in JavaScript
-    const filteredBusinesses = (businesses || []).filter(business => business.is_visible_on_platform);
-    console.log('👁️ DEBUG: Businesses after is_visible_on_platform filter:', JSON.stringify(filteredBusinesses, null, 2));
-
-    const validBusinesses = filteredBusinesses.filter(business => {
+    const validBusinesses = (businesses || []).filter(business => {
       const rawId = business?.id;
       const idStr = String(rawId ?? '').trim().toLowerCase();
 
@@ -104,7 +104,6 @@ export const handler = async (event, context) => {
       }
 
       return true;
-    });
 
     if (!validBusinesses.length) {
       return {
@@ -130,26 +129,22 @@ export const handler = async (event, context) => {
       try {
         currentProcessingBusinessId = business.id;
         // --- ADD THIS LOGGING HERE ---
-        console.log(`🔧 DEBUG: About to update business with ID: "${String(business.id).trim()}" (raw: ${JSON.stringify(business.id)})`);
+        console.log(`🔧 DEBUG: Processing business ID: "${String(business.id).trim()}"`);
         // --- END ADDITION ---
         
-        // NOTE: searchText will be empty if only 'id' and 'is_visible_on_platform' are selected, this is expected for this test.
         const searchText = [
-          business.name, // This will be undefined
-          business.description, // This will be undefined
-          business.short_description, // This will be undefined
-          business.category, // This will be undefined
-          business.location, // This will be undefined
-          Array.isArray(business.tags) ? business.tags.join(' ') : '' // This will be undefined
+          business.name,
+          business.description,
+          business.short_description,
+          business.category,
+          business.location,
+          Array.isArray(business.tags) ? business.tags.join(' ') : ''
         ].filter(Boolean).join(' ').trim();
 
         if (!searchText) {
           console.warn(`⚠️ Skipping ${business.id} – no text for embedding`);
-          // For this test, we expect searchText to be empty, so we'll just log and continue
-          // In a real scenario, this would be an error or a different flow.
-          // We'll simulate success for the purpose of this test to see if the query itself works.
-          results.push({ businessId: business.id, success: true, message: "Skipped due to empty searchText (expected for this test)" });
-          successCount++;
+          results.push({ businessId: business.id, success: false, error: "No text for embedding" });
+          errorCount++;
           continue; 
         }
 
@@ -175,7 +170,7 @@ export const handler = async (event, context) => {
         }
 
         console.log(`✅ DEBUG: Successfully updated embedding for business ID: "${business.id}"`);
-        results.push({ businessId: business.id, success: true });
+        results.push({ businessId: business.id, success: true, embeddingDimensions: embedding.length });
         successCount++;
         await new Promise(res => setTimeout(res, 100)); // slight delay
 
