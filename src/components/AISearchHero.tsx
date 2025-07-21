@@ -300,7 +300,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide ${numAINeeded} different but related businesses that match this search intent.`
               : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
 
-            const response = await fetch('/.netlify/functions/ai-business-search', {
+            const response = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -314,7 +314,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 latitude: latitude,   // Pass user's latitude from hook
                 longitude: longitude  // Pass user's longitude from hook
               })
-            });
+            }, 25000); // 25 second timeout for AI business search
             
             if (!response.ok) {
               const errorText = await response.text();
@@ -412,7 +412,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             
             // Fallback to platform businesses if AI search fails
             // Remove duplicates by ID and limit to 5
-              const response = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
+            const uniquePlatformResults = sortedResults.filter((business, index, self) => 
               index === self.findIndex(b => b.id === business.id)
             ).slice(0, 5);
             
@@ -425,8 +425,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               error: aiError.message,
               fallback: true
             });
-                }),
-                timeout: 25000 // 25 second timeout for AI business search
+          }
         } else {
           // Just use the platform businesses
           const sortedResults = transformedBusinesses.sort((a, b) => {
