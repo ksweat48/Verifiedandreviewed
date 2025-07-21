@@ -9,6 +9,9 @@ const corsHeaders = {
 };
 
 export const handler = async (event, context) => {
+  // Declare effectiveBusinessId at the top level for proper scope
+  let effectiveBusinessId = null;
+  
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -30,7 +33,7 @@ export const handler = async (event, context) => {
     const { businessId, batchSize = 10, forceRegenerate = false } = JSON.parse(event.body || '{}');
 
     // Robust businessId sanitization to prevent UUID syntax errors
-    let effectiveBusinessId = businessId;
+    effectiveBusinessId = businessId;
     
     // Check if businessId is invalid and should be treated as undefined
     if (businessId) {
@@ -91,10 +94,37 @@ export const handler = async (event, context) => {
 
     if (fetchError) throw fetchError;
 
-    if (!businesses || businesses.length === 0) {
+    // Critical: Filter out invalid UUIDs after fetching from Supabase
+    // This prevents any "null" strings or malformed IDs from causing UUID syntax errors
+    const validBusinesses = (businesses || []).filter(business => {
+      if (!business.id) {
+        console.warn(`⚠️ Skipping business with missing ID:`, business.name || 'Unknown');
+        return false;
+      }
+      
+      const businessIdStr = String(business.id).trim();
+      
+      // Check for invalid string values
+      const invalidValues = ['null', 'undefined', '', 'none', 'empty', 'NULL'];
+      if (invalidValues.includes(businessIdStr.toLowerCase())) {
+        console.warn(`⚠️ Skipping business with invalid ID string: "${businessIdStr}" for business:`, business.name || 'Unknown');
+        return false;
+      }
+      
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(businessIdStr)) {
+        console.warn(`⚠️ Skipping business with invalid UUID format: "${businessIdStr}" for business:`, business.name || 'Unknown');
+        return false;
+      }
+      
+      return true;
+    });
+
+    if (!validBusinesses || validBusinesses.length === 0) {
       const message = effectiveBusinessId 
         ? `No business found with ID: ${effectiveBusinessId}`
-        : 'No businesses need embedding generation';
+        : `No valid businesses need embedding generation (${(businesses || []).length} total fetched, ${validBusinesses.length} valid)`;
         
       return {
         statusCode: 200,
@@ -109,34 +139,17 @@ export const handler = async (event, context) => {
       };
     }
 
-    console.log(`📊 Processing ${businesses.length} businesses...`);
+    console.log(`📊 Processing ${validBusinesses.length} valid businesses (${(businesses || []).length} total fetched)...`);
 
     const results = [];
     let successCount = 0;
     let errorCount = 0;
 
     // Process each business
-    for (const business of businesses) {
+    for (const business of validBusinesses) {
       try {
-        // Validate business has required fields
-        const businessIdStr = String(business.id || '').trim();
-        if (!business.id || 
-            business.id === null || 
-            businessIdStr === '' ||
-            businessIdStr === 'null' || 
-            businessIdStr === 'NULL' ||
-            businessIdStr === 'undefined' ||
-            businessIdStr.toLowerCase() === 'null') {
-          console.warn(`⚠️ Skipping business with invalid ID: ${JSON.stringify(business)}`);
-          errorCount++;
-          results.push({
-            businessId: business.id || 'invalid',
-            businessName: business.name || 'Unknown',
-            success: false,
-            error: 'Invalid or null business ID'
-          });
-          continue;
-        }
+        // Set current business ID for error logging
+        effectiveBusinessId = business.id;
         
         // Generate search text for embedding
         const searchText = [
@@ -149,13 +162,20 @@ export const handler = async (event, context) => {
         ].filter(Boolean).join(' ').trim();
 
         if (!searchText) {
-          console.warn(`⚠️ Skipping business ${business.id} - no text content`);
+          console.warn(`⚠️ Skipping business ${business.id} (${business.name}) - no text content for embedding`);
+          errorCount++;
+          results.push({
+            businessId: business.id,
+            businessName: business.name || 'Unknown',
+            success: false,
+            error: 'No text content available for embedding generation'
+          });
           continue;
         }
 
         console.log(`🧠 Generating embedding for: ${business.name}`);
 
-        // Generate embedding
+        // Generate embedding using OpenAI
         const embeddingResponse = await openai.embeddings.create({
           model: 'text-embedding-3-small',
           input: searchText,
@@ -164,14 +184,14 @@ export const handler = async (event, context) => {
 
         const embedding = embeddingResponse.data[0].embedding;
 
-        // Update business with embedding
+        // Update business with embedding in Supabase
         const { error: updateError } = await supabase
           .from('businesses')
           .update({ 
             embedding: embedding,
             updated_at: new Date().toISOString()
           })
-          .eq('id', businessIdStr);
+          .eq('id', business.id);
 
         if (updateError) throw updateError;
 
@@ -189,7 +209,7 @@ export const handler = async (event, context) => {
         await new Promise(resolve => setTimeout(resolve, 100));
 
       } catch (error) {
-        console.error(`❌ Error processing business ${business.id}:`, error);
+        console.error(`❌ Error processing business ${business.id} (${business.name}):`, error);
         results.push({
           businessId: business.id,
           businessName: business.name,
@@ -208,7 +228,7 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         message: `Generated embeddings for ${successCount} businesses`,
-        processed: businesses.length,
+        processed: validBusinesses.length,
         successCount,
         errorCount,
         results,
@@ -225,6 +245,7 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         error: 'Failed to generate embeddings',
         message: error.message,
+        businessId: effectiveBusinessId,
         businessId: effectiveBusinessId,
         timestamp: new Date().toISOString()
       })
