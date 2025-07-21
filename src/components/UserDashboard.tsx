@@ -1,267 +1,149 @@
-import React, { useState } from 'react';
-import { Camera, Upload, Star, MapPin, Tag, ChevronRight, ChevronLeft, Check, X, Loader2 } from 'lucide-react';
-import { CreditService } from '../services/creditService';
+import React, { useState, useEffect } from 'react';
+import { Camera, Star, Zap, Eye, Building, Plus } from 'lucide-react';
+import RecentActivitySection from './RecentActivitySection';
+import MyReviewsSection from './MyReviewsSection';
+import CreditUsageInfo from './CreditUsageInfo';
+import MyBusinessesSection from './MyBusinessesSection';
+import { BusinessService } from '../services/businessService';
+import { addMonths } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
-import { UserService } from '../services/userService';
-import { useNavigate } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import type { User } from '../types/user';
-import type { UserReview } from '../services/supabaseClient';
 
-interface ReviewFormData {
-  featuredImage: string | null; // Changed to store URL
-  galleryImages: string[]; // Changed to store URLs
-  content: string;
-  businessName: string;
-  businessAddress: string;
-  category: string;
-  rating: number;
-  businessId: string; // Placeholder for now, in real app this would be selected
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  credits?: number;
+  reviewCount: number;
+  level: number;
+  joinDate: string;
+  bio?: string;
+  role?: string;
 }
 
-const ReviewSubmissionForm = () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<ReviewFormData>({
-    featuredImage: null, // Will store URL
-    galleryImages: [], // Will store URLs
-    content: '',
-    businessName: '',
-    businessAddress: '',
-    category: '',
-    rating: 0,
-    businessId: 'a1b2c3d4-e5f6-7890-1234-567890abcdef' // Placeholder UUID for an existing business
-  });
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [uploadingImages, setUploadingImages] = useState(false);
-  const [loading, setLoading] = useState(false); // For overall form submission
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+interface UserReview {
+  id: number;
+  businessName: string;
+  location: string;
+  rating: number;
+  status: 'published' | 'pending' | 'draft';
+  isVerified: boolean;
+  publishDate: string;
+  views: number;
+}
+
+interface UserDashboardProps {
+  user: UserProfile | null;
+  loading?: boolean;
+}
+
+const UserDashboard: React.FC<UserDashboardProps> = ({ 
+  user: propUser, 
+  loading: propLoading = false 
+}) => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<UserProfile | null>(propUser);
+  const [activeTab, setActiveTab] = useState<'overview' | 'my-reviews' | 'my-businesses'>('overview'); 
+  const [myBusinessesCount, setMyBusinessesCount] = useState(0);
+  const [reviews, setReviews] = useState<UserReview[]>([]);
+  const [loading, setLoading] = useState(propLoading);
 
-  // Fetch current user on component mount
-  React.useEffect(() => {
-    const fetchUser = async () => {
-      const user = await UserService.getCurrentUser();
-      setCurrentUser(user);
-    };
-    fetchUser();
-  }, []);
-
-  const categories = [
-    'Healthy Restaurants',
-    'Restaurants', 
-    'Vegan',
-    'Hotels',
-    'Retail & Grocery',
-    'Wellness',
-    'Products & Services'
-  ];
-
-  // Helper function to upload image to Supabase Storage
-  const uploadImageToSupabase = async (file: File, path: string): Promise<string | null> => {
-    if (!currentUser) {
-      setError('User not authenticated for image upload.');
-      return null;
+  useEffect(() => {
+    if (propUser) {
+      setUser(propUser);
+      setLoading(false);
+    } else if (!loading) {
+      loadUserData();
     }
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
-      const filePath = `${path}/${currentUser.id}/${fileName}`; // Organize by user ID
+  }, [propUser, loading]);
 
-      const { error: uploadError } = await supabase.storage
-        .from('review-images') // Use a dedicated bucket for review images
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false // Don't upsert, create new files
-        });
+  // Fetch user's businesses count
+  useEffect(() => {
+    const fetchMyBusinessesCount = async () => {
+      if (user && user.id) {
+        try {
+          const userBusinesses = await BusinessService.getUserBusinesses(user.id);
+          setMyBusinessesCount(userBusinesses.length);
+        } catch (err) {
+          console.error('Error fetching user businesses count:', err);
+          setMyBusinessesCount(0); // Fallback to 0 on error
+        }
+      }
+    };
+    fetchMyBusinessesCount();
+  }, [user]);
 
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('review-images')
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error('Error uploading image to Supabase:', error);
-      setError(`Failed to upload image: ${error instanceof Error ? error.message : String(error)}`);
-      return null;
+  const loadUserData = () => {
+    // Instead of using mock data, we'll fetch real data
+    if (user && user.id) {
+      // Fetch user's reviews
+      const fetchUserReviews = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('user_reviews')
+            .select('*, businesses(*)')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+            
+          if (error) throw error;
+          
+          if (data) {
+            const formattedReviews = data.map(review => ({
+              id: review.id,
+              businessName: review.businesses?.name || 'Unknown Business',
+              location: review.businesses?.location || 'Unknown Location',
+              rating: review.rating,
+              status: review.status,
+              isVerified: review.businesses?.is_verified || false,
+              publishDate: review.created_at,
+              views: 0 // We don't track views yet
+            }));
+            
+            setReviews(formattedReviews);
+          }
+        } catch (err) {
+          console.error('Error fetching user reviews:', err);
+          setReviews([]);
+        }
+      };
+      
+      fetchUserReviews();
+    } else {
+      setReviews([]);
     }
   };
 
-  const handleFeaturedImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const getNextLevelProgress = () => {
+    if (!user) return 0;
+    const reviewsInCurrentLevel = user.reviewCount % 10;
+    return (reviewsInCurrentLevel / 10) * 100;
+  };
+
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setUploadingImages(true);
-      setError('');
-      const url = await uploadImageToSupabase(file, 'featured');
-      if (url) {
-        setFormData(prev => ({ ...prev, featuredImage: url }));
-      }
-      setUploadingImages(false);
-    }
-  };
-
-  const handleGalleryImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length === 0) return;
-
-    setUploadingImages(true);
-    setError('');
-    const uploadedUrls: string[] = [];
-    for (const file of files) {
-      const url = await uploadImageToSupabase(file, 'gallery');
-      if (url) {
-        uploadedUrls.push(url);
-      }
-    }
-    setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...uploadedUrls] }));
-    setUploadingImages(false);
-  };
-
-  const removeGalleryImage = (index: number) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      galleryImages: prev.galleryImages.filter((_, i) => i !== index) 
-    }));
-  };
-  const removeGalleryImage = (index: number) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      galleryImages: prev.galleryImages.filter((_, i) => i !== index) 
-    }));
-  };
-  const removeGalleryImage = (index: number) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      galleryImages: prev.galleryImages.filter((_, i) => i !== index) 
-    }));
-  };
-  const handleContentChange = (content: string) => {
-    setFormData({ ...formData, content });
-  };
-
-  const handleRatingClick = (rating: number) => {
-    setFormData({ ...formData, rating });
-  };
-
-  const handleSubmit = async () => {
-    if (!currentUser) {
-      setError('You must be logged in to submit a review.');
-      return;
-    }
-    if (!canSubmit) {
-      setError('Please fill in all required fields and meet criteria.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const allImageUrls = [];
-      if (formData.featuredImage) {
-        allImageUrls.push(formData.featuredImage);
-      }
-      allImageUrls.push(...formData.galleryImages);
-
-      const newReview: Partial<UserReview> = {
-        user_id: currentUser.id,
-        business_id: formData.businessId, // Ensure this is a valid UUID for an existing business
-        review_text: formData.content,
-        rating: formData.rating,
-        image_urls: allImageUrls,
-        status: 'approved' // Reviews now auto-post as approved (immediately visible)
+      // Handle avatar upload (integrate with WordPress media library)
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (user) {
+          setUser({ ...user, avatar: e.target?.result as string });
+        }
       };
-
-      const { data, error: insertError } = await supabase
-        .from('user_reviews')
-        .insert(newReview)
-        .select('*')
-        .single();
-
-      if (insertError) throw insertError;
-      
-      console.log('Review submitted successfully:', data);
-
-      // Check if review qualifies for credit reward
-      const qualifiesForCredit =
-        formData.rating > 0 &&
-        formData.galleryImages.length >= 3 && // Assuming featured image is not counted here for simplicity
-        formData.content.trim().length > 100;
-
-      // If review qualifies, add credit reward
-      if (qualifiesForCredit) {
-        await CreditService.addReviewCredits(currentUser.id, {
-          hasRating: true,
-          photoCount: formData.galleryImages.length + (formData.featuredImage ? 1 : 0), // Count all images
-          hasText: formData.content.trim().length > 0
-        });
-      }
-      
-      // Trigger a refresh of user data to show updated review count
-      window.dispatchEvent(new Event('auth-state-changed'));
-
-      setSuccess(true);
-      // Reset form
-      setFormData({
-        featuredImage: null,
-        galleryImages: [],
-        content: '',
-        businessName: '',
-        businessAddress: '',
-        category: '',
-        rating: 0,
-        businessId: 'a1b2c3d4-e5f6-7890-1234-567890abcdef' // Reset to placeholder
-      });
-      setCurrentStep(1); // Reset to first step
-      // Redirect after a short delay
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 3000);
-
-    } catch (err) {
-      console.error('Review submission error:', err);
-      setError(`Failed to submit review: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setLoading(false);
+      reader.readAsDataURL(file);
     }
   };
 
-  const canProceedToStep2 = formData.featuredImage !== null && formData.galleryImages.length > 0;
-  const canProceedToStep3 = formData.content.trim().length >= 100;
-  const canSubmit = formData.businessName && formData.businessAddress && formData.category && formData.rating > 0 && canProceedToStep3;
+  const handleAddBusiness = () => {
+    navigate('/add-business');
+  };
 
-  if (!currentUser) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-xl shadow-lg text-center">
-          <Loader2 className="h-12 w-12 text-primary-500 mx-auto mb-4 animate-spin" />
-          <h2 className="font-cinzel text-2xl font-bold text-neutral-900 mb-4">Loading User Data...</h2>
-          <p className="font-lora text-neutral-600">Please wait while we verify your session.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-xl shadow-lg text-center">
-          <Check className="h-12 w-12 text-green-500 mx-auto mb-4" />
-          <h2 className="font-cinzel text-2xl font-bold text-neutral-900 mb-4">Review Submitted!</h2>
-          <p className="font-lora text-neutral-600 mb-6">Your review has been published and is now live!</p>
-          <button
-        business_id: businessId,
-      console.warn('Using placeholder image due to upload error');
-      return 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400';
-            onClick={() => navigate('/dashboard')}
-            className="font-poppins bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
-          >
-            Go to Dashboard
-          </button>
+        <div className="animate-pulse">
+          <div className="h-8 bg-neutral-200 rounded w-48 mb-4"></div>
+          <div className="h-4 bg-neutral-200 rounded w-32"></div>
         </div>
       </div>
     );
@@ -269,348 +151,227 @@ const ReviewSubmissionForm = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Progress Bar */}
-        <div className="mb-8">
+      {/* Header */}
+      <div className="bg-white border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-poppins font-bold ${
-                  currentStep >= step
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-neutral-200 text-neutral-600'
-                }`}>
-                  {currentStep > step ? <Check className="h-5 w-5" /> : step}
-                </div>
-                {step < 3 && (
-                  <div className={`w-24 h-1 mx-4 ${
-                    currentStep > step ? 'bg-primary-500' : 'bg-neutral-200'
-                  }`} />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between mt-2">
-            <span className="font-lora text-sm text-neutral-600">Upload Media</span>
-            <span className="font-lora text-sm text-neutral-600">Write Review</span>
-            <span className="font-lora text-sm text-neutral-600">Business Info</span>
-          </div>
-        </div>
-
-        {/* Step Content */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm border border-neutral-200">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center">
-                <X className="h-5 w-5 text-red-500 mr-2" />
-                <p className="font-lora text-red-700">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Step 1: Media Upload */}
-          {currentStep === 1 && (
-            <div>
-              <h2 className="font-cinzel text-2xl font-bold text-neutral-900 mb-6">
-                Upload Photos
-              </h2>
-
-              {/* Featured Image */}
-              <div className="mb-8">
-                <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4">
-                  Featured Image (Required)
-                </h3>
-                <div className="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center hover:border-primary-500 transition-colors duration-200">
-                  {uploadingImages ? (
-                    <div className="flex items-center justify-center h-40">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-                    </div>
-                  ) : formData.featuredImage ? (
-                    <div className="relative">
-                      <img
-                        src={formData.featuredImage}
-                        alt="Featured"
-                        className="max-h-64 mx-auto rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, featuredImage: null })}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="cursor-pointer">
-                      <Camera className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
-                      <p className="font-lora text-neutral-600 mb-2">
-                        Click to upload your main photo
-                      </p>
-                      <p className="font-lora text-sm text-neutral-500">
-                        JPG, PNG up to 10MB
-                      </p>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFeaturedImageUpload}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-              </div>
-
-              {/* Gallery Images */}
-              <div className="mb-8">
-                <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4">
-                  Additional Photos (Up to 5)
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {formData.galleryImages.map((image, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={image}
-                        alt={`Gallery ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ 
-                          ...prev, 
-                          galleryImages: prev.galleryImages.filter((_, i) => i !== index) 
-                        }))}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                      <div className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white rounded px-1 text-xs">
-                        {index + 1}
-                      </div>
-                    </div>
-                  ))}
-
-                  {formData.galleryImages.length < 5 && (
-                    <label className="border-2 border-dashed border-neutral-300 rounded-lg h-24 flex flex-col items-center justify-center cursor-pointer hover:border-primary-500 transition-colors duration-200">
-                      {uploadingImages ? (
-                        <Loader2 className="h-6 w-6 animate-spin text-primary-500" />
-                      ) : (
-                        <Upload className="h-6 w-6 text-neutral-400 mb-1" />
-                      )}
-                      <span className="text-xs text-neutral-500">Add Photo</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleGalleryImageUpload}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-                <p className="font-lora text-xs text-neutral-500 mt-2">
-                  {formData.galleryImages.length}/5 gallery images uploaded
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Write Review */}
-          {currentStep === 2 && (
-            <div>
-              <h2 className="font-cinzel text-2xl font-bold text-neutral-900 mb-6">
-                Write Your Review
-              </h2>
-
-              <div className="mb-6">
-                <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
-                  Review Content (Minimum 100 characters)
+            <div className="flex items-center">
+              <div className="relative">
+                <img
+                  src={user.avatar}
+                  alt={user.name || "User"}
+                  className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg"
+                />
+                <label className="absolute bottom-0 right-0 bg-primary-500 text-white p-1 rounded-full cursor-pointer hover:bg-primary-600 transition-colors duration-200">
+                  <Camera className="h-3 w-3" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
                 </label>
-
-                {/* Credit Reward Info */}
-                <div className="bg-primary-50 rounded-lg p-3 mb-4">
-                  <p className="font-lora text-sm text-primary-700">
-                    <span className="font-semibold">Earn 1 credit</span> by including a rating, at least 3 photos, and a written review.
-                  </p>
+              </div>
+              
+              <div className="ml-4">
+                <h1 className="font-cinzel text-2xl font-bold text-neutral-900">
+                  {user.name}
+                </h1>
+                <div className="flex items-center gap-4 mt-1">
+                  <span className="font-lora text-neutral-600">Level {user.level} Reviewer</span>
+                  <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-xs font-semibold">
+                    {user.credits >= 999999 ? 'Unlimited Credits' : 'Available Credits'}
+                  </span>
                 </div>
-
-                <div className="border border-neutral-200 rounded-lg">
-                  {/* Rich Text Editor Toolbar */}
-                  <div className="border-b border-neutral-200 p-3 flex gap-2">
-                    <button type="button" className="px-3 py-1 border border-neutral-200 rounded text-sm font-bold hover:bg-neutral-50">
-                      B
-                    </button>
-                    <button type="button" className="px-3 py-1 border border-neutral-200 rounded text-sm italic hover:bg-neutral-50">
-                      I
-                    </button>
-                    <button type="button" className="px-3 py-1 border border-neutral-200 rounded text-sm hover:bg-neutral-50">
-                      H1
-                    </button>
-                    <button type="button" className="px-3 py-1 border border-neutral-200 rounded text-sm hover:bg-neutral-50">
-                      H2
-                    </button>
-                    <button type="button" className="px-3 py-1 border border-neutral-200 rounded text-sm hover:bg-neutral-50">
-                      Link
-                    </button>
-                  </div>
-
-                  <textarea
-                    value={formData.content}
-                    onChange={(e) => handleContentChange(e.target.value)}
-                    placeholder="Share your experience... What did you love? What could be improved? Be honest and detailed to help other visitors."
-                    rows={12}
-                    className="w-full p-4 border-0 rounded-b-lg font-lora focus:ring-2 focus:ring-primary-500 resize-none"
-                  />
-                </div>
-                <p className="font-lora text-xs text-neutral-500 mt-2">
-                  {formData.content.length}/100 characters minimum
-                </p>
               </div>
             </div>
-          )}
-
-          {/* Step 3: Business Info & Rating */}
-          {currentStep === 3 && (
-            <div>
-              <h2 className="font-cinzel text-2xl font-bold text-neutral-900 mb-6">
-                Business Information
-              </h2>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
-                    Business Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.businessName}
-                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                    placeholder="Enter the business name"
-                    className="w-full px-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
-                    Address/Location
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.businessAddress}
-                    onChange={(e) => setFormData({ ...formData, businessAddress: e.target.value })}
-                    placeholder="Enter the full address or location"
-                    className="w-full px-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-poppins text-sm font-medium text-neutral-700 block mb-4">
-                    Overall Rating
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        type="button"
-                        key={star}
-                        onClick={() => handleRatingClick(star)}
-                        className={`text-3xl transition-colors duration-200 ${
-                          star <= formData.rating ? 'text-yellow-400' : 'text-neutral-300'
-                        } hover:text-yellow-400`}
-                      >
-                        <Star className="h-8 w-8 fill-current" />
-                      </button>
-                    ))}
-                    <span className="font-poppins text-lg font-semibold text-neutral-700 ml-4">
-                      {formData.rating > 0 ? `${formData.rating}/5` : 'Select rating'}
+            
+            <button
+              onClick={handleAddBusiness}
+              className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 flex items-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Business
+            </button>
+          </div>
+          
+          {/* Credits Overview */}
+          <div className="mt-6 bg-white rounded-lg p-4 border border-neutral-200">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <Zap className="h-5 w-5 text-primary-500 mr-2" />
+                <span className="font-poppins text-sm font-semibold text-neutral-700">
+                  {user.role === 'administrator' || user.credits >= 999999 ? 'Unlimited Credits' : 'Available Credits'}
+                </span>
+              </div>
+                {user.role === 'administrator' || user.credits >= 999999 ? (
+                  <div className="bg-yellow-50 px-3 py-1 rounded-full">
+                    <span className="font-poppins text-lg font-bold text-yellow-700">
+                      {user.role === 'administrator' ? '∞ Admin' : '∞'}
                     </span>
                   </div>
+                ) : (
+                  <div className="bg-primary-50 px-3 py-1 rounded-full">
+                    <span className="font-poppins text-lg font-bold text-primary-700">
+                      {user.credits || 0}
+                    </span>
+                  </div>
+                )}
+            </div>
+            
+            {user.role !== 'administrator' && user.credits < 999999 && (
+              <div className="text-xs text-neutral-500 mb-3">
+                Next refill: {addMonths(new Date(user.joinDate), 1).toLocaleDateString()} • +100 credits
+              </div>
+            )}
+            
+            {user.role !== 'administrator' && user.credits < 999999 && <CreditUsageInfo />}
+            
+            {(user.role === 'administrator' || user.credits >= 999999) && (
+              <div className="bg-yellow-100 rounded-lg p-3 mt-3">
+                <p className="font-lora text-sm text-yellow-800">
+                  {user.role === 'administrator' 
+                    ? 'Administrator account with unlimited credits and full platform access.' 
+                    : 'Account with unlimited credits.'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Level Progress */}
+          <div className="mt-6 bg-neutral-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-poppins text-sm font-semibold text-neutral-700">
+                Progress to Level {user.level + 1}
+              </span>
+              <span className="font-lora text-sm text-neutral-600">
+                {user.reviewCount % 10}/10 reviews
+              </span>
+            </div>
+            <div className="w-full bg-neutral-200 rounded-full h-2">
+              <div 
+                className="bg-primary-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${getNextLevelProgress()}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="mt-6">
+            <div className="flex space-x-1 bg-neutral-100 rounded-lg p-1">
+              {[
+                { id: 'overview', name: 'Overview' },
+                { id: 'my-reviews', name: 'My Reviews' },
+                { id: 'my-businesses', name: 'My Businesses' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex-1 py-2 px-4 rounded-md font-poppins font-medium transition-colors duration-200 ${
+                    activeTab === tab.id
+                      ? 'bg-white text-primary-600 shadow-sm'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  {tab.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Stats Cards */}
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                    <Star className="h-6 w-6 text-primary-600" />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <p className="font-lora text-sm text-neutral-600">Total Reviews</p> 
+                    <p className="font-poppins text-2xl font-bold text-neutral-900">
+                      {user.role === 'administrator' ? '∞' : user.reviewCount}
+                    </p>
+                  </div>
+                  {user.role !== 'administrator' && user.credits < 999999 && (
+                    <div className="flex flex-col items-end">
+                      <p className="font-lora text-xs text-neutral-500">Credits earned</p>
+                      <p className="font-poppins text-sm font-semibold text-primary-600">
+                        +{user.reviewCount} <Zap className="h-3 w-3 inline" />
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Eye className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <p className="font-lora text-sm text-neutral-600">Total Views</p>
+                    <p className="font-poppins text-2xl font-bold text-neutral-900">
+                      {user.role === 'administrator' ? '∞' : user.reviewCount * 10}
+                    </p>
+                  </div>
+                  {user.role !== 'administrator' && user.credits < 999999 && (
+                    <div className="flex flex-col items-end">
+                      <p className="font-lora text-xs text-neutral-500">Credits earned</p>
+                      <p className="font-poppins text-sm font-semibold text-primary-600">
+                        +{user.reviewCount} <Zap className="h-3 w-3 inline" />
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Building className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <p className="font-lora text-sm text-neutral-600">My Businesses</p>
+                    <div className="flex items-center">
+                      <p className="font-poppins text-2xl font-bold text-neutral-900 mr-3">
+                        {myBusinessesCount}
+                      </p>
+                      <button
+                        onClick={handleAddBusiness}
+                        className="bg-blue-100 text-blue-600 p-1 rounded-full hover:bg-blue-200 transition-colors duration-200"
+                        title="Add Business"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t border-neutral-200">
-            <button
-              type="button"
-              onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-              disabled={currentStep === 1 || loading}
-              className={`flex items-center font-poppins px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
-                currentStep === 1 || loading
-                  ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
-                  : 'border border-neutral-200 text-neutral-700 hover:bg-neutral-50'
-              }`}
-            >
-              <ChevronLeft className="h-5 w-5 mr-2" />
-              Previous
-            </button>
-
-            {currentStep < 3 ? (
-              <button
-                type="button"
-                onClick={() => setCurrentStep(currentStep + 1)}
-                disabled={
-                  loading || uploadingImages ||
-                  (currentStep === 1 && !canProceedToStep2) ||
-                  (currentStep === 2 && !canProceedToStep3)
-                }
-                className={`flex items-center font-poppins px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
-                  loading || uploadingImages ||
-                  (currentStep === 1 && !canProceedToStep2) ||
-                  (currentStep === 2 && !canProceedToStep3)
-                    ? 'bg-neutral-300 text-neutral-600 cursor-not-allowed'
-                    : 'bg-primary-500 text-white hover:bg-primary-600'
-                }`}
-              >
-                Next
-                <ChevronRight className="h-5 w-5 ml-2" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!canSubmit || loading || uploadingImages}
-                className={`flex items-center font-poppins px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
-                  !canSubmit || loading || uploadingImages
-                    ? 'bg-neutral-300 text-neutral-600 cursor-not-allowed'
-                    : 'bg-green-500 text-white hover:bg-green-600'
-                }`}
-              >
-                {loading ? (
-                  <span className="flex items-center">
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Submitting...
-                  </span>
-                ) : (
-                  <>
-                    <Check className="h-5 w-5 mr-2" />
-                    Submit Review
-                  </>
-                )}
-              </button>
-            )}
+            {/* Recent Activity Section */}
+            <RecentActivitySection />
           </div>
-        </div>
+        )}
+
+        {/* My Businesses Tab */}
+        {activeTab === 'my-businesses' && (
+          <MyBusinessesSection user={user} />
+        )}
+
+        {/* Reviews Tab */}
+        {activeTab === 'my-reviews' && (
+          <MyReviewsSection reviews={reviews} />
+        )}
       </div>
     </div>
   );
 };
 
-export default ReviewSubmissionForm;
+export default UserDashboard;
