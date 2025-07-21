@@ -11,7 +11,7 @@ const corsHeaders = {
 export const handler = async (event, context) => {
   // Declare variables at the top level for proper scope
   let currentProcessingBusinessId = null;
-  let effectiveBusinessId = null;
+  let effectiveBusinessId = undefined;
   
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
@@ -33,26 +33,25 @@ export const handler = async (event, context) => {
   try {
     const { businessId, batchSize = 10, forceRegenerate = false } = JSON.parse(event.body || '{}');
 
-    // Robust businessId sanitization to prevent UUID syntax errors
-    effectiveBusinessId = businessId;
-    
-    // Check if businessId is invalid and should be treated as undefined
-    if (businessId) {
-      const businessIdStr = String(businessId).trim().toLowerCase();
-      const invalidValues = ['null', 'undefined', '', 'none', 'empty'];
+    // Sanitize businessId - only use it if it's a valid UUID string
+    if (businessId && typeof businessId === 'string' && businessId.trim() !== '') {
+      const cleanBusinessId = businessId.trim();
+      const invalidValues = ['null', 'undefined', 'none', 'empty'];
       
-      if (invalidValues.includes(businessIdStr)) {
-        console.warn(`⚠️ Invalid businessId received: "${businessId}" - falling back to batch processing`);
-        effectiveBusinessId = undefined;
-      } else {
-        // Validate UUID format (basic check)
+      if (!invalidValues.includes(cleanBusinessId.toLowerCase())) {
+        // Validate UUID format
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(businessIdStr)) {
+        if (uuidRegex.test(cleanBusinessId)) {
+          effectiveBusinessId = cleanBusinessId;
+          console.log(`🎯 Processing single business: ${effectiveBusinessId}`);
+        } else {
           console.warn(`⚠️ Invalid UUID format for businessId: "${businessId}" - falling back to batch processing`);
-          effectiveBusinessId = undefined;
         }
+      } else {
+        console.warn(`⚠️ Invalid businessId value: "${businessId}" - falling back to batch processing`);
       }
     }
+    
     console.log('🔄 Starting embedding generation process...', effectiveBusinessId ? `for business ${effectiveBusinessId}` : `batch of ${batchSize}`);
 
     // Check required environment variables
@@ -77,7 +76,6 @@ export const handler = async (event, context) => {
     if (effectiveBusinessId) {
       // If a valid businessId is provided, process only that one
       queryBuilder = queryBuilder.eq('id', effectiveBusinessId).limit(1);
-      console.log(`🎯 Processing single business: ${effectiveBusinessId}`);
     } else {
       // Otherwise, use the batch processing logic
       queryBuilder = queryBuilder
@@ -93,7 +91,7 @@ export const handler = async (event, context) => {
     // Critical: Filter out invalid UUIDs after fetching from Supabase
     // This prevents any "null" strings or malformed IDs from causing UUID syntax errors
     const validBusinesses = (businesses || []).filter(business => {
-      if (!business.id) {
+      if (!business.id || business.id === null || business.id === undefined) {
         console.warn(`⚠️ Skipping business with missing ID:`, business.name || 'Unknown');
         return false;
       }
@@ -101,7 +99,7 @@ export const handler = async (event, context) => {
       const businessIdStr = String(business.id).trim();
       
       // Check for invalid string values
-      const invalidValues = ['null', 'undefined', '', 'none', 'empty', 'NULL'];
+      const invalidValues = ['null', 'undefined', '', 'none', 'empty', 'NULL', 'nil'];
       if (invalidValues.includes(businessIdStr.toLowerCase())) {
         console.warn(`⚠️ Skipping business with invalid ID string: "${businessIdStr}" for business:`, business.name || 'Unknown');
         return false;
@@ -146,7 +144,6 @@ export const handler = async (event, context) => {
       try {
         // Set current business ID for error logging - CRITICAL: Set this first
         currentProcessingBusinessId = business.id;
-        effectiveBusinessId = business.id;
         
         console.log(`🔍 VERBOSE: Starting processing for business ID: "${business.id}"`);
         console.log(`🔍 VERBOSE: Business ID type: ${typeof business.id}`);
@@ -190,25 +187,10 @@ export const handler = async (event, context) => {
         console.log(`🔍 VERBOSE: About to update business in Supabase...`);
         console.log(`🔍 VERBOSE: Business ID for update: "${business.id}" (type: ${typeof business.id})`);
         console.log(`🔍 VERBOSE: Embedding array length: ${embedding.length}`);
-        console.log(`🔍 VERBOSE: Update timestamp: ${new Date().toISOString()}`);
 
-        // TEMPORARY TEST: Update only timestamp first to isolate the issue
-        console.log(`🔍 VERBOSE: Testing timestamp-only update first...`);
-        const { error: timestampError } = await supabase
-          .from('businesses')
-          .update({ 
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', business.id);
 
-        if (timestampError) {
-          console.error(`❌ VERBOSE: Timestamp-only update failed for business ${business.id}:`, timestampError);
-          throw timestampError;
-        }
         
-        console.log(`✅ VERBOSE: Timestamp-only update successful, now updating with embedding...`);
-        
-        // Now update with embedding
+        // Update business with embedding
         const { error: updateError } = await supabase
           .from('businesses')
           .update({ 
@@ -218,11 +200,11 @@ export const handler = async (event, context) => {
           .eq('id', business.id);
 
         if (updateError) {
-          console.error(`❌ VERBOSE: Embedding update failed for business ${business.id}:`, updateError);
+          console.error(`❌ Embedding update failed for business ${business.id}:`, updateError);
           throw updateError;
         }
         
-        console.log(`✅ VERBOSE: Embedding update successful for business ${business.id}`);
+        console.log(`✅ Embedding update successful for business ${business.id}`);
 
         results.push({
           businessId: business.id,
@@ -232,14 +214,14 @@ export const handler = async (event, context) => {
         });
 
         successCount++;
-        console.log(`✅ VERBOSE: Completed processing for: ${business.name} (ID: ${business.id})`);
+        console.log(`✅ Completed processing for: ${business.name} (ID: ${business.id})`);
 
         // Add delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 100));
 
       } catch (error) {
-        console.error(`❌ VERBOSE: Error processing business ${currentProcessingBusinessId} (${business.name}):`, error);
-        console.error(`❌ VERBOSE: Error details:`, {
+        console.error(`❌ Error processing business ${currentProcessingBusinessId} (${business.name}):`, error);
+        console.error(`❌ Error details:`, {
           businessId: currentProcessingBusinessId,
           businessName: business.name,
           errorCode: error.code,
@@ -282,7 +264,7 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         error: 'Failed to generate embeddings',
         message: error.message,
-        currentBusinessId: currentProcessingBusinessId,
+        currentBusinessId: currentProcessingBusinessId || 'unknown',
         errorDetails: {
           code: error.code,
           message: error.message,
