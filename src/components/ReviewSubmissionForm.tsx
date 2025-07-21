@@ -34,6 +34,7 @@ const ReviewSubmissionForm = () => {
   const [loading, setLoading] = useState(false); // For overall form submission
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
 
   // Fetch current user on component mount
   React.useEffect(() => {
@@ -188,6 +189,7 @@ const ReviewSubmissionForm = () => {
         rating: 0,
         businessId: 'a1b2c3d4-e5f6-7890-1234-567890abcdef' // Reset to placeholder
       });
+      setCurrentStep(1); // Reset to first step
       // Redirect after a short delay
       setTimeout(() => {
         navigate('/dashboard');

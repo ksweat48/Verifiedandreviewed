@@ -5,7 +5,7 @@ import {
   Settings, ChevronDown, Eye, Edit, Trash2, 
   Shield, AlertTriangle, CheckCircle, XCircle, 
   RefreshCw, BarChart2, TrendingUp, Calendar, 
-  Clock, ArrowRight, EyeOff
+  Clock, ArrowRight, EyeOff, MessageSquare, MapPin, Star
 } from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import { supabase } from '../services/supabaseClient';
@@ -18,16 +18,20 @@ const EmbeddingGenerationTest = React.lazy(() => import('./EmbeddingGenerationTe
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'businesses' | 'users' | 'analytics' | 'ai-integrations' | 'settings'>('businesses');
+  const [activeTab, setActiveTab] = useState<'overview' | 'businesses' | 'users' | 'reviews' | 'analytics' | 'ai-integrations' | 'settings'>('businesses');
+  const [reviewsTab, setReviewsTab] = useState<'pending' | 'all'>('pending');
   const [allBusinesses, setAllBusinesses] = useState<Business[]>([]);
   const [pendingBusinesses, setPendingBusinesses] = useState<Business[]>([]);
   const [verifiedBusinesses, setVerifiedBusinesses] = useState<Business[]>([]);
+  const [userReviews, setUserReviews] = useState<any[]>([]);
+  const [pendingReviews, setPendingReviews] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [processingBusinessId, setProcessingBusinessId] = useState<string | null>(null);
+  const [processingReviewId, setProcessingReviewId] = useState<string | null>(null);
   const [isBusinessProfileModalOpen, setIsBusinessProfileModalOpen] = useState(false);
   const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
 
@@ -57,6 +61,36 @@ const AdminDashboard = () => {
         
       if (userError) throw userError;
       setUsers(userData || []);
+      
+      // Fetch user reviews from Supabase
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('user_reviews')
+        .select(`
+          *,
+          profiles!inner(name, email),
+          businesses!inner(name, address)
+        `)
+        .order('created_at', { ascending: false });
+        
+      if (reviewsError) throw reviewsError;
+      
+      const formattedReviews = (reviewsData || []).map(review => ({
+        id: review.id,
+        userId: review.user_id,
+        userName: review.profiles.name,
+        userEmail: review.profiles.email,
+        businessId: review.business_id,
+        businessName: review.businesses.name,
+        businessAddress: review.businesses.address,
+        reviewText: review.review_text,
+        rating: review.rating,
+        status: review.status,
+        imageUrls: review.image_urls || [],
+        createdAt: review.created_at
+      }));
+      
+      setUserReviews(formattedReviews);
+      setPendingReviews(formattedReviews.filter(r => r.status === 'pending'));
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -110,6 +144,70 @@ const AdminDashboard = () => {
       console.error('Error deleting business:', error);
     } finally {
       setProcessingBusinessId(null);
+    }
+  };
+
+  const handleApproveReview = async (reviewId: string) => {
+    setProcessingReviewId(reviewId);
+    try {
+      const { error } = await supabase
+        .from('user_reviews')
+        .update({ status: 'approved' })
+        .eq('id', reviewId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setUserReviews(prev => 
+        prev.map(r => r.id === reviewId ? { ...r, status: 'approved' } : r)
+      );
+      setPendingReviews(prev => prev.filter(r => r.id !== reviewId));
+    } catch (error) {
+      console.error('Error approving review:', error);
+    } finally {
+      setProcessingReviewId(null);
+    }
+  };
+
+  const handleRejectReview = async (reviewId: string) => {
+    setProcessingReviewId(reviewId);
+    try {
+      const { error } = await supabase
+        .from('user_reviews')
+        .update({ status: 'rejected' })
+        .eq('id', reviewId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setUserReviews(prev => 
+        prev.map(r => r.id === reviewId ? { ...r, status: 'rejected' } : r)
+      );
+      setPendingReviews(prev => prev.filter(r => r.id !== reviewId));
+    } catch (error) {
+      console.error('Error rejecting review:', error);
+    } finally {
+      setProcessingReviewId(null);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    setProcessingReviewId(reviewId);
+    try {
+      const { error } = await supabase
+        .from('user_reviews')
+        .delete()
+        .eq('id', reviewId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setUserReviews(prev => prev.filter(r => r.id !== reviewId));
+      setPendingReviews(prev => prev.filter(r => r.id !== reviewId));
+    } catch (error) {
+      console.error('Error deleting review:', error);
+    } finally {
+      setProcessingReviewId(null);
     }
   };
 
@@ -363,6 +461,17 @@ const AdminDashboard = () => {
             >
               <Users className="h-5 w-5 inline mr-2" />
               Users
+            </button>
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`px-6 py-4 font-poppins font-medium whitespace-nowrap ${
+                activeTab === 'reviews'
+                  ? 'text-primary-500 border-b-2 border-primary-500'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <MessageSquare className="h-5 w-5 inline mr-2" />
+              Reviews ({pendingReviews.length})
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
@@ -702,6 +811,179 @@ const AdminDashboard = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'reviews' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-cinzel text-2xl font-bold text-neutral-900">
+                Review Management
+              </h2>
+              
+              <div className="flex space-x-1 bg-neutral-100 rounded-lg p-1">
+                <button
+                  onClick={() => setReviewsTab('pending')}
+                  className={`px-4 py-2 rounded-md font-poppins font-medium transition-colors duration-200 ${
+                    reviewsTab === 'pending'
+                      ? 'bg-white text-primary-600 shadow-sm'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  Pending ({pendingReviews.length})
+                </button>
+                <button
+                  onClick={() => setReviewsTab('all')}
+                  className={`px-4 py-2 rounded-md font-poppins font-medium transition-colors duration-200 ${
+                    reviewsTab === 'all'
+                      ? 'bg-white text-primary-600 shadow-sm'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  All Reviews ({userReviews.length})
+                </button>
+              </div>
+            </div>
+            
+            {/* Reviews Table */}
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-neutral-50 border-b border-neutral-200">
+                    <tr>
+                      <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Business</th>
+                      <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Reviewer</th>
+                      <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Rating</th>
+                      <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Status</th>
+                      <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Date</th>
+                      <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-200">
+                    {(reviewsTab === 'pending' ? pendingReviews : userReviews).map((review) => (
+                      <tr key={review.id} className="hover:bg-neutral-50">
+                        <td className="px-6 py-4">
+                          <div>
+                            <div className="font-poppins font-semibold text-neutral-900">
+                              {review.businessName}
+                            </div>
+                            <div className="font-lora text-sm text-neutral-600 flex items-center">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {review.businessAddress}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <div className="font-poppins font-semibold text-neutral-900">{review.userName}</div>
+                            <div className="font-lora text-sm text-neutral-600">{review.userEmail}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="flex text-yellow-400 mr-2">
+                              {[...Array(review.rating)].map((_, i) => (
+                                <Star key={i} className="h-4 w-4 fill-current" />
+                              ))}
+                            </div>
+                            <span className="font-poppins text-sm font-semibold">
+                              {review.rating}/5
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
+                            review.status === 'approved' 
+                              ? 'bg-green-100 text-green-700' 
+                              : review.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : review.status === 'rejected'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-neutral-100 text-neutral-700'
+                          }`}>
+                            {review.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-lora text-sm text-neutral-600 flex items-center">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {new Date(review.createdAt).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => alert(`Review: "${review.reviewText}"`)}
+                              className="p-1 bg-neutral-500 text-white rounded hover:bg-neutral-600"
+                              title="View Review"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            
+                            {review.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleApproveReview(review.id)}
+                                  disabled={processingReviewId === review.id}
+                                  className="p-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                  title="Approve Review"
+                                >
+                                  {processingReviewId === review.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="h-4 w-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleRejectReview(review.id)}
+                                  disabled={processingReviewId === review.id}
+                                  className="p-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                  title="Reject Review"
+                                >
+                                  {processingReviewId === review.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <XCircle className="h-4 w-4" />
+                                  )}
+                                </button>
+                              </>
+                            )}
+                            
+                            <button
+                              onClick={() => handleDeleteReview(review.id)}
+                              disabled={processingReviewId === review.id}
+                              className="p-1 bg-red-500 text-white rounded hover:bg-red-600"
+                              title="Delete Review"
+                            >
+                              {processingReviewId === review.id ? (
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {(reviewsTab === 'pending' ? pendingReviews : userReviews).length === 0 && (
+                <div className="text-center py-12">
+                  <MessageSquare className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
+                  <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
+                    {reviewsTab === 'pending' ? 'No Pending Reviews' : 'No Reviews Found'}
+                  </h3>
+                  <p className="font-lora text-neutral-600">
+                    {reviewsTab === 'pending' 
+                      ? 'All reviews have been processed.' 
+                      : 'No user reviews have been submitted yet.'
+                    }
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
