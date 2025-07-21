@@ -45,7 +45,7 @@ export const handler = async (event, context) => {
     // Check required environment variables
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-    const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!OPENAI_API_KEY) {
       return {
@@ -58,7 +58,7 @@ export const handler = async (event, context) => {
       };
     }
 
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       return {
         statusCode: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -89,7 +89,7 @@ export const handler = async (event, context) => {
 
     // Initialize Supabase client
     console.log('🗄️ Initializing Supabase client...');
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Perform semantic search using the RPC function
     console.log('🔍 Performing semantic search...');
