@@ -247,6 +247,7 @@ const ReviewSubmissionForm = () => {
           insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }) }) }),
           update: () => ({ eq: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }) }),
           delete: () => ({ eq: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }) })
+    )
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-xl shadow-lg text-center">
@@ -266,6 +267,7 @@ const ReviewSubmissionForm = () => {
           </button>
         </div>
       </div>
+    )
     // Return mock client instead of throwing
     return {
       auth: {
