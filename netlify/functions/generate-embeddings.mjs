@@ -31,6 +31,10 @@ export const handler = async (event, context) => {
   try {
     const { businessId, batchSize = 10, forceRegenerate = false } = JSON.parse(event.body || '{}');
 
+    // --- ADD THIS LOGGING HERE ---
+    console.log(`🔍 DEBUG: Incoming businessId from request body: "${businessId}" (type: ${typeof businessId})`);
+    // --- END ADDITION ---
+
     if (businessId && typeof businessId === 'string' && businessId.trim() !== '') {
       const cleanBusinessId = businessId.trim();
       const invalidValues = ['null', 'undefined', 'none', 'empty'];
@@ -39,12 +43,12 @@ export const handler = async (event, context) => {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
         if (uuidRegex.test(cleanBusinessId)) {
           effectiveBusinessId = cleanBusinessId;
-          console.log(`🎯 Processing single business: ${effectiveBusinessId}`);
+          console.log(`🎯 DEBUG: Effective single business ID for processing: "${effectiveBusinessId}"`);
         } else {
-          console.warn(`⚠️ Invalid UUID format: "${businessId}" – falling back to batch`);
+          console.warn(`⚠️ DEBUG: Invalid UUID format for input: "${cleanBusinessId}" – falling back to batch`);
         }
       } else {
-        console.warn(`⚠️ Invalid businessId: "${businessId}" – falling back to batch`);
+        console.warn(`⚠️ DEBUG: Invalid businessId string: "${cleanBusinessId}" – falling back to batch`);
       }
     }
 
@@ -76,9 +80,7 @@ export const handler = async (event, context) => {
     const { data: businesses, error: fetchError } = await queryBuilder;
     if (fetchError) throw fetchError;
 
-    console.log('👁️ Raw fetched businesses:', JSON.stringify(businesses, null, 2));
-
-    console.log('👁️ Raw fetched businesses:', JSON.stringify(businesses, null, 2));
+    console.log('👁️ DEBUG: Raw fetched businesses (before filtering):', JSON.stringify(businesses, null, 2));
 
     const validBusinesses = (businesses || []).filter(business => {
       const rawId = business?.id;
@@ -87,14 +89,14 @@ export const handler = async (event, context) => {
       // Reject if it's a known invalid string
       const invalidValues = ['null', 'undefined', '', 'none', 'empty'];
       if (!rawId || invalidValues.includes(idStr)) {
-        console.warn(`⚠️ Skipping business with invalid ID: "${idStr}"`, business.name);
+        console.warn(`⚠️ DEBUG: Skipping business with invalid ID (string value): "${idStr}" for business "${business?.name || 'Unknown'}"`);
         return false;
       }
 
       // Reject if not a UUID
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(idStr)) {
-        console.warn(`⚠️ Invalid UUID format: "${idStr}"`, business.name);
+        console.warn(`⚠️ DEBUG: Invalid UUID format (regex mismatch): "${idStr}" for business "${business?.name || 'Unknown'}"`);
         return false;
       }
 
@@ -107,14 +109,15 @@ export const handler = async (event, context) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           success: true,
-          message: 'No valid businesses found to embed.',
+          message: 'No valid businesses found to embed after filtering.',
           processed: 0,
           timestamp: new Date().toISOString()
         })
       };
     }
 
-    console.log(`📊 Valid businesses to process: ${validBusinesses.length}`);
+    console.log(`📊 DEBUG: Valid businesses to process (after filtering): ${validBusinesses.length}`);
+    console.log(`📋 DEBUG: Valid business IDs that will be processed:`, validBusinesses.map(b => `"${b.id}"`));
 
     const results = [];
     let successCount = 0;
@@ -123,6 +126,10 @@ export const handler = async (event, context) => {
     for (const business of validBusinesses) {
       try {
         currentProcessingBusinessId = business.id;
+        // --- ADD THIS LOGGING HERE ---
+        console.log(`🔧 DEBUG: About to update business with ID: "${String(business.id).trim()}" (raw: ${JSON.stringify(business.id)})`);
+        // --- END ADDITION ---
+        
         const searchText = [
           business.name,
           business.description,
@@ -155,15 +162,23 @@ export const handler = async (event, context) => {
           .eq('id', String(business.id).trim());
 
         if (updateError) {
+          console.error(`❌ DEBUG: Supabase update error for business ID "${business.id}":`, updateError);
           throw updateError;
         }
 
+        console.log(`✅ DEBUG: Successfully updated embedding for business ID: "${business.id}"`);
         results.push({ businessId: business.id, success: true });
         successCount++;
         await new Promise(res => setTimeout(res, 100)); // slight delay
 
       } catch (error) {
-        console.error(`❌ Error on ${currentProcessingBusinessId}:`, error);
+        console.error(`❌ DEBUG: Error processing business ID "${currentProcessingBusinessId}":`, {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          businessId: currentProcessingBusinessId
+        });
         errorCount++;
         results.push({
           businessId: currentProcessingBusinessId,
@@ -188,7 +203,13 @@ export const handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('❌ Embedding generation failed:', error);
+    console.error('❌ DEBUG: Embedding generation failed:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      currentBusinessId: currentProcessingBusinessId
+    });
     return {
       statusCode: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
