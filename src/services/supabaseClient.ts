@@ -7,24 +7,75 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 // Check if we're in development mode
 const isDevelopment = import.meta.env.DEV;
 
-// Create a mock client for development if credentials are missing
-if ((!supabaseUrl || !supabaseAnonKey) && isDevelopment) {
-  console.warn('Supabase credentials missing in development. Using mock client. Please check your .env file for VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-} else if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase credentials missing. Please check your .env file for VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+// Validate Supabase credentials
+if (!supabaseUrl || !supabaseAnonKey) {
+  const errorMessage = `
+❌ Supabase Configuration Error:
+
+Missing environment variables in your .env file:
+${!supabaseUrl ? '- VITE_SUPABASE_URL' : ''}
+${!supabaseAnonKey ? '- VITE_SUPABASE_ANON_KEY' : ''}
+
+To fix this:
+1. Create a .env file in your project root (if it doesn't exist)
+2. Add these variables from your Supabase project dashboard:
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key-here
+3. Restart your development server
+
+Find these values at: https://supabase.com/dashboard/project/[your-project]/settings/api
+  `;
+  
+  console.error(errorMessage);
+  
+  if (isDevelopment) {
+    // Show user-friendly error in development
+    setTimeout(() => {
+      alert(errorMessage);
+    }, 1000);
+  }
 }
 
-// Create the client or a mock client if credentials are missing
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder-url.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
-    auth: {
-      persistSession: !!(supabaseUrl && supabaseAnonKey),
-      autoRefreshToken: !!(supabaseUrl && supabaseAnonKey)
+// Create the Supabase client with proper error handling
+export const supabase = (() => {
+  try {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      // Return a mock client that throws helpful errors
+      return {
+        auth: {
+          getSession: () => Promise.reject(new Error('Supabase not configured. Please check your .env file.')),
+          getUser: () => Promise.reject(new Error('Supabase not configured. Please check your .env file.')),
+          signInWithPassword: () => Promise.reject(new Error('Supabase not configured. Please check your .env file.')),
+          signUp: () => Promise.reject(new Error('Supabase not configured. Please check your .env file.')),
+          signOut: () => Promise.reject(new Error('Supabase not configured. Please check your .env file.')),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+        },
+        from: () => ({
+          select: () => Promise.reject(new Error('Supabase not configured. Please check your .env file.')),
+          insert: () => Promise.reject(new Error('Supabase not configured. Please check your .env file.')),
+          update: () => Promise.reject(new Error('Supabase not configured. Please check your .env file.')),
+          delete: () => Promise.reject(new Error('Supabase not configured. Please check your .env file.'))
+        }),
+        storage: {
+          from: () => ({
+            upload: () => Promise.reject(new Error('Supabase not configured. Please check your .env file.')),
+            getPublicUrl: () => ({ data: { publicUrl: '' } })
+          })
+        }
+      };
     }
+    
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true
+      }
+    });
+  } catch (error) {
+    console.error('Failed to initialize Supabase client:', error);
+    throw error;
   }
-);
+})();
 
 // Database types
 export type Profile = {
