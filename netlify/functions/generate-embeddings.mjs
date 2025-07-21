@@ -78,18 +78,23 @@ export const handler = async (event, context) => {
 
     console.log('👁️ Raw fetched businesses:', JSON.stringify(businesses, null, 2));
 
+    console.log('👁️ Raw fetched businesses:', JSON.stringify(businesses, null, 2));
+
     const validBusinesses = (businesses || []).filter(business => {
       const rawId = business?.id;
       const idStr = String(rawId ?? '').trim().toLowerCase();
 
-      if (!rawId || idStr === '' || ['null', 'undefined', 'none', 'empty'].includes(idStr)) {
-        console.warn(`⚠️ Skipping invalid ID: "${idStr}" from business: ${business.name}`);
+      // Reject if it's a known invalid string
+      const invalidValues = ['null', 'undefined', '', 'none', 'empty'];
+      if (!rawId || invalidValues.includes(idStr)) {
+        console.warn(`⚠️ Skipping business with invalid ID: "${idStr}"`, business.name);
         return false;
       }
 
+      // Reject if not a UUID
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(idStr)) {
-        console.warn(`⚠️ Skipping invalid UUID format: "${idStr}" from business: ${business.name}`);
+        console.warn(`⚠️ Invalid UUID format: "${idStr}"`, business.name);
         return false;
       }
 
