@@ -73,9 +73,10 @@ export const handler = async (event, context) => {
       queryBuilder = queryBuilder.eq('id', effectiveBusinessId).limit(1);
     } else {
       // --- MODIFIED SECTION START ---
-      if (forceRegenerate) {
-        queryBuilder = queryBuilder.not('id', 'is', null); // Explicitly check for NOT NULL
-      } else {
+      // The 'id' column is already NOT NULL in the database schema.
+      // The 'id.not.is.null' filter is redundant and might be causing the UUID parsing error.
+      // We only need to filter by 'embedding.is.null' if forceRegenerate is false.
+      if (!forceRegenerate) { // Only apply this filter if not forcing regeneration
         queryBuilder = queryBuilder.is('embedding', null); // Explicitly check for IS NULL
       }
       // --- MODIFIED SECTION END ---
