@@ -72,9 +72,14 @@ export const handler = async (event, context) => {
     if (effectiveBusinessId) {
       queryBuilder = queryBuilder.eq('id', effectiveBusinessId).limit(1);
     } else {
-      queryBuilder = queryBuilder
-        .or(forceRegenerate ? 'id.neq.null' : 'embedding.is.null')
-        .limit(batchSize);
+      // --- MODIFIED SECTION START ---
+      if (forceRegenerate) {
+        queryBuilder = queryBuilder.not('id', 'is', null); // Explicitly check for NOT NULL
+      } else {
+        queryBuilder = queryBuilder.is('embedding', null); // Explicitly check for IS NULL
+      }
+      // --- MODIFIED SECTION END ---
+      queryBuilder = queryBuilder.limit(batchSize);
       console.log(`📦 Processing batch of ${batchSize} businesses`);
     }
 
