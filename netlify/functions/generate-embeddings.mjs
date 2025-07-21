@@ -46,7 +46,7 @@ export const handler = async (event, context) => {
           console.log(`🎯 DEBUG: Effective single business ID for processing: "${effectiveBusinessId}"`);
         } else {
           console.warn(`⚠️ DEBUG: Invalid UUID format for input: "${cleanBusinessId}" – falling back to batch`);
-        }
+            .or(forceRegenerate ? 'id.not.is.null' : 'embedding.is.null')
       } else {
         console.warn(`⚠️ DEBUG: Invalid businessId string: "${cleanBusinessId}" – falling back to batch`);
       }
