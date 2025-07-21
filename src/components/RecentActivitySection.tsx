@@ -127,18 +127,7 @@ const ReviewSubmissionForm = () => {
       galleryImages: prev.galleryImages.filter((_, i) => i !== index) 
     }));
   };
-  const removeGalleryImage = (index: number) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      galleryImages: prev.galleryImages.filter((_, i) => i !== index) 
-    }));
-  };
-  const removeGalleryImage = (index: number) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      galleryImages: prev.galleryImages.filter((_, i) => i !== index) 
-    }));
-  };
+
   const handleContentChange = (content: string) => {
     setFormData({ ...formData, content });
   };
@@ -223,7 +212,7 @@ const ReviewSubmissionForm = () => {
       }, 3000);
 
     } catch (err) {
-      console.error('Review submission error:', err);
+      console.error('Error fetching user reviews:', err);
       setError(`Failed to submit review: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
@@ -254,9 +243,6 @@ const ReviewSubmissionForm = () => {
           <h2 className="font-cinzel text-2xl font-bold text-neutral-900 mb-4">Review Submitted!</h2>
           <p className="font-lora text-neutral-600 mb-6">Your review has been published and is now live!</p>
           <button
-        business_id: businessId,
-      console.warn('Using placeholder image due to upload error');
-      return 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400';
             onClick={() => navigate('/dashboard')}
             className="font-poppins bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
           >
