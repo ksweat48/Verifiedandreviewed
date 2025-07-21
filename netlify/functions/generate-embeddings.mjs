@@ -9,7 +9,8 @@ const corsHeaders = {
 };
 
 export const handler = async (event, context) => {
-  // Declare effectiveBusinessId at the top level for proper scope
+  // Declare variables at the top level for proper scope
+  let currentProcessingBusinessId = null;
   let effectiveBusinessId = null;
   
   // Handle CORS preflight
@@ -148,8 +149,13 @@ export const handler = async (event, context) => {
     // Process each business
     for (const business of validBusinesses) {
       try {
-        // Set current business ID for error logging
+        // Set current business ID for error logging - CRITICAL: Set this first
+        currentProcessingBusinessId = business.id;
         effectiveBusinessId = business.id;
+        
+        console.log(`🔍 VERBOSE: Starting processing for business ID: "${business.id}"`);
+        console.log(`🔍 VERBOSE: Business ID type: ${typeof business.id}`);
+        console.log(`🔍 VERBOSE: Business name: "${business.name}"`);
         
         // Generate search text for embedding
         const searchText = [
@@ -162,7 +168,7 @@ export const handler = async (event, context) => {
         ].filter(Boolean).join(' ').trim();
 
         if (!searchText) {
-          console.warn(`⚠️ Skipping business ${business.id} (${business.name}) - no text content for embedding`);
+          console.warn(`⚠️ VERBOSE: Skipping business ${business.id} (${business.name}) - no text content for embedding`);
           errorCount++;
           results.push({
             businessId: business.id,
@@ -173,7 +179,8 @@ export const handler = async (event, context) => {
           continue;
         }
 
-        console.log(`🧠 Generating embedding for: ${business.name}`);
+        console.log(`🧠 VERBOSE: Generating embedding for: ${business.name} (ID: ${business.id})`);
+        console.log(`🧠 VERBOSE: Search text length: ${searchText.length} characters`);
 
         // Generate embedding using OpenAI
         const embeddingResponse = await openai.embeddings.create({
@@ -183,8 +190,30 @@ export const handler = async (event, context) => {
         });
 
         const embedding = embeddingResponse.data[0].embedding;
+        
+        console.log(`🔍 VERBOSE: Generated embedding with ${embedding.length} dimensions`);
+        console.log(`🔍 VERBOSE: About to update business in Supabase...`);
+        console.log(`🔍 VERBOSE: Business ID for update: "${business.id}" (type: ${typeof business.id})`);
+        console.log(`🔍 VERBOSE: Embedding array length: ${embedding.length}`);
+        console.log(`🔍 VERBOSE: Update timestamp: ${new Date().toISOString()}`);
 
-        // Update business with embedding in Supabase
+        // TEMPORARY TEST: Update only timestamp first to isolate the issue
+        console.log(`🔍 VERBOSE: Testing timestamp-only update first...`);
+        const { error: timestampError } = await supabase
+          .from('businesses')
+          .update({ 
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', business.id);
+
+        if (timestampError) {
+          console.error(`❌ VERBOSE: Timestamp-only update failed for business ${business.id}:`, timestampError);
+          throw timestampError;
+        }
+        
+        console.log(`✅ VERBOSE: Timestamp-only update successful, now updating with embedding...`);
+        
+        // Now update with embedding
         const { error: updateError } = await supabase
           .from('businesses')
           .update({ 
@@ -193,7 +222,12 @@ export const handler = async (event, context) => {
           })
           .eq('id', business.id);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error(`❌ VERBOSE: Embedding update failed for business ${business.id}:`, updateError);
+          throw updateError;
+        }
+        
+        console.log(`✅ VERBOSE: Embedding update successful for business ${business.id}`);
 
         results.push({
           businessId: business.id,
@@ -203,15 +237,23 @@ export const handler = async (event, context) => {
         });
 
         successCount++;
-        console.log(`✅ Generated embedding for: ${business.name}`);
+        console.log(`✅ VERBOSE: Completed processing for: ${business.name} (ID: ${business.id})`);
 
         // Add delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 100));
 
       } catch (error) {
-        console.error(`❌ Error processing business ${business.id} (${business.name}):`, error);
+        console.error(`❌ VERBOSE: Error processing business ${currentProcessingBusinessId} (${business.name}):`, error);
+        console.error(`❌ VERBOSE: Error details:`, {
+          businessId: currentProcessingBusinessId,
+          businessName: business.name,
+          errorCode: error.code,
+          errorMessage: error.message,
+          errorDetails: error.details,
+          errorHint: error.hint
+        });
         results.push({
-          businessId: business.id,
+          businessId: currentProcessingBusinessId,
           businessName: business.name,
           success: false,
           error: error.message
@@ -245,8 +287,13 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         error: 'Failed to generate embeddings',
         message: error.message,
-        businessId: effectiveBusinessId,
-        businessId: effectiveBusinessId,
+        currentBusinessId: currentProcessingBusinessId,
+        errorDetails: {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        },
         timestamp: new Date().toISOString()
       })
     };
