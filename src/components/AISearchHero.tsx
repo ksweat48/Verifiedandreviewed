@@ -33,6 +33,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [useSemanticSearch, setUseSemanticSearch] = useState(true);
   const [semanticSearchAvailable, setSemanticSearchAvailable] = useState(false);
   const { trackEvent } = useAnalytics();
+  
+  // Strict semantic similarity threshold for display
+  const MINIMUM_SEMANTIC_DISPLAY_THRESHOLD = 0.7;
+  
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -207,14 +211,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         try {
           // Fetch real businesses from Supabase
           const realBusinesses = await BusinessService.getBusinesses({
-            search: searchQuery,
-            userLatitude: latitude || undefined,
-            userLongitude: longitude || undefined
+        // Step 1: Perform semantic search for platform businesses
+        console.log('🧠 Performing semantic search for platform businesses...');
+        let platformSemanticResults = [];
+        let usedSemanticSearch = true;
           });
-          
-          // Debug logging to see what businesses are returned from Supabase
-          console.log('🔍 Supabase realBusinesses:', realBusinesses);
-          console.log('🔍 Search query:', searchQuery);
           console.log('🔍 Number of businesses found:', realBusinesses.length);
           
           // Transform the business data to match the expected format
@@ -251,35 +252,32 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       setUsedAI(needsAI && !usedSemanticSearch);
 
-      let canProceed = true;
-      const creditsRequired = usedSemanticSearch ? 5 : (needsAI ? 10 : 1); // Semantic search costs 5 credits
-      
-      if (currentUser && currentUser.id) {
-        // Check credit balance for all users
-        if (userCredits < creditsRequired) {
-          setShowCreditWarning(true);
-          canProceed = false;
-        } else {
-          // Deduct credits
-          const success = await CreditService.deductSearchCredits(currentUser.id, usedSemanticSearch ? 'semantic' : (needsAI ? 'ai' : 'platform')); // Fix: use currentUser.id
-          if (success) {
-            // Update local credit count
-            setUserCredits(prev => prev - creditsRequired);
+        if (semanticSearchAvailable) {
+          const semanticResult = await SemanticSearchService.searchByVibe(searchQuery, {
+            latitude,
+            longitude,
+            matchThreshold: 0.65,
+            matchCount: 10
+          });
+          
+          if (semanticResult.success && semanticResult.results.length > 0) {
+            // Filter platform businesses by strict semantic threshold
+            platformSemanticResults = semanticResult.results.filter(business => 
+              business.similarity >= MINIMUM_SEMANTIC_DISPLAY_THRESHOLD
+            );
+            console.log('✅ Platform semantic search:', platformSemanticResults.length, 'relevant results');
+            console.log('🎯 Platform similarity scores:', platformSemanticResults.map(r => ({ 
+              name: r.name, 
+              similarity: r.similarity 
+            })));
           } else {
-            setShowCreditWarning(true);
-            canProceed = false;
+            console.log('⚠️ Platform semantic search failed or no results');
           }
+        } else {
+          console.log('⚠️ Semantic search not available');
+          usedSemanticSearch = false;
         }
       }
-      
-      if (canProceed) {
-        if (needsAI) {
-          // Call OpenAI API through our serverless function
-          setIsSearching(true);
-          
-          try {
-            // Calculate how many AI businesses we need (max 4 total cards)
-            const numAINeeded = Math.max(0, 5 - transformedBusinesses.length);
             
             if (numAINeeded === 0) {
               // We already have 5 or more platform businesses, no AI needed
@@ -440,169 +438,14 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               results_count: uniquePlatformResults.length,
               error: aiError.message,
               fallback: true
-            });
-          }
-        } else {
-          // Just use the platform businesses
-          const sortedResults = transformedBusinesses.sort((a, b) => {
-            // First priority: Semantic similarity score (higher is better)
-            const aSimilarity = a.similarity || 0;
-            const bSimilarity = b.similarity || 0;
-            if (aSimilarity !== bSimilarity) {
-              return bSimilarity - aSimilarity; // Descending order (higher similarity first)
-            }
-            
-            // Second priority: Platform businesses (all are platform businesses here, so this is mostly redundant)
-            if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-            if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
-            
-            // Third priority: Open businesses
-            if (a.isOpen && !b.isOpen) return -1;
-            if (!a.isOpen && b.isOpen) return 1;
-            
-            // Fourth priority: Closest businesses (by distance)
-            if (a.distance && b.distance) {
-              if (a.distance < b.distance) return -1;
-              if (a.distance > b.distance) return 1;
-            }
-            
-            return 0;
-          });
-          
-          // Remove duplicates by ID and limit to 5
-          const uniquePlatformResults = sortedResults.filter((business, index, self) => 
-            index === self.findIndex(b => b.id === business.id)
-          ).slice(0, 5);
-          
-          setResults(uniquePlatformResults);
-          console.log('📊 Using platform-only results for:', searchQuery);
-          trackEvent('search_performed', { 
-            query: searchQuery, 
-            used_ai: false,
-            used_semantic: usedSemanticSearch,
-            credits_deducted: creditsRequired,
-            results_count: uniquePlatformResults.length
-          });
-        }
-      } else {
-        setShowCreditWarning(true);
-        setResults([]);
-        trackEvent('search_performed', { 
-          query: searchQuery, 
-          used_ai: false,
-          used_semantic: false,
-          credits_deducted: 0,
-          error: 'Insufficient credits'
-        });
-      }
-    } catch (error) {
-      console.error('Search error:', error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Exit app mode
-  const exitAppMode = () => {
-    setIsAppModeActive(false);
-    setShowResults(false);
-    
-    // Go back in history to remove the app-mode state
-    window.history.back();
-  };
-
-  const startVoiceRecognition = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('Voice recognition is not supported in your browser.');
-      return;
-    }
-
-    setIsListening(true);
-
-    // @ts-ignore
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    
-    recognition.lang = 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setSearchQuery(transcript);
-      handleSearch();
-      setIsListening(false);
-    };
-
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error', event.error);
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.start();
-  };
-
-  const handleRecommend = async (business) => {
-    // Log to Supabase for admin approval
-    console.log('Recommending business:', business.name);
-    alert(`Thanks! We'll review ${business.name} for addition to our platform.`);
-  };
-
-  const handleTakeMeThere = (business) => {
-    // Record the business visit for platform businesses
-    if (business.isPlatformBusiness && currentUser && currentUser.id) {
-      BusinessService.recordBusinessVisit(business.id, currentUser.id)
-        .then(success => {
-          if (success) {
-            console.log('✅ Business visit recorded for:', business.name);
-            // Dispatch event to update visited businesses list
-            window.dispatchEvent(new CustomEvent('visited-businesses-updated'));
-          }
-        })
-        .catch(error => {
-          console.error('❌ Error recording business visit:', error);
-        });
-    }
-    
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
-    window.open(mapsUrl, '_blank');
-  };
-
-  const handleSignup = () => {
-    console.log('Opening signup modal from AISearchHero');
-    setShowSignupPrompt(false); // Close the signup prompt first
-    trackEvent('signup_prompt_clicked', { source: 'search_hero' });
-    
-    // Force signup mode
-    const event = new CustomEvent('open-auth-modal', { 
-      detail: { 
-        mode: 'signup',
-        forceMode: true 
-      } 
-    });
-    document.dispatchEvent(event);
-  };
-  
-  const handleLogin = () => {
-    console.log('Opening login modal');
-    // Trigger the auth modal to open in login mode
-    trackEvent('login_prompt_clicked', { source: 'search_hero' });
-    setShowSignupPrompt(false); // Close the signup prompt first
-    const event = new CustomEvent('open-auth-modal', { 
-      detail: { 
-        mode: 'login',
-        forceMode: true 
-      } 
-    });
-    document.dispatchEvent(event);
-  };
-
+        // Step 2: Perform AI business search for Google Places results
+        console.log('🤖 Performing AI business search for Google Places...');
+        let aiPseudoSemanticResults = [];
+        let needsAI = platformSemanticResults.length < 5; // Use AI if we have fewer than 5 platform results
+        
   useEffect(() => {
     const handleKeyPress = (e) => {
+        setResults([]);
       if (e.key === 'Enter' && searchInputRef.current === document.activeElement) {
         handleSearch();
       }
