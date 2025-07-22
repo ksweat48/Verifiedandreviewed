@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import ImageGallery from './ImageGallery';
-import { ReviewService } from '../services/reviewService';
 
 interface BusinessProfileModalProps {
   isOpen: boolean;
@@ -39,8 +38,6 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
   business
 }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'gallery' | 'reviews'>('info');
-  const [modalReviews, setModalReviews] = useState<any[]>([]);
-  const [loadingModalReviews, setLoadingModalReviews] = useState(false);
   
   // Prevent body scrolling when modal is open
   useEffect(() => {
@@ -54,28 +51,6 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
       document.body.style.overflow = 'auto';
     };
   }, [isOpen]);
-
-  // Fetch reviews when switching to reviews tab
-  useEffect(() => {
-    const fetchBusinessReviews = async () => {
-      if (activeTab === 'reviews' && business?.id) {
-        setLoadingModalReviews(true);
-        try {
-          console.log('🔍 Fetching reviews for business ID:', business.id);
-          const reviews = await ReviewService.getBusinessReviews(business.id);
-          console.log('🔍 Fetched business reviews:', reviews);
-          setModalReviews(reviews);
-        } catch (error) {
-          console.error('Error fetching business reviews:', error);
-          setModalReviews([]);
-        } finally {
-          setLoadingModalReviews(false);
-        }
-      }
-    };
-    
-    fetchBusinessReviews();
-  }, [activeTab, business?.id]);
 
   if (!isOpen || !business) return null;
 
@@ -457,80 +432,15 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
           {/* Reviews Tab */}
           {activeTab === 'reviews' && (
             <div>
-              {loadingModalReviews ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
-                  <p className="font-lora text-neutral-600">Loading reviews...</p>
-                </div>
-              ) : modalReviews.length === 0 ? (
-                <div className="text-center py-12">
-                  <Icons.MessageSquare className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
-                  <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
-                    No Reviews Yet
-                  </h3>
-                  <p className="font-lora text-neutral-600">
-                    Be the first to leave a review for this business!
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {modalReviews.map((review) => (
-                    <div key={review.id} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
-                      <div className="flex items-start gap-4">
-                        <img
-                          src={review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100'}
-                          alt={review.profiles?.name || 'Anonymous'}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h5 className="font-poppins font-semibold text-neutral-900">
-                              {review.profiles?.name || 'Anonymous'}
-                            </h5>
-                            <div className="flex items-center">
-                              <div className="flex text-yellow-400 mr-2">
-                                {[...Array(review.rating)].map((_, i) => (
-                                  <Icons.Star key={i} className="h-4 w-4 fill-current" />
-                                ))}
-                              </div>
-                              <span className="font-poppins text-sm font-semibold text-neutral-700">
-                                {review.rating}/5
-                              </span>
-                            </div>
-                            <span className="text-sm text-neutral-500">
-                              {new Date(review.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <p className="font-lora text-neutral-700 leading-relaxed mb-3">
-                            {review.review_text}
-                          </p>
-                          
-                          {/* Review Images */}
-                          {review.image_urls && review.image_urls.length > 0 && (
-                            <div className="flex gap-2 mt-3">
-                              {review.image_urls.slice(0, 3).map((imageUrl: string, index: number) => (
-                                <img
-                                  key={index}
-                                  src={imageUrl}
-                                  alt={`Review image ${index + 1}`}
-                                  className="w-16 h-16 object-cover rounded-lg"
-                                />
-                              ))}
-                              {review.image_urls.length > 3 && (
-                                <div className="w-16 h-16 bg-neutral-100 rounded-lg flex items-center justify-center">
-                                  <span className="font-poppins text-xs text-neutral-600">
-                                    +{review.image_urls.length - 3}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="text-center py-12">
+                <Icons.MessageSquare className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
+                <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
+                  Reviews Coming Soon
+                </h3>
+                <p className="font-lora text-neutral-600">
+                  We're working on adding reviews for this business.
+                </p>
+              </div>
             </div>
           )}
         </div>
