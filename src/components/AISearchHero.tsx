@@ -528,7 +528,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // Step 2: Perform AI business search for Google Places results
       console.log('🤖 Performing AI business search for Google Places...');
       let aiPseudoSemanticResults = [];
-      let needsAI = platformSemanticResults.length < 5; // Use AI if we have fewer than 5 platform results
+      needsAI = platformSemanticResults.length < 5; // Use AI if we have fewer than 5 platform results
       
     } catch (error) {
       console.error('Search error:', error);
