@@ -127,21 +127,13 @@ export class ReviewService {
       const { data, error } = await supabase
         .from('user_reviews')
         .select(`
-          id,
-          user_id,
-          business_id,
-          review_text,
-          rating,
-          image_urls,
-          status,
-          created_at,
-          updated_at,
+          *,
           businesses!inner (
             id,
             name,
-            location,
-            is_verified
+            location
           )
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -151,10 +143,6 @@ export class ReviewService {
     } catch (error) {
       console.error('Error fetching user reviews:', error);
       return [];
-    }
-  }
-}
-        )
     }
   }
 }
