@@ -313,6 +313,30 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       setUsedAI(needsAI && !usedSemanticSearch);
 
+      if (needsAI && !usedSemanticSearch) {
+        // Check if user has enough credits for AI search
+        const creditsRequired = 10; // AI search costs 10 credits
+        
+        if (userCredits < creditsRequired) {
+          setShowCreditWarning(true);
+          setIsSearching(false);
+          return;
+        }
+        
+        // Deduct credits before AI search
+        try {
+          await CreditService.deductCredits(creditsRequired);
+          setUserCredits(prev => prev - creditsRequired);
+        } catch (error) {
+          console.error('Error deducting credits:', error);
+          setShowCreditWarning(true);
+          setIsSearching(false);
+          return;
+        }
+        
+        // Calculate how many AI businesses we need
+        const numAINeeded = Math.max(0, 5 - transformedBusinesses.length);
+        
         if (semanticSearchAvailable) {
           const semanticResult = await SemanticSearchService.searchByVibe(searchQuery, {
             latitude,
@@ -338,176 +362,186 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           console.log('⚠️ Semantic search not available');
           usedSemanticSearch = false;
         }
-      }
             
-            if (numAINeeded === 0) {
-              // We already have 5 or more platform businesses, no AI needed
-              setResults(transformedBusinesses.slice(0, 5));
-              console.log('📊 Using platform-only results (5+ available):', searchQuery);
-              trackEvent('search_performed', { 
-                query: searchQuery, 
-                used_ai: false, 
-                credits_deducted: creditsRequired,
-                results_count: Math.min(transformedBusinesses.length, 5),
-                platform_results: Math.min(transformedBusinesses.length, 5),
-                ai_results: 0
-              });
-              return;
-            }
-            
-            // Prepare the AI prompt with context about existing results
-            const aiPrompt = transformedBusinesses.length > 0 
-              ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide ${numAINeeded} different but related businesses that match this search intent.`
-              : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
-
-            const response = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({ 
-                prompt: aiPrompt,
-                searchQuery: searchQuery,
-                existingResultsCount: transformedBusinesses.length,
-                numToGenerate: numAINeeded,
-                latitude: latitude,   // Pass user's latitude from hook
-                longitude: longitude  // Pass user's longitude from hook
-              })
-            }, 25000); // 25 second timeout for AI business search
-            
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error('AI search API error:', response.status, errorText);
-              throw new Error(`AI search failed: ${response.status} - ${errorText}`);
-            }
-            
-            const data = await response.json();
-            console.log('🎯 AI search response:', data);
-            
-            if (data.success && data.results) {
-              // Combine platform businesses with AI-generated businesses
-              const aiGeneratedBusinesses = data.results.map(business => ({
-                ...business,
-                // Ensure all required fields are present
-                id: business.id || `ai-${Date.now()}-${Math.random()}`,
-                rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
-                image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-                isOpen: business.isOpen !== undefined ? business.isOpen : true,
-                hours: business.hours || 'Hours unavailable',
-                address: business.address || 'Address not available',
-                distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10, // Ensure distance is present
-                duration: business.duration || Math.floor(Math.random() * 10 + 5), // Ensure duration is present
-                reviews: business.reviews || [],
-                isPlatformBusiness: false,
-                similarity: business.similarity || 0 // Ensure similarity score is present for AI businesses
-              }));
-              
-              console.log(`🤖 Using AI to enhance search results for: ${searchQuery} (${numAINeeded} AI businesses)`);
-              const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
-              
-              // Sort by semantic relevance first, then platform status, then other factors
-              const sortedResults = combinedResults.sort((a, b) => {
-                // First priority: Semantic similarity score (higher is better)
-                const aSimilarity = a.similarity || 0;
-                const bSimilarity = b.similarity || 0;
-                if (aSimilarity !== bSimilarity) {
-                  return bSimilarity - aSimilarity; // Descending order (higher similarity first)
-                }
-                
-                // Second priority: Platform businesses (only if similarity is equal)
-                if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-                if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
-                
-                // Third priority: Open businesses
-                if (a.isOpen && !b.isOpen) return -1;
-                if (!a.isOpen && b.isOpen) return 1;
-                
-                // Fourth priority: Closest businesses (by distance)
-                if (a.distance && b.distance) {
-                  if (a.distance < b.distance) return -1;
-                  if (a.distance > b.distance) return 1;
-                }
-                
-                return 0;
-              });
-              
-              // Remove duplicates by ID and limit to 5
-              const uniqueResults = sortedResults.filter((business, index, self) => 
-                index === self.findIndex(b => b.id === business.id)
-              ).slice(0, 5);
-              
-              setResults(uniqueResults);
-              console.log('✅ Combined results:', combinedResults.length, 'businesses');
-              
-              trackEvent('search_performed', { 
-                query: searchQuery, 
-                used_ai: needsAI,
-                used_semantic: usedSemanticSearch,
-                credits_deducted: creditsRequired,
-                results_count: uniqueResults.length,
-                platform_results: platformBusinesses.length,
-                ai_results: aiGeneratedBusinesses.length
-              });
-            } else {
-              console.error('AI search failed:', data);
-              throw new Error(data.error || data.message || 'Failed to get AI business suggestions');
-            }
-          } catch (aiError) {
-            console.error('AI search error:', aiError);
-            console.log('🔄 Falling back to platform-only results');
-            
-            // Show error message to user
-            setShowCreditWarning(true);
-            // Sort and limit results: Platform businesses first, then open businesses first, limit to 5 total
-            const sortedResults = transformedBusinesses.sort((a, b) => {
-              // First priority: Semantic similarity score (higher is better)
-              const aSimilarity = a.similarity || 0;
-              const bSimilarity = b.similarity || 0;
-              if (aSimilarity !== bSimilarity) {
-                return bSimilarity - aSimilarity; // Descending order (higher similarity first)
-              }
-              
-              // Second priority: Platform businesses
-              if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-              if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
-              
-              // Third priority: Open businesses
-              if (a.isOpen && !b.isOpen) return -1;
-              if (!a.isOpen && b.isOpen) return 1;
-              
-              // Fourth priority: Closest businesses (by distance)
-              if (a.distance && b.distance) {
-                if (a.distance < b.distance) return -1;
-                if (a.distance > b.distance) return 1;
-              }
-              
-              return 0;
-            }).slice(0, 5);
-            
-            // Fallback to platform businesses if AI search fails
-            // Remove duplicates by ID and limit to 5
-            const uniquePlatformResults = sortedResults.filter((business, index, self) => 
-              index === self.findIndex(b => b.id === business.id)
-            ).slice(0, 5);
-            
-            setResults(uniquePlatformResults);
-            trackEvent('search_performed', { 
-              query: searchQuery, 
-              used_ai: false, 
-              credits_deducted: creditsRequired,
-              results_count: uniquePlatformResults.length,
-              error: aiError.message,
-              fallback: true
-        // Step 2: Perform AI business search for Google Places results
-        console.log('🤖 Performing AI business search for Google Places...');
-        let aiPseudoSemanticResults = [];
-        let needsAI = platformSemanticResults.length < 5; // Use AI if we have fewer than 5 platform results
+        if (numAINeeded === 0) {
+          // We already have 5 or more platform businesses, no AI needed
+          setResults(transformedBusinesses.slice(0, 5));
+          console.log('📊 Using platform-only results (5+ available):', searchQuery);
+          trackEvent('search_performed', { 
+            query: searchQuery, 
+            used_ai: false, 
+            credits_deducted: creditsRequired,
+            results_count: Math.min(transformedBusinesses.length, 5),
+            platform_results: Math.min(transformedBusinesses.length, 5),
+            ai_results: 0
+          });
+          return;
+        }
         
+        // Prepare the AI prompt with context about existing results
+        const aiPrompt = transformedBusinesses.length > 0 
+          ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide ${numAINeeded} different but related businesses that match this search intent.`
+          : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
+
+        const response = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ 
+            prompt: aiPrompt,
+            searchQuery: searchQuery,
+            existingResultsCount: transformedBusinesses.length,
+            numToGenerate: numAINeeded,
+            latitude: latitude,   // Pass user's latitude from hook
+            longitude: longitude  // Pass user's longitude from hook
+          })
+        }, 25000); // 25 second timeout for AI business search
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('AI search API error:', response.status, errorText);
+          throw new Error(`AI search failed: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('🎯 AI search response:', data);
+        
+        if (data.success && data.results) {
+          // Combine platform businesses with AI-generated businesses
+          const aiGeneratedBusinesses = data.results.map(business => ({
+            ...business,
+            // Ensure all required fields are present
+            id: business.id || `ai-${Date.now()}-${Math.random()}`,
+            rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
+            image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+            isOpen: business.isOpen !== undefined ? business.isOpen : true,
+            hours: business.hours || 'Hours unavailable',
+            address: business.address || 'Address not available',
+            distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10, // Ensure distance is present
+            duration: business.duration || Math.floor(Math.random() * 10 + 5), // Ensure duration is present
+            reviews: business.reviews || [],
+            isPlatformBusiness: false,
+            similarity: business.similarity || 0 // Ensure similarity score is present for AI businesses
+          }));
+          
+          console.log(`🤖 Using AI to enhance search results for: ${searchQuery} (${numAINeeded} AI businesses)`);
+          const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
+          
+          // Sort by semantic relevance first, then platform status, then other factors
+          const sortedResults = combinedResults.sort((a, b) => {
+            // First priority: Semantic similarity score (higher is better)
+            const aSimilarity = a.similarity || 0;
+            const bSimilarity = b.similarity || 0;
+            if (aSimilarity !== bSimilarity) {
+              return bSimilarity - aSimilarity; // Descending order (higher similarity first)
+            }
+            
+            // Second priority: Platform businesses (only if similarity is equal)
+            if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+            if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+            
+            // Third priority: Open businesses
+            if (a.isOpen && !b.isOpen) return -1;
+            if (!a.isOpen && b.isOpen) return 1;
+            
+            // Fourth priority: Closest businesses (by distance)
+            if (a.distance && b.distance) {
+              if (a.distance < b.distance) return -1;
+              if (a.distance > b.distance) return 1;
+            }
+            
+            return 0;
+          });
+          
+          // Remove duplicates by ID and limit to 5
+          const uniqueResults = sortedResults.filter((business, index, self) => 
+            index === self.findIndex(b => b.id === business.id)
+          ).slice(0, 5);
+          
+          setResults(uniqueResults);
+          console.log('✅ Combined results:', combinedResults.length, 'businesses');
+          
+          trackEvent('search_performed', { 
+            query: searchQuery, 
+            used_ai: needsAI,
+            used_semantic: usedSemanticSearch,
+            credits_deducted: creditsRequired,
+            results_count: uniqueResults.length,
+            platform_results: platformBusinesses.length,
+            ai_results: aiGeneratedBusinesses.length
+          });
+        } else {
+          console.error('AI search failed:', data);
+          throw new Error(data.error || data.message || 'Failed to get AI business suggestions');
+        }
+      } else {
+        console.error('AI search error:', aiError);
+        console.log('🔄 Falling back to platform-only results');
+        
+        // Show error message to user
+        setShowCreditWarning(true);
+        // Sort and limit results: Platform businesses first, then open businesses first, limit to 5 total
+        const sortedResults = transformedBusinesses.sort((a, b) => {
+          // First priority: Semantic similarity score (higher is better)
+          const aSimilarity = a.similarity || 0;
+          const bSimilarity = b.similarity || 0;
+          if (aSimilarity !== bSimilarity) {
+            return bSimilarity - aSimilarity; // Descending order (higher similarity first)
+          }
+          
+          // Second priority: Platform businesses
+          if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+          if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+          
+          // Third priority: Open businesses
+          if (a.isOpen && !b.isOpen) return -1;
+          if (!a.isOpen && b.isOpen) return 1;
+          
+          // Fourth priority: Closest businesses (by distance)
+          if (a.distance && b.distance) {
+            if (a.distance < b.distance) return -1;
+            if (a.distance > b.distance) return 1;
+          }
+          
+          return 0;
+        }).slice(0, 5);
+        
+        // Fallback to platform businesses if AI search fails
+        // Remove duplicates by ID and limit to 5
+        const uniquePlatformResults = sortedResults.filter((business, index, self) => 
+          index === self.findIndex(b => b.id === business.id)
+        ).slice(0, 5);
+        
+        setResults(uniquePlatformResults);
+        trackEvent('search_performed', { 
+          query: searchQuery, 
+          used_ai: false, 
+          credits_deducted: creditsRequired,
+          results_count: uniquePlatformResults.length,
+          error: aiError.message,
+          fallback: true
+        });
+      }
+      
+      // Step 2: Perform AI business search for Google Places results
+      console.log('🤖 Performing AI business search for Google Places...');
+      let aiPseudoSemanticResults = [];
+      let needsAI = platformSemanticResults.length < 5; // Use AI if we have fewer than 5 platform results
+      
+    } catch (error) {
+      console.error('Search error:', error);
+      setShowCreditWarning(true);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   useEffect(() => {
     const handleKeyPress = (e) => {
-        setResults([]);
       if (e.key === 'Enter' && searchInputRef.current === document.activeElement) {
+        setResults([]);
         handleSearch();
       }
     };
