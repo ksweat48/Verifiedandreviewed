@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Eye, Edit, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { ReviewService } from '../services/reviewService';
 import { BusinessService } from '../services/businessService';
 import BusinessProfileModal from './BusinessProfileModal';

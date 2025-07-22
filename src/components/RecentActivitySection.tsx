@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigation, Star } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import LeaveReviewModal from './LeaveReviewModal';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
