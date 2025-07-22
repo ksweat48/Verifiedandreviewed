@@ -118,6 +118,13 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
     };
   }, [user]);
 
+  // Fetch reviews when switching to My Reviews tab
+  useEffect(() => {
+    if (activeTab === 'my-reviews' && user && user.id) {
+      console.log('Switching to My Reviews tab, fetching reviews...');
+      fetchUserReviews();
+    }
+  }, [activeTab, user]);
   const loadUserData = () => {
     // Fetch user's reviews when component loads
     fetchUserReviews();
