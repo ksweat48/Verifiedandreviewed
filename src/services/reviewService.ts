@@ -134,8 +134,8 @@ export class ReviewService {
           rating,
           image_urls,
           status,
-          created_at as review_created_at,
-          updated_at as review_updated_at,
+          created_at:review_created_at,
+          updated_at:review_updated_at,
           businesses!inner (
             id,
             name,
