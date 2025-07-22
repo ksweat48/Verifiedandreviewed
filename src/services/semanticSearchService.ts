@@ -30,7 +30,7 @@ export class SemanticSearchService {
           query: query.trim(),
           latitude: options.latitude,
           longitude: options.longitude,
-          matchThreshold: options.matchThreshold || 0.7,
+          matchThreshold: options.matchThreshold || 0.65,
           matchCount: options.matchCount || 10
         }),
         timeout: 20000 // 20 second timeout for semantic search

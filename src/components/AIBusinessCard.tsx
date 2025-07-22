@@ -21,6 +21,7 @@ interface BusinessCard {
   duration?: number;
   isGoogleVerified?: boolean;
   placeId?: string;
+  similarity?: number; // Semantic search similarity score (0-1)
 }
 
 const AIBusinessCard: React.FC<{
@@ -51,6 +52,12 @@ const AIBusinessCard: React.FC<{
             <span className="font-poppins text-xs font-semibold text-neutral-700 ml-1">
               {business.rating.toFixed(1)}
             </span>
+            {/* Semantic Similarity Score - Only show if available and > 0 */}
+            {business.similarity && business.similarity > 0 && (
+              <span className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold ml-2">
+                {Math.round(business.similarity * 100)}% match
+              </span>
+            )}
             {business.isGoogleVerified && (
               <span className="font-poppins text-xs text-green-600 font-semibold ml-2">
                 Google Verified

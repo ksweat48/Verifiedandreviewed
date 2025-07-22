@@ -32,6 +32,7 @@ interface BusinessCard {
   tags?: string[];
   distance?: number;
   duration?: number;
+  similarity?: number; // Semantic search similarity score (0-1)
 }
 
 const PlatformBusinessCard: React.FC<{
@@ -163,6 +164,13 @@ const PlatformBusinessCard: React.FC<{
                   </span>
                 )}
               </div>
+              {/* Semantic Similarity Score - Only show if available and > 0 */}
+              {business.similarity && business.similarity > 0 && (
+                <div className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
+                  {Math.round(business.similarity * 100)}% match
+                </div>
+              )}
+              
               
               <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-xs font-poppins font-semibold flex items-center shadow-md ml-auto`}>
                 <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
