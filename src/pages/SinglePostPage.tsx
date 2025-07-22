@@ -4,8 +4,6 @@ import { Star, MapPin, Calendar, User, ArrowLeft, Share2, Heart, MessageCircle, 
 import { useWordPressPost } from '../hooks/useWordPress';
 import { ReviewService } from '../services/reviewService';
 
-// Lazy load components
-const RecommendationButton = React.lazy(() => import('../components/RecommendationButton'));
 const InlineImageGallery = React.lazy(() => import('../components/InlineImageGallery'));
 
 const SinglePostPage = () => {
