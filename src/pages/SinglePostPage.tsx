@@ -204,16 +204,6 @@ const SinglePostPage = () => {
                   </span>
                 </div>
               )}
-
-              {/* Recommendation Button for Unverified Posts */}
-              <React.Suspense fallback={<div className="h-12 bg-neutral-100 rounded-lg animate-pulse"></div>}>
-                <RecommendationButton
-                  postId={post.id}
-                  postSlug={post.slug}
-                  businessName={reviewData.businessName}
-                  isVerified={reviewData.isVerified}
-                />
-              </React.Suspense>
             </div>
 
             {/* INLINE GALLERY IMAGES - RIGHT UNDER FEATURED IMAGE */}
