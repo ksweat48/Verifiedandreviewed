@@ -46,6 +46,7 @@ const SinglePostPage = () => {
     
     fetchUserReviews();
   }, [post]);
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-50">
@@ -418,82 +419,84 @@ const SinglePostPage = () => {
                     Comments
                   </h3>
 
-              {/* Comment Form */}
-              <form onSubmit={handleCommentSubmit} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 mb-8">
-                <h4 className="font-poppins text-lg font-semibold text-neutral-900 mb-4">
-                  Leave a Comment
-                </h4>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <input
-                    type="text"
-                    value={commentName}
-                    onChange={(e) => setCommentName(e.target.value)}
-                    placeholder="Your Name"
-                    required
-                    className="px-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                  <input
-                    type="email"
-                    value={commentEmail}
-                    onChange={(e) => setCommentEmail(e.target.value)}
-                    placeholder="Your Email"
-                    required
-                    className="px-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-                
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Share your thoughts about this review..."
-                  required
-                  rows={4}
-                  className="w-full px-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent mb-4"
-                />
-                
-                <button
-                  type="submit"
-                  className="font-poppins bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
-                >
-                  Post Comment
-                </button>
-              </form>
+                  {/* Comment Form */}
+                  <form onSubmit={handleCommentSubmit} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 mb-8">
+                    <h4 className="font-poppins text-lg font-semibold text-neutral-900 mb-4">
+                      Leave a Comment
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <input
+                        type="text"
+                        value={commentName}
+                        onChange={(e) => setCommentName(e.target.value)}
+                        placeholder="Your Name"
+                        required
+                        className="px-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                      <input
+                        type="email"
+                        value={commentEmail}
+                        onChange={(e) => setCommentEmail(e.target.value)}
+                        placeholder="Your Email"
+                        required
+                        className="px-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    </div>
+                    
+                    <textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="Share your thoughts about this review..."
+                      required
+                      rows={4}
+                      className="w-full px-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent mb-4"
+                    />
+                    
+                    <button
+                      type="submit"
+                      className="font-poppins bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
+                    >
+                      Post Comment
+                    </button>
+                  </form>
 
-              {/* Sample Comments */}
-              <div className="space-y-6">
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-primary-500" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h5 className="font-poppins font-semibold text-neutral-900">Sarah M.</h5>
-                        <span className="font-lora text-sm text-neutral-500">2 days ago</span>
+                  {/* Sample Comments */}
+                  <div className="space-y-6">
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                          <User className="h-5 w-5 text-primary-500" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h5 className="font-poppins font-semibold text-neutral-900">Sarah M.</h5>
+                            <span className="font-lora text-sm text-neutral-500">2 days ago</span>
+                          </div>
+                          <p className="font-lora text-neutral-700 leading-relaxed">
+                            Great review! I visited this place last week and had a similar experience. 
+                            The cleanliness standards really are impressive, and the staff was very helpful.
+                          </p>
+                        </div>
                       </div>
-                      <p className="font-lora text-neutral-700 leading-relaxed">
-                        Great review! I visited this place last week and had a similar experience. 
-                        The cleanliness standards really are impressive, and the staff was very helpful.
-                      </p>
                     </div>
-                  </div>
-                </div>
 
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-accent-100 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-accent-500" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h5 className="font-poppins font-semibold text-neutral-900">Mike R.</h5>
-                        <span className="font-lora text-sm text-neutral-500">1 week ago</span>
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 bg-accent-100 rounded-full flex items-center justify-center">
+                          <User className="h-5 w-5 text-accent-500" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h5 className="font-poppins font-semibold text-neutral-900">Mike R.</h5>
+                            <span className="font-lora text-sm text-neutral-500">1 week ago</span>
+                          </div>
+                          <p className="font-lora text-neutral-700 leading-relaxed">
+                            Thanks for the honest review! The health score system is really helpful 
+                            for making decisions about where to eat.
+                          </p>
+                        </div>
                       </div>
-                      <p className="font-lora text-neutral-700 leading-relaxed">
-                        Thanks for the honest review! The health score system is really helpful 
-                        for making decisions about where to eat.
-                      </p>
                     </div>
                   </div>
                 </div>
