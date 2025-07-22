@@ -36,6 +36,12 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   const [localReviews, setLocalReviews] = useState(reviews);
   const reviewsPerPage = 10;
   
+  // Update local reviews when props change
+  React.useEffect(() => {
+    console.log('🔍 DEBUG: MyReviewsSection received reviews prop:', reviews);
+    setLocalReviews(reviews);
+  }, [reviews]);
+  
   // Simplified for token reduction
   const completedReviews = localReviews.filter(review => 
     review.status === 'published' || 
@@ -52,12 +58,6 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   })));
   
   const currentReviews = completedReviews;
-
-  // Update local reviews when props change
-  React.useEffect(() => {
-    console.log('🔍 DEBUG: MyReviewsSection received reviews prop:', reviews);
-    setLocalReviews(reviews);
-  }, [reviews]);
 
   const handleViewReview = async (review: UserReview) => {
     try {
