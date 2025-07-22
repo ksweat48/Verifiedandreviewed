@@ -50,6 +50,33 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   const [reviews, setReviews] = useState<UserReview[]>([]);
   const [loading, setLoading] = useState(propLoading);
 
+  // Function to fetch user's reviews
+  const fetchUserReviews = async () => {
+    if (user && user.id) {
+      try {
+        const userReviews = await ReviewService.getUserReviews(user.id);
+        
+        const formattedReviews = userReviews.map(review => ({
+          id: review.id,
+          businessName: review.businesses?.name || 'Unknown Business',
+          location: review.businesses?.location || 'Unknown Location',
+          rating: review.rating,
+          status: review.status,
+          isVerified: review.businesses?.is_verified || false,
+          publishDate: review.created_at,
+          views: 0 // We don't track views yet
+        }));
+        
+        setReviews(formattedReviews);
+      } catch (err) {
+        console.error('Error fetching user reviews:', err);
+        setReviews([]);
+      }
+    } else {
+      setReviews([]);
+    }
+  };
+
   useEffect(() => {
     if (propUser) {
       setUser(propUser);
@@ -75,36 +102,23 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
     fetchMyBusinessesCount();
   }, [user]);
 
-  const loadUserData = () => {
-    // Instead of using mock data, we'll fetch real data
-    if (user && user.id) {
-      // Fetch user's reviews
-      const fetchUserReviews = async () => {
-        try {
-          const userReviews = await ReviewService.getUserReviews(user.id);
-          
-          const formattedReviews = userReviews.map(review => ({
-            id: review.id,
-            businessName: review.businesses?.name || 'Unknown Business',
-            location: review.businesses?.location || 'Unknown Location',
-            rating: review.rating,
-            status: review.status,
-            isVerified: review.businesses?.is_verified || false,
-            publishDate: review.created_at,
-            views: 0 // We don't track views yet
-          }));
-          
-          setReviews(formattedReviews);
-        } catch (err) {
-          console.error('Error fetching user reviews:', err);
-          setReviews([]);
-        }
-      };
-      
+  // Listen for review updates
+  useEffect(() => {
+    const handleReviewUpdate = () => {
+      console.log('Review update event received, refreshing reviews...');
       fetchUserReviews();
-    } else {
-      setReviews([]);
-    }
+    };
+    
+    window.addEventListener('visited-businesses-updated', handleReviewUpdate);
+    
+    return () => {
+      window.removeEventListener('visited-businesses-updated', handleReviewUpdate);
+    };
+  }, [user]);
+
+  const loadUserData = () => {
+    // Fetch user's reviews when component loads
+    fetchUserReviews();
   };
 
   const getNextLevelProgress = () => {
