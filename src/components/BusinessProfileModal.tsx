@@ -209,9 +209,9 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
             >
               <Icons.MessageSquare className="h-5 w-5 inline mr-2" />
               Reviews
-              {business.thumbs_up && (
+              {businessReviews.length > 0 && (
                 <span className="ml-2 bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full text-xs">
-                  {business.thumbs_up}
+                  {businessReviews.length}
                 </span>
               )}
             </button>
