@@ -340,23 +340,31 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10, // Ensure distance is present
                 duration: business.duration || Math.floor(Math.random() * 10 + 5), // Ensure duration is present
                 reviews: business.reviews || [],
-                isPlatformBusiness: false
+                isPlatformBusiness: false,
+                similarity: business.similarity || 0 // Ensure similarity score is present for AI businesses
               }));
               
               console.log(`🤖 Using AI to enhance search results for: ${searchQuery} (${numAINeeded} AI businesses)`);
               const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
               
-              // Sort and limit results: Platform businesses first, then open businesses, then closest, limit to 5 total
+              // Sort by semantic relevance first, then platform status, then other factors
               const sortedResults = combinedResults.sort((a, b) => {
-                // First priority: Platform businesses
+                // First priority: Semantic similarity score (higher is better)
+                const aSimilarity = a.similarity || 0;
+                const bSimilarity = b.similarity || 0;
+                if (aSimilarity !== bSimilarity) {
+                  return bSimilarity - aSimilarity; // Descending order (higher similarity first)
+                }
+                
+                // Second priority: Platform businesses (only if similarity is equal)
                 if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
                 if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
                 
-                // First priority: Open businesses
+                // Third priority: Open businesses
                 if (a.isOpen && !b.isOpen) return -1;
                 if (!a.isOpen && b.isOpen) return 1;
                 
-                // Second priority: Closest businesses (by distance)
+                // Fourth priority: Closest businesses (by distance)
                 if (a.distance && b.distance) {
                   if (a.distance < b.distance) return -1;
                   if (a.distance > b.distance) return 1;
@@ -394,15 +402,22 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             setShowCreditWarning(true);
             // Sort and limit results: Platform businesses first, then open businesses first, limit to 5 total
             const sortedResults = transformedBusinesses.sort((a, b) => {
-              // First priority: Platform businesses
+              // First priority: Semantic similarity score (higher is better)
+              const aSimilarity = a.similarity || 0;
+              const bSimilarity = b.similarity || 0;
+              if (aSimilarity !== bSimilarity) {
+                return bSimilarity - aSimilarity; // Descending order (higher similarity first)
+              }
+              
+              // Second priority: Platform businesses
               if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
               if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
               
-              // Second priority: Open businesses
+              // Third priority: Open businesses
               if (a.isOpen && !b.isOpen) return -1;
               if (!a.isOpen && b.isOpen) return 1;
               
-              // Third priority: Closest businesses (by distance)
+              // Fourth priority: Closest businesses (by distance)
               if (a.distance && b.distance) {
                 if (a.distance < b.distance) return -1;
                 if (a.distance > b.distance) return 1;
@@ -430,15 +445,22 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         } else {
           // Just use the platform businesses
           const sortedResults = transformedBusinesses.sort((a, b) => {
-            // First priority: Platform businesses (all are platform businesses here)
+            // First priority: Semantic similarity score (higher is better)
+            const aSimilarity = a.similarity || 0;
+            const bSimilarity = b.similarity || 0;
+            if (aSimilarity !== bSimilarity) {
+              return bSimilarity - aSimilarity; // Descending order (higher similarity first)
+            }
+            
+            // Second priority: Platform businesses (all are platform businesses here, so this is mostly redundant)
             if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
             if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
             
-            // Second priority: Open businesses
+            // Third priority: Open businesses
             if (a.isOpen && !b.isOpen) return -1;
             if (!a.isOpen && b.isOpen) return 1;
             
-            // Third priority: Closest businesses (by distance)
+            // Fourth priority: Closest businesses (by distance)
             if (a.distance && b.distance) {
               if (a.distance < b.distance) return -1;
               if (a.distance > b.distance) return 1;
