@@ -142,6 +142,7 @@ export class ReviewService {
             location,
             is_verified
           )
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
