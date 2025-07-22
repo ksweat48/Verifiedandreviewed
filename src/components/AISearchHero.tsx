@@ -269,6 +269,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       let transformedBusinesses = [];
       let platformBusinesses = [];
       let aiBusinesses = [];
+      let platformSemanticResults = [];
       let needsAI = !usedSemanticSearch; // Only use AI if semantic search wasn't successful
 
       if (usedSemanticSearch) {
@@ -539,11 +540,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           ai_results: 0
         });
       }
-      
-      // Step 2: Perform AI business search for Google Places results
-      console.log('🤖 Performing AI business search for Google Places...');
-      let aiPseudoSemanticResults = [];
-      needsAI = platformSemanticResults.length < 5; // Use AI if we have fewer than 5 platform results
       
     } catch (error) {
       console.error('Search error:', error);
