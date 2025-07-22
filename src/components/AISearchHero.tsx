@@ -197,6 +197,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
+    // Initialize credit variables at the start of the function
+    let creditsRequired = 1; // Default for platform-only search
+    let searchType = 'platform';
+
     // If user is not authenticated or not current user, show signup prompt instead of searching
     if (!isAuthenticated || !currentUser) {
       setShowSignupPrompt(true);
@@ -237,6 +241,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       if (semanticSearchAvailable && useSemanticSearch) {
         console.log('🧠 Attempting semantic search...');
         console.log('🔍 Search query:', searchQuery);
+        
+        // Update credits for semantic search
+        creditsRequired = 5;
+        searchType = 'semantic';
         
         const semanticResult = await SemanticSearchService.searchByVibe(searchQuery, {
           latitude,
@@ -315,7 +323,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       if (needsAI && !usedSemanticSearch) {
         // Check if user has enough credits for AI search
-        const creditsRequired = 10; // AI search costs 10 credits
+        creditsRequired = 10; // AI search costs 10 credits
+        searchType = 'ai';
         
         if (userCredits < creditsRequired) {
           setShowCreditWarning(true);
@@ -325,7 +334,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         
         // Deduct credits before AI search
         try {
-          await CreditService.deductCredits(creditsRequired);
+          await CreditService.deductSearchCredits(currentUser.id, searchType);
           setUserCredits(prev => prev - creditsRequired);
         } catch (error) {
           console.error('Error deducting credits:', error);
@@ -370,7 +379,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false, 
-            credits_deducted: creditsRequired,
+            credits_deducted: 1, // Platform-only search costs 1 credit
             results_count: Math.min(transformedBusinesses.length, 5),
             platform_results: Math.min(transformedBusinesses.length, 5),
             ai_results: 0
@@ -512,13 +521,22 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         ).slice(0, 5);
         
         setResults(uniquePlatformResults);
+        
+        // Deduct credits for the search that was actually performed
+        try {
+          await CreditService.deductSearchCredits(currentUser.id, searchType);
+          setUserCredits(prev => prev - creditsRequired);
+        } catch (error) {
+          console.error('Error deducting credits:', error);
+        }
+        
         trackEvent('search_performed', { 
           query: searchQuery, 
           used_ai: false, 
           credits_deducted: creditsRequired,
           results_count: uniquePlatformResults.length,
-          error: error.message,
-          fallback: true
+          platform_results: uniquePlatformResults.length,
+          ai_results: 0
         });
       }
       
