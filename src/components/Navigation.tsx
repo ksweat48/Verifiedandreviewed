@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Camera, Upload, Star, MapPin, Tag, ChevronRight, ChevronLeft, Check, X, Loader2 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { CreditService } from '../services/creditService';
 import { supabase } from '../services/supabaseClient';
 import { UserService } from '../services/userService';
 import { useNavigate } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
-import type { UserReview } from '../services/supabaseClient';
 
 interface ReviewFormData {
   featuredImage: string | null; // Changed to store URL
