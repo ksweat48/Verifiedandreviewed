@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from 'react';
 
-// Lazy load components to reduce initial bundle size
 const AISearchHero = lazy(() => import('../components/AISearchHero')); 
 const FeaturedBlogSection = lazy(() => import('../components/FeaturedBlogSection'));
 const ExploreArea = lazy(() => import('../components/ExploreArea'));

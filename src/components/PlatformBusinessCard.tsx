@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import ReviewerProfile from './ReviewerProfile';
 import ImageGalleryPopup from './ImageGalleryPopup';
@@ -34,7 +34,6 @@ interface BusinessCard {
   duration?: number;
 }
 
-// Platform Business Card Component - Full featured card for verified businesses
 const PlatformBusinessCard: React.FC<{
   business: BusinessCard;
   onRecommend: (business: BusinessCard) => void;
@@ -78,8 +77,8 @@ const PlatformBusinessCard: React.FC<{
     const reviewer = {
       name: review.author,
       image: review.authorImage || "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100",
-      level: Math.floor(Math.random() * 5) + 1, // Random level 1-5
-      reviewCount: Math.floor(Math.random() * 50) + 1, // Random count 1-50
+      level: Math.floor(Math.random() * 5) + 1,
+      reviewCount: Math.floor(Math.random() * 50) + 1,
       joinDate: '2023-' + (Math.floor(Math.random() * 12) + 1) + '-' + (Math.floor(Math.random() * 28) + 1),
       bio: `Food enthusiast and travel blogger. I love discovering hidden gems and sharing honest reviews about my experiences.`,
       reviews: [
@@ -89,21 +88,6 @@ const PlatformBusinessCard: React.FC<{
           date: new Date().toLocaleDateString(),
           rating: review.thumbsUp ? 'thumbsUp' as const : 'thumbsDown' as const,
           text: review.text
-        },
-        // Add some mock previous reviews
-        {
-          businessName: 'Coastal Breeze Cafe',
-          location: 'Santa Monica, CA',
-          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-          rating: 'thumbsUp' as const,
-          text: 'Fantastic ocean views and the freshest seafood. Highly recommended for sunset dining!'
-        },
-        {
-          businessName: 'Mountain Lodge Restaurant',
-          location: 'Denver, CO',
-          date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-          rating: 'thumbsUp' as const,
-          text: 'Cozy atmosphere with amazing comfort food. Perfect after a day of hiking.'
         }
       ]
     };
@@ -193,7 +177,6 @@ const PlatformBusinessCard: React.FC<{
         <div className="relative bg-neutral-50 rounded-lg p-4 pr-14 flex-grow flex flex-col">
             {business.reviews && business.reviews.length > 0 ? (
               <div>
-                {/* Review Images */}
                 {business.reviews[currentReviewIndex]?.images && business.reviews[currentReviewIndex].images.length > 0 && (
                   <div className="review-images-row flex gap-1 mb-1">
                     {business.reviews[currentReviewIndex].images.slice(0, 3).map((image, index) => (
@@ -260,7 +243,6 @@ const PlatformBusinessCard: React.FC<{
               </div>
             )}
             
-            {/* GO button positioned at bottom right */}
             <button
               onClick={(e) => {e.stopPropagation(); onTakeMeThere(business);}}
               className="absolute bottom-3 right-3 w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
@@ -268,21 +250,8 @@ const PlatformBusinessCard: React.FC<{
               GO
             </button>
         </div>
-          
-          {/* Image Gallery Popup */}
-          {business.reviews && 
-           business.reviews[currentReviewIndex]?.images && 
-           business.reviews[currentReviewIndex].images.length > 0 && (
-            <ImageGalleryPopup
-              isOpen={galleryOpen}
-              onClose={() => setGalleryOpen(false)}
-              images={business.reviews[currentReviewIndex].images || []}
-              initialIndex={galleryInitialIndex}
-            />
-           )}
       </div>
       
-      {/* Reviewer Profile Modal */}
       {selectedReviewer && (
         <ReviewerProfile
           isOpen={reviewerProfileOpen}
@@ -291,7 +260,6 @@ const PlatformBusinessCard: React.FC<{
         />
       )}
       
-      {/* Image Gallery Popup - Standalone */}
       {business.reviews && 
        business.reviews[currentReviewIndex]?.images && business.reviews[currentReviewIndex].images.length > 0 && (
          <ImageGalleryPopup
@@ -302,7 +270,6 @@ const PlatformBusinessCard: React.FC<{
          />
        )}
       
-      {/* Business Profile Modal */}
       <BusinessProfileModal
         isOpen={businessProfileOpen}
         onClose={() => setBusinessProfileOpen(false)}
