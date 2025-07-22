@@ -63,8 +63,7 @@ const ReviewSubmissionForm = () => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
-      const filePath = `${path}/${currentUser.id}/${fileName}`; // Organize by user ID
-      const filePath = `public/${user.id}/${fileName}`;
+      const filePath = `${currentUser.id}/${path}/${fileName}`; // Corrected path: user_id/folder_type/filename
       const { error: uploadError } = await supabase.storage
         .from('review-images')
         .upload(filePath, file, {
