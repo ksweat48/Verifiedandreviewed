@@ -70,32 +70,41 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
 
   const handleViewReview = async (review: UserReview) => {
     try {
-      // For now, we'll use the business name to create a mock business object
-      // In a real implementation, you'd fetch the actual business data
-      const mockBusiness: Business = {
-        id: review.id,
-        name: review.businessName,
-        address: review.location,
-        location: review.location,
-        category: 'General',
-        tags: [],
-        description: `Business associated with review`,
-        image_url: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-        gallery_urls: [],
-        hours: 'Hours not available',
-        is_verified: review.isVerified,
-        thumbs_up: 0,
-        thumbs_down: 0,
-        sentiment_score: 0,
-        created_at: review.publishDate,
-        updated_at: review.publishDate
-      };
+      // Fetch the complete business data from the database
+      console.log('🔍 Fetching business details for ID:', review.businessId);
+      const business = await BusinessService.getBusinessById(review.businessId);
       
-      setSelectedBusinessForProfile(mockBusiness);
+      if (business) {
+        console.log('✅ Business data fetched successfully:', business.name);
+        setSelectedBusinessForProfile(business);
+      } else {
+        console.error('❌ Business not found for ID:', review.businessId);
+        // Fallback to mock business if fetch fails
+        const fallbackBusiness: Business = {
+          id: review.businessId,
+          name: review.businessName,
+          address: review.location,
+          location: review.location,
+          category: 'General',
+          tags: [],
+          description: `Business information not available`,
+          image_url: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+          gallery_urls: [],
+          hours: 'Hours not available',
+          is_verified: review.isVerified,
+          thumbs_up: 0,
+          thumbs_down: 0,
+          sentiment_score: 0,
+          created_at: review.publishDate,
+          updated_at: review.publishDate
+        };
+        setSelectedBusinessForProfile(fallbackBusiness);
+      }
+      
       setIsBusinessProfileModalOpen(true);
     } catch (error) {
       console.error('Error viewing review:', error);
-      alert('Failed to load business details');
+      alert('Failed to load business details. Please try again.');
     }
   };
 
