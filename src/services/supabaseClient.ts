@@ -4,6 +4,17 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+// Debug: Log the actual values being used
+console.log('🔍 Supabase Configuration Debug:');
+console.log('  VITE_SUPABASE_URL:', supabaseUrl);
+console.log('  VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'MISSING');
+console.log('  Environment variables loaded:', {
+  url: !!supabaseUrl,
+  key: !!supabaseAnonKey,
+  urlLength: supabaseUrl.length,
+  keyLength: supabaseAnonKey.length
+});
+
 // Check if we're in development mode
 const isDevelopment = import.meta.env.DEV;
 
