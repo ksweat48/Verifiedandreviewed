@@ -59,9 +59,12 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
   // Reset form when reviewToEdit changes
   useEffect(() => {
     console.log('🔍 DEBUG: reviewToEdit changed:', reviewToEdit);
-    console.log('🔍 DEBUG: review_text value:', reviewToEdit?.review_text);
-    console.log('🔍 DEBUG: rating value:', reviewToEdit?.rating);
-    console.log('🔍 DEBUG: image_urls:', reviewToEdit?.image_urls);
+    if (reviewToEdit) {
+      console.log('🔍 DEBUG: Full reviewToEdit object:', JSON.stringify(reviewToEdit, null, 2));
+      console.log('🔍 DEBUG: review_text value:', reviewToEdit?.review_text);
+      console.log('🔍 DEBUG: rating value:', reviewToEdit?.rating);
+      console.log('🔍 DEBUG: image_urls:', reviewToEdit?.image_urls);
+    }
     
     if (reviewToEdit) {
       // Pre-fill form with existing review data

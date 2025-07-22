@@ -59,7 +59,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
         
         const formattedReviews = userReviews.map(review => ({
           id: review.id,
-          businessId: review.business_id,
+          businessId: review.business_id, 
           businessName: review.businesses?.name || 'Unknown Business',
           location: review.businesses?.location || 'Unknown Location',
           rating: review.rating,
