@@ -21,7 +21,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   const reviewsPerPage = 10;
   
   // Simplified for token reduction
-  const completedReviews = reviews.filter(review => review.status === 'published');
+  const completedReviews = reviews.filter(review => review.status === 'published' || review.status === 'pending');
   const currentReviews = completedReviews.slice(0, 5);
 
   return (
@@ -52,6 +52,18 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                     <h3 className="font-poppins text-lg font-semibold text-neutral-900">
                       {review.businessName}
                     </h3>
+                    {/* Status Badge */}
+                    <div className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
+                      review.status === 'published' 
+                        ? 'bg-green-100 text-green-700' 
+                        : review.status === 'pending'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {review.status === 'published' ? 'Published' : 
+                       review.status === 'pending' ? 'Pending Approval' : 
+                       'Draft'}
+                    </div>
                     {/* Thumbs Up/Down Rating */}
                     {review.rating >= 4 ? (
                       <div className="flex items-center text-green-600">
