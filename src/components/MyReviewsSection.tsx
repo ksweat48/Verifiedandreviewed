@@ -44,18 +44,14 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   }, [reviews]);
   
   // Use the reviews prop directly instead of localReviews for filtering
-  const completedReviews = reviews.filter(review => 
+  const completedReviews = reviews.filter(review => {
     console.log('🔍 DEBUG: Checking review:', review.id, 'status:', review.status, 'typeof:', typeof review.status);
     const isValidStatus = review.status === 'published' || 
                          review.status === 'pending' || 
                          review.status === 'approved';
     console.log('🔍 DEBUG: Status check result for', review.id, ':', isValidStatus);
     return isValidStatus;
-                           review.status === 'approved';
-      console.log('🔍 DEBUG: Status check result:', isValidStatus);
-      return isValidStatus;
-    }
-  );
+  });
   
   console.log('🔍 DEBUG: reviews prop before filtering:', reviews);
   console.log('🔍 DEBUG: completedReviews after filtering:', completedReviews);
@@ -131,6 +127,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
       setDeletingReviewId(null);
     }
   };
+  
   return (
     <>
       <div className="space-y-6">
@@ -218,7 +215,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                     <Eye className="h-4 w-4" />
                   </button>
                   <button 
-                    onClick={() => handleEditReview(review.id)}
+                    onClick={() => handleEditReview(review)}
                     className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
                     title="Edit"
                   >
