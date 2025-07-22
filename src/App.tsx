@@ -12,7 +12,6 @@ const SinglePostPage = lazy(() => import('./pages/SinglePostPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const ReviewerDashboardPage = lazy(() => import('./pages/ReviewerDashboardPage'));
-const SubmitReviewPage = lazy(() => import('./pages/SubmitReviewPage'));
 const AddBusinessPage = lazy(() => import('./pages/AddBusinessPage'));
 
 function App() {
@@ -54,7 +53,6 @@ function App() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/dashboard" element={<ReviewerDashboardPage />} />
           <Route path="/account" element={<AccountPage />} />
-          <Route path="/submit-review" element={<SubmitReviewPage />} />
           <Route path="/add-business" element={<AddBusinessPage />} />
         </Routes>
       </Suspense>

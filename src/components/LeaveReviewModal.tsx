@@ -60,6 +60,17 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
 
   // Reset form when reviewToEdit changes
   useEffect(() => {
+    console.log('🔍 DEBUG: reviewToEdit changed:', reviewToEdit);
+    console.log('🔍 DEBUG: review_text value:', reviewToEdit?.review_text);
+    console.log('🔍 DEBUG: rating value:', reviewToEdit?.rating);
+    console.log('🔍 DEBUG: image_urls:', reviewToEdit?.image_urls);
+    
+    setRating(getThumbsRating(reviewToEdit?.rating));
+    setReviewText(reviewToEdit?.review_text || '');
+    setImages(reviewToEdit?.image_urls?.map(url => ({ file: null as any, preview: url })) || []);
+  }, [reviewToEdit]);
+  // Reset form when reviewToEdit changes
+  useEffect(() => {
     setRating(getThumbsRating(reviewToEdit?.rating));
     setReviewText(reviewToEdit?.review_text || '');
     setImages(reviewToEdit?.image_urls?.map(url => ({ file: null as any, preview: url })) || []);
