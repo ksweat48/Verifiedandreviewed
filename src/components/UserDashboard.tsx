@@ -71,6 +71,29 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
           review_text: review.review_text || ''
         }));
         
+        console.log('🔍 DEBUG: Raw userReviews from Supabase:', userReviews);
+        console.log('🔍 DEBUG: Formatted reviews before setting state:', formattedReviews);
+        setReviews(formattedReviews);
+      } catch (err) {
+        console.error('Error fetching user reviews:', err);
+        setReviews([]);
+      }
+    } else {
+      setReviews([]);
+    }
+  };
+          businessId: review.business_id, 
+          businessName: review.businesses?.name || 'Unknown Business',
+          location: review.businesses?.location || 'Unknown Location',
+          rating: review.rating,
+          status: review.status,
+          isVerified: review.businesses?.is_verified || false,
+          publishDate: review.created_at,
+          views: 0, // We don't track views yet
+          image_urls: review.image_urls || [],
+          review_text: review.review_text || ''
+        }));
+        
         console.log('Formatted reviews before setting state:', formattedReviews);
         setReviews(formattedReviews);
       } catch (err) {

@@ -46,6 +46,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
 
   // Update local reviews when props change
   React.useEffect(() => {
+    console.log('🔍 DEBUG: MyReviewsSection received reviews prop:', reviews);
     setLocalReviews(reviews);
   }, [reviews]);
 
@@ -81,6 +82,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   };
 
   const handleEditReview = (review: UserReview) => {
+    console.log('🔍 DEBUG: handleEditReview called with:', review);
     setReviewToEdit(review);
     setIsEditReviewModalOpen(true);
   };
