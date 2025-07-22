@@ -50,11 +50,9 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
   reviewToEdit,
   onSubmitReview
 }) => {
-  const [rating, setRating] = useState<'thumbsUp' | 'thumbsDown' | null>(getThumbsRating(reviewToEdit?.rating));
-  const [reviewText, setReviewText] = useState(reviewToEdit?.review_text || '');
-  const [images, setImages] = useState<ReviewImage[]>(
-    reviewToEdit?.image_urls?.map(url => ({ file: null as any, preview: url })) || []
-  );
+  const [rating, setRating] = useState<'thumbsUp' | 'thumbsDown' | null>(null);
+  const [reviewText, setReviewText] = useState('');
+  const [images, setImages] = useState<ReviewImage[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
 
@@ -65,9 +63,17 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
     console.log('🔍 DEBUG: rating value:', reviewToEdit?.rating);
     console.log('🔍 DEBUG: image_urls:', reviewToEdit?.image_urls);
     
-    setRating(getThumbsRating(reviewToEdit?.rating));
-    setReviewText(reviewToEdit?.review_text || '');
-    setImages(reviewToEdit?.image_urls?.map(url => ({ file: null as any, preview: url })) || []);
+    if (reviewToEdit) {
+      // Pre-fill form with existing review data
+      setRating(getThumbsRating(reviewToEdit.rating));
+      setReviewText(reviewToEdit.review_text || '');
+      setImages(reviewToEdit.image_urls?.map(url => ({ file: null as any, preview: url })) || []);
+    } else {
+      // Reset form for new review
+      setRating(null);
+      setReviewText('');
+      setImages([]);
+    }
   }, [reviewToEdit]);
   // Reset form when reviewToEdit changes
   useEffect(() => {

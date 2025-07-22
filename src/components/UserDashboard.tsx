@@ -68,7 +68,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
           publishDate: review.created_at,
           views: 0, // We don't track views yet
           image_urls: review.image_urls || [],
-          review_text: review.review_text
+          review_text: review.review_text || ''
         }));
         
         console.log('Formatted reviews before setting state:', formattedReviews);
