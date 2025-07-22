@@ -134,8 +134,8 @@ export class ReviewService {
           rating,
           image_urls,
           status,
-          created_at,
-          updated_at,
+          created_at as review_created_at,
+          updated_at as review_updated_at,
           businesses!inner (
             id,
             name,
@@ -144,7 +144,7 @@ export class ReviewService {
           )
         `)
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('review_created_at', { ascending: false });
 
       console.log('Supabase query result for user reviews:', data);
       if (error) throw error;
