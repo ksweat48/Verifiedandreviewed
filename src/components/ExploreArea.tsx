@@ -98,21 +98,6 @@ const ExploreArea = () => {
           };
         })
       );
-        id: business.id,
-        name: business.name,
-        rating: {
-          thumbsUp: business.thumbs_up || 0,
-          thumbsDown: business.thumbs_down || 0,
-          sentimentScore: business.sentiment_score || 0
-        },
-        image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-        isOpen: true, // Default to open since we don't have real-time status
-        hours: business.hours || 'Hours unavailable',
-        address: business.address || '',
-        reviews: [], // We'll need to fetch reviews separately
-        isPlatformBusiness: business.is_verified || false,
-        tags: business.tags || []
-      }));
       
       setBusinesses(businessesWithReviews.slice(0, 6));
     } catch (error) {
