@@ -50,6 +50,47 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
     setLocalReviews(reviews);
   }, [reviews]);
 
+  const fetchUserReviews = async () => {
+    if (user && user.id) {
+      try {
+        console.log('Fetching reviews for user ID:', user.id);
+        const userReviews = await ReviewService.getUserReviews(user.id);
+        
+        console.log('🔍 DEBUG: Raw userReviews from service:', userReviews);
+        console.log('🔍 DEBUG: Number of reviews returned:', userReviews.length);
+        if (userReviews.length > 0) {
+          console.log('🔍 DEBUG: First review raw data:', userReviews[0]);
+          console.log('🔍 DEBUG: First review review_text:', userReviews[0].review_text);
+          console.log('🔍 DEBUG: First review rating:', userReviews[0].rating);
+          console.log('🔍 DEBUG: First review image_urls:', userReviews[0].image_urls);
+        }
+        
+        const formattedReviews = userReviews.map(review => ({
+          id: review.id,
+          businessId: review.business_id,
+          businessName: review.businesses?.name || 'Unknown Business',
+          location: review.businesses?.location || 'Unknown Location',
+          rating: review.rating,
+          status: review.status,
+          isVerified: review.businesses?.is_verified || false,
+          publishDate: review.created_at,
+          views: 0, // We don't track views yet
+          image_urls: review.image_urls || [],
+          review_text: review.review_text
+        }));
+        
+        console.log('🔍 DEBUG: Formatted reviews before setState:', formattedReviews);
+        if (formattedReviews.length > 0) {
+          console.log('🔍 DEBUG: First formatted review:', formattedReviews[0]);
+          console.log('🔍 DEBUG: First formatted review review_text:', formattedReviews[0].review_text);
+          console.log('🔍 DEBUG: First formatted review rating:', formattedReviews[0].rating);
+          console.log('🔍 DEBUG: First formatted review image_urls:', formattedReviews[0].image_urls);
+        }
+        
+        console.log('Formatted reviews before setting state:', formattedReviews);
+        setReviews(formattedReviews);
+      } catch (err) {
+
   const handleViewReview = async (review: UserReview) => {
     try {
       // For now, we'll use the business name to create a mock business object
