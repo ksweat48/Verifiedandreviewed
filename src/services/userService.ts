@@ -5,6 +5,8 @@ export class UserService {
   // Get current user from WordPress
   static async getCurrentUser(): Promise<User | null> {
     try {
+      console.log('🔍 UserService.getCurrentUser() called');
+      
       // Check if Supabase is properly configured
       if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
         console.warn('Supabase not configured. Using mock user data.');
@@ -25,23 +27,31 @@ export class UserService {
       }
 
       // Check for auth token
+      console.log('🔍 Checking Supabase session...');
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 Session result:', session ? 'Session found' : 'No session', session?.user?.id);
       if (!session) return null;
 
       // Mock user data for demo (replace with actual WordPress API call)
       try {
         // Try to get user from Supabase
+        console.log('🔍 Getting authenticated user from Supabase...');
         const { data: { user: authUser } } = await supabase.auth.getUser();
+        console.log('🔍 Auth user result:', authUser ? 'User found' : 'No user', authUser?.id);
         if (!authUser) throw new Error('No authenticated user');
         
+        console.log('🔍 Fetching user profile from profiles table...');
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', authUser.id)
           .single();
           
+        console.log('🔍 Profile query result:', { profile: profile ? 'Profile found' : 'No profile', error: error ? error.message : 'No error' });
+        
         if (error || !profile) throw error;
         
+        console.log('✅ Successfully fetched user profile:', profile.id, profile.name);
         return {
           id: profile.id,
           name: profile.name,
@@ -57,24 +67,21 @@ export class UserService {
           lastLogin: new Date().toISOString()
         };
       } catch (error) {
+        console.error('❌ Error fetching user profile from Supabase:', error);
+        console.error('❌ Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: error?.code,
+          details: error?.details,
+          hint: error?.hint
+        });
+        
         // Fallback to mock user if Supabase fails
-        const mockUser: User = {
-          id: '1',
-          name: 'Sarah Johnson',
-          email: 'sarah@example.com',
-          avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150',
-          role: 'user',
-          credits: 200,
-          level: 3,
-          joinDate: '2023-06-15',
-          bio: 'Food enthusiast and travel blogger. Love discovering hidden gems!',
-          status: 'active',
-          lastLogin: new Date().toISOString()
-        };
-        return mockUser;
+        console.warn('⚠️ Returning null instead of mock user to debug the issue');
+        return null;
       }
 
     } catch (error) {
+      console.error('❌ Outer error in getCurrentUser:', error);
       return null;
     }
   }
