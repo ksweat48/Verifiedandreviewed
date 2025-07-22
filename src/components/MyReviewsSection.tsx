@@ -19,7 +19,6 @@ interface UserReview {
   views: number;
   image_urls?: string[];
   review_text?: string;
-  review_text?: string;
 }
 
 interface MyReviewsSectionProps {
