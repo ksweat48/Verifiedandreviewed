@@ -477,7 +477,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           throw new Error(data.error || data.message || 'Failed to get AI business suggestions');
         }
       } else {
-        console.error('AI search error:', aiError);
+        console.error('AI search error:', error);
         console.log('🔄 Falling back to platform-only results');
         
         // Show error message to user
@@ -520,7 +520,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           used_ai: false, 
           credits_deducted: creditsRequired,
           results_count: uniquePlatformResults.length,
-          error: aiError.message,
+          error: error.message,
           fallback: true
         });
       }
