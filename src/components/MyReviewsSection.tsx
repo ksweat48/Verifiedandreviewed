@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Eye, Edit, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ReviewService } from '../services/reviewService';
+import { BusinessService } from '../services/businessService';
+import BusinessProfileModal from './BusinessProfileModal';
+import type { Business } from '../services/supabaseClient';
 
 interface UserReview {
   id: string;
@@ -17,19 +22,87 @@ interface MyReviewsSectionProps {
 }
 
 const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
+  const [isBusinessProfileModalOpen, setIsBusinessProfileModalOpen] = useState(false);
+  const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const [localReviews, setLocalReviews] = useState(reviews);
   const reviewsPerPage = 10;
   
   // Simplified for token reduction
-  const completedReviews = reviews.filter(review => 
+  const completedReviews = localReviews.filter(review => 
     review.status === 'published' || 
     review.status === 'pending' || 
     review.status === 'approved'
   );
   const currentReviews = completedReviews;
 
+  // Update local reviews when props change
+  React.useEffect(() => {
+    setLocalReviews(reviews);
+  }, [reviews]);
+
+  const handleViewReview = async (review: UserReview) => {
+    try {
+      // For now, we'll use the business name to create a mock business object
+      // In a real implementation, you'd fetch the actual business data
+      const mockBusiness: Business = {
+        id: review.id,
+        name: review.businessName,
+        address: review.location,
+        location: review.location,
+        category: 'General',
+        tags: [],
+        description: `Business associated with review`,
+        image_url: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+        gallery_urls: [],
+        hours: 'Hours not available',
+        is_verified: review.isVerified,
+        thumbs_up: 0,
+        thumbs_down: 0,
+        sentiment_score: 0,
+        created_at: review.publishDate,
+        updated_at: review.publishDate
+      };
+      
+      setSelectedBusinessForProfile(mockBusiness);
+      setIsBusinessProfileModalOpen(true);
+    } catch (error) {
+      console.error('Error viewing review:', error);
+      alert('Failed to load business details');
+    }
+  };
+
+  const handleEditReview = (reviewId: string) => {
+    navigate(`/submit-review?edit=${reviewId}`);
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm('Are you sure you want to delete this review? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeletingReviewId(reviewId);
+    try {
+      const success = await ReviewService.deleteReview(reviewId);
+      if (success) {
+        // Remove the review from local state
+        setLocalReviews(prev => prev.filter(review => review.id !== reviewId));
+        alert('Review deleted successfully');
+      } else {
+        throw new Error('Delete operation failed');
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      alert('Failed to delete review. Please try again.');
+    } finally {
+      setDeletingReviewId(null);
+    }
+  };
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="font-cinzel text-2xl font-bold text-neutral-900">
           My Reviews ({completedReviews.length})
@@ -107,22 +180,30 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                 
                 <div className="flex items-center gap-2">
                   <button 
+                    onClick={() => handleViewReview(review)}
                     className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                     title="View"
                   >
                     <Eye className="h-4 w-4" />
                   </button>
                   <button 
+                    onClick={() => handleEditReview(review.id)}
                     className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
                     title="Edit"
                   >
                     <Edit className="h-4 w-4" />
                   </button>
                   <button 
-                    className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                    onClick={() => handleDeleteReview(review.id)}
+                    disabled={deletingReviewId === review.id}
+                    className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
                     title="Delete"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    {deletingReviewId === review.id ? (
+                      <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -130,7 +211,15 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
           ))}
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Business Profile Modal */}
+      <BusinessProfileModal
+        isOpen={isBusinessProfileModalOpen}
+        onClose={() => setIsBusinessProfileModalOpen(false)}
+        business={selectedBusinessForProfile}
+      />
+    </>
   );
 };
 
