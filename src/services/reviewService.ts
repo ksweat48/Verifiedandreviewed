@@ -106,9 +106,7 @@ export class ReviewService {
           profiles!inner (
             id,
             name,
-            avatar_url,
-            level,
-            review_count
+            avatar_url
           )
         `)
         .eq('business_id', businessId)
