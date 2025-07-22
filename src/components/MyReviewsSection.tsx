@@ -72,7 +72,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
           rating: review.rating,
           status: review.status,
           isVerified: review.businesses?.is_verified || false,
-          publishDate: review.updated_at,
+          publishDate: review.created_at,
           views: 0, // We don't track views yet
           image_urls: review.image_urls || [],
           review_text: review.review_text
