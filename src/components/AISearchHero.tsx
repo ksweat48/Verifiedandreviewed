@@ -1,4 +1,382 @@
               ```jsx
+import React, { useState, useRef, useEffect } from 'react';
+import * as Icons from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { useGeolocation } from '../hooks/useGeolocation';
+import { BusinessService } from '../services/businessService';
+import { ReviewService } from '../services/reviewService';
+import { CreditService } from '../services/creditService';
+import { SemanticSearchService } from '../services/semanticSearchService';
+import PlatformBusinessCard from './PlatformBusinessCard';
+import AIBusinessCard from './AIBusinessCard';
+import SignupPrompt from './SignupPrompt';
+
+interface BusinessCard {
+  id: string;
+  name: string;
+  rating: {
+    thumbsUp: number;
+    thumbsDown: number;
+    sentimentScore: number;
+  };
+  address?: string;
+  location?: string;
+  category?: string;
+  tags?: string[];
+  description?: string;
+  imageUrl?: string;
+  hours?: string;
+  isVerified?: boolean;
+  isPlatformBusiness?: boolean;
+  reviews?: Array<{
+    id: string;
+    text: string;
+    author: string;
+    authorImage?: string;
+    images: Array<{
+      url: string;
+      alt: string;
+    }>;
+    thumbsUp: boolean;
+    level?: number;
+    reviewCount?: number;
+  }>;
+}
+
+interface AISearchHeroProps {
+  onBusinessSelect?: (business: BusinessCard) => void;
+}
+
+const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [results, setResults] = useState<BusinessCard[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [isAppModeActive, setIsAppModeActive] = useState(false);
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+  const [showCreditWarning, setShowCreditWarning] = useState(false);
+  const [usedAI, setUsedAI] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [semanticSearchAvailable, setSemanticSearchAvailable] = useState(false);
+  const [useSemanticSearch, setUseSemanticSearch] = useState(false);
+  
+  const { user, isAuthenticated, userCredits, refreshUserCredits } = useAuth();
+  const { 
+    location, 
+    error: geoError, 
+    loading: geoLoading, 
+    getCurrentLocation 
+  } = useGeolocation();
+  
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const searchBarRef = useRef<HTMLDivElement>(null);
+
+  const samplePrompts = [
+    "cozy coffee shops",
+    "best brunch spots", 
+    "romantic dinner",
+    "family activities",
+    "late night eats"
+  ];
+
+  useEffect(() => {
+    const checkSemanticSearch = async () => {
+      try {
+        const available = await SemanticSearchService.isAvailable();
+        setSemanticSearchAvailable(available);
+        setUseSemanticSearch(available);
+      } catch (error) {
+        console.error('Error checking semantic search availability:', error);
+        setSemanticSearchAvailable(false);
+        setUseSemanticSearch(false);
+      }
+    };
+
+    checkSemanticSearch();
+  }, []);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    setShowResults(true);
+    setIsAppModeActive(true);
+    setShowCreditWarning(false);
+    setUsedAI(false);
+    
+    try {
+      await getCurrentLocation();
+      
+      const creditCost = useSemanticSearch && semanticSearchAvailable ? 10 : 1;
+      
+      if (isAuthenticated && userCredits < creditCost) {
+        setShowCreditWarning(true);
+        setIsSearching(false);
+        return;
+      }
+      
+      if (!isAuthenticated && !semanticSearchAvailable) {
+        setShowSignupPrompt(true);
+        setIsSearching(false);
+        return;
+      }
+
+      let searchResults = [];
+      
+      if (useSemanticSearch && semanticSearchAvailable) {
+        try {
+          const semanticResults = await SemanticSearchService.searchBusinesses(
+            searchQuery,
+            location?.latitude,
+            location?.longitude
+          );
+          searchResults = semanticResults;
+          setUsedAI(true);
+        } catch (error) {
+          console.error('Semantic search failed, falling back to regular search:', error);
+          setShowCreditWarning(true);
+          setIsSearching(false);
+          return;
+        }
+      } else {
+        const aiResults = await fetch('/api/ai-business-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: searchQuery,
+            latitude: location?.latitude,
+            longitude: location?.longitude
+          })
+        });
+        
+        if (!aiResults.ok) {
+          throw new Error('AI search failed');
+        }
+        
+        const data = await aiResults.json();
+        searchResults = data.businesses || [];
+        setUsedAI(true);
+      }
+
+      const realBusinesses = await BusinessService.getAllBusinesses();
+      
+      const businessesWithReviews = await Promise.all(
+        realBusinesses.map(async (business) => {
+          try {
+            const reviews = await ReviewService.getBusinessReviews(business.id);
+            const transformedReviews = reviews.map(review => ({
+              id: review.id,
+              text: review.review_text,
+              author: review.profiles?.name || 'Anonymous',
+              authorImage: review.profiles?.avatar_url,
+              images: (review.image_urls || []).map((url: string, index: number) => ({
+                url,
+                alt: `Review image ${index + 1}`
+              })),
+              thumbsUp: review.rating >= 4,
+              level: review.profiles?.level || 1,
+              reviewCount: review.profiles?.review_count || 0
+            }));
+            
+            return {
+              ...business,
+              reviews: transformedReviews
+            };
+          } catch (error) {
+            console.error(`Error fetching reviews for business ${business.id}:`, error);
+            return {
+              ...business,
+              reviews: []
+            };
+          }
+        })
+      );
+
+      let transformedBusinesses: BusinessCard[] = businessesWithReviews.map(business => ({
+        id: business.id,
+        name: business.name,
+        rating: {
+          thumbsUp: business.thumbs_up || 0,
+          thumbsDown: business.thumbs_down || 0,
+          sentimentScore: business.sentiment_score || 0
+        },
+        address: business.address,
+        location: business.location,
+        category: business.category,
+        tags: business.tags,
+        description: business.description,
+        imageUrl: business.image_url,
+        hours: business.hours,
+        isVerified: business.is_verified,
+        isPlatformBusiness: true,
+        reviews: business.reviews || []
+      }));
+
+      const combinedResults = [...transformedBusinesses, ...searchResults];
+      setResults(combinedResults);
+      
+      if (isAuthenticated) {
+        await CreditService.deductCredits(user.id, creditCost, 
+          useSemanticSearch ? 'semantic_search' : 'ai_search', 
+          `Search: "${searchQuery}"`
+        );
+        await refreshUserCredits();
+      }
+      
+    } catch (error) {
+      console.error('Search error:', error);
+      setShowCreditWarning(true);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleRecommend = async (business: BusinessCard) => {
+    // Implementation for recommendation
+  };
+
+  const handleTakeMeThere = (business: BusinessCard) => {
+    if (business.address) {
+      const encodedAddress = encodeURIComponent(business.address);
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+    }
+  };
+
+  const handleSignup = () => {
+    setShowSignupPrompt(false);
+  };
+
+  const handleLogin = () => {
+    setShowSignupPrompt(false);
+  };
+
+  const exitAppMode = () => {
+    setIsAppModeActive(false);
+    setShowResults(false);
+    setResults([]);
+    setSearchQuery('');
+  };
+
+  const startVoiceRecognition = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+      
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setSearchQuery(transcript);
+        setIsListening(false);
+      };
+      
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+      
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+      
+      recognition.start();
+    }
+  };
+
+  return (
+    <div className="relative w-full">
+      {!showResults && (
+        <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('https://images.pexels.com/photos/1581384/pexels-photo-1581384.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')`
+            }}
+          />
+          
+          <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+            <div className="mb-8">
+              <h1 className="font-poppins text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
+                Find Your Next
+                <span className="block bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">
+                  Favorite Spot
+                </span>
+              </h1>
+              <p className="font-lora text-lg sm:text-xl text-white/90 mb-8 max-w-2xl mx-auto leading-relaxed">
+                Discover amazing local businesses through AI-powered search. 
+                Tell us what you're looking for and we'll find the perfect match.
+              </p>
+            </div>
+            
+            <div 
+              ref={searchRef}
+              className="relative max-w-2xl mx-auto mb-8"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
+              <div className="relative bg-white rounded-xl shadow-2xl border border-white/20 p-2">
+                <form onSubmit={(e) => {e.preventDefault(); handleSearch();}} className="flex items-center">
+                  <Icons.Sparkles className="h-6 w-6 text-primary-500 ml-4 mr-3 flex-shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="peaceful brunch spot, vibe-y wine bar, cozy coffee for work..."
+                    className="flex-1 py-4 px-2 text-lg font-lora text-neutral-700 placeholder-neutral-400 bg-transparent border-none outline-none"
+                  />
+                  <button
+                    onClick={startVoiceRecognition}
+                    className={`p-3 rounded-full mr-2 ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200`}
+                    aria-label="Voice search"
+                    type="button"
+                  >
+                    <Icons.Mic className="h-5 w-5" />
+                  </button>
+                  
+                  {isAuthenticated && userCredits > 0 && (
+                    <div className="flex items-center mr-3 bg-primary-50 px-3 py-2 rounded-lg">
+                      {semanticSearchAvailable && useSemanticSearch ? (
+                        <Icons.Brain className="h-4 w-4 text-purple-500 mr-2" />
+                      ) : (
+                        <Icons.Zap className="h-4 w-4 text-primary-500 mr-2" />
+                      )}
+                      <span className="font-poppins text-sm font-semibold text-primary-700">
+                        {userCredits} credits
+                      </span>
+                    </div>
+                  )}
+                  
+                  <button
+                    type="submit"
+                    disabled={isSearching || geoLoading}
+                    className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-6 py-4 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50"
+                    aria-label="Search"
+                  >
+                    {isSearching ? (
+                      <span className="flex items-center">
+                        <Icons.Loader2 className="h-5 w-5 animate-spin mr-2" />
+                        Thinking...
+                      </span>
+                    ) : geoLoading ? (
+                      <span className="flex items-center">
+                        <Icons.MapPin className="h-5 w-5 animate-pulse mr-2" />
+                        Locating...
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <Icons.Search className="h-5 w-5 mr-2" />
+                        Search
+                      </span>
+                    )}
+                  </button>
+                </form>
               </div>
             </div>
             
