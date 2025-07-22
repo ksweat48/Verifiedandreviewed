@@ -77,7 +77,7 @@ const AccountPage = () => {
         
         // Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage
-          .from('user-images')
+          .from('review-images')
           .upload(filePath, file, {
             cacheControl: '3600',
             upsert: true
@@ -87,7 +87,7 @@ const AccountPage = () => {
         
         // Get the public URL
         const { data } = supabase.storage
-          .from('user-images')
+          .from('review-images')
           .getPublicUrl(filePath);
           
         if (!data.publicUrl) throw new Error('Failed to get public URL');
