@@ -64,9 +64,9 @@ const ReviewSubmissionForm = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
       const filePath = `${path}/${currentUser.id}/${fileName}`; // Organize by user ID
-
+      const filePath = `public/${user.id}/${fileName}`;
       const { error: uploadError } = await supabase.storage
-        .from('review-images') // Use a dedicated bucket for review images
+        .from('review-images')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false // Don't upsert, create new files

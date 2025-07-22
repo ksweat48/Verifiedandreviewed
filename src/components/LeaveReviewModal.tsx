@@ -49,10 +49,10 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
-      const filePath = `review-images/${user.id}/${fileName}`;
+      const filePath = `public/${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('user-images')
+        .from('review-images')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -61,7 +61,7 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
-        .from('user-images')
+        .from('review-images')
         .getPublicUrl(filePath);
 
       return data.publicUrl;

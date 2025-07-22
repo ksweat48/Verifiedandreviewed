@@ -5,6 +5,7 @@ import MyReviewsSection from './MyReviewsSection';
 import CreditUsageInfo from './CreditUsageInfo';
 import MyBusinessesSection from './MyBusinessesSection';
 import { BusinessService } from '../services/businessService';
+import { ReviewService } from '../services/reviewService';
 import { addMonths } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
@@ -80,28 +81,20 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       // Fetch user's reviews
       const fetchUserReviews = async () => {
         try {
-          const { data, error } = await supabase
-            .from('user_reviews')
-            .select('*, businesses(*)')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
-            
-          if (error) throw error;
+          const userReviews = await ReviewService.getUserReviews(user.id);
           
-          if (data) {
-            const formattedReviews = data.map(review => ({
-              id: review.id,
-              businessName: review.businesses?.name || 'Unknown Business',
-              location: review.businesses?.location || 'Unknown Location',
-              rating: review.rating,
-              status: review.status,
-              isVerified: review.businesses?.is_verified || false,
-              publishDate: review.created_at,
-              views: 0 // We don't track views yet
-            }));
-            
-            setReviews(formattedReviews);
-          }
+          const formattedReviews = userReviews.map(review => ({
+            id: review.id,
+            businessName: review.businesses?.name || 'Unknown Business',
+            location: review.businesses?.location || 'Unknown Location',
+            rating: review.rating,
+            status: review.status,
+            isVerified: review.businesses?.is_verified || false,
+            publishDate: review.created_at,
+            views: 0 // We don't track views yet
+          }));
+          
+          setReviews(formattedReviews);
         } catch (err) {
           console.error('Error fetching user reviews:', err);
           setReviews([]);

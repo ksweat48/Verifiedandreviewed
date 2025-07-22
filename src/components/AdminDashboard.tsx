@@ -5,9 +5,10 @@ import {
   Settings, ChevronDown, Eye, Edit, Trash2, 
   Shield, AlertTriangle, CheckCircle, XCircle, 
   RefreshCw, BarChart2, TrendingUp, Calendar, 
-  Clock, ArrowRight, EyeOff
+  Clock, ArrowRight, EyeOff, MessageSquare, Star, Image
 } from 'lucide-react';
 import { BusinessService } from '../services/businessService';
+import { ReviewService } from '../services/reviewService';
 import { supabase } from '../services/supabaseClient';
 import type { Business } from '../services/supabaseClient';
 import BusinessProfileModal from './BusinessProfileModal';
@@ -18,16 +19,18 @@ const EmbeddingGenerationTest = React.lazy(() => import('./EmbeddingGenerationTe
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'businesses' | 'users' | 'analytics' | 'ai-integrations' | 'settings'>('businesses');
+  const [activeTab, setActiveTab] = useState<'overview' | 'businesses' | 'reviews' | 'users' | 'analytics' | 'ai-integrations' | 'settings'>('businesses');
   const [allBusinesses, setAllBusinesses] = useState<Business[]>([]);
   const [pendingBusinesses, setPendingBusinesses] = useState<Business[]>([]);
   const [verifiedBusinesses, setVerifiedBusinesses] = useState<Business[]>([]);
+  const [pendingReviews, setPendingReviews] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [processingBusinessId, setProcessingBusinessId] = useState<string | null>(null);
+  const [processingReviewId, setProcessingReviewId] = useState<string | null>(null);
   const [isBusinessProfileModalOpen, setIsBusinessProfileModalOpen] = useState(false);
   const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
 
@@ -49,6 +52,10 @@ const AdminDashboard = () => {
       
       setPendingBusinesses(pending);
       setVerifiedBusinesses(verified);
+      
+      // Fetch pending reviews
+      const reviews = await ReviewService.getPendingReviews();
+      setPendingReviews(reviews);
       
       // Fetch users from Supabase
       const { data: userData, error: userError } = await supabase
@@ -133,6 +140,51 @@ const AdminDashboard = () => {
       console.error('Error toggling business visibility:', error);
     } finally {
       setProcessingBusinessId(null);
+    }
+  };
+
+  const handleApproveReview = async (reviewId: string) => {
+    setProcessingReviewId(reviewId);
+    try {
+      const success = await ReviewService.approveReview(reviewId);
+      if (success) {
+        // Remove from pending reviews list
+        setPendingReviews(prev => prev.filter(review => review.id !== reviewId));
+      }
+    } catch (error) {
+      console.error('Error approving review:', error);
+    } finally {
+      setProcessingReviewId(null);
+    }
+  };
+
+  const handleRejectReview = async (reviewId: string) => {
+    setProcessingReviewId(reviewId);
+    try {
+      const success = await ReviewService.rejectReview(reviewId);
+      if (success) {
+        // Remove from pending reviews list
+        setPendingReviews(prev => prev.filter(review => review.id !== reviewId));
+      }
+    } catch (error) {
+      console.error('Error rejecting review:', error);
+    } finally {
+      setProcessingReviewId(null);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    setProcessingReviewId(reviewId);
+    try {
+      const success = await ReviewService.deleteReview(reviewId);
+      if (success) {
+        // Remove from pending reviews list
+        setPendingReviews(prev => prev.filter(review => review.id !== reviewId));
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error);
+    } finally {
+      setProcessingReviewId(null);
     }
   };
 
@@ -352,6 +404,17 @@ const AdminDashboard = () => {
             >
               <Building className="h-5 w-5 inline mr-2" />
               Businesses
+            </button>
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`px-6 py-4 font-poppins font-medium whitespace-nowrap ${
+                activeTab === 'reviews'
+                  ? 'text-primary-500 border-b-2 border-primary-500'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <MessageSquare className="h-5 w-5 inline mr-2" />
+              Reviews ({pendingReviews.length})
             </button>
             <button
               onClick={() => setActiveTab('users')}
@@ -620,6 +683,142 @@ const AdminDashboard = () => {
               <Shield className="h-6 w-6 text-green-500" />,
               filteredVerifiedBusinesses.length
             )}
+          </div>
+        )}
+
+        {activeTab === 'reviews' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-cinzel text-2xl font-bold text-neutral-900">
+                Review Management
+              </h2>
+            </div>
+            
+            {/* Pending Reviews */}
+            <div className="mb-8">
+              <div className="flex items-center mb-4">
+                <Clock className="h-6 w-6 text-yellow-500 mr-2" />
+                <h3 className="font-poppins text-xl font-semibold text-neutral-900">
+                  Pending Reviews ({pendingReviews.length})
+                </h3>
+              </div>
+              
+              {pendingReviews.length === 0 ? (
+                <div className="bg-neutral-50 rounded-lg p-6 text-center">
+                  <p className="font-lora text-neutral-600">No pending reviews</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-neutral-50 border-b border-neutral-200">
+                        <tr>
+                          <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Reviewer</th>
+                          <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Business</th>
+                          <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Rating</th>
+                          <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Review Text</th>
+                          <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Images</th>
+                          <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Date</th>
+                          <th className="px-6 py-3 text-left font-poppins text-sm font-semibold text-neutral-900">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-200">
+                        {pendingReviews.map((review) => (
+                          <tr key={review.id} className="hover:bg-neutral-50">
+                            <td className="px-6 py-4">
+                              <div className="font-poppins font-semibold text-neutral-900">
+                                {review.profiles?.name || 'Unknown User'}
+                              </div>
+                              <div className="font-lora text-sm text-neutral-600">
+                                {review.profiles?.email || ''}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="font-poppins font-semibold text-neutral-900">
+                                {review.businesses?.name || 'Unknown Business'}
+                              </div>
+                              <div className="font-lora text-sm text-neutral-600">
+                                {review.businesses?.location || ''}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <div className="flex text-yellow-400 mr-2">
+                                  {[...Array(review.rating)].map((_, i) => (
+                                    <Star key={i} className="h-4 w-4 fill-current" />
+                                  ))}
+                                </div>
+                                <span className="font-poppins text-sm font-semibold">
+                                  {review.rating}/5
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="font-lora text-sm text-neutral-700 max-w-xs truncate">
+                                {review.review_text || 'No text provided'}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <Image className="h-4 w-4 text-neutral-500 mr-1" />
+                                <span className="font-poppins text-sm text-neutral-600">
+                                  {review.image_urls?.length || 0}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="font-lora text-sm text-neutral-600">
+                                {new Date(review.created_at).toLocaleDateString()}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => handleApproveReview(review.id)}
+                                  disabled={processingReviewId === review.id}
+                                  className="p-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                  title="Approve"
+                                >
+                                  {processingReviewId === review.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="h-4 w-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleRejectReview(review.id)}
+                                  disabled={processingReviewId === review.id}
+                                  className="p-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                  title="Reject"
+                                >
+                                  {processingReviewId === review.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <XCircle className="h-4 w-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteReview(review.id)}
+                                  disabled={processingReviewId === review.id}
+                                  className="p-1 bg-red-500 text-white rounded hover:bg-red-600"
+                                  title="Delete"
+                                >
+                                  {processingReviewId === review.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

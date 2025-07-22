@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, MapPin, Calendar, User, ArrowLeft, Share2, Heart, MessageCircle, Shield, CheckCircle, Image } from 'lucide-react';
 import { useWordPressPost } from '../hooks/useWordPress';
-import RecommendationButton from '../components/RecommendationButton';
-import InlineImageGallery from '../components/InlineImageGallery';
+import { ReviewService } from '../services/reviewService';
+
+// Lazy load components
+const RecommendationButton = React.lazy(() => import('../components/RecommendationButton'));
+const InlineImageGallery = React.lazy(() => import('../components/InlineImageGallery'));
 
 const SinglePostPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -11,6 +14,8 @@ const SinglePostPage = () => {
   const [comment, setComment] = useState('');
   const [commentName, setCommentName] = useState('');
   const [commentEmail, setCommentEmail] = useState('');
+  const [userReviews, setUserReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   
   const { post, loading, error } = useWordPressPost(slug || '');
 
@@ -19,6 +24,28 @@ const SinglePostPage = () => {
     window.scrollTo(0, 0);
   }, [slug]);
 
+  // Fetch user reviews for this business
+  useEffect(() => {
+    const fetchUserReviews = async () => {
+      if (!post || !post.acf?.business_name) return;
+      
+      setLoadingReviews(true);
+      try {
+        // For now, we'll use a simple approach - in a full implementation,
+        // you'd need to map WordPress posts to Supabase businesses
+        // This is a placeholder that shows the structure
+        const reviews = await ReviewService.getBusinessReviews('placeholder-business-id');
+        setUserReviews(reviews);
+      } catch (error) {
+        console.error('Error fetching user reviews:', error);
+        setUserReviews([]);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+    
+    fetchUserReviews();
+  }, [post]);
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-50">
@@ -180,21 +207,25 @@ const SinglePostPage = () => {
               )}
 
               {/* Recommendation Button for Unverified Posts */}
-              <RecommendationButton
-                postId={post.id}
-                postSlug={post.slug}
-                businessName={reviewData.businessName}
-                isVerified={reviewData.isVerified}
-              />
+              <React.Suspense fallback={<div className="h-12 bg-neutral-100 rounded-lg animate-pulse"></div>}>
+                <RecommendationButton
+                  postId={post.id}
+                  postSlug={post.slug}
+                  businessName={reviewData.businessName}
+                  isVerified={reviewData.isVerified}
+                />
+              </React.Suspense>
             </div>
 
             {/* INLINE GALLERY IMAGES - RIGHT UNDER FEATURED IMAGE */}
-            {reviewData.galleryImages.length > 0 && (
-              <InlineImageGallery 
-                images={reviewData.galleryImages}
-                className="mb-8"
-              />
-            )}
+            <React.Suspense fallback={<div className="h-32 bg-neutral-100 rounded-lg animate-pulse mb-8"></div>}>
+              {reviewData.galleryImages.length > 0 && (
+                <InlineImageGallery 
+                  images={reviewData.galleryImages}
+                  className="mb-8"
+                />
+              )}
+            </React.Suspense>
 
             {/* Article Header */}
             <header className="mb-8">
@@ -286,10 +317,106 @@ const SinglePostPage = () => {
 
             {/* Comments Section */}
             <section className="border-t border-neutral-200 pt-12">
-              <h3 className="font-cinzel text-2xl font-bold text-neutral-900 mb-8 flex items-center">
-                <MessageCircle className="h-6 w-6 mr-3" />
-                Comments
-              </h3>
+              <div className="space-y-8">
+                {/* User Reviews Section */}
+                <div>
+                  <h3 className="font-cinzel text-2xl font-bold text-neutral-900 mb-6 flex items-center">
+                    <Star className="h-6 w-6 mr-3 text-yellow-500" />
+                    User Reviews
+                  </h3>
+                  
+                  {loadingReviews ? (
+                    <div className="space-y-4">
+                      {[1, 2].map(i => (
+                        <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 animate-pulse">
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 bg-neutral-200 rounded-full"></div>
+                            <div className="flex-1 space-y-2">
+                              <div className="h-4 bg-neutral-200 rounded w-1/4"></div>
+                              <div className="h-4 bg-neutral-200 rounded w-full"></div>
+                              <div className="h-4 bg-neutral-200 rounded w-3/4"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : userReviews.length > 0 ? (
+                    <div className="space-y-6">
+                      {userReviews.map((review) => (
+                        <div key={review.id} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                          <div className="flex items-start gap-4">
+                            <img
+                              src={review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100'}
+                              alt={review.profiles?.name || 'Anonymous'}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h5 className="font-poppins font-semibold text-neutral-900">
+                                  {review.profiles?.name || 'Anonymous'}
+                                </h5>
+                                <div className="flex items-center">
+                                  <div className="flex text-yellow-400 mr-2">
+                                    {[...Array(review.rating)].map((_, i) => (
+                                      <Star key={i} className="h-4 w-4 fill-current" />
+                                    ))}
+                                  </div>
+                                  <span className="font-poppins text-sm font-semibold text-neutral-700">
+                                    {review.rating}/5
+                                  </span>
+                                </div>
+                                <span className="text-sm text-neutral-500">
+                                  {new Date(review.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <p className="font-lora text-neutral-700 leading-relaxed mb-3">
+                                {review.review_text}
+                              </p>
+                              
+                              {/* Review Images */}
+                              {review.image_urls && review.image_urls.length > 0 && (
+                                <div className="flex gap-2 mt-3">
+                                  {review.image_urls.slice(0, 3).map((imageUrl: string, index: number) => (
+                                    <img
+                                      key={index}
+                                      src={imageUrl}
+                                      alt={`Review image ${index + 1}`}
+                                      className="w-16 h-16 object-cover rounded-lg"
+                                    />
+                                  ))}
+                                  {review.image_urls.length > 3 && (
+                                    <div className="w-16 h-16 bg-neutral-100 rounded-lg flex items-center justify-center">
+                                      <span className="font-poppins text-xs text-neutral-600">
+                                        +{review.image_urls.length - 3}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-neutral-50 rounded-2xl p-8 text-center">
+                      <Star className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
+                      <h4 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
+                        No User Reviews Yet
+                      </h4>
+                      <p className="font-lora text-neutral-600">
+                        Be the first to leave a review for this business!
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Comments Section */}
+                <div>
+                  <h3 className="font-cinzel text-2xl font-bold text-neutral-900 mb-6 flex items-center">
+                    <MessageCircle className="h-6 w-6 mr-3" />
+                    Comments
+                  </h3>
 
               {/* Comment Form */}
               <form onSubmit={handleCommentSubmit} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 mb-8">
