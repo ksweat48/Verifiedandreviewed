@@ -33,7 +33,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
   const [isEditReviewModalOpen, setIsEditReviewModalOpen] = useState(false);
   const [reviewToEdit, setReviewToEdit] = useState<UserReview | null>(null);
-  const [localReviews, setLocalReviews] = useState(reviews);
+  const [localReviews, setLocalReviews] = useState<UserReview[]>([]);
   const reviewsPerPage = 10;
   
   // Update local reviews when props change
@@ -42,16 +42,16 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
     setLocalReviews(reviews);
   }, [reviews]);
   
-  // Simplified for token reduction
-  const completedReviews = localReviews.filter(review => 
+  // Use the reviews prop directly instead of localReviews for filtering
+  const completedReviews = reviews.filter(review => 
     review.status === 'published' || 
     review.status === 'pending' || 
     review.status === 'approved'
   );
   
-  console.log('🔍 DEBUG: localReviews before filtering:', localReviews);
+  console.log('🔍 DEBUG: reviews prop before filtering:', reviews);
   console.log('🔍 DEBUG: completedReviews after filtering:', completedReviews);
-  console.log('🔍 DEBUG: Filter criteria check:', localReviews.map(r => ({ 
+  console.log('🔍 DEBUG: Filter criteria check:', reviews.map(r => ({ 
     id: r.id, 
     status: r.status, 
     passesFilter: r.status === 'published' || r.status === 'pending' || r.status === 'approved'
