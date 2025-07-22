@@ -319,7 +319,7 @@ const ExploreArea = () => {
                           </div>
                         </div>
                       ) : (
-                       <div className="flex justify-between h-full">
+                        <div className="flex justify-between h-full" onClick={(e) => {e.stopPropagation(); openReviewModal(business);}}>
                           <p className="font-lora text-sm text-neutral-500 text-center py-4 flex-1 cursor-pointer">No reviews available</p>
                           <div className="flex-shrink-0 self-end">
                             <button
@@ -348,7 +348,7 @@ const ExploreArea = () => {
           onClose={() => setBusinessProfileOpen(false)}
           business={{
             id: selectedBusinessForProfile.id,
-                             // TODO: Implement image gallery functionality
+            name: selectedBusinessForProfile.name,
             category: selectedBusinessForProfile.tags?.[0],
             description: selectedBusinessForProfile.reviews?.[0]?.text,
             address: selectedBusinessForProfile.address,
