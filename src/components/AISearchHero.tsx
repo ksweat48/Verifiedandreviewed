@@ -477,11 +477,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           throw new Error(data.error || data.message || 'Failed to get AI business suggestions');
         }
       } else {
-        console.error('AI search error:', error);
-        console.log('🔄 Falling back to platform-only results');
+        console.log('🔄 Using platform-only results');
         
-        // Show error message to user
-        setShowCreditWarning(true);
         // Sort and limit results: Platform businesses first, then open businesses first, limit to 5 total
         const sortedResults = transformedBusinesses.sort((a, b) => {
           // First priority: Semantic similarity score (higher is better)
