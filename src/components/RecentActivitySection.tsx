@@ -205,10 +205,18 @@ const RecentActivitySection: React.FC = () => {
                     )}
                   </div>
                   {business.hasReviewed && business.rating && (
-                    <div className="flex text-yellow-400 mt-1">
-                      {[...Array(business.rating)].map((_, i) => (
-                        <Star key={i} className="h-3 w-3 fill-current" />
-                      ))}
+                    <div className="flex items-center mt-1">
+                      {business.rating >= 4 ? (
+                        <div className="flex items-center text-green-600">
+                          <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                          <span className="font-poppins text-xs font-semibold">Recommend</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-red-600">
+                          <Icons.ThumbsDown className="h-3 w-3 mr-1 fill-current" />
+                          <span className="font-poppins text-xs font-semibold">Not for me</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

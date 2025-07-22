@@ -182,15 +182,19 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                        'Draft'}
                     </div>
                     {/* Thumbs Up/Down Rating */}
-                    {review.rating >= 4 ? (
-                      <div className="flex items-center text-green-600">
-                        <ThumbsUp className="h-4 w-4 mr-1 fill-current" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center text-red-600">
-                        <ThumbsDown className="h-4 w-4 mr-1 fill-current" />
-                      </div>
-                    )}
+                    <div className="flex items-center">
+                      {review.rating >= 4 ? (
+                        <div className="flex items-center text-green-600">
+                          <ThumbsUp className="h-4 w-4 mr-1 fill-current" />
+                          <span className="font-poppins text-xs font-semibold">Recommend</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-red-600">
+                          <ThumbsDown className="h-4 w-4 mr-1 fill-current" />
+                          <span className="font-poppins text-xs font-semibold">Not for me</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-4 mb-3">

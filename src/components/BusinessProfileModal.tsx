@@ -483,15 +483,14 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                     <h3 className="font-poppins text-lg font-semibold text-neutral-900">
                       Customer Reviews ({businessReviews.length})
                     </h3>
-                    <div className="flex items-center">
-                      <Icons.Star className="h-5 w-5 text-yellow-400 fill-current mr-1" />
-                      <span className="font-poppins font-semibold text-neutral-700">
-                        {businessReviews.length > 0 
-                          ? (businessReviews.reduce((sum, review) => sum + review.rating, 0) / businessReviews.length).toFixed(1)
-                          : '0.0'
-                        }
-                      </span>
-                    </div>
+                    {business.thumbs_up > 0 && (
+                      <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-sm font-poppins font-semibold flex items-center`}>
+                        <Icons.ThumbsUp className="h-4 w-4 mr-1 fill-current" />
+                        <span>{business.thumbs_up}</span>
+                        <span className="mx-1">•</span>
+                        <span>{sentimentRating.text}</span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -509,14 +508,17 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                                 {review.profiles?.name || 'Anonymous'}
                               </h5>
                               <div className="flex items-center">
-                                <div className="flex text-yellow-400 mr-2">
-                                  {[...Array(review.rating)].map((_, i) => (
-                                    <Icons.Star key={i} className="h-4 w-4 fill-current" />
-                                  ))}
-                                </div>
-                                <span className="font-poppins text-sm font-semibold text-neutral-700">
-                                  {review.rating}/5
-                                </span>
+                                {review.rating >= 4 ? (
+                                  <div className="flex items-center text-green-600">
+                                    <Icons.ThumbsUp className="h-4 w-4 mr-1 fill-current" />
+                                    <span className="font-poppins text-sm font-semibold">Recommend</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center text-red-600">
+                                    <Icons.ThumbsDown className="h-4 w-4 mr-1 fill-current" />
+                                    <span className="font-poppins text-sm font-semibold">Not for me</span>
+                                  </div>
+                                )}
                               </div>
                               <span className="text-sm text-neutral-500">
                                 {new Date(review.created_at).toLocaleDateString()}
