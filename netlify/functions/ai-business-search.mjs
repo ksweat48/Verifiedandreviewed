@@ -269,7 +269,8 @@ Requirements:
               }],
               isPlatformBusiness: false,
               tags: [],
-              isGoogleVerified: true // Flag to indicate Google verification
+              isGoogleVerified: true, // Flag to indicate Google verification
+              similarity: 0.8 // Default high similarity for AI-generated businesses
             };
             
             foundBusinesses.push(foundBusiness);

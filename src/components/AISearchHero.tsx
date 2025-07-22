@@ -11,6 +11,9 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import { SemanticSearchService } from '../services/semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
+// Minimum semantic similarity threshold for displaying results
+const MINIMUM_DISPLAY_SIMILARITY = 0.5;
+
 interface AISearchHeroProps {
   isAppModeActive: boolean;
   setIsAppModeActive: React.Dispatch<React.SetStateAction<boolean>>;
@@ -195,58 +198,19 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       let transformedBusinesses = [];
       let platformBusinesses = [];
       let aiBusinesses = [];
-      let needsAI = !usedSemanticSearch; // Only use AI if semantic search wasn't successful
+      let needsAI = false; // Will be determined based on semantic results only
 
       if (usedSemanticSearch) {
         // Use semantic search results
         transformedBusinesses = searchResults;
         platformBusinesses = searchResults;
-        needsAI = searchResults.length < 6;
+        needsAI = searchResults.length < 5; // Use AI to fill up to 5 total results
       } else {
-        // Traditional keyword search fallback
-        try {
-          // Fetch real businesses from Supabase
-          const realBusinesses = await BusinessService.getBusinesses({
-            search: searchQuery,
-            userLatitude: latitude || undefined,
-            userLongitude: longitude || undefined
-          });
-          
-          // Debug logging to see what businesses are returned from Supabase
-          console.log('🔍 Supabase realBusinesses:', realBusinesses);
-          console.log('🔍 Search query:', searchQuery);
-          console.log('🔍 Number of businesses found:', realBusinesses.length);
-          
-          // Transform the business data to match the expected format
-          transformedBusinesses = realBusinesses.map(business => ({
-            id: business.id,
-            name: business.name,
-            rating: {
-              thumbsUp: business.thumbs_up || 0,
-              thumbsDown: business.thumbs_down || 0,
-              sentimentScore: business.sentiment_score || 0
-            },
-            image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-            isOpen: true, // Default to open since we don't have real-time status
-            hours: business.hours || 'Hours unavailable',
-            address: business.address || '',
-            reviews: [], // We'll need to fetch reviews separately
-            isPlatformBusiness: true, // All businesses from Supabase are platform businesses
-            tags: business.tags || [],
-            distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10,
-            duration: business.duration || Math.floor(Math.random() * 10 + 5)
-          }));
-          
-          // All businesses from Supabase are platform businesses
-          platformBusinesses = transformedBusinesses;
-          aiBusinesses = []; // No AI businesses from Supabase
-          
-          // Use AI if we have fewer than 6 total results (platform + unverified)
-          needsAI = transformedBusinesses.length < 6;
-        } catch (error) {
-          console.error('Error fetching businesses from Supabase:', error);
-          needsAI = true;
-        }
+        // No semantic search results - only use AI if semantic search is unavailable
+        console.log('⚠️ Semantic search failed or unavailable, using AI only');
+        transformedBusinesses = [];
+        platformBusinesses = [];
+        needsAI = true;
       }
 
       setUsedAI(needsAI && !usedSemanticSearch);
@@ -341,14 +305,24 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 duration: business.duration || Math.floor(Math.random() * 10 + 5), // Ensure duration is present
                 reviews: business.reviews || [],
                 isPlatformBusiness: false,
-                similarity: business.similarity || 0 // Ensure similarity score is present for AI businesses
+                similarity: business.similarity || 0.8 // Default high similarity for AI businesses
               }));
               
               console.log(`🤖 Using AI to enhance search results for: ${searchQuery} (${numAINeeded} AI businesses)`);
               const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
               
-              // Sort by semantic relevance first, then platform status, then other factors
-              const sortedResults = combinedResults.sort((a, b) => {
+              // Apply strict semantic filtering - only show businesses above minimum similarity
+              const semanticallyRelevantResults = combinedResults.filter(business => {
+                const similarity = business.similarity || 0;
+                const isRelevant = similarity >= MINIMUM_DISPLAY_SIMILARITY;
+                if (!isRelevant) {
+                  console.log(`🚫 Filtering out irrelevant business: ${business.name} (similarity: ${similarity})`);
+                }
+                return isRelevant;
+              });
+              
+              // Sort semantically relevant results
+              const sortedResults = semanticallyRelevantResults.sort((a, b) => {
                 // First priority: Semantic similarity score (higher is better)
                 const aSimilarity = a.similarity || 0;
                 const bSimilarity = b.similarity || 0;
@@ -379,7 +353,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               ).slice(0, 5);
               
               setResults(uniqueResults);
-              console.log('✅ Combined results:', combinedResults.length, 'businesses');
+              console.log('✅ Semantically filtered results:', uniqueResults.length, 'businesses (filtered from', combinedResults.length, 'total)');
               
               trackEvent('search_performed', { 
                 query: searchQuery, 
@@ -400,8 +374,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             
             // Show error message to user
             setShowCreditWarning(true);
-            // Sort and limit results: Platform businesses first, then open businesses first, limit to 5 total
-            const sortedResults = transformedBusinesses.sort((a, b) => {
+            
+            // Apply strict semantic filtering even for fallback results
+            const semanticallyRelevantFallback = transformedBusinesses.filter(business => {
+              const similarity = business.similarity || 0;
+              return similarity >= MINIMUM_DISPLAY_SIMILARITY;
+            });
+            
+            // Sort semantically relevant fallback results
+            const sortedFallbackResults = semanticallyRelevantFallback.sort((a, b) => {
               // First priority: Semantic similarity score (higher is better)
               const aSimilarity = a.similarity || 0;
               const bSimilarity = b.similarity || 0;
@@ -424,15 +405,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               }
               
               return 0;
-            }).slice(0, 5);
+            });
             
-            // Fallback to platform businesses if AI search fails
             // Remove duplicates by ID and limit to 5
-            const uniquePlatformResults = sortedResults.filter((business, index, self) => 
+            const uniquePlatformResults = sortedFallbackResults.filter((business, index, self) => 
               index === self.findIndex(b => b.id === business.id)
             ).slice(0, 5);
             
             setResults(uniquePlatformResults);
+            console.log('✅ Fallback semantically filtered results:', uniquePlatformResults.length, 'businesses');
             trackEvent('search_performed', { 
               query: searchQuery, 
               used_ai: false, 
@@ -443,8 +424,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             });
           }
         } else {
-          // Just use the platform businesses
-          const sortedResults = transformedBusinesses.sort((a, b) => {
+          // Apply strict semantic filtering to platform-only results
+          const semanticallyRelevantPlatform = transformedBusinesses.filter(business => {
+            const similarity = business.similarity || 0;
+            const isRelevant = similarity >= MINIMUM_DISPLAY_SIMILARITY;
+            if (!isRelevant) {
+              console.log(`🚫 Filtering out irrelevant platform business: ${business.name} (similarity: ${similarity})`);
+            }
+            return isRelevant;
+          });
+          
+          // Sort semantically relevant platform businesses
+          const sortedResults = semanticallyRelevantPlatform.sort((a, b) => {
             // First priority: Semantic similarity score (higher is better)
             const aSimilarity = a.similarity || 0;
             const bSimilarity = b.similarity || 0;
@@ -475,7 +466,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           ).slice(0, 5);
           
           setResults(uniquePlatformResults);
-          console.log('📊 Using platform-only results for:', searchQuery);
+          console.log('📊 Semantically filtered platform-only results:', uniquePlatformResults.length, 'businesses for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false,
