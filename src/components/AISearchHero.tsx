@@ -132,6 +132,68 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     return { text: 'Improve', color: 'bg-red-500' };
   };
 
+  const exitAppMode = () => {
+    setIsAppModeActive(false);
+    setShowResults(false);
+    window.history.back();
+  };
+
+  const startVoiceRecognition = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+      
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setSearchQuery(transcript);
+        setIsListening(false);
+      };
+      
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+      
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+      
+      recognition.start();
+    } else {
+      alert('Speech recognition not supported in this browser');
+    }
+  };
+
+  const handleSignup = () => {
+    setShowSignupPrompt(false);
+    document.dispatchEvent(new CustomEvent('open-auth-modal', { 
+      detail: { mode: 'signup', forceMode: true } 
+    }));
+  };
+
+  const handleLogin = () => {
+    setShowSignupPrompt(false);
+    document.dispatchEvent(new CustomEvent('open-auth-modal', { 
+      detail: { mode: 'login', forceMode: true } 
+    }));
+  };
+
+  const handleRecommend = (business) => {
+    alert(`Thanks! We'll review ${business.name} for addition to our platform.`);
+  };
+
+  const handleTakeMeThere = (business) => {
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+    window.open(mapsUrl, '_blank');
+  };
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
