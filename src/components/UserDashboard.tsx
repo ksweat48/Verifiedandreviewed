@@ -54,6 +54,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   const fetchUserReviews = async () => {
     if (user && user.id) {
       try {
+        console.log('Fetching reviews for user ID:', user.id);
         const userReviews = await ReviewService.getUserReviews(user.id);
         
         const formattedReviews = userReviews.map(review => ({
@@ -67,6 +68,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
           views: 0 // We don't track views yet
         }));
         
+        console.log('Formatted reviews before setting state:', formattedReviews);
         setReviews(formattedReviews);
       } catch (err) {
         console.error('Error fetching user reviews:', err);

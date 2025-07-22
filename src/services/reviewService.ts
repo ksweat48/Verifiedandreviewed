@@ -137,6 +137,7 @@ export class ReviewService {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
+      console.log('Supabase query result for user reviews:', data);
       if (error) throw error;
       return data || [];
     } catch (error) {
