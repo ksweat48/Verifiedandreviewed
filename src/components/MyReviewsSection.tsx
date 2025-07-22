@@ -63,7 +63,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                     }`}>
                       {review.status === 'published' ? 'Published' : review.status === 'pending' ? 'Pending Approval' : review.status}
                     </span>
-                      {review.status === 'approved' ? 'Live' : review.status === 'pending' ? 'Pending' : 'Hidden by Admin'}
+                    
                     {/* Thumbs Up/Down Rating */}
                     {review.rating >= 4 ? (
                       <div className="flex items-center text-green-600">
