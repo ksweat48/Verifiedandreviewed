@@ -167,7 +167,7 @@ const PlatformBusinessCard: React.FC<{
               {/* Semantic Similarity Score - Only show if available and > 0 */}
               {business.similarity && business.similarity > 0 && (
                 <div className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
-                  {Math.min(Math.round(((business.similarity + 1) / 2) * 100), 100)}% match
+                  {Math.round(business.similarity * 100)}% match
                 </div>
               )}
               

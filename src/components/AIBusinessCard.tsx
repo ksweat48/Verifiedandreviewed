@@ -107,7 +107,7 @@ const AIBusinessCard: React.FC<{
               GO
               {business.distance && business.duration && (
                 <span className="ml-1 text-xs opacity-90">
-                  {Math.min(Math.round(((business.similarity + 1) / 2) * 100), 100)}% match
+                  {business.distance}mi • {business.duration} min
                 </span>
               )}
             </button>

@@ -33,10 +33,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [useSemanticSearch, setUseSemanticSearch] = useState(true);
   const [semanticSearchAvailable, setSemanticSearchAvailable] = useState(false);
   const { trackEvent } = useAnalytics();
-  
-  // Strict semantic similarity threshold for display
-  const MINIMUM_SEMANTIC_DISPLAY_THRESHOLD = 0.7;
-  
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -132,74 +128,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     return { text: 'Improve', color: 'bg-red-500' };
   };
 
-  const exitAppMode = () => {
-    setIsAppModeActive(false);
-    setShowResults(false);
-    window.history.back();
-  };
-
-  const startVoiceRecognition = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-      
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-      
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setSearchQuery(transcript);
-        setIsListening(false);
-      };
-      
-      recognition.onerror = () => {
-        setIsListening(false);
-      };
-      
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-      
-      recognition.start();
-    } else {
-      alert('Speech recognition not supported in this browser');
-    }
-  };
-
-  const handleSignup = () => {
-    setShowSignupPrompt(false);
-    document.dispatchEvent(new CustomEvent('open-auth-modal', { 
-      detail: { mode: 'signup', forceMode: true } 
-    }));
-  };
-
-  const handleLogin = () => {
-    setShowSignupPrompt(false);
-    document.dispatchEvent(new CustomEvent('open-auth-modal', { 
-      detail: { mode: 'login', forceMode: true } 
-    }));
-  };
-
-  const handleRecommend = (business) => {
-    alert(`Thanks! We'll review ${business.name} for addition to our platform.`);
-  };
-
-  const handleTakeMeThere = (business) => {
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
-    window.open(mapsUrl, '_blank');
-  };
-
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-
-    // Initialize credit variables at the start of the function
-    let creditsRequired = 1; // Default for platform-only search
-    let searchType = 'platform';
 
     // If user is not authenticated or not current user, show signup prompt instead of searching
     if (!isAuthenticated || !currentUser) {
@@ -242,10 +172,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         console.log('🧠 Attempting semantic search...');
         console.log('🔍 Search query:', searchQuery);
         
-        // Update credits for semantic search
-        creditsRequired = 5;
-        searchType = 'semantic';
-        
         const semanticResult = await SemanticSearchService.searchByVibe(searchQuery, {
           latitude,
           longitude,
@@ -269,7 +195,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       let transformedBusinesses = [];
       let platformBusinesses = [];
       let aiBusinesses = [];
-      let platformSemanticResults = [];
       let needsAI = !usedSemanticSearch; // Only use AI if semantic search wasn't successful
 
       if (usedSemanticSearch) {
@@ -283,9 +208,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           // Fetch real businesses from Supabase
           const realBusinesses = await BusinessService.getBusinesses({
             search: searchQuery,
-            userLatitude: latitude,
-            userLongitude: longitude
+            userLatitude: latitude || undefined,
+            userLongitude: longitude || undefined
           });
+          
+          // Debug logging to see what businesses are returned from Supabase
+          console.log('🔍 Supabase realBusinesses:', realBusinesses);
+          console.log('🔍 Search query:', searchQuery);
           console.log('🔍 Number of businesses found:', realBusinesses.length);
           
           // Transform the business data to match the expected format
@@ -322,125 +251,200 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       setUsedAI(needsAI && !usedSemanticSearch);
 
-      if (needsAI && !usedSemanticSearch) {
-        // Check if user has enough credits for AI search
-        creditsRequired = 10; // AI search costs 10 credits
-        searchType = 'ai';
-        
+      let canProceed = true;
+      const creditsRequired = usedSemanticSearch ? 5 : (needsAI ? 10 : 1); // Semantic search costs 5 credits
+      
+      if (currentUser && currentUser.id) {
+        // Check credit balance for all users
         if (userCredits < creditsRequired) {
           setShowCreditWarning(true);
-          setIsSearching(false);
-          return;
-        }
-        
-        // Deduct credits before AI search
-        try {
-          await CreditService.deductSearchCredits(currentUser.id, searchType);
-          setUserCredits(prev => prev - creditsRequired);
-        } catch (error) {
-          console.error('Error deducting credits:', error);
-          setShowCreditWarning(true);
-          setIsSearching(false);
-          return;
-        }
-        
-        // Calculate how many AI businesses we need
-        const numAINeeded = Math.max(0, 5 - transformedBusinesses.length);
-        
-        if (semanticSearchAvailable) {
-          const semanticResult = await SemanticSearchService.searchByVibe(searchQuery, {
-            latitude,
-            longitude,
-            matchThreshold: 0.65,
-            matchCount: 10
-          });
-          
-          if (semanticResult.success && semanticResult.results.length > 0) {
-            // Filter platform businesses by strict semantic threshold
-            platformSemanticResults = semanticResult.results.filter(business => 
-              business.similarity >= MINIMUM_SEMANTIC_DISPLAY_THRESHOLD
-            );
-            console.log('✅ Platform semantic search:', platformSemanticResults.length, 'relevant results');
-            console.log('🎯 Platform similarity scores:', platformSemanticResults.map(r => ({ 
-              name: r.name, 
-              similarity: r.similarity 
-            })));
+          canProceed = false;
+        } else {
+          // Deduct credits
+          const success = await CreditService.deductSearchCredits(currentUser.id, usedSemanticSearch ? 'semantic' : (needsAI ? 'ai' : 'platform')); // Fix: use currentUser.id
+          if (success) {
+            // Update local credit count
+            setUserCredits(prev => prev - creditsRequired);
           } else {
-            console.log('⚠️ Platform semantic search failed or no results');
+            setShowCreditWarning(true);
+            canProceed = false;
+          }
+        }
+      }
+      
+      if (canProceed) {
+        if (needsAI) {
+          // Call OpenAI API through our serverless function
+          setIsSearching(true);
+          
+          try {
+            // Calculate how many AI businesses we need (max 4 total cards)
+            const numAINeeded = Math.max(0, 5 - transformedBusinesses.length);
+            
+            if (numAINeeded === 0) {
+              // We already have 5 or more platform businesses, no AI needed
+              setResults(transformedBusinesses.slice(0, 5));
+              console.log('📊 Using platform-only results (5+ available):', searchQuery);
+              trackEvent('search_performed', { 
+                query: searchQuery, 
+                used_ai: false, 
+                credits_deducted: creditsRequired,
+                results_count: Math.min(transformedBusinesses.length, 5),
+                platform_results: Math.min(transformedBusinesses.length, 5),
+                ai_results: 0
+              });
+              return;
+            }
+            
+            // Prepare the AI prompt with context about existing results
+            const aiPrompt = transformedBusinesses.length > 0 
+              ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide ${numAINeeded} different but related businesses that match this search intent.`
+              : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
+
+            const response = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({ 
+                prompt: aiPrompt,
+                searchQuery: searchQuery,
+                existingResultsCount: transformedBusinesses.length,
+                numToGenerate: numAINeeded,
+                latitude: latitude,   // Pass user's latitude from hook
+                longitude: longitude  // Pass user's longitude from hook
+              })
+            }, 25000); // 25 second timeout for AI business search
+            
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error('AI search API error:', response.status, errorText);
+              throw new Error(`AI search failed: ${response.status} - ${errorText}`);
+            }
+            
+            const data = await response.json();
+            console.log('🎯 AI search response:', data);
+            
+            if (data.success && data.results) {
+              // Combine platform businesses with AI-generated businesses
+              const aiGeneratedBusinesses = data.results.map(business => ({
+                ...business,
+                // Ensure all required fields are present
+                id: business.id || `ai-${Date.now()}-${Math.random()}`,
+                rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
+                image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+                isOpen: business.isOpen !== undefined ? business.isOpen : true,
+                hours: business.hours || 'Hours unavailable',
+                address: business.address || 'Address not available',
+                distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10, // Ensure distance is present
+                duration: business.duration || Math.floor(Math.random() * 10 + 5), // Ensure duration is present
+                reviews: business.reviews || [],
+                isPlatformBusiness: false,
+                similarity: business.similarity || 0 // Ensure similarity score is present for AI businesses
+              }));
+              
+              console.log(`🤖 Using AI to enhance search results for: ${searchQuery} (${numAINeeded} AI businesses)`);
+              const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
+              
+              // Sort by semantic relevance first, then platform status, then other factors
+              const sortedResults = combinedResults.sort((a, b) => {
+                // First priority: Semantic similarity score (higher is better)
+                const aSimilarity = a.similarity || 0;
+                const bSimilarity = b.similarity || 0;
+                if (aSimilarity !== bSimilarity) {
+                  return bSimilarity - aSimilarity; // Descending order (higher similarity first)
+                }
+                
+                // Second priority: Platform businesses (only if similarity is equal)
+                if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+                if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+                
+                // Third priority: Open businesses
+                if (a.isOpen && !b.isOpen) return -1;
+                if (!a.isOpen && b.isOpen) return 1;
+                
+                // Fourth priority: Closest businesses (by distance)
+                if (a.distance && b.distance) {
+                  if (a.distance < b.distance) return -1;
+                  if (a.distance > b.distance) return 1;
+                }
+                
+                return 0;
+              });
+              
+              // Remove duplicates by ID and limit to 5
+              const uniqueResults = sortedResults.filter((business, index, self) => 
+                index === self.findIndex(b => b.id === business.id)
+              ).slice(0, 5);
+              
+              setResults(uniqueResults);
+              console.log('✅ Combined results:', combinedResults.length, 'businesses');
+              
+              trackEvent('search_performed', { 
+                query: searchQuery, 
+                used_ai: needsAI,
+                used_semantic: usedSemanticSearch,
+                credits_deducted: creditsRequired,
+                results_count: uniqueResults.length,
+                platform_results: platformBusinesses.length,
+                ai_results: aiGeneratedBusinesses.length
+              });
+            } else {
+              console.error('AI search failed:', data);
+              throw new Error(data.error || data.message || 'Failed to get AI business suggestions');
+            }
+          } catch (aiError) {
+            console.error('AI search error:', aiError);
+            console.log('🔄 Falling back to platform-only results');
+            
+            // Show error message to user
+            setShowCreditWarning(true);
+            // Sort and limit results: Platform businesses first, then open businesses first, limit to 5 total
+            const sortedResults = transformedBusinesses.sort((a, b) => {
+              // First priority: Semantic similarity score (higher is better)
+              const aSimilarity = a.similarity || 0;
+              const bSimilarity = b.similarity || 0;
+              if (aSimilarity !== bSimilarity) {
+                return bSimilarity - aSimilarity; // Descending order (higher similarity first)
+              }
+              
+              // Second priority: Platform businesses
+              if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+              if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+              
+              // Third priority: Open businesses
+              if (a.isOpen && !b.isOpen) return -1;
+              if (!a.isOpen && b.isOpen) return 1;
+              
+              // Fourth priority: Closest businesses (by distance)
+              if (a.distance && b.distance) {
+                if (a.distance < b.distance) return -1;
+                if (a.distance > b.distance) return 1;
+              }
+              
+              return 0;
+            }).slice(0, 5);
+            
+            // Fallback to platform businesses if AI search fails
+            // Remove duplicates by ID and limit to 5
+            const uniquePlatformResults = sortedResults.filter((business, index, self) => 
+              index === self.findIndex(b => b.id === business.id)
+            ).slice(0, 5);
+            
+            setResults(uniquePlatformResults);
+            trackEvent('search_performed', { 
+              query: searchQuery, 
+              used_ai: false, 
+              credits_deducted: creditsRequired,
+              results_count: uniquePlatformResults.length,
+              error: aiError.message,
+              fallback: true
+            });
           }
         } else {
-          console.log('⚠️ Semantic search not available');
-          usedSemanticSearch = false;
-        }
-            
-        if (numAINeeded === 0) {
-          // We already have 5 or more platform businesses, no AI needed
-          setResults(transformedBusinesses.slice(0, 5));
-          console.log('📊 Using platform-only results (5+ available):', searchQuery);
-          trackEvent('search_performed', { 
-            query: searchQuery, 
-            used_ai: false, 
-            credits_deducted: 1, // Platform-only search costs 1 credit
-            results_count: Math.min(transformedBusinesses.length, 5),
-            platform_results: Math.min(transformedBusinesses.length, 5),
-            ai_results: 0
-          });
-          return;
-        }
-        
-        // Prepare the AI prompt with context about existing results
-        const aiPrompt = transformedBusinesses.length > 0 
-          ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide ${numAINeeded} different but related businesses that match this search intent.`
-          : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
-
-        const response = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ 
-            prompt: aiPrompt,
-            searchQuery: searchQuery,
-            existingResultsCount: transformedBusinesses.length,
-            numToGenerate: numAINeeded,
-            latitude: latitude,   // Pass user's latitude from hook
-            longitude: longitude  // Pass user's longitude from hook
-          })
-        }, 25000); // 25 second timeout for AI business search
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('AI search API error:', response.status, errorText);
-          throw new Error(`AI search failed: ${response.status} - ${errorText}`);
-        }
-        
-        const data = await response.json();
-        console.log('🎯 AI search response:', data);
-        
-        if (data.success && data.results) {
-          // Combine platform businesses with AI-generated businesses
-          const aiGeneratedBusinesses = data.results.map(business => ({
-            ...business,
-            // Ensure all required fields are present
-            id: business.id || `ai-${Date.now()}-${Math.random()}`,
-            rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
-            image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-            isOpen: business.isOpen !== undefined ? business.isOpen : true,
-            hours: business.hours || 'Hours unavailable',
-            address: business.address || 'Address not available',
-            distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10, // Ensure distance is present
-            duration: business.duration || Math.floor(Math.random() * 10 + 5), // Ensure duration is present
-            reviews: business.reviews || [],
-            isPlatformBusiness: false,
-            similarity: business.similarity || 0 // Ensure similarity score is present for AI businesses
-          }));
-          
-          console.log(`🤖 Using AI to enhance search results for: ${searchQuery} (${numAINeeded} AI businesses)`);
-          const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
-          
-          // Sort by semantic relevance first, then platform status, then other factors
-          const sortedResults = combinedResults.sort((a, b) => {
+          // Just use the platform businesses
+          const sortedResults = transformedBusinesses.sort((a, b) => {
             // First priority: Semantic similarity score (higher is better)
             const aSimilarity = a.similarity || 0;
             const bSimilarity = b.similarity || 0;
@@ -448,7 +452,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               return bSimilarity - aSimilarity; // Descending order (higher similarity first)
             }
             
-            // Second priority: Platform businesses (only if similarity is equal)
+            // Second priority: Platform businesses (all are platform businesses here, so this is mostly redundant)
             if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
             if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
             
@@ -466,93 +470,140 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           });
           
           // Remove duplicates by ID and limit to 5
-          const uniqueResults = sortedResults.filter((business, index, self) => 
+          const uniquePlatformResults = sortedResults.filter((business, index, self) => 
             index === self.findIndex(b => b.id === business.id)
           ).slice(0, 5);
           
-          setResults(uniqueResults);
-          console.log('✅ Combined results:', combinedResults.length, 'businesses');
-          
+          setResults(uniquePlatformResults);
+          console.log('📊 Using platform-only results for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
-            used_ai: needsAI,
+            used_ai: false,
             used_semantic: usedSemanticSearch,
             credits_deducted: creditsRequired,
-            results_count: uniqueResults.length,
-            platform_results: platformBusinesses.length,
-            ai_results: aiGeneratedBusinesses.length
+            results_count: uniquePlatformResults.length
           });
-        } else {
-          console.error('AI search failed:', data);
-          throw new Error(data.error || data.message || 'Failed to get AI business suggestions');
         }
       } else {
-        console.log('🔄 Using platform-only results');
-        
-        // Sort and limit results: Platform businesses first, then open businesses first, limit to 5 total
-        const sortedResults = transformedBusinesses.sort((a, b) => {
-          // First priority: Semantic similarity score (higher is better)
-          const aSimilarity = a.similarity || 0;
-          const bSimilarity = b.similarity || 0;
-          if (aSimilarity !== bSimilarity) {
-            return bSimilarity - aSimilarity; // Descending order (higher similarity first)
-          }
-          
-          // Second priority: Platform businesses
-          if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-          if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
-          
-          // Third priority: Open businesses
-          if (a.isOpen && !b.isOpen) return -1;
-          if (!a.isOpen && b.isOpen) return 1;
-          
-          // Fourth priority: Closest businesses (by distance)
-          if (a.distance && b.distance) {
-            if (a.distance < b.distance) return -1;
-            if (a.distance > b.distance) return 1;
-          }
-          
-          return 0;
-        }).slice(0, 5);
-        
-        // Fallback to platform businesses if AI search fails
-        // Remove duplicates by ID and limit to 5
-        const uniquePlatformResults = sortedResults.filter((business, index, self) => 
-          index === self.findIndex(b => b.id === business.id)
-        ).slice(0, 5);
-        
-        setResults(uniquePlatformResults);
-        
-        // Deduct credits for the search that was actually performed
-        try {
-          await CreditService.deductSearchCredits(currentUser.id, searchType);
-          setUserCredits(prev => prev - creditsRequired);
-        } catch (error) {
-          console.error('Error deducting credits:', error);
-        }
-        
+        setShowCreditWarning(true);
+        setResults([]);
         trackEvent('search_performed', { 
           query: searchQuery, 
-          used_ai: false, 
-          credits_deducted: creditsRequired,
-          results_count: uniquePlatformResults.length,
-          platform_results: uniquePlatformResults.length,
-          ai_results: 0
+          used_ai: false,
+          used_semantic: false,
+          credits_deducted: 0,
+          error: 'Insufficient credits'
         });
       }
-      
     } catch (error) {
       console.error('Search error:', error);
-      setShowCreditWarning(true);
     } finally {
       setIsSearching(false);
     }
   };
 
+  // Exit app mode
+  const exitAppMode = () => {
+    setIsAppModeActive(false);
+    setShowResults(false);
+    
+    // Go back in history to remove the app-mode state
+    window.history.back();
+  };
+
+  const startVoiceRecognition = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Voice recognition is not supported in your browser.');
+      return;
+    }
+
+    setIsListening(true);
+
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setSearchQuery(transcript);
+      handleSearch();
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error', event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
+
+  const handleRecommend = async (business) => {
+    // Log to Supabase for admin approval
+    console.log('Recommending business:', business.name);
+    alert(`Thanks! We'll review ${business.name} for addition to our platform.`);
+  };
+
+  const handleTakeMeThere = (business) => {
+    // Record the business visit for platform businesses
+    if (business.isPlatformBusiness && currentUser && currentUser.id) {
+      BusinessService.recordBusinessVisit(business.id, currentUser.id)
+        .then(success => {
+          if (success) {
+            console.log('✅ Business visit recorded for:', business.name);
+            // Dispatch event to update visited businesses list
+            window.dispatchEvent(new CustomEvent('visited-businesses-updated'));
+          }
+        })
+        .catch(error => {
+          console.error('❌ Error recording business visit:', error);
+        });
+    }
+    
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+    window.open(mapsUrl, '_blank');
+  };
+
+  const handleSignup = () => {
+    console.log('Opening signup modal from AISearchHero');
+    setShowSignupPrompt(false); // Close the signup prompt first
+    trackEvent('signup_prompt_clicked', { source: 'search_hero' });
+    
+    // Force signup mode
+    const event = new CustomEvent('open-auth-modal', { 
+      detail: { 
+        mode: 'signup',
+        forceMode: true 
+      } 
+    });
+    document.dispatchEvent(event);
+  };
+  
+  const handleLogin = () => {
+    console.log('Opening login modal');
+    // Trigger the auth modal to open in login mode
+    trackEvent('login_prompt_clicked', { source: 'search_hero' });
+    setShowSignupPrompt(false); // Close the signup prompt first
+    const event = new CustomEvent('open-auth-modal', { 
+      detail: { 
+        mode: 'login',
+        forceMode: true 
+      } 
+    });
+    document.dispatchEvent(event);
+  };
+
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.key === 'Enter' && searchInputRef.current === document.activeElement) {
-        setResults([]);
         handleSearch();
       }
     };
