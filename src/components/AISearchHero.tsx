@@ -211,10 +211,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         try {
           // Fetch real businesses from Supabase
           const realBusinesses = await BusinessService.getBusinesses({
-        // Step 1: Perform semantic search for platform businesses
-        console.log('🧠 Performing semantic search for platform businesses...');
-        let platformSemanticResults = [];
-        let usedSemanticSearch = true;
+            search: searchQuery,
+            userLatitude: latitude,
+            userLongitude: longitude
           });
           console.log('🔍 Number of businesses found:', realBusinesses.length);
           
