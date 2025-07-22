@@ -63,7 +63,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
           businessName: review.businesses?.name || 'Unknown Business',
           location: review.businesses?.location || 'Unknown Location',
           rating: review.rating,
-          status: review.status,
+          status: review.status || 'approved', // Ensure status is set
           isVerified: review.businesses?.is_verified || false,
           publishDate: review.created_at,
           views: 0, // We don't track views yet
@@ -73,6 +73,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
         
         console.log('🔍 DEBUG: Raw userReviews from Supabase:', userReviews);
         console.log('🔍 DEBUG: Formatted reviews before setting state:', formattedReviews);
+        console.log('🔍 DEBUG: Review statuses:', formattedReviews.map(r => ({ id: r.id, status: r.status })));
         setReviews(formattedReviews);
       } catch (err) {
         console.error('Error fetching user reviews:', err);

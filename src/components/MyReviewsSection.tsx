@@ -42,6 +42,15 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
     review.status === 'pending' || 
     review.status === 'approved'
   );
+  
+  console.log('🔍 DEBUG: localReviews before filtering:', localReviews);
+  console.log('🔍 DEBUG: completedReviews after filtering:', completedReviews);
+  console.log('🔍 DEBUG: Filter criteria check:', localReviews.map(r => ({ 
+    id: r.id, 
+    status: r.status, 
+    passesFilter: r.status === 'published' || r.status === 'pending' || r.status === 'approved'
+  })));
+  
   const currentReviews = completedReviews;
 
   // Update local reviews when props change
