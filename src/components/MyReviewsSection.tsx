@@ -39,11 +39,13 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   // Update local reviews when props change
   React.useEffect(() => {
     console.log('🔍 DEBUG: MyReviewsSection received reviews prop:', reviews);
+    console.log('🔍 DEBUG: First review detailed:', reviews[0]);
     setLocalReviews(reviews);
   }, [reviews]);
   
   // Use the reviews prop directly instead of localReviews for filtering
   const completedReviews = reviews.filter(review => 
+    console.log('🔍 DEBUG: Checking review:', review.id, 'status:', review.status, 'typeof:', typeof review.status) ||
     review.status === 'published' || 
     review.status === 'pending' || 
     review.status === 'approved'
@@ -51,10 +53,15 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   
   console.log('🔍 DEBUG: reviews prop before filtering:', reviews);
   console.log('🔍 DEBUG: completedReviews after filtering:', completedReviews);
-  console.log('🔍 DEBUG: Filter criteria check:', reviews.map(r => ({ 
+  console.log('🔍 DEBUG: Detailed filter check:', reviews.map(r => ({ 
     id: r.id, 
-    status: r.status, 
-    passesFilter: r.status === 'published' || r.status === 'pending' || r.status === 'approved'
+    status: r.status,
+    statusType: typeof r.status,
+    statusValue: JSON.stringify(r.status),
+    passesFilter: r.status === 'published' || r.status === 'pending' || r.status === 'approved',
+    checkPublished: r.status === 'published',
+    checkPending: r.status === 'pending', 
+    checkApproved: r.status === 'approved'
   })));
   
   const currentReviews = completedReviews;
