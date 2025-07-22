@@ -149,7 +149,7 @@ const ReviewSubmissionForm = () => {
         review_text: formData.content,
         rating: formData.rating,
         image_urls: allImageUrls,
-        status: 'pending' // Reviews start as pending
+        status: 'approved' // Reviews start as approved
       };
 
       const { data, error: insertError } = await supabase

@@ -134,7 +134,7 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
             review_text: reviewText,
             rating: rating === 'thumbsUp' ? 5 : 1,
             image_urls: imageUrls,
-            status: 'pending'
+            status: 'approved'
           })
           .select('*')
           .single();
