@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { MapPin, Calendar, Eye, Edit, Trash2, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 interface UserReview {
-  id: number;
+  id: string;
   businessName: string;
   location: string;
   rating: number;
-  status: 'published' | 'pending' | 'draft';
+  status: 'published' | 'pending' | 'draft' | 'approved' | 'rejected';
   isVerified: boolean;
   publishDate: string;
   views: number;
@@ -21,8 +21,12 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   const reviewsPerPage = 10;
   
   // Simplified for token reduction
-  const completedReviews = reviews.filter(review => review.status === 'published' || review.status === 'pending');
-  const currentReviews = completedReviews.slice(0, 5);
+  const completedReviews = reviews.filter(review => 
+    review.status === 'published' || 
+    review.status === 'pending' || 
+    review.status === 'approved'
+  );
+  const currentReviews = completedReviews;
 
   return (
     <div className="space-y-6">
@@ -56,11 +60,14 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                     <div className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
                       review.status === 'published' 
                         ? 'bg-green-100 text-green-700' 
+                        : review.status === 'approved'
+                        ? 'bg-green-100 text-green-700'
                         : review.status === 'pending'
                         ? 'bg-yellow-100 text-yellow-700'
                         : 'bg-gray-100 text-gray-700'
                     }`}>
-                      {review.status === 'published' ? 'Published' : 
+                      {review.status === 'published' ? 'Published' :
+                       review.status === 'approved' ? 'Approved' :
                        review.status === 'pending' ? 'Pending Approval' : 
                        'Draft'}
                     </div>
