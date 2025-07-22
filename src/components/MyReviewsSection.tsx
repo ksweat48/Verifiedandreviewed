@@ -19,7 +19,6 @@ interface UserReview {
   views: number;
   image_urls?: string[];
   review_text?: string;
-  review_text?: string;
 }
 
 interface MyReviewsSectionProps {
@@ -90,6 +89,10 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
         console.log('Formatted reviews before setting state:', formattedReviews);
         setReviews(formattedReviews);
       } catch (err) {
+        console.error('Error fetching user reviews:', err);
+      }
+    }
+  };
 
   const handleViewReview = async (review: UserReview) => {
     try {
@@ -236,7 +239,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                     <Eye className="h-4 w-4" />
                   </button>
                   <button 
-                    onClick={() => handleEditReview(review.id)}
+                    onClick={() => handleEditReview(review)}
                     className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
                     title="Edit"
                   >
