@@ -59,13 +59,16 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
         
         const formattedReviews = userReviews.map(review => ({
           id: review.id,
+          businessId: review.business_id,
           businessName: review.businesses?.name || 'Unknown Business',
           location: review.businesses?.location || 'Unknown Location',
           rating: review.rating,
           status: review.status,
           isVerified: review.businesses?.is_verified || false,
           publishDate: review.created_at,
-          views: 0 // We don't track views yet
+          views: 0, // We don't track views yet
+          image_urls: review.image_urls || [],
+          review_text: review.review_text
         }));
         
         console.log('Formatted reviews before setting state:', formattedReviews);

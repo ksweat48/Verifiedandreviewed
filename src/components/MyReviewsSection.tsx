@@ -4,10 +4,12 @@ import { MapPin, Calendar, Eye, Edit, Trash2, ThumbsUp, ThumbsDown } from 'lucid
 import { ReviewService } from '../services/reviewService';
 import { BusinessService } from '../services/businessService';
 import BusinessProfileModal from './BusinessProfileModal';
+import LeaveReviewModal from './LeaveReviewModal';
 import type { Business } from '../services/supabaseClient';
 
 interface UserReview {
   id: string;
+  businessId: string;
   businessName: string;
   location: string;
   rating: number;
@@ -15,6 +17,8 @@ interface UserReview {
   isVerified: boolean;
   publishDate: string;
   views: number;
+  image_urls?: string[];
+  review_text?: string;
 }
 
 interface MyReviewsSectionProps {
@@ -27,6 +31,8 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   const [isBusinessProfileModalOpen, setIsBusinessProfileModalOpen] = useState(false);
   const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const [isEditReviewModalOpen, setIsEditReviewModalOpen] = useState(false);
+  const [reviewToEdit, setReviewToEdit] = useState<UserReview | null>(null);
   const [localReviews, setLocalReviews] = useState(reviews);
   const reviewsPerPage = 10;
   
@@ -74,8 +80,9 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
     }
   };
 
-  const handleEditReview = (reviewId: string) => {
-    navigate(`/submit-review?edit=${reviewId}`);
+  const handleEditReview = (review: UserReview) => {
+    setReviewToEdit(review);
+    setIsEditReviewModalOpen(true);
   };
 
   const handleDeleteReview = async (reviewId: string) => {
@@ -219,6 +226,27 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
         onClose={() => setIsBusinessProfileModalOpen(false)}
         business={selectedBusinessForProfile}
       />
+
+      {/* LeaveReviewModal for editing */}
+      {reviewToEdit && (
+        <LeaveReviewModal
+          isOpen={isEditReviewModalOpen}
+          onClose={() => {
+            setIsEditReviewModalOpen(false);
+            setReviewToEdit(null);
+            window.dispatchEvent(new CustomEvent('visited-businesses-updated'));
+          }}
+          business={{
+            id: reviewToEdit.businessId,
+            name: reviewToEdit.businessName,
+            image: reviewToEdit.image_urls?.[0] || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+            address: reviewToEdit.location,
+            visitDate: reviewToEdit.publishDate,
+          }}
+          reviewToEdit={reviewToEdit}
+          onSubmitReview={() => {}} // Empty function since we handle submission internally
+        />
+      )}
     </>
   );
 };
