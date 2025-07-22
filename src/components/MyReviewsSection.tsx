@@ -152,6 +152,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
       setDeletingReviewId(null);
     }
   };
+  
   return (
     <>
       <div className="space-y-6">
