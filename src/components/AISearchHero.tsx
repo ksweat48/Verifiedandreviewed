@@ -1,4 +1,4 @@
-              ```jsx
+```jsx
 import React, { useState, useRef, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -173,7 +173,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
               authorImage: review.profiles?.avatar_url,
               images: (review.image_urls || []).map((url: string, index: number) => ({
                 url,
-                alt: \`Review image ${index + 1}`
+                alt: `Review image ${index + 1}`
               })),
               thumbsUp: review.rating >= 4,
               level: review.profiles?.level || 1,
@@ -185,7 +185,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
               reviews: transformedReviews
             };
           } catch (error) {
-            console.error(\`Error fetching reviews for business ${business.id}:`, error);
+            console.error(`Error fetching reviews for business ${business.id}:`, error);
             return {
               ...business,
               reviews: []
@@ -220,7 +220,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
       if (isAuthenticated) {
         await CreditService.deductCredits(user.id, creditCost, 
           useSemanticSearch ? 'semantic_search' : 'ai_search', 
-          \`Search: "${searchQuery}"`
+          `Search: "${searchQuery}"`
         );
         await refreshUserCredits();
       }
@@ -240,7 +240,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
   const handleTakeMeThere = (business: BusinessCard) => {
     if (business.address) {
       const encodedAddress = encodeURIComponent(business.address);
-      window.open(\`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
     }
   };
 
@@ -297,7 +297,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
           <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: \`linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('https://images.pexels.com/photos/1581384/pexels-photo-1581384.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')`
+              backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), url('https://images.pexels.com/photos/1581384/pexels-photo-1581384.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')`
             }}
           />
           
@@ -333,7 +333,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
                   />
                   <button
                     onClick={startVoiceRecognition}
-                    className={\`p-3 rounded-full mr-2 ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200`}
+                    className={`p-3 rounded-full mr-2 ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200`}
                     aria-label="Voice search"
                     type="button"
                   >
@@ -400,7 +400,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
       )}
 
       {showResults && (
-        <div className={\`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} mb-1`}>
+        <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} mb-1`}>
         <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div 
             ref={searchRef}
@@ -420,7 +420,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
                 />
                 <button
                   onClick={startVoiceRecognition}
-                  className={\`p-2 rounded-full ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200 flex-shrink-0`}
+                  className={`p-2 rounded-full ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200 flex-shrink-0`}
                   aria-label="Voice search"
                   type="button"
                 >
@@ -523,7 +523,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
               </h3>
               <p className="font-lora text-xs text-yellow-700 mt-1">
                 {userCredits < (usedAI ? 10 : 1) 
-                  ? \`You need ${usedAI ? '10 credits' : '1 credit'} for this search. Purchase more credits to continue searching.`
+                  ? `You need ${usedAI ? '10 credits' : '1 credit'} for this search. Purchase more credits to continue searching.`
                   : 'AI search is temporarily unavailable. Please try again in a moment.'
                 }
               </p>
@@ -570,7 +570,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
 
       <div
         ref={resultsRef} 
-        className={\`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-20' : ''} ${
+        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-20' : ''} ${
           showResults && results.length > 0 ? 'opacity-100 mt-0 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'
         }`}
         style={{
@@ -586,7 +586,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ onBusinessSelect }) => {
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-8"
               >
                 {results.map((business, businessIndex) => (
-                  <div key={\`${business.id}-${businessIndex}`} className={business.isPlatformBusiness ? "sm:col-span-2 lg:col-span-2 flex flex-col h-full" : ""}>
+                  <div key={`${business.id}-${businessIndex}`} className={business.isPlatformBusiness ? "sm:col-span-2 lg:col-span-2 flex flex-col h-full" : ""}>
                     {business.isPlatformBusiness ? (
                       <PlatformBusinessCard
                         business={business}
