@@ -133,14 +133,17 @@ export class ReviewService {
           review_text,
           rating,
           image_urls,
+          status,
           created_at,
+          updated_at,
           businesses!inner (
             id,
             name,
             location,
             is_verified
           )
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
       console.log('Supabase query result for user reviews:', data);
       if (error) throw error;
@@ -148,18 +151,6 @@ export class ReviewService {
     } catch (error) {
       console.error('Error fetching user reviews:', error);
       return [];
-    }
-  }
-}
-        )
-    }
-  }
-}
-        )
-    }
-  }
-}
-        )
     }
   }
 }

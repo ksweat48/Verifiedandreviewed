@@ -19,6 +19,7 @@ interface UserReview {
   views: number;
   image_urls?: string[];
   review_text?: string;
+  review_text?: string;
 }
 
 interface MyReviewsSectionProps {
@@ -48,51 +49,6 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   React.useEffect(() => {
     setLocalReviews(reviews);
   }, [reviews]);
-
-  const fetchUserReviews = async () => {
-    if (user && user.id) {
-      try {
-        console.log('Fetching reviews for user ID:', user.id);
-        const userReviews = await ReviewService.getUserReviews(user.id);
-        
-        console.log('🔍 DEBUG: Raw userReviews from service:', userReviews);
-        console.log('🔍 DEBUG: Number of reviews returned:', userReviews.length);
-        if (userReviews.length > 0) {
-          console.log('🔍 DEBUG: First review raw data:', userReviews[0]);
-          console.log('🔍 DEBUG: First review review_text:', userReviews[0].review_text);
-          console.log('🔍 DEBUG: First review rating:', userReviews[0].rating);
-          console.log('🔍 DEBUG: First review image_urls:', userReviews[0].image_urls);
-        }
-        
-        const formattedReviews = userReviews.map(review => ({
-          id: review.id,
-          businessId: review.business_id,
-          businessName: review.businesses?.name || 'Unknown Business',
-          location: review.businesses?.location || 'Unknown Location',
-          rating: review.rating,
-          status: review.status,
-          isVerified: review.businesses?.is_verified || false,
-          publishDate: new Date().toISOString(), // Temporary fallback date
-          views: 0, // We don't track views yet
-          image_urls: review.image_urls || [],
-          review_text: review.review_text
-        }));
-        
-        console.log('🔍 DEBUG: Formatted reviews before setState:', formattedReviews);
-        if (formattedReviews.length > 0) {
-          console.log('🔍 DEBUG: First formatted review:', formattedReviews[0]);
-          console.log('🔍 DEBUG: First formatted review review_text:', formattedReviews[0].review_text);
-          console.log('🔍 DEBUG: First formatted review rating:', formattedReviews[0].rating);
-          console.log('🔍 DEBUG: First formatted review image_urls:', formattedReviews[0].image_urls);
-        }
-        
-        console.log('Formatted reviews before setting state:', formattedReviews);
-        setReviews(formattedReviews);
-      } catch (err) {
-        console.error('Error fetching user reviews:', err);
-      }
-    }
-  };
 
   const handleViewReview = async (review: UserReview) => {
     try {
@@ -152,7 +108,6 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
       setDeletingReviewId(null);
     }
   };
-  
   return (
     <>
       <div className="space-y-6">
@@ -240,7 +195,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                     <Eye className="h-4 w-4" />
                   </button>
                   <button 
-                    onClick={() => handleEditReview(review)}
+                    onClick={() => handleEditReview(review.id)}
                     className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
                     title="Edit"
                   >
