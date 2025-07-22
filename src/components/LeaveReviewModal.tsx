@@ -49,7 +49,7 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      const filePath = `${user.id}/reviews/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('review-images')

@@ -73,7 +73,7 @@ const AccountPage = () => {
         // Create a unique filename
         // Simplified path structure to match RLS policy
         const fileExt = file.name.split('.').pop();
-        const filePath = `${session.user.id}/avatar.${fileExt}`;
+        const filePath = `${session.user.id}/avatars/avatar.${fileExt}`;
         
         // Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage
