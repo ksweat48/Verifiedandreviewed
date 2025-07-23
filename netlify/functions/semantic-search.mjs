@@ -173,22 +173,15 @@ export const handler = async (event, context) => {
     }
     // Transform results to match expected format
     const formattedResults = enrichedResults.map(business => ({
-      id: business.id,
-      name: business.name,
-      description: business.description || business.short_description || '',
-      location: business.location,
-      address: business.address,
-      category: business.category,
-      tags: business.tags || [],
+      // Spread all business properties to ensure complete data flow
+      ...business,
+      // Override/add specific properties for frontend compatibility
       image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-      hours: business.hours || 'Hours not available',
-      isVerified: business.is_verified || false,
       rating: {
         thumbsUp: business.thumbs_up || 0,
         thumbsDown: business.thumbs_down || 0,
         sentimentScore: business.sentiment_score || 0
       },
-      similarity: business.similarity || 0,
       isPlatformBusiness: true,
       isOpen: true, // Default to open since we don't have real-time status
       distance: latitude && longitude ? 
@@ -197,7 +190,8 @@ export const handler = async (event, context) => {
       duration: latitude && longitude ? 
         Math.floor(Math.random() * 10 + 5) : // Placeholder until distance calculation
         undefined,
-      reviews: [] // Reviews would be fetched separately if needed
+      reviews: [], // Reviews would be fetched separately if needed
+      similarity: business.similarity || 0
     }));
 
     // If no semantic matches found, provide helpful response

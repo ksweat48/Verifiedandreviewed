@@ -12,15 +12,33 @@ interface ReviewImage {
 interface BusinessCard {
   id: string;
   name: string;
+  description?: string;
+  short_description?: string;
+  address: string;
+  location?: string;
+  category?: string;
+  tags?: string[];
+  image: string;
+  gallery_urls?: string[];
+  hours?: string;
+  days_closed?: string;
+  phone_number?: string;
+  website_url?: string;
+  social_media?: string[];
+  price_range?: string;
+  service_area?: string;
+  owner_user_id?: string;
+  latitude?: number;
+  longitude?: number;
+  created_at?: string;
+  updated_at?: string;
+  is_verified?: boolean;
   rating: {
     thumbsUp: number;
     thumbsDown?: number;
     sentimentScore: number;
   };
-  image: string;
   isOpen: boolean;
-  hours: string;
-  address: string;
   reviews: Array<{
     text: string;
     author: string;
@@ -29,7 +47,6 @@ interface BusinessCard {
     thumbsUp: boolean;
   }>;
   isPlatformBusiness: boolean;
-  tags?: string[];
   distance?: number;
   duration?: number;
   similarity?: number; // Semantic search similarity score (0-1)
@@ -282,33 +299,16 @@ const PlatformBusinessCard: React.FC<{
         isOpen={businessProfileOpen}
         onClose={() => setBusinessProfileOpen(false)}
         business={{
-          id: business.id,
-          name: business.name,
-          category: business.category || business.tags?.[0],
-          description: business.description,
-          short_description: business.short_description,
-          address: business.address,
-          location: business.address,
+          // Pass all business properties directly
+          ...business,
+          // Map specific fields for modal compatibility
           image_url: business.image,
-          gallery_urls: business.reviews?.[0]?.images?.map(img => img.url) || [],
-          hours: business.hours,
-          days_closed: business.days_closed,
-          phone_number: business.phone_number,
-          website_url: business.website_url,
-          social_media: business.social_media,
-          price_range: business.price_range,
-          service_area: business.service_area,
-          tags: business.tags,
-          is_verified: business.isPlatformBusiness,
+          location: business.location || business.address,
+          is_verified: business.is_verified || business.isPlatformBusiness,
           thumbs_up: business.rating?.thumbsUp,
           thumbs_down: business.rating?.thumbsDown,
           sentiment_score: business.rating?.sentimentScore,
-          isOpen: business.isOpen,
-          owner_user_id: business.owner_user_id,
-          latitude: business.latitude,
-          longitude: business.longitude,
-          created_at: business.created_at,
-          updated_at: business.updated_at
+          gallery_urls: business.gallery_urls || business.reviews?.[0]?.images?.map(img => img.url) || []
         }}
       />
     </>
