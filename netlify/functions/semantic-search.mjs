@@ -86,6 +86,7 @@ export const handler = async (event, context) => {
 
     const queryEmbedding = embeddingResponse.data[0].embedding;
     console.log('✅ Generated embedding with dimensions:', queryEmbedding.length);
+    console.log('🔍 Query Embedding for:', query, ':', JSON.stringify(queryEmbedding));
 
     // Initialize Supabase client
     console.log('🗄️ Initializing Supabase client...');
