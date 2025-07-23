@@ -178,7 +178,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         const semanticResult = await SemanticSearchService.searchByVibe(searchQuery, {
           latitude,
           longitude,
-          matchThreshold: 0.65, // Higher threshold for more precise results
+          matchThreshold: 0.5, // Updated threshold for better recall
           matchCount: 8
         });
         
