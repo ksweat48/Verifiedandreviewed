@@ -95,15 +95,26 @@ const AIBusinessCard: React.FC<{
           <div className="flex items-center gap-2 mt-2">
             <button 
               onClick={() => {
-                // Prioritize most accurate location data for reliable mobile navigation
+                // Robust navigation URL construction with data validation
                 let mapsUrl;
                 if (business.placeId) {
+                  // Priority 1: Use Google Place ID (most accurate)
                   mapsUrl = `https://www.google.com/maps/place/?q=place_id:${business.placeId}`;
                 } else if (business.latitude && business.longitude) {
+                  // Priority 2: Use coordinates (highly reliable)
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+                } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
+                  // Priority 3: Use valid address string
+                  mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
+                } else if (business.name && typeof business.name === 'string' && business.name.trim().length > 0) {
+                  // Priority 4: Use business name as fallback
+                  mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
                 } else {
-                  mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+                  // Last resort: Generic search
+                  mapsUrl = `https://www.google.com/maps/search/?api=1&query=business`;
                 }
+                
+                console.log('🗺️ Opening Google Maps with URL:', mapsUrl);
                 window.open(mapsUrl, '_blank');
               }}
               className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"

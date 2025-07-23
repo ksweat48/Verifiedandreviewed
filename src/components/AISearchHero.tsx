@@ -559,13 +559,23 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         });
     }
     
-    // Prioritize coordinates for more reliable mobile navigation
+    // Robust navigation URL construction with data validation
     let mapsUrl;
     if (business.latitude && business.longitude) {
+      // Priority 1: Use coordinates (most reliable)
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+    } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
+      // Priority 2: Use valid address string
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
+    } else if (business.name && typeof business.name === 'string' && business.name.trim().length > 0) {
+      // Priority 3: Use business name as fallback
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
     } else {
-      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+      // Last resort: Generic search
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=business`;
     }
+    
+    console.log('🗺️ Opening Google Maps with URL:', mapsUrl);
     window.open(mapsUrl, '_blank');
   };
 
