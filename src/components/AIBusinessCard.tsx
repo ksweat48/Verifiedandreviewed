@@ -115,6 +115,7 @@ const AIBusinessCard: React.FC<{
             >
               <Icons.Heart className="h-4 w-4" />
             </button>
+          </div>
         </div>
     </div>
   );
