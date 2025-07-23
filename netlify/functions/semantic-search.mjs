@@ -121,8 +121,58 @@ export const handler = async (event, context) => {
       });
     }
 
+    // Enrich search results with full business details
+    let enrichedResults = [];
+    if (searchResults && searchResults.length > 0) {
+      console.log('🔄 Enriching search results with full business details...');
+      
+      // Extract business IDs from search results
+      const businessIds = searchResults.map(result => result.id);
+      
+      // Fetch full business details for these IDs
+      const { data: fullBusinessDetails, error: detailsError } = await supabase
+        .from('businesses')
+        .select('*')
+        .in('id', businessIds);
+      
+      if (detailsError) {
+        console.error('❌ Error fetching full business details:', detailsError);
+        // Fall back to original search results if enrichment fails
+        enrichedResults = searchResults;
+      } else {
+        console.log('✅ Fetched full details for', fullBusinessDetails?.length || 0, 'businesses');
+        
+        // Create a map of business ID to full details for quick lookup
+        const businessDetailsMap = new Map();
+        if (fullBusinessDetails) {
+          fullBusinessDetails.forEach(business => {
+            businessDetailsMap.set(business.id, business);
+          });
+        }
+        
+        // Merge search results with full business details
+        enrichedResults = searchResults.map(searchResult => {
+          const fullDetails = businessDetailsMap.get(searchResult.id);
+          if (fullDetails) {
+            // Merge full details with search result, preserving similarity score
+            return {
+              ...fullDetails,
+              similarity: searchResult.similarity
+            };
+          } else {
+            // Fall back to search result if full details not found
+            console.warn(`⚠️ Full details not found for business ID: ${searchResult.id}`);
+            return searchResult;
+          }
+        });
+        
+        console.log('✅ Successfully enriched', enrichedResults.length, 'business results with full details');
+      }
+    } else {
+      enrichedResults = searchResults || [];
+    }
     // Transform results to match expected format
-    const formattedResults = (searchResults || []).map(business => ({
+    const formattedResults = enrichedResults.map(business => ({
       id: business.id,
       name: business.name,
       description: business.description || business.short_description || '',
