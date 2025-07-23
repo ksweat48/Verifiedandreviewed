@@ -284,19 +284,31 @@ const PlatformBusinessCard: React.FC<{
         business={{
           id: business.id,
           name: business.name,
-          category: business.tags?.[0],
-          description: business.reviews?.[0]?.text,
+          category: business.category || business.tags?.[0],
+          description: business.description,
+          short_description: business.short_description,
           address: business.address,
           location: business.address,
           image_url: business.image,
           gallery_urls: business.reviews?.[0]?.images?.map(img => img.url) || [],
           hours: business.hours,
+          days_closed: business.days_closed,
+          phone_number: business.phone_number,
+          website_url: business.website_url,
+          social_media: business.social_media,
+          price_range: business.price_range,
+          service_area: business.service_area,
           tags: business.tags,
           is_verified: business.isPlatformBusiness,
           thumbs_up: business.rating?.thumbsUp,
           thumbs_down: business.rating?.thumbsDown,
           sentiment_score: business.rating?.sentimentScore,
-          isOpen: business.isOpen
+          isOpen: business.isOpen,
+          owner_user_id: business.owner_user_id,
+          latitude: business.latitude,
+          longitude: business.longitude,
+          created_at: business.created_at,
+          updated_at: business.updated_at
         }}
       />
     </>

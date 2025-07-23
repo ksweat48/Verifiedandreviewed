@@ -64,6 +64,20 @@ const ExploreArea = () => {
       const transformedBusinesses = realBusinesses.map(business => ({
         id: business.id,
         name: business.name,
+        category: business.category,
+        description: business.description,
+        short_description: business.short_description,
+        phone_number: business.phone_number,
+        website_url: business.website_url,
+        social_media: business.social_media,
+        price_range: business.price_range,
+        service_area: business.service_area,
+        days_closed: business.days_closed,
+        owner_user_id: business.owner_user_id,
+        latitude: business.latitude,
+        longitude: business.longitude,
+        created_at: business.created_at,
+        updated_at: business.updated_at,
         rating: {
           thumbsUp: business.thumbs_up || 0,
           thumbsDown: business.thumbs_down || 0,
@@ -349,21 +363,31 @@ const ExploreArea = () => {
           business={{
             id: selectedBusinessForProfile.id,
             name: selectedBusinessForProfile.name,
-            category: selectedBusinessForProfile.tags?.[0],
-            description: selectedBusinessForProfile.reviews?.[0]?.text,
+            category: selectedBusinessForProfile.category || selectedBusinessForProfile.tags?.[0],
+            description: selectedBusinessForProfile.description,
+            short_description: selectedBusinessForProfile.short_description,
             address: selectedBusinessForProfile.address,
-            location: selectedBusinessForProfile.address,
+            location: selectedBusinessForProfile.address || selectedBusinessForProfile.location,
             image_url: selectedBusinessForProfile.image,
-            gallery_urls: selectedBusinessForProfile.reviews && selectedBusinessForProfile.reviews.length > 0 && selectedBusinessForProfile.reviews[0].images
-              ? selectedBusinessForProfile.reviews[0].images.map(img => img.url)
-              : [],
+            gallery_urls: selectedBusinessForProfile.gallery_urls || [],
             hours: selectedBusinessForProfile.hours,
+            days_closed: selectedBusinessForProfile.days_closed,
+            phone_number: selectedBusinessForProfile.phone_number,
+            website_url: selectedBusinessForProfile.website_url,
+            social_media: selectedBusinessForProfile.social_media,
+            price_range: selectedBusinessForProfile.price_range,
+            service_area: selectedBusinessForProfile.service_area,
             tags: selectedBusinessForProfile.tags,
-            is_verified: true,
+            is_verified: selectedBusinessForProfile.isPlatformBusiness,
             thumbs_up: selectedBusinessForProfile.rating?.thumbsUp,
             thumbs_down: selectedBusinessForProfile.rating?.thumbsDown,
             sentiment_score: selectedBusinessForProfile.rating?.sentimentScore,
-            isOpen: selectedBusinessForProfile.isOpen
+            isOpen: selectedBusinessForProfile.isOpen,
+            owner_user_id: selectedBusinessForProfile.owner_user_id,
+            latitude: selectedBusinessForProfile.latitude,
+            longitude: selectedBusinessForProfile.longitude,
+            created_at: selectedBusinessForProfile.created_at,
+            updated_at: selectedBusinessForProfile.updated_at
           }}
         />
       )}

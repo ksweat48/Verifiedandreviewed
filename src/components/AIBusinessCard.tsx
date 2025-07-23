@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
-import BusinessProfileModal from './BusinessProfileModal';
 
 interface BusinessCard {
   id: string;
@@ -28,15 +27,13 @@ const AIBusinessCard: React.FC<{
   business: BusinessCard;
   onRecommend: (business: BusinessCard) => void;
 }> = ({ business, onRecommend }) => {
-  const [businessProfileOpen, setBusinessProfileOpen] = useState(false);
 
   return (
-    <>
-      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group">
-        <div className="p-2">
-          <h3 className="font-poppins text-base font-bold text-neutral-900 line-clamp-1 mb-1">
-            {business.name}
-          </h3>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group">
+      <div className="p-2">
+        <h3 className="font-poppins text-base font-bold text-neutral-900 line-clamp-1 mb-1">
+          {business.name}
+        </h3>
           
           <div className="flex items-center gap-1 mb-2">
             {[...Array(5)].map((_, i) => (
@@ -118,10 +115,8 @@ const AIBusinessCard: React.FC<{
             >
               <Icons.Heart className="h-4 w-4" />
             </button>
-          </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 };
 

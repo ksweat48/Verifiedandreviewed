@@ -323,6 +323,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               
               // Sort semantically relevant results
               const sortedResults = semanticallyRelevantResults.sort((a, b) => {
+                // First priority: Platform businesses (higher is better)
+                if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+                if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+                
                 // First priority: Semantic similarity score (higher is better)
                 const aSimilarity = a.similarity || 0;
                 const bSimilarity = b.similarity || 0;
@@ -330,15 +334,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   return bSimilarity - aSimilarity; // Descending order (higher similarity first)
                 }
                 
-                // Second priority: Platform businesses (only if similarity is equal)
-                if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-                if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
-                
-                // Third priority: Open businesses
+                // Second priority: Open businesses
                 if (a.isOpen && !b.isOpen) return -1;
                 if (!a.isOpen && b.isOpen) return 1;
                 
-                // Fourth priority: Closest businesses (by distance)
+                // Third priority: Closest businesses (by distance)
                 if (a.distance && b.distance) {
                   if (a.distance < b.distance) return -1;
                   if (a.distance > b.distance) return 1;
@@ -383,6 +383,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             
             // Sort semantically relevant fallback results
             const sortedFallbackResults = semanticallyRelevantFallback.sort((a, b) => {
+              // First priority: Platform businesses (higher is better)
+              if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+              if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+              
               // First priority: Semantic similarity score (higher is better)
               const aSimilarity = a.similarity || 0;
               const bSimilarity = b.similarity || 0;
@@ -390,15 +394,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 return bSimilarity - aSimilarity; // Descending order (higher similarity first)
               }
               
-              // Second priority: Platform businesses
-              if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-              if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
-              
-              // Third priority: Open businesses
+              // Second priority: Open businesses
               if (a.isOpen && !b.isOpen) return -1;
               if (!a.isOpen && b.isOpen) return 1;
               
-              // Fourth priority: Closest businesses (by distance)
+              // Third priority: Closest businesses (by distance)
               if (a.distance && b.distance) {
                 if (a.distance < b.distance) return -1;
                 if (a.distance > b.distance) return 1;
@@ -436,6 +436,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           
           // Sort semantically relevant platform businesses
           const sortedResults = semanticallyRelevantPlatform.sort((a, b) => {
+            // First priority: Platform businesses (higher is better)
+            if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
+            if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
+            
             // First priority: Semantic similarity score (higher is better)
             const aSimilarity = a.similarity || 0;
             const bSimilarity = b.similarity || 0;
@@ -443,15 +447,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               return bSimilarity - aSimilarity; // Descending order (higher similarity first)
             }
             
-            // Second priority: Platform businesses (all are platform businesses here, so this is mostly redundant)
-            if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-            if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
-            
-            // Third priority: Open businesses
+            // Second priority: Open businesses
             if (a.isOpen && !b.isOpen) return -1;
             if (!a.isOpen && b.isOpen) return 1;
             
-            // Fourth priority: Closest businesses (by distance)
+            // Third priority: Closest businesses (by distance)
             if (a.distance && b.distance) {
               if (a.distance < b.distance) return -1;
               if (a.distance > b.distance) return 1;
