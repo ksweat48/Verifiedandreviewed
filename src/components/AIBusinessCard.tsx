@@ -95,23 +95,43 @@ const AIBusinessCard: React.FC<{
           <div className="flex items-center gap-2 mt-2">
             <button 
               onClick={() => {
+                // Debug: Log the complete business object to inspect data
+                console.log('🗺️ DEBUG: AIBusinessCard GO button clicked with business object:', business);
+                console.log('🗺️ DEBUG: Business coordinates:', { 
+                  latitude: business.latitude, 
+                  longitude: business.longitude,
+                  hasCoords: !!(business.latitude && business.longitude)
+                });
+                console.log('🗺️ DEBUG: Business address/name/placeId:', { 
+                  address: business.address, 
+                  name: business.name,
+                  placeId: business.placeId,
+                  addressType: typeof business.address,
+                  nameType: typeof business.name
+                });
+                
                 // Robust navigation URL construction with data validation
                 let mapsUrl;
                 if (business.placeId) {
                   // Priority 1: Use Google Place ID (most accurate)
                   mapsUrl = `https://www.google.com/maps/place/?q=place_id:${business.placeId}`;
+                  console.log('🗺️ DEBUG: Using Place ID for maps URL:', business.placeId);
                 } else if (business.latitude && business.longitude) {
                   // Priority 2: Use coordinates (highly reliable)
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+                  console.log('🗺️ DEBUG: Using coordinates for maps URL');
                 } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
                   // Priority 3: Use valid address string
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
+                  console.log('🗺️ DEBUG: Using address for maps URL:', business.address.trim());
                 } else if (business.name && typeof business.name === 'string' && business.name.trim().length > 0) {
                   // Priority 4: Use business name as fallback
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
+                  console.log('🗺️ DEBUG: Using business name for maps URL:', business.name.trim());
                 } else {
                   // Last resort: Generic search
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=business`;
+                  console.log('🗺️ DEBUG: Using generic fallback for maps URL');
                 }
                 
                 console.log('🗺️ Opening Google Maps with URL:', mapsUrl);

@@ -177,6 +177,10 @@ export const handler = async (event, context) => {
       ...business,
       // Override/add specific properties for frontend compatibility
       image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+      latitude: business.latitude || null,
+      longitude: business.longitude || null,
+      address: business.address || null,
+      name: business.name || null,
       rating: {
         thumbsUp: business.thumbs_up || 0,
         thumbsDown: business.thumbs_down || 0,

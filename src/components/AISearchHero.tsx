@@ -544,6 +544,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleTakeMeThere = (business) => {
+    // Debug: Log the complete business object to inspect data
+    console.log('🗺️ DEBUG: handleTakeMeThere called with business object:', business);
+    console.log('🗺️ DEBUG: Business coordinates:', { 
+      latitude: business.latitude, 
+      longitude: business.longitude,
+      hasCoords: !!(business.latitude && business.longitude)
+    });
+    console.log('🗺️ DEBUG: Business address/name:', { 
+      address: business.address, 
+      name: business.name,
+      addressType: typeof business.address,
+      nameType: typeof business.name
+    });
+    
     // Record the business visit for platform businesses
     if (business.isPlatformBusiness && currentUser && currentUser.id) {
       BusinessService.recordBusinessVisit(business.id, currentUser.id)
@@ -564,15 +578,19 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     if (business.latitude && business.longitude) {
       // Priority 1: Use coordinates (most reliable)
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+      console.log('🗺️ DEBUG: Using coordinates for maps URL');
     } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
       // Priority 2: Use valid address string
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
+      console.log('🗺️ DEBUG: Using address for maps URL:', business.address.trim());
     } else if (business.name && typeof business.name === 'string' && business.name.trim().length > 0) {
       // Priority 3: Use business name as fallback
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
+      console.log('🗺️ DEBUG: Using business name for maps URL:', business.name.trim());
     } else {
       // Last resort: Generic search
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=business`;
+      console.log('🗺️ DEBUG: Using generic fallback for maps URL');
     }
     
     console.log('🗺️ Opening Google Maps with URL:', mapsUrl);

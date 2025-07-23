@@ -330,6 +330,8 @@ Requirements:
               isOpen: isOpen,
               hours: businessHours,
               address: result.formatted_address,
+              latitude: result.geometry?.location?.lat || null,
+              longitude: result.geometry?.location?.lng || null,
               distance: distance,
               duration: duration,
               placeId: result.place_id, // Add place_id for Google Business Profile linking
