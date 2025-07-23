@@ -21,6 +21,8 @@ interface BusinessCard {
   isGoogleVerified?: boolean;
   placeId?: string;
   similarity?: number; // Semantic search similarity score (0-1)
+  latitude?: number;
+  longitude?: number;
 }
 
 const AIBusinessCard: React.FC<{
@@ -93,9 +95,15 @@ const AIBusinessCard: React.FC<{
           <div className="flex items-center gap-2 mt-2">
             <button 
               onClick={() => {
-                const mapsUrl = business.placeId 
-                  ? `https://www.google.com/maps/place/?q=place_id:${business.placeId}`
-                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+                // Prioritize most accurate location data for reliable mobile navigation
+                let mapsUrl;
+                if (business.placeId) {
+                  mapsUrl = `https://www.google.com/maps/place/?q=place_id:${business.placeId}`;
+                } else if (business.latitude && business.longitude) {
+                  mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+                } else {
+                  mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+                }
                 window.open(mapsUrl, '_blank');
               }}
               className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"

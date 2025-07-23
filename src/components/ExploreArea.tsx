@@ -128,7 +128,13 @@ const ExploreArea = () => {
 
   // Function to handle "Take Me There" button click
   const handleTakeMeThere = (business: Business) => {
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+    // Prioritize coordinates for more reliable mobile navigation
+    let mapsUrl;
+    if (business.latitude && business.longitude) {
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+    } else {
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+    }
     window.open(mapsUrl, '_blank');
   };
 
