@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Upload, X, Plus, MapPin, Clock, Phone, Globe, DollarSign, Tag } from 'lucide-react';
+import { Upload, X, Plus, MapPin, Clock, Phone, Globe, DollarSign, Tag, TrendingUp, Info, CheckCircle, AlertCircle } from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import { useAuth } from '../hooks/useAuth';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
@@ -58,6 +58,7 @@ export default function AddBusinessPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
   const [geocodingError, setGeocodingError] = useState<string>('');
+  const [contentQualityScore, setContentQualityScore] = useState(0);
 
   // Fetch business data if in edit mode
   useEffect(() => {
@@ -108,6 +109,66 @@ export default function AddBusinessPage() {
       fetchBusinessData();
     }
   }, [isEditMode, editBusinessId]);
+
+  // Calculate content quality score
+  const calculateContentQualityScore = () => {
+    let score = 0;
+    const maxScore = 100;
+    
+    // Business name (10 points)
+    if (formData.name.trim().length > 0) {
+      score += 10;
+    }
+    
+    // Category (10 points)
+    if (formData.category.trim().length > 0) {
+      score += 10;
+    }
+    
+    // Short description (20 points)
+    if (formData.short_description.trim().length >= 50) {
+      score += 20;
+    } else if (formData.short_description.trim().length >= 20) {
+      score += 10;
+    }
+    
+    // Full description (30 points)
+    if (formData.description.trim().length >= 150) {
+      score += 30;
+    } else if (formData.description.trim().length >= 75) {
+      score += 15;
+    }
+    
+    // Tags (20 points)
+    if (formData.tags.length >= 5) {
+      score += 20;
+    } else if (formData.tags.length >= 3) {
+      score += 10;
+    }
+    
+    // Contact info (10 points)
+    if (formData.phone_number.trim().length > 0 || formData.website_url.trim().length > 0) {
+      score += 10;
+    }
+    
+    return Math.min(score, maxScore);
+  };
+
+  // Update content quality score when form data changes
+  useEffect(() => {
+    const score = calculateContentQualityScore();
+    setContentQualityScore(score);
+  }, [formData]);
+
+  const getQualityLevel = (score: number) => {
+    if (score >= 80) return { level: 'Excellent', color: 'text-green-600', bgColor: 'bg-green-100', icon: CheckCircle };
+    if (score >= 60) return { level: 'Good', color: 'text-blue-600', bgColor: 'bg-blue-100', icon: TrendingUp };
+    if (score >= 40) return { level: 'Fair', color: 'text-yellow-600', bgColor: 'bg-yellow-100', icon: AlertCircle };
+    return { level: 'Poor', color: 'text-red-600', bgColor: 'bg-red-100', icon: AlertCircle };
+  };
+
+  const qualityLevel = getQualityLevel(contentQualityScore);
+  const QualityIcon = qualityLevel.icon;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -309,6 +370,64 @@ export default function AddBusinessPage() {
             </p>
           </div>
 
+          {/* Content Quality Indicator */}
+          <div className={`${qualityLevel.bgColor} rounded-xl p-6 mb-8 border-2 ${qualityLevel.color.replace('text-', 'border-').replace('-600', '-200')}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <QualityIcon className={`h-6 w-6 ${qualityLevel.color} mr-3`} />
+                <div>
+                  <h3 className="font-poppins text-lg font-semibold text-neutral-900">
+                    Search Relevance Score: {contentQualityScore}%
+                  </h3>
+                  <p className={`font-lora text-sm ${qualityLevel.color}`}>
+                    Content Quality: {qualityLevel.level}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="w-32 bg-gray-200 rounded-full h-3 mb-2">
+                  <div 
+                    className={`h-3 rounded-full transition-all duration-300 ${
+                      contentQualityScore >= 80 ? 'bg-green-500' :
+                      contentQualityScore >= 60 ? 'bg-blue-500' :
+                      contentQualityScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${contentQualityScore}%` }}
+                  ></div>
+                </div>
+                <p className="font-lora text-xs text-gray-600">
+                  Higher scores = better search visibility
+                </p>
+              </div>
+            </div>
+            
+            {/* Dynamic recommendations */}
+            <div className="space-y-2">
+              {contentQualityScore < 80 && (
+                <div className="bg-white bg-opacity-50 rounded-lg p-3">
+                  <h4 className="font-poppins font-semibold text-neutral-900 mb-2 flex items-center">
+                    <Info className="h-4 w-4 mr-2" />
+                    Tips to improve your search ranking:
+                  </h4>
+                  <ul className="font-lora text-sm text-neutral-700 space-y-1">
+                    {formData.short_description.length < 50 && (
+                      <li>• Add a compelling short description (50+ characters)</li>
+                    )}
+                    {formData.description.length < 150 && (
+                      <li>• Write a detailed description (150+ words) including your unique vibe and atmosphere</li>
+                    )}
+                    {formData.tags.length < 5 && (
+                      <li>• Add more tags (5+ recommended) like "cozy", "family-friendly", "organic", etc.</li>
+                    )}
+                    {!formData.phone_number && !formData.website_url && (
+                      <li>• Add contact information (phone or website)</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information */}
             <div className="space-y-6">
@@ -325,8 +444,11 @@ export default function AddBusinessPage() {
                   onChange={handleInputChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your business name"
+                  placeholder="e.g., 'Sunrise Wellness Studio' or 'The Cozy Corner Cafe'"
                 />
+                <p className="font-lora text-xs text-gray-500 mt-1">
+                  Use descriptive names that convey your business type and atmosphere
+                </p>
               </div>
 
               <div>
@@ -339,9 +461,16 @@ export default function AddBusinessPage() {
                   value={formData.short_description}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Brief description of your business"
+                  placeholder="e.g., 'Cozy neighborhood cafe with organic coffee and fresh pastries'"
                   maxLength={100}
                 />
+                <p className="font-lora text-xs text-gray-500 mt-1">
+                  <span className={formData.short_description.length >= 50 ? 'text-green-600' : 'text-gray-500'}>
+                    {formData.short_description.length}/100 characters
+                  </span>
+                  {formData.short_description.length < 50 && ' - Aim for 50+ characters'}
+                  . Focus on your core service and unique vibe (e.g., "cozy", "vibrant", "upscale").
+                </p>
               </div>
 
               <div>
@@ -354,8 +483,15 @@ export default function AddBusinessPage() {
                   onChange={handleInputChange}
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Detailed description of your business, services, and what makes you unique"
+                  placeholder="Describe your services, unique selling points, atmosphere, and what customers can expect. Include details about your vibe, target audience, and what makes you special..."
                 />
+                <p className="font-lora text-xs text-gray-500 mt-1">
+                  <span className={formData.description.length >= 150 ? 'text-green-600' : 'text-gray-500'}>
+                    {formData.description.length} characters
+                  </span>
+                  {formData.description.length < 150 && ' - Aim for 150+ characters (about 25-50 words)'}
+                  . Include atmosphere, services, target audience, and unique features.
+                </p>
               </div>
 
               <div>
@@ -370,13 +506,19 @@ export default function AddBusinessPage() {
                 >
                   <option value="">Select a category</option>
                   <option value="Restaurant">Restaurant</option>
+                  <option value="Health & Wellness">Health & Wellness</option>
+                  <option value="Fitness">Fitness</option>
+                  <option value="Beauty & Spa">Beauty & Spa</option>
+                  <option value="Coffee & Tea">Coffee & Tea</option>
                   <option value="Retail">Retail</option>
                   <option value="Service">Service</option>
-                  <option value="Health & Wellness">Health & Wellness</option>
                   <option value="Entertainment">Entertainment</option>
                   <option value="Professional">Professional</option>
                   <option value="Other">Other</option>
                 </select>
+                <p className="font-lora text-xs text-gray-500 mt-1">
+                  Choose the most specific category that describes your business
+                </p>
               </div>
             </div>
 
@@ -599,13 +741,26 @@ export default function AddBusinessPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Add Tags
                 </label>
+                <p className="font-lora text-xs text-gray-600 mb-2">
+                  Add 5-10 relevant keywords that describe your services, atmosphere, and target audience.
+                </p>
+                <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                  <p className="font-poppins text-sm font-semibold text-blue-800 mb-1">
+                    Great tag examples:
+                  </p>
+                  <div className="font-lora text-xs text-blue-700 space-y-1">
+                    <p><strong>Atmosphere:</strong> cozy, modern, rustic, upscale, casual, intimate, lively</p>
+                    <p><strong>Services:</strong> organic, vegan-friendly, family-owned, locally-sourced, handcrafted</p>
+                    <p><strong>Audience:</strong> family-friendly, pet-friendly, date-night, business-casual, kid-friendly</p>
+                  </div>
+                </div>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., organic, family-friendly, outdoor seating"
+                    placeholder="e.g., cozy, organic, family-friendly, live-music"
                   />
                   <button
                     type="button"
@@ -615,6 +770,12 @@ export default function AddBusinessPage() {
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
+                <p className="font-lora text-xs text-gray-500 mb-2">
+                  <span className={formData.tags.length >= 5 ? 'text-green-600' : 'text-gray-500'}>
+                    {formData.tags.length} tags added
+                  </span>
+                  {formData.tags.length < 5 && ' - Add at least 5 tags for better search visibility'}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {formData.tags.map((tag, index) => (
                     <span
