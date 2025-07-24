@@ -805,6 +805,41 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         </div>
       )}
       
+      {/* Distance Filter Slider - Only show when results are displayed */}
+      {showResults && allFetchedBusinesses.length > 0 && (
+        <div className="w-full bg-white border-b border-neutral-100 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-center gap-4">
+              <span className="font-poppins text-sm font-medium text-neutral-700">
+                Max Distance:
+              </span>
+              <div className="flex items-center gap-3">
+                <span className="font-lora text-xs text-neutral-500">10mi</span>
+                <input
+                  type="range"
+                  min="10"
+                  max="30"
+                  step="10"
+                  value={selectedDisplayRadius}
+                  onChange={(e) => setSelectedDisplayRadius(parseInt(e.target.value))}
+                  className="w-32 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(to right, #f76c5e 0%, #f76c5e ${((selectedDisplayRadius - 10) / 20) * 100}%, #e5e7eb ${((selectedDisplayRadius - 10) / 20) * 100}%, #e5e7eb 100%)`
+                  }}
+                />
+                <span className="font-lora text-xs text-neutral-500">30mi</span>
+              </div>
+              <span className="font-poppins text-sm font-semibold text-primary-600">
+                {selectedDisplayRadius} miles
+              </span>
+              <div className="text-xs text-neutral-500">
+                ({results.length} results)
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Exit Search Button */}
       {isAppModeActive && (
         <button 
