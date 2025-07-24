@@ -834,7 +834,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           </div>
           
           {/* Distance Filter Slider - Only show when results are displayed */}
-          {showResults && allFetchedBusinesses.length > 0 && (
+          {showResults && results.length > 0 && (
             <div className="border-t border-neutral-100 bg-white shadow-sm p-4">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                 <div className="flex items-center justify-center gap-4">
