@@ -345,7 +345,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             // Apply dynamic search algorithm to platform-only results
             const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
             // Store all fetched businesses for slider filtering
-            // Store all fetched businesses for slider filtering
             setAllFetchedBusinesses(transformedBusinesses);
             
             // Apply initial filter with selected radius
@@ -356,25 +355,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             // Apply initial filter with selected radius
             const initialFilteredResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude, selectedDisplayRadius);
             
-            setResults(initialFilteredResults);
-            setResults(initialFilteredFallbackResults);
+            // Store all fetched businesses for slider filtering
+            console.log('✅ Dynamic search algorithm results:', initialFilteredResults.length, 'businesses (from', combinedResults.length, 'total)');
             console.log('✅ Fallback dynamic search results:', initialFilteredFallbackResults.length, 'businesses');
             trackEvent('search_performed', { 
               query: searchQuery, 
               used_ai: false, 
               credits_deducted: creditsRequired,
               results_count: initialFilteredFallbackResults.length,
-              results_count: initialFilteredResults.length,
               fallback: true
             });
           }
         } else {
           // Apply dynamic search algorithm to platform-only results
           const rankedPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
-          
-          // Store all fetched businesses for slider filtering
-          console.log('🎚️ DEBUG: Setting allFetchedBusinesses with combinedResults:', combinedResults.length, 'businesses');
-          setAllFetchedBusinesses(combinedResults);
           
           // Store all fetched businesses for slider filtering
           setAllFetchedBusinesses(transformedBusinesses);
@@ -403,7 +397,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           error: 'Insufficient credits'
         });
       }
-        console.log('🎚️ DEBUG: Setting allFetchedBusinesses with transformedBusinesses (fallback):', transformedBusinesses.length, 'businesses');
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -626,12 +619,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
   
   // DEBUG: Log state values before render
-  console.log('🎚️ RENDER DEBUG:', {
-    showResults,
+  console.log('🎚️ Slider state:', {
     allFetchedBusinessesLength: allFetchedBusinesses.length,
     resultsLength: results.length,
-    selectedDisplayRadius,
-    isAppModeActive
+    selectedDisplayRadius
   });
   
   return (
@@ -848,11 +839,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           </div>
           
           {/* Distance Filter Slider - Only show when results are displayed */}
-          {showResults && (
-            <div className="border-t border-neutral-100 bg-red-500 p-4">
-              <div className="text-white text-center mb-2">
-                DEBUG: allFetchedBusinesses.length = {allFetchedBusinesses.length}, results.length = {results.length}
-              </div>
+          {allFetchedBusinesses.length > 0 && (
+            <div className="border-t border-neutral-100 bg-neutral-50 p-4">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                 <div className="flex items-center justify-center gap-4">
                   <span className="font-poppins text-sm font-medium text-neutral-700">
