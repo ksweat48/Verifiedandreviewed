@@ -607,8 +607,25 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         <div className="flex flex-col justify-center items-center flex-grow z-10 px-4 sm:px-6 lg:px-8">
           {/* Centered Hero Content Container */}
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
+            {/* Loading Message - Show when searching */}
+            {isSearching && (
+              <div className="mb-8 animate-in fade-in duration-500">
+                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-6 shadow-lg">
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                    <h2 className="font-cinzel text-2xl md:text-3xl font-bold text-white">
+                      One Moment
+                    </h2>
+                  </div>
+                  <p className="font-lora text-lg md:text-xl text-white/90 animate-pulse">
+                    Vibe Check in Progress...
+                  </p>
+                </div>
+              </div>
+            )}
+            
             {/* Title and Subtitle */}
-            <div className="mb-8">
+            <div className={`mb-8 transition-all duration-500 ${isSearching ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}>
               <h1 className="font-cinzel text-4xl md:text-7xl lg:text-8xl font-bold text-neutral-900 mb-6 mx-auto">
                 <span className="text-white drop-shadow-lg">Discover what matters</span>
               </h1>
@@ -620,7 +637,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             </div>
             
             {/* Search Bar */}
-            <div className="w-full max-w-2xl mx-auto mb-6">
+            <div className={`w-full max-w-2xl mx-auto mb-6 transition-all duration-500 ${isSearching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
               <div 
                 ref={searchRef}
                 className="relative w-full"
@@ -690,7 +707,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             </div>
             
             {/* Sample Prompts */}
-            <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
+            <div className={`flex flex-wrap justify-center gap-1 sm:gap-2 transition-all duration-500 ${isSearching ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
               {samplePrompts.map((prompt) => (
                 <button
                   key={prompt}
@@ -698,6 +715,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     setSearchQuery(prompt);
                     handleSearch();
                   }}
+                  disabled={isSearching}
                   className="bg-white/10 border border-white/30 text-white px-3 py-1 rounded-full text-sm font-lora hover:bg-white/20 hover:border-white transition-colors duration-200"
                 >
                   {prompt}
