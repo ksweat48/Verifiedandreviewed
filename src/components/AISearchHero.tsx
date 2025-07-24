@@ -35,6 +35,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [showCreditWarning, setShowCreditWarning] = useState(false);
   const searchRef = useRef(null);
   const searchBarRef = useRef(null);
+  const [selectedDisplayRadius, setSelectedDisplayRadius] = useState(10);
+  const [allFetchedBusinesses, setAllFetchedBusinesses] = useState([]);
   const [useSemanticSearch, setUseSemanticSearch] = useState(true);
   const [semanticSearchAvailable, setSemanticSearchAvailable] = useState(false);
   const { trackEvent } = useAnalytics();
@@ -247,7 +249,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           
           try {
             // Calculate how many AI businesses we need (max 4 total cards)
-            const numAINeeded = Math.max(0, 20 - transformedBusinesses.length); // Get more for better ranking
+            const numAINeeded = Math.max(0, 20 - transformedBusinesses.length);
             
             // Always try to get AI results for better ranking diversity
             console.log(`🤖 Getting ${numAINeeded} AI businesses for enhanced ranking`);
@@ -378,20 +380,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   // Dynamic Search Algorithm Implementation
-  const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number) => {
+  const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number, maxRadius: number = 30) => {
     console.log('🔍 Applying dynamic search algorithm to', businesses.length, 'businesses');
     
-    // Step 1: Filter by radius (10 miles max)
+    // Step 1: Filter by radius (user-selected max)
     const businessesWithinRadius = businesses.filter(business => {
       const distance = business.distance || 0;
-      const withinRadius = distance <= MAX_SEARCH_RADIUS_MILES;
+      const withinRadius = distance <= maxRadius;
       if (!withinRadius) {
-        console.log(`🚫 Filtering out business outside radius: ${business.name} (${distance} miles)`);
+        console.log(`🚫 Filtering out business outside ${maxRadius} mile radius: ${business.name} (${distance} miles)`);
       }
       return withinRadius;
     });
     
-    console.log(`📍 ${businessesWithinRadius.length} businesses within ${MAX_SEARCH_RADIUS_MILES} mile radius`);
+    console.log(`📍 ${businessesWithinRadius.length} businesses within ${maxRadius} mile radius`);
     
     // Step 2: Calculate composite scores for each business
     const businessesWithScores = businessesWithinRadius.map(business => {
@@ -428,7 +430,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     
     // Step 6: Handle no results case
     if (uniqueResults.length === 0) {
-      console.log('⚠️ No businesses found within 10 mile radius');
+      console.log(`⚠️ No businesses found within ${maxRadius} mile radius`);
       return [];
     }
     
