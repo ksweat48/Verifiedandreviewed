@@ -14,7 +14,7 @@ import { getMatchPercentage, meetsDisplayThreshold, calculateCompositeScore } fr
 
 // Minimum semantic similarity threshold for displaying results
 const MINIMUM_DISPLAY_SIMILARITY = 0.0; // Allow all results for composite scoring
-const MAX_SEARCH_RADIUS_MILES = 10; // Maximum search radius in miles
+const MAX_SEARCH_RADIUS_MILES = 30; // Maximum search radius in miles
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -178,7 +178,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           latitude,
           longitude,
           matchThreshold: 0.5, // Updated threshold for better recall
-          matchCount: 8
+          matchCount: 20
         });
         
         if (semanticResult.success && semanticResult.results.length > 0) {
@@ -247,7 +247,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           
           try {
             // Calculate how many AI businesses we need (max 4 total cards)
-            const numAINeeded = Math.max(0, 10 - transformedBusinesses.length); // Get more for better ranking
+            const numAINeeded = Math.max(0, 20 - transformedBusinesses.length); // Get more for better ranking
             
             // Always try to get AI results for better ranking diversity
             console.log(`🤖 Getting ${numAINeeded} AI businesses for enhanced ranking`);

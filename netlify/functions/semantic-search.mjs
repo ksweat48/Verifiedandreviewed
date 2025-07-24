@@ -102,7 +102,7 @@ export const handler = async (event, context) => {
       {
         query_embedding: queryEmbedding,
         match_threshold: matchThreshold,
-        match_count: matchCount
+        match_count: 20
       }
     );
 

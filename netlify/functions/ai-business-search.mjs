@@ -70,7 +70,7 @@ export default async function handler(req) {
     // Use provided coordinates or default to San Francisco for testing
     const searchLatitude = latitude || 37.7749;
     const searchLongitude = longitude || -122.4194;
-    const searchRadius = 10000; // 10km radius
+    const searchRadius = 48280; // 30 miles in meters (30 * 1609.34)
     
     console.log('🔍 AI Business Search Request:', { 
       prompt, 
@@ -143,8 +143,8 @@ Requirements:
                 type: "string",
                 description: "Google Places search query (e.g., 'trendy wine bar', 'cozy coffee shop')"
               },
-              minItems: numToGenerate,
-              maxItems: numToGenerate
+              minItems: 20,
+              maxItems: 20
             }
           },
           required: ["queries"]
