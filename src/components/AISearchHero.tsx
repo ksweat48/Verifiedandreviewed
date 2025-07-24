@@ -22,6 +22,9 @@ interface AISearchHeroProps {
 }
 
 const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppModeActive }) => {
+  // Call the useGeolocation hook first to ensure latitude/longitude are available
+  const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -54,9 +57,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef(null);
   const [currentUser, setCurrentUser] = useState(null);
-  
-  // Call the useGeolocation hook
-  const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
   
   // Check if semantic search is available
   useEffect(() => {
