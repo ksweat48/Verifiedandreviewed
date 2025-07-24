@@ -762,110 +762,111 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       )}
 
       {showResults && (
-        <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} mb-1`}>
-        <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-          <div 
-            ref={searchRef}
-            className="relative w-full"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
-            <div className="relative bg-white rounded-xl shadow-md border border-neutral-200 p-2 w-full">
-              <form onSubmit={(e) => {e.preventDefault(); handleSearch();}} className="flex items-center w-full">
-                <Icons.Sparkles className="h-5 w-5 text-primary-500 ml-2 sm:ml-4 mr-2 sm:mr-3 flex-shrink-0" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="peaceful brunch spot, vibe-y wine bar, cozy coffee for work..."
-                  className="flex-1 py-2 sm:py-3 px-2 text-base font-lora text-neutral-700 placeholder-neutral-400 bg-transparent border-none outline-none min-w-0"
-                />
-                <button
-                  onClick={startVoiceRecognition}
-                  className={`p-2 rounded-full ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200 flex-shrink-0`}
-                  aria-label="Voice search"
-                  type="button"
-                >
-                  <Icons.Mic className="h-5 w-5" />
-                </button>
-                
-                {/* Credit display for logged-in users */}
-               {isAuthenticated && userCredits > 0 && (
-                  <div className="hidden sm:flex items-center mr-2 bg-primary-50 px-2 py-1 rounded-lg">
-                    {semanticSearchAvailable && useSemanticSearch ? (
-                      <Icons.Brain className="h-3 w-3 text-purple-500 mr-1" />
-                    ) : (
-                      <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
-                    )}
-                    <span className="font-poppins text-xs font-semibold text-primary-700">
-                      {userCredits} credits
-                    </span>
-                  </div>
-                )}
-                
-                {/* Free trial credits for non-logged-in users */}
-                <button
-                  type="submit"
-                  disabled={isSearching || geoLoading} // Disable search if geolocation is loading
-                  className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
-                  aria-label="Search"
-                >
-                  {isSearching ? (
-                    <span className="flex items-center">
-                      <Icons.Loader2 className="h-5 w-5 animate-spin sm:mr-2" />
-                      <span className="hidden sm:inline">Thinking...</span>
-                    </span>
-                  ) : geoLoading ? ( // Show loading state for geolocation
-                    <span className="flex items-center">
-                      <Icons.MapPin className="h-5 w-5 animate-pulse sm:mr-2" />
-                      <span className="hidden sm:inline">Locating...</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <Icons.Search className="h-5 w-5 sm:mr-2" />
-                      <span className="hidden sm:inline">Search</span>
-                    </span>
+        <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'}`}>
+          {/* Search Bar */}
+          <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+            <div 
+              ref={searchRef}
+              className="relative w-full"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
+              <div className="relative bg-white rounded-xl shadow-md border border-neutral-200 p-2 w-full">
+                <form onSubmit={(e) => {e.preventDefault(); handleSearch();}} className="flex items-center w-full">
+                  <Icons.Sparkles className="h-5 w-5 text-primary-500 ml-2 sm:ml-4 mr-2 sm:mr-3 flex-shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="peaceful brunch spot, vibe-y wine bar, cozy coffee for work..."
+                    className="flex-1 py-2 sm:py-3 px-2 text-base font-lora text-neutral-700 placeholder-neutral-400 bg-transparent border-none outline-none min-w-0"
+                  />
+                  <button
+                    onClick={startVoiceRecognition}
+                    className={`p-2 rounded-full ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200 flex-shrink-0`}
+                    aria-label="Voice search"
+                    type="button"
+                  >
+                    <Icons.Mic className="h-5 w-5" />
+                  </button>
+                  
+                  {/* Credit display for logged-in users */}
+                 {isAuthenticated && userCredits > 0 && (
+                    <div className="hidden sm:flex items-center mr-2 bg-primary-50 px-2 py-1 rounded-lg">
+                      {semanticSearchAvailable && useSemanticSearch ? (
+                        <Icons.Brain className="h-3 w-3 text-purple-500 mr-1" />
+                      ) : (
+                        <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
+                      )}
+                      <span className="font-poppins text-xs font-semibold text-primary-700">
+                        {userCredits} credits
+                      </span>
+                    </div>
                   )}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-        </div>
-      )}
-      
-      {/* Distance Filter Slider - Only show when results are displayed */}
-      {showResults && allFetchedBusinesses.length > 0 && (
-        <div className="w-full bg-white border-b border-neutral-100 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex items-center justify-center gap-4">
-              <span className="font-poppins text-sm font-medium text-neutral-700">
-                Max Distance:
-              </span>
-              <div className="flex items-center gap-3">
-                <span className="font-lora text-xs text-neutral-500">10mi</span>
-                <input
-                  type="range"
-                  min="10"
-                  max="30"
-                  step="10"
-                  value={selectedDisplayRadius}
-                  onChange={(e) => setSelectedDisplayRadius(parseInt(e.target.value))}
-                  className="w-32 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer slider"
-                  style={{
-                    background: `linear-gradient(to right, #f76c5e 0%, #f76c5e ${((selectedDisplayRadius - 10) / 20) * 100}%, #e5e7eb ${((selectedDisplayRadius - 10) / 20) * 100}%, #e5e7eb 100%)`
-                  }}
-                />
-                <span className="font-lora text-xs text-neutral-500">30mi</span>
-              </div>
-              <span className="font-poppins text-sm font-semibold text-primary-600">
-                {selectedDisplayRadius} miles
-              </span>
-              <div className="text-xs text-neutral-500">
-                ({results.length} results)
+                  
+                  {/* Free trial credits for non-logged-in users */}
+                  <button
+                    type="submit"
+                    disabled={isSearching || geoLoading} // Disable search if geolocation is loading
+                    className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+                    aria-label="Search"
+                  >
+                    {isSearching ? (
+                      <span className="flex items-center">
+                        <Icons.Loader2 className="h-5 w-5 animate-spin sm:mr-2" />
+                        <span className="hidden sm:inline">Thinking...</span>
+                      </span>
+                    ) : geoLoading ? ( // Show loading state for geolocation
+                      <span className="flex items-center">
+                        <Icons.MapPin className="h-5 w-5 animate-pulse sm:mr-2" />
+                        <span className="hidden sm:inline">Locating...</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <Icons.Search className="h-5 w-5 sm:mr-2" />
+                        <span className="hidden sm:inline">Search</span>
+                      </span>
+                    )}
+                  </button>
+                </form>
               </div>
             </div>
           </div>
+          
+          {/* Distance Filter Slider - Only show when results are displayed */}
+          {allFetchedBusinesses.length > 0 && (
+            <div className="border-t border-neutral-100">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                <div className="flex items-center justify-center gap-4">
+                  <span className="font-poppins text-sm font-medium text-neutral-700">
+                    Max Distance:
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-lora text-xs text-neutral-500">10mi</span>
+                    <input
+                      type="range"
+                      min="10"
+                      max="30"
+                      step="10"
+                      value={selectedDisplayRadius}
+                      onChange={(e) => setSelectedDisplayRadius(parseInt(e.target.value))}
+                      className="w-32 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer slider"
+                      style={{
+                        background: `linear-gradient(to right, #f76c5e 0%, #f76c5e ${((selectedDisplayRadius - 10) / 20) * 100}%, #e5e7eb ${((selectedDisplayRadius - 10) / 20) * 100}%, #e5e7eb 100%)`
+                      }}
+                    />
+                    <span className="font-lora text-xs text-neutral-500">30mi</span>
+                  </div>
+                  <span className="font-poppins text-sm font-semibold text-primary-600">
+                    {selectedDisplayRadius} miles
+                  </span>
+                  <div className="text-xs text-neutral-500">
+                    ({results.length} results)
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
       
@@ -967,12 +968,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       <div
         ref={resultsRef} 
-        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-20' : ''} ${
+        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-32' : ''} ${
           showResults && results.length > 0 ? 'opacity-100 mt-0 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'
         }`}
         style={{
-          height: isAppModeActive ? 'calc(100vh - 60px)' : 'auto',
-          maxHeight: isAppModeActive ? 'calc(100vh - 60px)' : showResults ? '800px' : '0'
+          height: isAppModeActive ? 'calc(100vh - 128px)' : 'auto',
+          maxHeight: isAppModeActive ? 'calc(100vh - 128px)' : showResults ? '800px' : '0'
         }}
       >
         <div className="max-w-7xl mx-auto px-4 relative z-20">
