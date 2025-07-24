@@ -342,19 +342,19 @@ export class BusinessService {
           );
         } catch (distanceError) {
           console.warn('Distance calculation failed, using fallback values:', distanceError);
-          // Add fallback distance/duration values
+          // Add fallback distance/duration values - mark as very far to be filtered out
           businesses = businesses.map(business => ({
             ...business,
-            distance: Math.round((Math.random() * 4 + 1) * 10) / 10,
-            duration: Math.floor(Math.random() * 10 + 5)
+            distance: 999999, // Mark as very far to be filtered out by 10-mile cap
+            duration: 999999
           }));
         }
       } else {
-        // Add fallback distance/duration values when no user location
+        // Add fallback distance/duration values when no user location - mark as very far
         businesses = businesses.map(business => ({
           ...business,
-          distance: Math.round((Math.random() * 4 + 1) * 10) / 10,
-          duration: Math.floor(Math.random() * 10 + 5)
+          distance: 999999, // Mark as very far to be filtered out by 10-mile cap
+          duration: 999999
         }));
       }
       

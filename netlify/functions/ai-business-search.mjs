@@ -265,10 +265,9 @@ Requirements:
             console.log(`✅ Found business: ${result.name} (${result.rating} stars)`);
             
             // Calculate distance from search center (approximate)
-            const distance = result.geometry && result.geometry.location 
-              ? Math.round(Math.random() * 4 + 1) // Will be more accurate with actual distance calculation
-              : Math.round((Math.random() * 4 + 1) * 10) / 10;
-            const duration = Math.floor(distance * 2 + Math.random() * 5); // Rough estimate based on distance
+            // Store coordinates for distance calculation
+            const businessLatitude = result.geometry?.location?.lat;
+            const businessLongitude = result.geometry?.location?.lng;
             
             // Parse opening hours
             let businessHours = 'Hours not available';
@@ -330,10 +329,10 @@ Requirements:
               isOpen: isOpen,
               hours: businessHours,
               address: result.formatted_address,
-              latitude: result.geometry?.location?.lat || null,
-              longitude: result.geometry?.location?.lng || null,
-              distance: distance,
-              duration: duration,
+              latitude: businessLatitude || null,
+              longitude: businessLongitude || null,
+              distance: 999999, // Will be calculated accurately below
+              duration: 999999, // Will be calculated accurately below
               placeId: result.place_id, // Add place_id for Google Business Profile linking
               reviews: [{
                 text: `Great ${query}! Really enjoyed the atmosphere and service here.`,
@@ -362,6 +361,79 @@ Requirements:
     }
 
     console.log('🎯 Final search results:', foundBusinesses.length, 'businesses');
+
+    // Calculate accurate distances if we have user location and businesses with coordinates
+    if (foundBusinesses.length > 0 && searchLatitude && searchLongitude) {
+      try {
+        console.log('📏 Calculating accurate distances for', foundBusinesses.length, 'businesses');
+        
+        // Prepare businesses with coordinates for distance calculation
+        const businessesWithCoords = foundBusinesses.filter(business => 
+          business.latitude && business.longitude
+        );
+        
+        if (businessesWithCoords.length > 0) {
+          // Prepare data for distance calculation API
+          const origin = {
+            latitude: searchLatitude,
+            longitude: searchLongitude
+          };
+          
+          const destinations = businessesWithCoords.map(business => ({
+            latitude: business.latitude,
+            longitude: business.longitude,
+            businessId: business.id
+          }));
+          
+          // Call distance calculation function
+          const distanceResponse = await axios.post(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/get-business-distances`, {
+            origin,
+            destinations
+          }, {
+            timeout: 15000
+          });
+          
+          if (distanceResponse.data.success) {
+            // Create a map of business ID to distance data
+            const distanceMap = new Map();
+            distanceResponse.data.results.forEach(result => {
+              distanceMap.set(result.businessId, {
+                distance: result.distance,
+                duration: result.duration
+              });
+            });
+            
+            // Update businesses with accurate distances
+            foundBusinesses = foundBusinesses.map(business => {
+              const distanceData = distanceMap.get(business.id);
+              if (distanceData) {
+                return {
+                  ...business,
+                  distance: distanceData.distance,
+                  duration: distanceData.duration
+                };
+              } else {
+                // Business without coordinates - mark as very far
+                return {
+                  ...business,
+                  distance: 999999,
+                  duration: 999999
+                };
+              }
+            });
+            
+            console.log('✅ Updated businesses with accurate distances');
+          } else {
+            console.warn('⚠️ Distance calculation failed, keeping placeholder values');
+          }
+        }
+      } catch (distanceError) {
+        console.error('❌ Distance calculation error:', distanceError.message);
+        console.log('🔄 Keeping placeholder distance values');
+      }
+    } else {
+      console.log('⚠️ No user location or businesses with coordinates for distance calculation');
+    }
 
     // Sort businesses by similarity score (highest first)
     foundBusinesses.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));

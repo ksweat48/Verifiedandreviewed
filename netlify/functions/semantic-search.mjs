@@ -175,7 +175,6 @@ export const handler = async (event, context) => {
     const formattedResults = enrichedResults.map(business => ({
       // Spread all business properties to ensure complete data flow
       ...business,
-      // Override/add specific properties for frontend compatibility
       image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
       latitude: business.latitude || null,
       longitude: business.longitude || null,
@@ -188,15 +187,84 @@ export const handler = async (event, context) => {
       },
       isPlatformBusiness: true,
       isOpen: true, // Default to open since we don't have real-time status
-      distance: latitude && longitude ? 
-        Math.round((Math.random() * 4 + 1) * 10) / 10 : // Placeholder until distance calculation
-        undefined,
-      duration: latitude && longitude ? 
-        Math.floor(Math.random() * 10 + 5) : // Placeholder until distance calculation
-        undefined,
+      distance: 999999, // Will be calculated accurately below
+      duration: 999999, // Will be calculated accurately below
       reviews: [], // Reviews would be fetched separately if needed
       similarity: business.similarity || 0
     }));
+
+    // Calculate accurate distances if we have user location and businesses with coordinates
+    if (formattedResults.length > 0 && latitude && longitude) {
+      try {
+        console.log('📏 Calculating accurate distances for', formattedResults.length, 'platform businesses');
+        
+        // Prepare businesses with coordinates for distance calculation
+        const businessesWithCoords = formattedResults.filter(business => 
+          business.latitude && business.longitude
+        );
+        
+        if (businessesWithCoords.length > 0) {
+          // Prepare data for distance calculation API
+          const origin = {
+            latitude: latitude,
+            longitude: longitude
+          };
+          
+          const destinations = businessesWithCoords.map(business => ({
+            latitude: business.latitude,
+            longitude: business.longitude,
+            businessId: business.id
+          }));
+          
+          // Call distance calculation function
+          const axios = (await import('axios')).default;
+          const distanceResponse = await axios.post(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/get-business-distances`, {
+            origin,
+            destinations
+          }, {
+            timeout: 15000
+          });
+          
+          if (distanceResponse.data.success) {
+            // Create a map of business ID to distance data
+            const distanceMap = new Map();
+            distanceResponse.data.results.forEach(result => {
+              distanceMap.set(result.businessId, {
+                distance: result.distance,
+                duration: result.duration
+              });
+            });
+            
+            // Update businesses with accurate distances
+            formattedResults = formattedResults.map(business => {
+              const distanceData = distanceMap.get(business.id);
+              if (distanceData) {
+                return {
+                  ...business,
+                  distance: distanceData.distance,
+                  duration: distanceData.duration
+                };
+              } else {
+                // Business without coordinates - mark as very far
+                return {
+                  ...business,
+                  distance: 999999,
+                  duration: 999999
+                };
+              }
+            });
+            
+            console.log('✅ Updated platform businesses with accurate distances');
+          } else {
+            console.warn('⚠️ Distance calculation failed for platform businesses');
+          }
+        }
+      } catch (distanceError) {
+        console.error('❌ Distance calculation error for platform businesses:', distanceError.message);
+      }
+    } else {
+      console.log('⚠️ No user location or platform businesses with coordinates for distance calculation');
+    }
 
     // If no semantic matches found, provide helpful response
     if (formattedResults.length === 0) {
