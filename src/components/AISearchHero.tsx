@@ -373,6 +373,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           const rankedPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
           
           // Store all fetched businesses for slider filtering
+          console.log('🎚️ DEBUG: Setting allFetchedBusinesses with combinedResults:', combinedResults.length, 'businesses');
+          setAllFetchedBusinesses(combinedResults);
+          
+          // Store all fetched businesses for slider filtering
           setAllFetchedBusinesses(transformedBusinesses);
           
           // Apply initial filter with selected radius
@@ -399,6 +403,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           error: 'Insufficient credits'
         });
       }
+        console.log('🎚️ DEBUG: Setting allFetchedBusinesses with transformedBusinesses (fallback):', transformedBusinesses.length, 'businesses');
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -531,19 +536,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       address: business.address, 
       name: business.name,
       addressType: typeof business.address,
-      nameType: typeof business.name
-    });
-    
-    // Record the business visit for platform businesses
-    if (business.isPlatformBusiness && currentUser && currentUser.id) {
-      BusinessService.recordBusinessVisit(business.id, currentUser.id)
         .then(success => {
           if (success) {
             console.log('✅ Business visit recorded for:', business.name);
             // Dispatch event to update visited businesses list
             window.dispatchEvent(new CustomEvent('visited-businesses-updated'));
           }
-        })
         .catch(error => {
           console.error('❌ Error recording business visit:', error);
         });
@@ -553,6 +551,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     let mapsUrl;
     if (business.latitude && business.longitude) {
       // Priority 1: Use coordinates (most reliable)
+      console.log('🎚️ DEBUG: Setting allFetchedBusinesses with transformedBusinesses (platform-only):', transformedBusinesses.length, 'businesses');
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
       console.log('🗺️ DEBUG: Using coordinates for maps URL');
     } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
@@ -619,6 +618,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
+  
+  // DEBUG: Log state values before render
+  console.log('🎚️ RENDER DEBUG:', {
+    showResults,
+    allFetchedBusinessesLength: allFetchedBusinesses.length,
+    resultsLength: results.length,
+    selectedDisplayRadius,
+    isAppModeActive
+  });
   
   return (
     <div 
@@ -834,8 +842,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           </div>
           
           {/* Distance Filter Slider - Only show when results are displayed */}
-          {allFetchedBusinesses.length > 0 && (
-            <div className="border-t border-neutral-100">
+          {showResults && (
+            <div className="border-t border-neutral-100 bg-red-500 p-4">
+              <div className="text-white text-center mb-2">
+                DEBUG: allFetchedBusinesses.length = {allFetchedBusinesses.length}, results.length = {results.length}
+              </div>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                 <div className="flex items-center justify-center gap-4">
                   <span className="font-poppins text-sm font-medium text-neutral-700">
@@ -968,11 +979,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       <div
         ref={resultsRef} 
-        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-32' : ''} ${
+        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-40' : ''} ${
           showResults && results.length > 0 ? 'opacity-100 mt-0 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'
         }`}
         style={{
-          height: isAppModeActive ? 'calc(100vh - 128px)' : 'auto',
+          height: isAppModeActive ? 'calc(100vh - 160px)' : 'auto',
           maxHeight: isAppModeActive ? 'calc(100vh - 128px)' : showResults ? '800px' : '0'
         }}
       >
