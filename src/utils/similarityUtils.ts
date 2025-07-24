@@ -28,6 +28,52 @@ export const getMatchPercentage = (similarity: number | undefined): number => {
 };
 
 /**
+ * Convert match percentage back to normalized similarity score (0-1) for composite scoring
+ * 
+ * @param similarity Raw similarity score
+ * @returns Normalized similarity score (0-1) for use in composite formula
+ */
+export const getNormalizedSimilarity = (similarity: number | undefined): number => {
+  const matchPercentage = getMatchPercentage(similarity);
+  return matchPercentage / 100;
+};
+
+/**
+ * Calculate composite score for business ranking
+ * 
+ * @param business Business object with similarity, distance, isOpen, isPlatformBusiness
+ * @returns Composite score (0-1)
+ */
+export const calculateCompositeScore = (business: {
+  similarity?: number;
+  distance?: number;
+  isOpen?: boolean;
+  isPlatformBusiness?: boolean;
+}): number => {
+  // Normalize similarity score (0-1)
+  const normalizedSimilarity = getNormalizedSimilarity(business.similarity);
+  
+  // Convert platform status to 0 or 1
+  const isPlatformBusiness = business.isPlatformBusiness ? 1 : 0;
+  
+  // Convert open status to 0 or 1
+  const isOpen = business.isOpen ? 1 : 0;
+  
+  // Normalize distance (clamp to 0-10 miles, then convert to 0-1 scale)
+  const clampedDistance = Math.max(0, Math.min(10, business.distance || 10));
+  const normalizedDistance = 1 - (clampedDistance / 10);
+  
+  // Calculate composite score using the specified weights
+  const compositeScore = (
+    0.45 * normalizedSimilarity +
+    0.25 * isPlatformBusiness +
+    0.20 * isOpen +
+    0.10 * normalizedDistance
+  );
+  
+  return Math.round(compositeScore * 1000) / 1000; // Round to 3 decimal places
+};
+/**
  * Check if a similarity score meets the minimum threshold for display
  * 
  * @param similarity Raw similarity score

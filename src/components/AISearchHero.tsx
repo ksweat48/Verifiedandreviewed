@@ -10,10 +10,11 @@ import { BusinessService } from '../services/businessService';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { SemanticSearchService } from '../services/semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
-import { getMatchPercentage, meetsDisplayThreshold } from '../utils/similarityUtils';
+import { getMatchPercentage, meetsDisplayThreshold, calculateCompositeScore } from '../utils/similarityUtils';
 
 // Minimum semantic similarity threshold for displaying results
-const MINIMUM_DISPLAY_SIMILARITY = 0.0;
+const MINIMUM_DISPLAY_SIMILARITY = 0.0; // Allow all results for composite scoring
+const MAX_SEARCH_RADIUS_MILES = 10; // Maximum search radius in miles
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -244,22 +245,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           
           try {
             // Calculate how many AI businesses we need (max 4 total cards)
-            const numAINeeded = Math.max(0, 5 - transformedBusinesses.length);
+            const numAINeeded = Math.max(0, 10 - transformedBusinesses.length); // Get more for better ranking
             
-            if (numAINeeded === 0) {
-              // We already have 5 or more platform businesses, no AI needed
-              setResults(transformedBusinesses.slice(0, 5));
-              console.log('📊 Using platform-only results (5+ available):', searchQuery);
-              trackEvent('search_performed', { 
-                query: searchQuery, 
-                used_ai: false, 
-                credits_deducted: creditsRequired,
-                results_count: Math.min(transformedBusinesses.length, 5),
-                platform_results: Math.min(transformedBusinesses.length, 5),
-                ai_results: 0
-              });
-              return;
-            }
+            // Always try to get AI results for better ranking diversity
+            console.log(`🤖 Getting ${numAINeeded} AI businesses for enhanced ranking`);
             
             // Prepare the AI prompt with context about existing results
             const aiPrompt = transformedBusinesses.length > 0 
@@ -309,59 +298,21 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 similarity: business.similarity || 0.8 // Default high similarity for AI businesses
               }));
               
-              console.log(`🤖 Using AI to enhance search results for: ${searchQuery} (${numAINeeded} AI businesses)`);
+              console.log(`🤖 AI enhanced search results for: ${searchQuery} (${aiGeneratedBusinesses.length} AI businesses)`);
               const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
               
-              // Apply strict semantic filtering - only show businesses above minimum similarity
-              const semanticallyRelevantResults = combinedResults.filter(business => {
-                const similarity = business.similarity || 0;
-                const isRelevant = meetsDisplayThreshold(similarity, MINIMUM_DISPLAY_SIMILARITY);
-                if (!isRelevant) {
-                  console.log(`🚫 Filtering out irrelevant business: ${business.name} (similarity: ${similarity})`);
-                }
-                return isRelevant;
-              });
+              // Apply new dynamic search algorithm
+              const rankedResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude);
               
-              // Sort semantically relevant results
-              const sortedResults = semanticallyRelevantResults.sort((a, b) => {
-                // First priority: Platform businesses (higher is better)
-                if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-                if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
-                
-                // First priority: Semantic similarity score (higher is better)
-                const aSimilarity = a.similarity || 0;
-                const bSimilarity = b.similarity || 0;
-                if (aSimilarity !== bSimilarity) {
-                  return bSimilarity - aSimilarity; // Descending order (higher similarity first)
-                }
-                
-                // Second priority: Open businesses
-                if (a.isOpen && !b.isOpen) return -1;
-                if (!a.isOpen && b.isOpen) return 1;
-                
-                // Third priority: Closest businesses (by distance)
-                if (a.distance && b.distance) {
-                  if (a.distance < b.distance) return -1;
-                  if (a.distance > b.distance) return 1;
-                }
-                
-                return 0;
-              });
-              
-              // Remove duplicates by ID and limit to 5
-              const uniqueResults = sortedResults.filter((business, index, self) => 
-                index === self.findIndex(b => b.id === business.id)
-              ).slice(0, 5);
-              
-              setResults(uniqueResults);
-              console.log('✅ Semantically filtered results:', uniqueResults.length, 'businesses (filtered from', combinedResults.length, 'total)');
+              setResults(rankedResults);
+              console.log('✅ Dynamic search algorithm results:', rankedResults.length, 'businesses (from', combinedResults.length, 'total)');
               
               trackEvent('search_performed', { 
                 query: searchQuery, 
                 used_ai: needsAI,
                 used_semantic: usedSemanticSearch,
                 credits_deducted: creditsRequired,
-                results_count: uniqueResults.length,
+                results_count: rankedResults.length,
                 platform_results: platformBusinesses.length,
                 ai_results: aiGeneratedBusinesses.length
               });
@@ -376,104 +327,32 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             // Show error message to user
             setShowCreditWarning(true);
             
-            // Apply strict semantic filtering even for fallback results
-            const semanticallyRelevantFallback = transformedBusinesses.filter(business => {
-              const similarity = business.similarity || 0;
-              return meetsDisplayThreshold(similarity, MINIMUM_DISPLAY_SIMILARITY);
-            });
+            // Apply dynamic search algorithm to platform-only results
+            const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
             
-            // Sort semantically relevant fallback results
-            const sortedFallbackResults = semanticallyRelevantFallback.sort((a, b) => {
-              // First priority: Platform businesses (higher is better)
-              if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-              if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
-              
-              // First priority: Semantic similarity score (higher is better)
-              const aSimilarity = a.similarity || 0;
-              const bSimilarity = b.similarity || 0;
-              if (aSimilarity !== bSimilarity) {
-                return bSimilarity - aSimilarity; // Descending order (higher similarity first)
-              }
-              
-              // Second priority: Open businesses
-              if (a.isOpen && !b.isOpen) return -1;
-              if (!a.isOpen && b.isOpen) return 1;
-              
-              // Third priority: Closest businesses (by distance)
-              if (a.distance && b.distance) {
-                if (a.distance < b.distance) return -1;
-                if (a.distance > b.distance) return 1;
-              }
-              
-              return 0;
-            });
-            
-            // Remove duplicates by ID and limit to 5
-            const uniquePlatformResults = sortedFallbackResults.filter((business, index, self) => 
-              index === self.findIndex(b => b.id === business.id)
-            ).slice(0, 5);
-            
-            setResults(uniquePlatformResults);
-            console.log('✅ Fallback semantically filtered results:', uniquePlatformResults.length, 'businesses');
+            setResults(rankedFallbackResults);
+            console.log('✅ Fallback dynamic search results:', rankedFallbackResults.length, 'businesses');
             trackEvent('search_performed', { 
               query: searchQuery, 
               used_ai: false, 
               credits_deducted: creditsRequired,
-              results_count: uniquePlatformResults.length,
+              results_count: rankedFallbackResults.length,
               error: aiError.message,
               fallback: true
             });
           }
         } else {
-          // Apply strict semantic filtering to platform-only results
-          const semanticallyRelevantPlatform = transformedBusinesses.filter(business => {
-            const similarity = business.similarity || 0;
-            const isRelevant = meetsDisplayThreshold(similarity, MINIMUM_DISPLAY_SIMILARITY);
-            if (!isRelevant) {
-              console.log(`🚫 Filtering out irrelevant platform business: ${business.name} (similarity: ${similarity})`);
-            }
-            return isRelevant;
-          });
+          // Apply dynamic search algorithm to platform-only results
+          const rankedPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
           
-          // Sort semantically relevant platform businesses
-          const sortedResults = semanticallyRelevantPlatform.sort((a, b) => {
-            // First priority: Platform businesses (higher is better)
-            if (a.isPlatformBusiness && !b.isPlatformBusiness) return -1;
-            if (!a.isPlatformBusiness && b.isPlatformBusiness) return 1;
-            
-            // First priority: Semantic similarity score (higher is better)
-            const aSimilarity = a.similarity || 0;
-            const bSimilarity = b.similarity || 0;
-            if (aSimilarity !== bSimilarity) {
-              return bSimilarity - aSimilarity; // Descending order (higher similarity first)
-            }
-            
-            // Second priority: Open businesses
-            if (a.isOpen && !b.isOpen) return -1;
-            if (!a.isOpen && b.isOpen) return 1;
-            
-            // Third priority: Closest businesses (by distance)
-            if (a.distance && b.distance) {
-              if (a.distance < b.distance) return -1;
-              if (a.distance > b.distance) return 1;
-            }
-            
-            return 0;
-          });
-          
-          // Remove duplicates by ID and limit to 5
-          const uniquePlatformResults = sortedResults.filter((business, index, self) => 
-            index === self.findIndex(b => b.id === business.id)
-          ).slice(0, 5);
-          
-          setResults(uniquePlatformResults);
-          console.log('📊 Semantically filtered platform-only results:', uniquePlatformResults.length, 'businesses for:', searchQuery);
+          setResults(rankedPlatformResults);
+          console.log('📊 Dynamic search platform-only results:', rankedPlatformResults.length, 'businesses for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false,
             used_semantic: usedSemanticSearch,
             credits_deducted: creditsRequired,
-            results_count: uniquePlatformResults.length
+            results_count: rankedPlatformResults.length
           });
         }
       } else {
@@ -492,6 +371,64 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     } finally {
       setIsSearching(false);
     }
+  };
+
+  // Dynamic Search Algorithm Implementation
+  const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number) => {
+    console.log('🔍 Applying dynamic search algorithm to', businesses.length, 'businesses');
+    
+    // Step 1: Filter by radius (10 miles max)
+    const businessesWithinRadius = businesses.filter(business => {
+      const distance = business.distance || 0;
+      const withinRadius = distance <= MAX_SEARCH_RADIUS_MILES;
+      if (!withinRadius) {
+        console.log(`🚫 Filtering out business outside radius: ${business.name} (${distance} miles)`);
+      }
+      return withinRadius;
+    });
+    
+    console.log(`📍 ${businessesWithinRadius.length} businesses within ${MAX_SEARCH_RADIUS_MILES} mile radius`);
+    
+    // Step 2: Calculate composite scores for each business
+    const businessesWithScores = businessesWithinRadius.map(business => {
+      const compositeScore = calculateCompositeScore({
+        similarity: business.similarity,
+        distance: business.distance,
+        isOpen: business.isOpen,
+        isPlatformBusiness: business.isPlatformBusiness
+      });
+      
+      console.log(`📊 ${business.name}: similarity=${business.similarity?.toFixed(3)}, distance=${business.distance}, isOpen=${business.isOpen}, isPlatform=${business.isPlatformBusiness} → score=${compositeScore}`);
+      
+      return {
+        ...business,
+        compositeScore
+      };
+    });
+    
+    // Step 3: Sort by composite score (descending)
+    const sortedBusinesses = businessesWithScores.sort((a, b) => {
+      return b.compositeScore - a.compositeScore;
+    });
+    
+    // Step 4: Remove duplicates by ID and limit to 5
+    const uniqueResults = sortedBusinesses.filter((business, index, self) => 
+      index === self.findIndex(b => b.id === business.id)
+    ).slice(0, 5);
+    
+    // Step 5: Log final ranking
+    console.log('🏆 Final ranking:');
+    uniqueResults.forEach((business, index) => {
+      console.log(`  ${index + 1}. ${business.name} (score: ${business.compositeScore}, similarity: ${getMatchPercentage(business.similarity)}%)`);
+    });
+    
+    // Step 6: Handle no results case
+    if (uniqueResults.length === 0) {
+      console.log('⚠️ No businesses found within 10 mile radius');
+      return [];
+    }
+    
+    return uniqueResults;
   };
 
   // Exit app mode
