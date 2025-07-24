@@ -374,10 +374,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           setAllFetchedBusinesses(transformedBusinesses);
           
           // Apply initial filter with selected radius
-          const initialFilteredPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
-          // Store all fetched businesses for slider filtering
-          console.log('✅ Dynamic search algorithm results:', initialFilteredResults.length, 'businesses (from', combinedResults.length, 'total)');
-          console.log('📊 Dynamic search platform-only results:', initialFilteredPlatformResults.length, 'businesses for:', searchQuery);
+          const initialFilteredResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
+          
+          setResults(initialFilteredResults);
+          console.log('📊 Dynamic search platform-only results:', initialFilteredResults.length, 'businesses for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false,
