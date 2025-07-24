@@ -351,7 +351,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             // Apply initial filter with selected radius
             const initialFilteredFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
             
-            console.log('🎚️ DEBUG: Setting allFetchedBusinesses with combinedResults:', combinedResults.length, 'businesses');
             setAllFetchedBusinesses(combinedResults);
             
             // Apply initial filter with selected radius
@@ -539,7 +538,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       addressType: typeof business.address,
     });
     
-    // Record business visit for analytics
+    // Record business visit
     if (business.id && currentUser?.id) {
       BusinessService.recordBusinessVisit(business.id, currentUser.id)
         .then(success => {
@@ -625,6 +624,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
+  
+  // DEBUG: Log state values before render
+  console.log('🎚️ RENDER DEBUG:', {
+    showResults,
+    allFetchedBusinessesLength: allFetchedBusinesses.length,
+    resultsLength: results.length,
+    selectedDisplayRadius,
+    isAppModeActive
+  });
   
   return (
     <div 
