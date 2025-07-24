@@ -47,6 +47,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   useEffect(() => {
     if (allFetchedBusinesses.length > 0) {
       console.log('🎚️ Slider changed to:', selectedDisplayRadius, 'miles');
+      console.log('🔍 DEBUG: allFetchedBusinesses before filtering:', allFetchedBusinesses.map(b => ({
+        name: b.name,
+        distance: b.distance,
+        distanceType: typeof b.distance,
+        hasDistance: b.distance !== undefined && b.distance !== null
+      })));
       const filteredResults = applyDynamicSearchAlgorithm(allFetchedBusinesses, latitude, longitude, selectedDisplayRadius);
       setResults(filteredResults);
       console.log('✅ Filtered to', filteredResults.length, 'businesses within', selectedDisplayRadius, 'miles');
@@ -409,10 +415,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   // Dynamic Search Algorithm Implementation
   const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number, maxRadius: number = 30) => {
     console.log('🔍 Applying dynamic search algorithm to', businesses.length, 'businesses');
+    console.log('🎯 DEBUG: maxRadius parameter:', maxRadius, 'type:', typeof maxRadius);
     
     // Step 1: Filter by radius (user-selected max)
     const businessesWithinRadius = businesses.filter(business => {
       const distance = business.distance || 0;
+      console.log('🔍 DEBUG: Filtering business:', {
+        name: business.name,
+        distance: distance,
+        distanceType: typeof distance,
+        maxRadius: maxRadius,
+        maxRadiusType: typeof maxRadius,
+        comparison: `${distance} <= ${maxRadius}`,
+        result: distance <= maxRadius
+      });
       const withinRadius = distance <= maxRadius;
       if (!withinRadius) {
         console.log(`🚫 Filtering out business outside ${maxRadius} mile radius: ${business.name} (${distance} miles)`);
