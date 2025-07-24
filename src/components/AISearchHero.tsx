@@ -435,6 +435,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const exitAppMode = () => {
     setIsAppModeActive(false);
     setShowResults(false);
+    setResults([]);
+    setSearchQuery('');
+    setInitialResultsLoaded(false);
     
     // Go back in history to remove the app-mode state
     window.history.back();
