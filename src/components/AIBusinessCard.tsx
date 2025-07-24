@@ -104,15 +104,15 @@ const AIBusinessCard: React.FC<{
                 
                 // Robust navigation URL construction with data validation
                 let mapsUrl;
-                if (business.latitude && business.longitude) {
-                  // Priority 1: Use coordinates (most reliable for mobile apps)
-                  mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
-                  console.log('🗺️ DEBUG: Using coordinates for maps URL');
-                } else if (business.placeId && typeof business.placeId === 'string' && business.placeId.trim().length > 0) {
-                  // Priority 2: Use Google Place ID with query_place_id parameter (for direct business profile link)
+                if (business.placeId && typeof business.placeId === 'string' && business.placeId.trim().length > 0) {
+                  // Priority 1: Use Google Place ID with query_place_id parameter (for direct business profile link)
                   const businessName = business.name && typeof business.name === 'string' ? business.name.trim() : 'business';
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessName)}&query_place_id=${business.placeId.trim()}`;
                   console.log('🗺️ DEBUG: Using placeId with query_place_id for direct business profile:', business.placeId.trim());
+                } else if (business.latitude && business.longitude) {
+                  // Priority 2: Use coordinates (fallback for businesses without Place ID)
+                  mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+                  console.log('🗺️ DEBUG: Using coordinates for maps URL');
                 } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
                   // Priority 3: Use valid address string
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
@@ -133,8 +133,8 @@ const AIBusinessCard: React.FC<{
                   hasPlaceId: !!(business.placeId && business.placeId.trim()),
                   hasAddress: !!(business.address && business.address.trim()),
                   hasName: !!(business.name && business.name.trim()),
-                  selectedMethod: business.latitude && business.longitude ? 'coordinates' :
-                                 business.placeId ? 'query_place_id' :
+                  selectedMethod: business.placeId ? 'query_place_id' :
+                                 business.latitude && business.longitude ? 'coordinates' :
                                  business.address ? 'address' :
                                  business.name ? 'name' : 'generic'
                 });
