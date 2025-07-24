@@ -49,7 +49,7 @@ export class UserService {
           
         console.log('🔍 Profile query result:', { profile: profile ? 'Profile found' : 'No profile', error: error ? error.message : 'No error' });
         
-        if (error || !profile) throw error;
+        if (error || !profile) throw new Error(error?.message || 'Failed to retrieve user profile from database.');
         
         console.log('✅ Successfully fetched user profile:', profile.id, profile.name);
         return {
