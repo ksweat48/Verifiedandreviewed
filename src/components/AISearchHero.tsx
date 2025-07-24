@@ -351,7 +351,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             // Apply initial filter with selected radius
             const initialFilteredFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
             
-            console.log('🎚️ DEBUG: Setting allFetchedBusinesses with combinedResults:', combinedResults.length, 'businesses');
             setAllFetchedBusinesses(combinedResults);
             
             // Apply initial filter with selected radius
@@ -540,8 +539,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     });
     
     // Record business visit
-    if (currentUser && currentUser.id) {
-      BusinessService.recordBusinessVisit(currentUser.id, business.id)
+    if (business.id && currentUser?.id) {
+      BusinessService.recordBusinessVisit(business.id, currentUser.id)
         .then(success => {
           if (success) {
             console.log('✅ Business visit recorded for:', business.name);
@@ -625,6 +624,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
+  
+  // DEBUG: Log state values before render
+  console.log('🎚️ RENDER DEBUG:', {
+    showResults,
+    allFetchedBusinessesLength: allFetchedBusinesses.length,
+    resultsLength: results.length,
+    selectedDisplayRadius,
+    isAppModeActive
+  });
   
   return (
     <div 
@@ -840,8 +848,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           </div>
           
           {/* Distance Filter Slider - Only show when results are displayed */}
-          {allFetchedBusinesses.length > 0 && (
-            <div className="border-t border-neutral-100">
+          {showResults && (
+            <div className="border-t border-neutral-100 bg-red-500 p-4">
+              <div className="text-white text-center mb-2">
+                DEBUG: allFetchedBusinesses.length = {allFetchedBusinesses.length}, results.length = {results.length}
+              </div>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                 <div className="flex items-center justify-center gap-4">
                   <span className="font-poppins text-sm font-medium text-neutral-700">
