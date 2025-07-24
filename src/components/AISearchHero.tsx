@@ -345,19 +345,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             // Apply dynamic search algorithm to platform-only results
             const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
             // Store all fetched businesses for slider filtering
-            // Store all fetched businesses for slider filtering
             setAllFetchedBusinesses(transformedBusinesses);
             
             // Apply initial filter with selected radius
             const initialFilteredFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
             
-            console.log('🎚️ DEBUG: Setting allFetchedBusinesses with combinedResults:', combinedResults.length, 'businesses');
-            setAllFetchedBusinesses(combinedResults);
-            
-            // Apply initial filter with selected radius
-            const initialFilteredResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude, selectedDisplayRadius);
-            
-            setResults(initialFilteredResults);
             setResults(initialFilteredFallbackResults);
             console.log('✅ Fallback dynamic search results:', initialFilteredFallbackResults.length, 'businesses');
             trackEvent('search_performed', { 
@@ -365,7 +357,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               used_ai: false, 
               credits_deducted: creditsRequired,
               results_count: initialFilteredFallbackResults.length,
-              results_count: initialFilteredResults.length,
               fallback: true
             });
           }
@@ -374,23 +365,25 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           const rankedPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
           
           // Store all fetched businesses for slider filtering
-          console.log('🎚️ DEBUG: Setting allFetchedBusinesses with combinedResults:', combinedResults.length, 'businesses');
-          setAllFetchedBusinesses(combinedResults);
+          setAllFetchedBusinesses(transformedBusinesses);
+          
+          // Apply initial filter with selected radius
+          const initialFilteredPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
           
           // Store all fetched businesses for slider filtering
           setAllFetchedBusinesses(transformedBusinesses);
           
           // Apply initial filter with selected radius
           const initialFilteredPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
-          
-          setResults(initialFilteredPlatformResults);
+          // Store all fetched businesses for slider filtering
+          console.log('✅ Dynamic search algorithm results:', initialFilteredResults.length, 'businesses (from', combinedResults.length, 'total)');
           console.log('📊 Dynamic search platform-only results:', initialFilteredPlatformResults.length, 'businesses for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false,
             used_semantic: usedSemanticSearch,
             credits_deducted: creditsRequired,
-            results_count: initialFilteredPlatformResults.length
+            results_count: initialFilteredResults.length,
           });
         }
       } else {
@@ -404,7 +397,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           error: 'Insufficient credits'
         });
       }
-        console.log('🎚️ DEBUG: Setting allFetchedBusinesses with transformedBusinesses (fallback):', transformedBusinesses.length, 'businesses');
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -627,13 +619,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
   
   // DEBUG: Log state values before render
-  console.log('🎚️ RENDER DEBUG:', {
-    showResults,
-    allFetchedBusinessesLength: allFetchedBusinesses.length,
-    resultsLength: results.length,
-    selectedDisplayRadius,
-    isAppModeActive
-  });
   
   return (
     <div 
@@ -849,15 +834,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           </div>
           
           {/* Distance Filter Slider - Only show when results are displayed */}
-          {showResults && (
-            <div className="border-t border-neutral-100 bg-red-500 p-4">
-              <div className="text-white text-center mb-2">
-                DEBUG: allFetchedBusinesses.length = {allFetchedBusinesses.length}, results.length = {results.length}
-              </div>
+          {showResults && allFetchedBusinesses.length > 0 && (
+            <div className="border-t border-neutral-100 bg-white shadow-sm p-4">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                 <div className="flex items-center justify-center gap-4">
                   <span className="font-poppins text-sm font-medium text-neutral-700">
-                    Max Distance:
+                    Distance Filter:
                   </span>
                   <div className="flex items-center gap-3">
                     <span className="font-lora text-xs text-neutral-500">10mi</span>
@@ -868,10 +850,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       step="10"
                       value={selectedDisplayRadius}
                       onChange={(e) => setSelectedDisplayRadius(parseInt(e.target.value))}
-                      className="w-32 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer slider"
-                      style={{
-                        background: `linear-gradient(to right, #f76c5e 0%, #f76c5e ${((selectedDisplayRadius - 10) / 20) * 100}%, #e5e7eb ${((selectedDisplayRadius - 10) / 20) * 100}%, #e5e7eb 100%)`
-                      }}
+                      className="w-32 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer distance-slider"
                     />
                     <span className="font-lora text-xs text-neutral-500">30mi</span>
                   </div>
