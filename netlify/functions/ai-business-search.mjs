@@ -363,12 +363,13 @@ Requirements:
     console.log('🎯 Final search results:', foundBusinesses.length, 'businesses');
 
     // Calculate accurate distances if we have user location and businesses with coordinates
-    if (foundBusinesses.length > 0 && searchLatitude && searchLongitude) {
+    let updatedBusinesses = foundBusinesses;
+    if (updatedBusinesses.length > 0 && searchLatitude && searchLongitude) {
       try {
-        console.log('📏 Calculating accurate distances for', foundBusinesses.length, 'businesses');
+        console.log('📏 Calculating accurate distances for', updatedBusinesses.length, 'businesses');
         
         // Prepare businesses with coordinates for distance calculation
-        const businessesWithCoords = foundBusinesses.filter(business => 
+        const businessesWithCoords = updatedBusinesses.filter(business => 
           business.latitude && business.longitude
         );
         
@@ -404,7 +405,7 @@ Requirements:
             });
             
             // Update businesses with accurate distances
-            foundBusinesses = foundBusinesses.map(business => {
+            updatedBusinesses = updatedBusinesses.map(business => {
               const distanceData = distanceMap.get(business.id);
               if (distanceData) {
                 return {
@@ -436,20 +437,20 @@ Requirements:
     }
 
     // Sort businesses by similarity score (highest first)
-    foundBusinesses.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+    updatedBusinesses.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
     
-    console.log('📊 Business similarity scores:', foundBusinesses.map(b => ({
+    console.log('📊 Business similarity scores:', updatedBusinesses.map(b => ({
       name: b.name,
       similarity: Math.round((b.similarity || 0) * 100) + '%'
     })));
     return new Response(JSON.stringify({
       success: true,
-      results: foundBusinesses,
+      results: updatedBusinesses,
       query: searchQuery,
       usedAI: true,
       googleVerified: true,
       searchQueries: searchQueries,
-      foundBusinessesCount: foundBusinesses.length,
+      foundBusinessesCount: updatedBusinesses.length,
       searchLocation: {
         latitude: searchLatitude,
         longitude: searchLongitude,
