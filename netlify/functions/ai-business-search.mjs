@@ -251,7 +251,7 @@ Requirements:
             type: 'establishment',
             key: GOOGLE_PLACES_API_KEY
           },
-          timeout: 10000 // 10 second timeout
+          timeout: 20000 // 20 second timeout
         });
         
         if (placesResponse.data.status === 'OK' && 
