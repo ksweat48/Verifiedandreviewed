@@ -236,7 +236,7 @@ export const handler = async (event, context) => {
             });
             
             // Update businesses with accurate distances
-            formattedResults = formattedResults.map(business => {
+            const updatedResults = formattedResults.map(business => {
               const distanceData = distanceMap.get(business.id);
               if (distanceData) {
                 return {
@@ -254,7 +254,24 @@ export const handler = async (event, context) => {
               }
             });
             
+            // Use the updated results for the final response
+            const finalResults = updatedResults;
+            
             console.log('✅ Updated platform businesses with accurate distances');
+            
+            return {
+              statusCode: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                success: true,
+                results: finalResults,
+                query: query,
+                matchCount: finalResults.length,
+                usedSemanticSearch: true,
+                matchThreshold: matchThreshold,
+                timestamp: new Date().toISOString()
+              })
+            };
           } else {
             console.warn('⚠️ Distance calculation failed for platform businesses');
           }
