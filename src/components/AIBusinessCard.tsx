@@ -110,11 +110,9 @@ const AIBusinessCard: React.FC<{
                   console.log('🗺️ DEBUG: Using coordinates for maps URL');
                 } else if (business.placeId && typeof business.placeId === 'string' && business.placeId.trim().length > 0) {
                   // Priority 2: Use Google Place ID with query_place_id parameter (for direct business profile link)
-                  const trimmedPlaceId = business.placeId.trim();
-                  mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}&query_place_id=${trimmedPlaceId}`;
-                  console.log('🗺️ DEBUG: Using placeId with query parameter for direct business profile');
-                  console.log('🗺️ DEBUG: Place ID being used:', trimmedPlaceId);
-                  console.log('🗺️ DEBUG: Business name for reference:', business.name);
+                  const businessName = business.name && typeof business.name === 'string' ? business.name.trim() : 'business';
+                  mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessName)}&query_place_id=${business.placeId.trim()}`;
+                  console.log('🗺️ DEBUG: Using placeId with query_place_id for direct business profile:', business.placeId.trim());
                 } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
                   // Priority 3: Use valid address string
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
