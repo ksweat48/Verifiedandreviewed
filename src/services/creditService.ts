@@ -14,56 +14,31 @@ export class CreditService {
   // Deduct credits for a search
   static async deductSearchCredits(userId: string, searchType: 'platform' | 'ai' | 'semantic'): Promise<boolean> {
     try {
-      const user = await UserService.getCurrentUser();
-      if (!user) return false;
-      
-      // Skip deduction for admin or unlimited credit users
-      if (user.role === 'administrator' || user.credits >= 999999) {
-        return true;
-      }
-      
       const creditsToDeduct = searchType === 'semantic' ? 5 : (searchType === 'ai' ? 10 : 1);
       
-      if ((user.credits || 0) < creditsToDeduct) {
-        return false; // Not enough credits
-      }
-      
-      // In a real app, this would call an API to update the user's credits
-      try {
-        // Try to update credits in Supabase
-        const { error } = await supabase
-          .from('credit_transactions')
-          .insert({
-            user_id: userId,
-            amount: -creditsToDeduct,
-            type: searchType === 'semantic' ? 'semantic-search' : (searchType === 'ai' ? 'ai-search' : 'search'),
-            description: searchType === 'semantic' ? 'Semantic vibe search' : (searchType === 'ai' ? 'AI-assisted search' : 'Platform-only search')
-          });
-          
-        if (error) throw error;
-        
-        // The trigger will update the user's credits
-        return true;
-      } catch (supabaseError) {
-        console.error('Supabase error:', supabaseError);
-        
-        // Fallback to local update
-        const updatedUser = await UserService.updateUser(userId, {
-          credits: (user.credits || 0) - creditsToDeduct
-        });
-        
-        // Log transaction locally
-        this.logTransaction({
-          id: Date.now().toString(),
-          userId,
-          amount: -creditsToDeduct,
+      // Call the secure credit deduction function
+      const response = await fetch('/.netlify/functions/deduct-credits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          amount: creditsToDeduct,
           type: searchType === 'semantic' ? 'semantic-search' : (searchType === 'ai' ? 'ai-search' : 'search'),
-          description: searchType === 'semantic' ? 'Semantic vibe search' : (searchType === 'ai' ? 'AI-assisted search' : 'Platform-only search'),
-          timestamp: new Date().toISOString()
-        });
-        
-        return updatedUser.success;
+          description: searchType === 'semantic' ? 'Semantic vibe search' : (searchType === 'ai' ? 'AI-assisted search' : 'Platform-only search')
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Credit deduction failed:', errorData);
+        return false;
       }
+
+      const result = await response.json();
+      console.log('✅ Credit deduction successful:', result);
+      return result.success;
       
     } catch (error) {
       console.error('Error deducting credits:', error);

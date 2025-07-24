@@ -221,19 +221,24 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       const creditsRequired = usedSemanticSearch ? 5 : (needsAI ? 10 : 1); // Semantic search costs 5 credits
       
       if (currentUser && currentUser.id) {
-        // Check credit balance for all users
-        if (userCredits < creditsRequired) {
-          setShowCreditWarning(true);
-          canProceed = false;
+        // Skip deduction for admin or unlimited credit users
+        if (currentUser.role === 'administrator' || userCredits >= 999999) {
+          canProceed = true;
         } else {
-          // Deduct credits
-          const success = await CreditService.deductSearchCredits(currentUser.id, usedSemanticSearch ? 'semantic' : (needsAI ? 'ai' : 'platform')); // Fix: use currentUser.id
-          if (success) {
-            // Update local credit count
-            setUserCredits(prev => prev - creditsRequired);
-          } else {
+          // Check credit balance for regular users
+          if (userCredits < creditsRequired) {
             setShowCreditWarning(true);
             canProceed = false;
+          } else {
+            // Deduct credits using secure backend function
+            const success = await CreditService.deductSearchCredits(currentUser.id, usedSemanticSearch ? 'semantic' : (needsAI ? 'ai' : 'platform'));
+            if (success) {
+              // Update local credit count
+              setUserCredits(prev => prev - creditsRequired);
+            } else {
+              setShowCreditWarning(true);
+              canProceed = false;
+            }
           }
         }
       }
