@@ -614,7 +614,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             {/* Loading Message - Show when searching */}
             {isSearching && (
               <div className="mb-8 animate-in fade-in duration-500">
-                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-6 shadow-lg">
+                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-6 shadow-lg text-center">
                   <div className="flex items-center justify-center mb-4">
                     <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
                     <h2 className="font-cinzel text-2xl md:text-3xl font-bold text-white">
