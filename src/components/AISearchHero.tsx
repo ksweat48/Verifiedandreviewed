@@ -10,9 +10,10 @@ import { BusinessService } from '../services/businessService';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { SemanticSearchService } from '../services/semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { getMatchPercentage, meetsDisplayThreshold } from '../utils/similarityUtils';
 
 // Minimum semantic similarity threshold for displaying results
-const MINIMUM_DISPLAY_SIMILARITY = 0.5;
+const MINIMUM_DISPLAY_SIMILARITY = 0.0;
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -314,7 +315,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               // Apply strict semantic filtering - only show businesses above minimum similarity
               const semanticallyRelevantResults = combinedResults.filter(business => {
                 const similarity = business.similarity || 0;
-                const isRelevant = similarity >= MINIMUM_DISPLAY_SIMILARITY;
+                const isRelevant = meetsDisplayThreshold(similarity, MINIMUM_DISPLAY_SIMILARITY);
                 if (!isRelevant) {
                   console.log(`🚫 Filtering out irrelevant business: ${business.name} (similarity: ${similarity})`);
                 }
@@ -378,7 +379,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             // Apply strict semantic filtering even for fallback results
             const semanticallyRelevantFallback = transformedBusinesses.filter(business => {
               const similarity = business.similarity || 0;
-              return similarity >= MINIMUM_DISPLAY_SIMILARITY;
+              return meetsDisplayThreshold(similarity, MINIMUM_DISPLAY_SIMILARITY);
             });
             
             // Sort semantically relevant fallback results
@@ -427,7 +428,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           // Apply strict semantic filtering to platform-only results
           const semanticallyRelevantPlatform = transformedBusinesses.filter(business => {
             const similarity = business.similarity || 0;
-            const isRelevant = similarity >= MINIMUM_DISPLAY_SIMILARITY;
+            const isRelevant = meetsDisplayThreshold(similarity, MINIMUM_DISPLAY_SIMILARITY);
             if (!isRelevant) {
               console.log(`🚫 Filtering out irrelevant platform business: ${business.name} (similarity: ${similarity})`);
             }

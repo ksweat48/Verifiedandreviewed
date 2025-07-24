@@ -3,6 +3,7 @@ import * as Icons from 'lucide-react';
 import ReviewerProfile from './ReviewerProfile';
 import ImageGalleryPopup from './ImageGalleryPopup';
 import BusinessProfileModal from './BusinessProfileModal';
+import { getMatchPercentage } from '../utils/similarityUtils';
 
 interface ReviewImage {
   url: string;
@@ -184,7 +185,7 @@ const PlatformBusinessCard: React.FC<{
               {/* Semantic Similarity Score - Only show if available and > 0 */}
               {business.similarity && business.similarity > 0 && (
                 <div className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
-                  {Math.round(business.similarity * 100)}% match
+                  {getMatchPercentage(business.similarity)}% match
                 </div>
               )}
               
