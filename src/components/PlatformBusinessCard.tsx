@@ -269,7 +269,11 @@ const PlatformBusinessCard: React.FC<{
             )}
             
             <button
-              onClick={(e) => {e.stopPropagation(); onTakeMeThere(business);}}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onTakeMeThere(business);
+              }}
               className="absolute bottom-3 right-3 w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
             >
               GO

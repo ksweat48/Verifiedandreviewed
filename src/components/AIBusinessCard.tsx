@@ -94,7 +94,10 @@ const AIBusinessCard: React.FC<{
           
           <div className="flex items-center gap-2 mt-2">
             <button 
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
                 // Debug: Log the complete business object to inspect data
                 console.log('🗺️ DEBUG: AIBusinessCard GO button clicked with business object:', business);
                 console.log('🗺️ DEBUG: Business coordinates:', { 
@@ -135,7 +138,9 @@ const AIBusinessCard: React.FC<{
                 }
                 
                 console.log('🗺️ Opening Google Maps with URL:', mapsUrl);
-                window.open(mapsUrl, '_blank');
+                
+                // HARDENED NAVIGATION: Only perform window.open, no other navigation
+                window.open(mapsUrl, '_blank', 'noopener,noreferrer');
               }}
               className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"
             >
