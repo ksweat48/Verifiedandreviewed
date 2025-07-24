@@ -351,6 +351,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             // Apply initial filter with selected radius
             const initialFilteredFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
             
+            console.log('🎚️ DEBUG: Setting allFetchedBusinesses with combinedResults:', combinedResults.length, 'businesses');
             setAllFetchedBusinesses(combinedResults);
             
             // Apply initial filter with selected radius
@@ -539,8 +540,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     });
     
     // Record business visit
-    if (business.id && currentUser?.id) {
-      BusinessService.recordBusinessVisit(business.id, currentUser.id)
+    if (currentUser && currentUser.id) {
+      BusinessService.recordBusinessVisit(currentUser.id, business.id)
         .then(success => {
           if (success) {
             console.log('✅ Business visit recorded for:', business.name);
@@ -624,15 +625,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
-  
-  // DEBUG: Log state values before render
-  console.log('🎚️ RENDER DEBUG:', {
-    showResults,
-    allFetchedBusinessesLength: allFetchedBusinesses.length,
-    resultsLength: results.length,
-    selectedDisplayRadius,
-    isAppModeActive
-  });
   
   return (
     <div 
@@ -848,11 +840,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           </div>
           
           {/* Distance Filter Slider - Only show when results are displayed */}
-          {showResults && (
-            <div className="border-t border-neutral-100 bg-red-500 p-4">
-              <div className="text-white text-center mb-2">
-                DEBUG: allFetchedBusinesses.length = {allFetchedBusinesses.length}, results.length = {results.length}
-              </div>
+          {allFetchedBusinesses.length > 0 && (
+            <div className="border-t border-neutral-100">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                 <div className="flex items-center justify-center gap-4">
                   <span className="font-poppins text-sm font-medium text-neutral-700">
@@ -985,11 +974,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       <div
         ref={resultsRef} 
-        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-40' : ''} ${
+        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-32' : ''} ${
           showResults && results.length > 0 ? 'opacity-100 mt-0 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'
         }`}
         style={{
-          height: isAppModeActive ? 'calc(100vh - 160px)' : 'auto',
+          height: isAppModeActive ? 'calc(100vh - 128px)' : 'auto',
           maxHeight: isAppModeActive ? 'calc(100vh - 128px)' : showResults ? '800px' : '0'
         }}
       >
