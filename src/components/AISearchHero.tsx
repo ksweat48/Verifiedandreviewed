@@ -165,9 +165,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     window.history.pushState({ appMode: true }, '', window.location.pathname + '#app-mode');
     
     try {
-      setShowResults(true);
-      setInitialResultsLoaded(true);
-      
       // Determine search strategy: semantic vs traditional
       let searchResults = [];
       let usedSemanticSearch = false;
@@ -375,6 +372,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       console.error('Search error:', error);
     } finally {
       setIsSearching(false);
+      setShowResults(true);
+      setInitialResultsLoaded(true);
     }
   };
 
