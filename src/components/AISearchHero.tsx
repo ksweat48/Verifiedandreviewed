@@ -39,6 +39,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [allFetchedBusinesses, setAllFetchedBusinesses] = useState([]);
   const [useSemanticSearch, setUseSemanticSearch] = useState(true);
   const [semanticSearchAvailable, setSemanticSearchAvailable] = useState(false);
+  
+  // Add useEffect for dynamic filtering when slider changes
+  useEffect(() => {
+    if (allFetchedBusinesses.length > 0) {
+      console.log('🎚️ Slider changed to:', selectedDisplayRadius, 'miles');
+      const filteredResults = applyDynamicSearchAlgorithm(allFetchedBusinesses, latitude, longitude, selectedDisplayRadius);
+      setResults(filteredResults);
+      console.log('✅ Filtered to', filteredResults.length, 'businesses within', selectedDisplayRadius, 'miles');
+    }
+  }, [selectedDisplayRadius, allFetchedBusinesses, latitude, longitude]);
+  
   const { trackEvent } = useAnalytics();
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef(null);
@@ -333,15 +344,27 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             
             // Apply dynamic search algorithm to platform-only results
             const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
+            // Store all fetched businesses for slider filtering
+            // Store all fetched businesses for slider filtering
+            setAllFetchedBusinesses(transformedBusinesses);
             
-            setResults(rankedFallbackResults);
-            console.log('✅ Fallback dynamic search results:', rankedFallbackResults.length, 'businesses');
+            // Apply initial filter with selected radius
+            const initialFilteredFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
+            
+            setAllFetchedBusinesses(combinedResults);
+            
+            // Apply initial filter with selected radius
+            const initialFilteredResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude, selectedDisplayRadius);
+            
+            setResults(initialFilteredResults);
+            setResults(initialFilteredFallbackResults);
+            console.log('✅ Fallback dynamic search results:', initialFilteredFallbackResults.length, 'businesses');
             trackEvent('search_performed', { 
               query: searchQuery, 
               used_ai: false, 
               credits_deducted: creditsRequired,
-              results_count: rankedFallbackResults.length,
-              error: aiError.message,
+              results_count: initialFilteredFallbackResults.length,
+              results_count: initialFilteredResults.length,
               fallback: true
             });
           }
@@ -349,14 +372,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           // Apply dynamic search algorithm to platform-only results
           const rankedPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
           
-          setResults(rankedPlatformResults);
-          console.log('📊 Dynamic search platform-only results:', rankedPlatformResults.length, 'businesses for:', searchQuery);
+          // Store all fetched businesses for slider filtering
+          setAllFetchedBusinesses(transformedBusinesses);
+          
+          // Apply initial filter with selected radius
+          const initialFilteredPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
+          
+          setResults(initialFilteredPlatformResults);
+          console.log('📊 Dynamic search platform-only results:', initialFilteredPlatformResults.length, 'businesses for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false,
             used_semantic: usedSemanticSearch,
             credits_deducted: creditsRequired,
-            results_count: rankedPlatformResults.length
+            results_count: initialFilteredPlatformResults.length
           });
         }
       } else {
