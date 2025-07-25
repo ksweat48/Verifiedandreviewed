@@ -120,7 +120,7 @@ export default async function handler(req) {
 CRITICAL: Use the generateSearchQueries function. Do not return raw JSON or explanations.
 
 Requirements:
-• Generate exactly ${numToGenerate} different search queries
+    • Generate exactly 50 different search queries
 • Each query should be a string suitable for Google Places Text Search
 • Focus on business type + descriptive keywords that match the user's vibe
 • Include variety in business types and locations
