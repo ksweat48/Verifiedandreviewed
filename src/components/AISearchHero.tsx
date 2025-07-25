@@ -14,7 +14,7 @@ import { getMatchPercentage, meetsDisplayThreshold, calculateCompositeScore } fr
 
 // Minimum semantic similarity threshold for displaying results
 const MINIMUM_DISPLAY_SIMILARITY = 0.0; // Allow all results for composite scoring
-const MAX_SEARCH_RADIUS_MILES = 30; // Maximum search radius in miles
+const MAX_SEARCH_RADIUS_MILES = 10; // Maximum search radius in miles
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -22,9 +22,6 @@ interface AISearchHeroProps {
 }
 
 const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppModeActive }) => {
-  // Call the useGeolocation hook first to ensure latitude/longitude are available
-  const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
-  
   const [searchQuery, setSearchQuery] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -38,49 +35,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [showCreditWarning, setShowCreditWarning] = useState(false);
   const searchRef = useRef(null);
   const searchBarRef = useRef(null);
-  const [selectedDisplayRadius, setSelectedDisplayRadius] = useState(10);
-  const [allFetchedBusinesses, setAllFetchedBusinesses] = useState([]);
   const [useSemanticSearch, setUseSemanticSearch] = useState(true);
   const [semanticSearchAvailable, setSemanticSearchAvailable] = useState(false);
-  
-  // Helper function to deduplicate businesses by ID
-  const deduplicateBusinesses = (businesses: any[]) => {
-    const seen = new Set();
-    return businesses.filter(business => {
-      // Use a unique identifier for each business
-      const isDuplicate = seen.has(business.id);
-      seen.add(business.id);
-      return !isDuplicate;
-    });
-  };
-  
-  // Add useEffect for dynamic filtering when slider changes
-  useEffect(() => {
-    if (allFetchedBusinesses.length > 0) {
-      console.log('🎚️ Slider changed to:', selectedDisplayRadius, 'miles');
-      console.log('🔍 DEBUG: allFetchedBusinesses before filtering:', allFetchedBusinesses.map(b => ({
-        name: b.name,
-        distance: b.distance,
-        distanceType: typeof b.distance,
-        hasDistance: b.distance !== undefined && b.distance !== null
-      })));
-      console.log('🎚️ DEBUG: selectedDisplayRadius value:', selectedDisplayRadius, 'type:', typeof selectedDisplayRadius);
-      console.log('➡️ Calling applyDynamicSearchAlgorithm with maxRadius:', selectedDisplayRadius);
-      const filteredResults = applyDynamicSearchAlgorithm(allFetchedBusinesses, latitude, longitude, selectedDisplayRadius);
-      setResults(filteredResults);
-      console.log('✅ Filtered to', filteredResults.length, 'businesses within', selectedDisplayRadius, 'miles');
-      console.log('🎯 DEBUG: Final filtered results:', filteredResults.map(b => ({
-        name: b.name,
-        distance: b.distance,
-        passedFilter: true
-      })));
-    }
-  }, [selectedDisplayRadius, allFetchedBusinesses, latitude, longitude]);
-  
   const { trackEvent } = useAnalytics();
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef(null);
   const [currentUser, setCurrentUser] = useState(null);
+  
+  // Call the useGeolocation hook
+  const { latitude, longitude, error: geoError, loading: geoLoading } = useGeolocation();
   
   // Check if semantic search is available
   useEffect(() => {
@@ -141,6 +104,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const samplePrompts = [
     "peaceful brunch spot",
     "vibe-y wine bar",
+    "cozy coffee for work",
+    "romantic dinner place",
     "energetic workout studio"
   ];
 
@@ -213,7 +178,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           latitude,
           longitude,
           matchThreshold: 0.5, // Updated threshold for better recall
-          matchCount: 50
+          matchCount: 8
         });
         
         if (semanticResult.success && semanticResult.results.length > 0) {
@@ -282,7 +247,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           
           try {
             // Calculate how many AI businesses we need (max 4 total cards)
-            const numAINeeded = Math.max(0, 50 - transformedBusinesses.length);
+            const numAINeeded = Math.max(0, 10 - transformedBusinesses.length); // Get more for better ranking
             
             // Always try to get AI results for better ranking diversity
             console.log(`🤖 Getting ${numAINeeded} AI businesses for enhanced ranking`);
@@ -336,36 +301,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               }));
               
               console.log(`🤖 AI enhanced search results for: ${searchQuery} (${aiGeneratedBusinesses.length} AI businesses)`);
-              let combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
-              
-              // Deduplicate the combined results before storing them
-              const originalCount = combinedResults.length;
-              combinedResults = deduplicateBusinesses(combinedResults);
-              console.log(`🔄 Deduplicated businesses: ${originalCount} → ${combinedResults.length} (removed ${originalCount - combinedResults.length} duplicates)`);
+              const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
               
               // Apply new dynamic search algorithm
               const rankedResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude);
               
-              // Apply initial filter with selected radius
-              const initialFilteredResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude, selectedDisplayRadius);
-              
-              // Store all fetched businesses for slider filtering
-              setAllFetchedBusinesses(combinedResults);
-              
-              console.log('🔍 DEBUG: Setting results state with initialFilteredResults:', initialFilteredResults.map(b => ({
-                name: b.name,
-                distance: b.distance,
-                id: b.id
-              })));
-              setResults(initialFilteredResults);
-              console.log('✅ Dynamic search algorithm results:', initialFilteredResults.length, 'businesses (from', combinedResults.length, 'total)');
+              setResults(rankedResults);
+              console.log('✅ Dynamic search algorithm results:', rankedResults.length, 'businesses (from', combinedResults.length, 'total)');
               
               trackEvent('search_performed', { 
                 query: searchQuery, 
                 used_ai: needsAI,
                 used_semantic: usedSemanticSearch,
                 credits_deducted: creditsRequired,
-                results_count: initialFilteredResults.length,
+                results_count: rankedResults.length,
                 platform_results: platformBusinesses.length,
                 ai_results: aiGeneratedBusinesses.length
               });
@@ -381,61 +330,31 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             setShowCreditWarning(true);
             
             // Apply dynamic search algorithm to platform-only results
-            let fallbackResults = [...transformedBusinesses];
+            const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
             
-            // Deduplicate fallback results
-            const originalFallbackCount = fallbackResults.length;
-            fallbackResults = deduplicateBusinesses(fallbackResults);
-            console.log(`🔄 Deduplicated fallback businesses: ${originalFallbackCount} → ${fallbackResults.length} (removed ${originalFallbackCount - fallbackResults.length} duplicates)`);
-            
-            const rankedFallbackResults = applyDynamicSearchAlgorithm(fallbackResults, latitude, longitude);
-            // Store all fetched businesses for slider filtering
-            setAllFetchedBusinesses(fallbackResults);
-            
-            // Apply initial filter with selected radius
-            const initialFilteredFallbackResults = applyDynamicSearchAlgorithm(fallbackResults, latitude, longitude, selectedDisplayRadius);
-            
-            console.log('🔍 DEBUG: Setting results state with initialFilteredFallbackResults:', initialFilteredFallbackResults.map(b => ({
-              name: b.name,
-              distance: b.distance,
-              id: b.id
-            })));
-            setResults(initialFilteredFallbackResults);
-            console.log('✅ Fallback dynamic search results:', initialFilteredFallbackResults.length, 'businesses');
+            setResults(rankedFallbackResults);
+            console.log('✅ Fallback dynamic search results:', rankedFallbackResults.length, 'businesses');
             trackEvent('search_performed', { 
               query: searchQuery, 
               used_ai: false, 
               credits_deducted: creditsRequired,
-              results_count: initialFilteredFallbackResults.length,
+              results_count: rankedFallbackResults.length,
+              error: aiError.message,
               fallback: true
             });
           }
         } else {
-          // Deduplicate platform-only results
-          let platformOnlyResults = [...transformedBusinesses];
-          const originalPlatformCount = platformOnlyResults.length;
-          platformOnlyResults = deduplicateBusinesses(platformOnlyResults);
-          console.log(`🔄 Deduplicated platform-only businesses: ${originalPlatformCount} → ${platformOnlyResults.length} (removed ${originalPlatformCount - platformOnlyResults.length} duplicates)`);
-          
           // Apply dynamic search algorithm to platform-only results
-          const initialFilteredResults = applyDynamicSearchAlgorithm(platformOnlyResults, latitude, longitude, selectedDisplayRadius);
+          const rankedPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
           
-          // Store all fetched businesses for slider filtering
-          setAllFetchedBusinesses(platformOnlyResults);
-          
-          console.log('🔍 DEBUG: Setting results state with initialFilteredResults (platform-only):', initialFilteredResults.map(b => ({
-            name: b.name,
-            distance: b.distance,
-            id: b.id
-          })));
-          setResults(initialFilteredResults);
-          console.log('✅ Dynamic search platform-only results:', initialFilteredResults.length, 'businesses for:', searchQuery);
+          setResults(rankedPlatformResults);
+          console.log('📊 Dynamic search platform-only results:', rankedPlatformResults.length, 'businesses for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false,
             used_semantic: usedSemanticSearch,
             credits_deducted: creditsRequired,
-            results_count: initialFilteredResults.length,
+            results_count: rankedPlatformResults.length
           });
         }
       } else {
@@ -459,44 +378,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   // Dynamic Search Algorithm Implementation
-  const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number, maxRadius: number = 30) => {
+  const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number) => {
     console.log('🔍 Applying dynamic search algorithm to', businesses.length, 'businesses');
-    console.log('🎯 DEBUG: maxRadius parameter:', maxRadius, 'type:', typeof maxRadius);
     
-    // DEBUG: Log ALL businesses with their distances BEFORE filtering
-    console.log('🔍 DEBUG: ALL businesses before distance filter:');
-    businesses.forEach((business, index) => {
-      console.log(`  ${index + 1}. ${business.name}: distance=${business.distance} (${typeof business.distance})`);
-    });
-    
-    // Step 1: Filter by radius (user-selected max)
+    // Step 1: Filter by radius (10 miles max)
     const businessesWithinRadius = businesses.filter(business => {
       const distance = business.distance || 0;
-      console.log('🔍 DEBUG: Filtering business:', {
-        name: business.name,
-        distance: distance,
-        distanceType: typeof distance,
-        maxRadius: maxRadius,
-        maxRadiusType: typeof maxRadius,
-        comparison: `${distance} <= ${maxRadius}`,
-        result: distance <= maxRadius
-      });
-      const withinRadius = distance <= maxRadius;
+      const withinRadius = distance <= MAX_SEARCH_RADIUS_MILES;
       if (!withinRadius) {
-        console.log(`🚫 Filtering out business outside ${maxRadius} mile radius: ${business.name} (${distance} miles)`);
-      } else {
-        console.log(`✅ Business PASSED filter: ${business.name} (${distance} miles <= ${maxRadius} miles)`);
+        console.log(`🚫 Filtering out business outside radius: ${business.name} (${distance} miles)`);
       }
       return withinRadius;
     });
     
-    console.log(`📍 ${businessesWithinRadius.length} businesses within ${maxRadius} mile radius`);
-    
-    // DEBUG: Log ALL businesses that PASSED the distance filter
-    console.log('🎯 DEBUG: Businesses that PASSED distance filter:');
-    businessesWithinRadius.forEach((business, index) => {
-      console.log(`  ${index + 1}. ${business.name}: distance=${business.distance} miles`);
-    });
+    console.log(`📍 ${businessesWithinRadius.length} businesses within ${MAX_SEARCH_RADIUS_MILES} mile radius`);
     
     // Step 2: Calculate composite scores for each business
     const businessesWithScores = businessesWithinRadius.map(business => {
@@ -523,7 +418,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     // Step 4: Remove duplicates by ID and limit to 5
     const uniqueResults = sortedBusinesses.filter((business, index, self) => 
       index === self.findIndex(b => b.id === business.id)
-    ).slice(0, 10);
+    ).slice(0, 5);
     
     // Step 5: Log final ranking
     console.log('🏆 Final ranking:');
@@ -533,7 +428,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     
     // Step 6: Handle no results case
     if (uniqueResults.length === 0) {
-      console.log(`⚠️ No businesses found within ${maxRadius} mile radius`);
+      console.log('⚠️ No businesses found within 10 mile radius');
       return [];
     }
     
@@ -605,10 +500,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       address: business.address, 
       name: business.name,
       addressType: typeof business.address,
+      nameType: typeof business.name
     });
     
-    // Record business visit
-    if (business.id && currentUser?.id) {
+    // Record the business visit for platform businesses
+    if (business.isPlatformBusiness && currentUser && currentUser.id) {
       BusinessService.recordBusinessVisit(business.id, currentUser.id)
         .then(success => {
           if (success) {
@@ -626,7 +522,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     let mapsUrl;
     if (business.latitude && business.longitude) {
       // Priority 1: Use coordinates (most reliable)
-      console.log('🎚️ DEBUG: Setting allFetchedBusinesses with transformedBusinesses (platform-only):', transformedBusinesses.length, 'businesses');
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
       console.log('🗺️ DEBUG: Using coordinates for maps URL');
     } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
@@ -693,8 +588,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   const platformBusinesses = results.filter(b => b.isPlatformBusiness);
   const aiBusinesses = results.filter(b => !b.isPlatformBusiness);
-  
-  // DEBUG: Log state values before render
   
   return (
     <div 
@@ -838,108 +731,75 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       )}
 
       {showResults && (
-        <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'}`}>
-          {/* Search Bar */}
-          <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-            <div 
-              ref={searchRef}
-              className="relative w-full"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
-              <div className="relative bg-white rounded-xl shadow-md border border-neutral-200 p-2 w-full">
-                <form onSubmit={(e) => {e.preventDefault(); handleSearch();}} className="flex items-center w-full">
-                  <Icons.Sparkles className="h-5 w-5 text-primary-500 ml-2 sm:ml-4 mr-2 sm:mr-3 flex-shrink-0" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="peaceful brunch spot, vibe-y wine bar, cozy coffee for work..."
-                    className="flex-1 py-2 sm:py-3 px-2 text-base font-lora text-neutral-700 placeholder-neutral-400 bg-transparent border-none outline-none min-w-0"
-                  />
-                  <button
-                    onClick={startVoiceRecognition}
-                    className={`p-2 rounded-full ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200 flex-shrink-0`}
-                    aria-label="Voice search"
-                    type="button"
-                  >
-                    <Icons.Mic className="h-5 w-5" />
-                  </button>
-                  
-                  {/* Credit display for logged-in users */}
-                 {isAuthenticated && userCredits > 0 && (
-                    <div className="hidden sm:flex items-center mr-2 bg-primary-50 px-2 py-1 rounded-lg">
-                      {semanticSearchAvailable && useSemanticSearch ? (
-                        <Icons.Brain className="h-3 w-3 text-purple-500 mr-1" />
-                      ) : (
-                        <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
-                      )}
-                      <span className="font-poppins text-xs font-semibold text-primary-700">
-                        {userCredits} credits
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Free trial credits for non-logged-in users */}
-                  <button
-                    type="submit"
-                    disabled={isSearching || geoLoading} // Disable search if geolocation is loading
-                    className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
-                    aria-label="Search"
-                  >
-                    {isSearching ? (
-                      <span className="flex items-center">
-                        <Icons.Loader2 className="h-5 w-5 animate-spin sm:mr-2" />
-                        <span className="hidden sm:inline">Thinking...</span>
-                      </span>
-                    ) : geoLoading ? ( // Show loading state for geolocation
-                      <span className="flex items-center">
-                        <Icons.MapPin className="h-5 w-5 animate-pulse sm:mr-2" />
-                        <span className="hidden sm:inline">Locating...</span>
-                      </span>
+        <div className={`w-full bg-white border-b border-neutral-100 shadow-sm ${isAppModeActive ? 'search-bar-fixed' : 'sticky top-16 z-40'} mb-1`}>
+        <div ref={searchBarRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          <div 
+            ref={searchRef}
+            className="relative w-full"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
+            <div className="relative bg-white rounded-xl shadow-md border border-neutral-200 p-2 w-full">
+              <form onSubmit={(e) => {e.preventDefault(); handleSearch();}} className="flex items-center w-full">
+                <Icons.Sparkles className="h-5 w-5 text-primary-500 ml-2 sm:ml-4 mr-2 sm:mr-3 flex-shrink-0" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="peaceful brunch spot, vibe-y wine bar, cozy coffee for work..."
+                  className="flex-1 py-2 sm:py-3 px-2 text-base font-lora text-neutral-700 placeholder-neutral-400 bg-transparent border-none outline-none min-w-0"
+                />
+                <button
+                  onClick={startVoiceRecognition}
+                  className={`p-2 rounded-full ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200 flex-shrink-0`}
+                  aria-label="Voice search"
+                  type="button"
+                >
+                  <Icons.Mic className="h-5 w-5" />
+                </button>
+                
+                {/* Credit display for logged-in users */}
+               {isAuthenticated && userCredits > 0 && (
+                  <div className="hidden sm:flex items-center mr-2 bg-primary-50 px-2 py-1 rounded-lg">
+                    {semanticSearchAvailable && useSemanticSearch ? (
+                      <Icons.Brain className="h-3 w-3 text-purple-500 mr-1" />
                     ) : (
-                      <span className="flex items-center">
-                        <Icons.Search className="h-5 w-5 sm:mr-2" />
-                        <span className="hidden sm:inline">Search</span>
-                      </span>
+                      <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
                     )}
-                  </button>
-                </form>
-              </div>
+                    <span className="font-poppins text-xs font-semibold text-primary-700">
+                      {userCredits} credits
+                    </span>
+                  </div>
+                )}
+                
+                {/* Free trial credits for non-logged-in users */}
+                <button
+                  type="submit"
+                  disabled={isSearching || geoLoading} // Disable search if geolocation is loading
+                  className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+                  aria-label="Search"
+                >
+                  {isSearching ? (
+                    <span className="flex items-center">
+                      <Icons.Loader2 className="h-5 w-5 animate-spin sm:mr-2" />
+                      <span className="hidden sm:inline">Thinking...</span>
+                    </span>
+                  ) : geoLoading ? ( // Show loading state for geolocation
+                    <span className="flex items-center">
+                      <Icons.MapPin className="h-5 w-5 animate-pulse sm:mr-2" />
+                      <span className="hidden sm:inline">Locating...</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <Icons.Search className="h-5 w-5 sm:mr-2" />
+                      <span className="hidden sm:inline">Search</span>
+                    </span>
+                  )}
+                </button>
+              </form>
             </div>
           </div>
-          
-          {/* Distance Filter Slider - Only show when results are displayed */}
-          {showResults && results.length > 0 && (
-            <div className="border-t border-neutral-100 bg-white shadow-sm p-2">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1">
-                <div className="flex items-center justify-center gap-4">
-                  <span className="font-poppins text-sm font-medium text-neutral-700">
-                    Distance Filter:
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <span className="font-lora text-xs text-neutral-500">10mi</span>
-                    <input
-                      type="range"
-                      min="10"
-                      max="30"
-                      step="20"
-                      value={selectedDisplayRadius}
-                      onChange={(e) => setSelectedDisplayRadius(parseInt(e.target.value))}
-                      className="w-32 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer distance-slider"
-                    />
-                    <span className="font-lora text-xs text-neutral-500">30mi</span>
-                  </div>
-                  <span className="font-poppins text-sm font-semibold text-primary-600">
-                    {selectedDisplayRadius} miles
-                  </span>
-                  <div className="text-xs text-neutral-500">
-                    ({results.length} results)
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+        </div>
         </div>
       )}
       
@@ -947,7 +807,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       {isAppModeActive && (
         <button 
           onClick={exitAppMode}
-          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[999] w-auto px-4 py-2 bg-white rounded-full shadow-lg flex items-center justify-center border border-neutral-200"
+          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-auto px-4 py-2 bg-white bg-opacity-80 rounded-full shadow-lg flex items-center justify-center border border-neutral-100"
           aria-label="Exit search mode"
         >
           <Icons.LogOut className="h-4 w-4 mr-2 text-neutral-600" />
@@ -1041,22 +901,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       <div
         ref={resultsRef} 
-        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-40' : ''} ${
+        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-20' : ''} ${
           showResults && results.length > 0 ? 'opacity-100 mt-0 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'
         }`}
         style={{
-          height: isAppModeActive ? 'calc(100vh - 160px)' : 'auto',
-          maxHeight: isAppModeActive ? 'calc(100vh - 128px)' : showResults ? '800px' : '0'
+          height: isAppModeActive ? 'calc(100vh - 60px)' : 'auto',
+          maxHeight: isAppModeActive ? 'calc(100vh - 60px)' : showResults ? '800px' : '0'
         }}
       >
         <div className="max-w-7xl mx-auto px-4 relative z-20">
-          {/* DEBUG: Log results being rendered */}
-          {console.log('🎨 DEBUG: Rendering results array:', results.map(b => ({
-            name: b.name,
-            distance: b.distance,
-            id: b.id
-          })))}
-          
           {results.length > 0 && showResults && (
             <div className="relative">
               {/* Vertical scrollable layout */}

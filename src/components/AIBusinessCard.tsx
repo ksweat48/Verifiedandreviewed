@@ -30,14 +30,6 @@ const AIBusinessCard: React.FC<{
   business: BusinessCard;
   onRecommend: (business: BusinessCard) => void;
 }> = ({ business, onRecommend }) => {
-  // DEBUG: Log the distance value being used for display
-  console.log('🏷️ DEBUG: AIBusinessCard rendering:', {
-    name: business.name,
-    distance: business.distance,
-    distanceType: typeof business.distance,
-    duration: business.duration,
-    durationType: typeof business.duration
-  });
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group">
