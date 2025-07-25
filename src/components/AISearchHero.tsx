@@ -54,7 +54,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         hasDistance: b.distance !== undefined && b.distance !== null
       })));
       console.log('🎚️ DEBUG: selectedDisplayRadius value:', selectedDisplayRadius, 'type:', typeof selectedDisplayRadius);
-      console.log('➡️ Calling applyDynamicSearchAlgorithm with selectedDisplayRadius:', selectedDisplayRadius);
+      console.log('➡️ Calling applyDynamicSearchAlgorithm with maxRadius:', selectedDisplayRadius);
       const filteredResults = applyDynamicSearchAlgorithm(allFetchedBusinesses, latitude, longitude, selectedDisplayRadius);
       setResults(filteredResults);
       console.log('✅ Filtered to', filteredResults.length, 'businesses within', selectedDisplayRadius, 'miles');
@@ -332,25 +332,26 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               // Apply new dynamic search algorithm
               const rankedResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude);
               
-              console.log('🔍 DEBUG: Setting results state with rankedResults:', rankedResults.map(b => ({
-                name: b.name,
-                distance: b.distance,
-                id: b.id
-              })));
-              setResults(rankedResults);
+              // Apply initial filter with selected radius
+              const initialFilteredResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude, selectedDisplayRadius);
+              
+              // Store all fetched businesses for slider filtering
+              setAllFetchedBusinesses(combinedResults);
+              
               console.log('🔍 DEBUG: Setting results state with initialFilteredResults:', initialFilteredResults.map(b => ({
                 name: b.name,
                 distance: b.distance,
                 id: b.id
               })));
-              console.log('✅ Dynamic search algorithm results:', rankedResults.length, 'businesses (from', combinedResults.length, 'total)');
+              setResults(initialFilteredResults);
+              console.log('✅ Dynamic search algorithm results:', initialFilteredResults.length, 'businesses (from', combinedResults.length, 'total)');
               
               trackEvent('search_performed', { 
                 query: searchQuery, 
                 used_ai: needsAI,
                 used_semantic: usedSemanticSearch,
                 credits_deducted: creditsRequired,
-                results_count: rankedResults.length,
+                results_count: initialFilteredResults.length,
                 platform_results: platformBusinesses.length,
                 ai_results: aiGeneratedBusinesses.length
               });
@@ -369,11 +370,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
             // Store all fetched businesses for slider filtering
             setAllFetchedBusinesses(transformedBusinesses);
-            console.log('🔍 DEBUG: Setting results state with initialFilteredResults:', initialFilteredResults.map(b => ({
-              name: b.name,
-              distance: b.distance,
-              id: b.id
-            })));
             
             // Apply initial filter with selected radius
             const initialFilteredFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
@@ -395,22 +391,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           }
         } else {
           // Apply dynamic search algorithm to platform-only results
-          const rankedPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
-          
-          // Store all fetched businesses for slider filtering
-          setAllFetchedBusinesses(transformedBusinesses);
-          
-          // Apply initial filter with selected radius
-          const initialFilteredPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
-          
-          // Store all fetched businesses for slider filtering
-          setAllFetchedBusinesses(transformedBusinesses);
-          
-          // Apply initial filter with selected radius
           const initialFilteredResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
           
+          // Store all fetched businesses for slider filtering
+          setAllFetchedBusinesses(transformedBusinesses);
+          
+          console.log('🔍 DEBUG: Setting results state with initialFilteredResults (platform-only):', initialFilteredResults.map(b => ({
+            name: b.name,
+            distance: b.distance,
+            id: b.id
+          })));
           setResults(initialFilteredResults);
-          console.log('📊 Dynamic search platform-only results:', initialFilteredResults.length, 'businesses for:', searchQuery);
+          console.log('✅ Dynamic search platform-only results:', initialFilteredResults.length, 'businesses for:', searchQuery);
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false,
