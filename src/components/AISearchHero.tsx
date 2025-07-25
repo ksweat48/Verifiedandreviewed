@@ -141,7 +141,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const samplePrompts = [
     "peaceful brunch spot",
     "vibe-y wine bar",
-    "cozy coffee for work",
     "energetic workout studio"
   ];
 
