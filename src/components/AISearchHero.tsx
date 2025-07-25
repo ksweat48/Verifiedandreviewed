@@ -43,6 +43,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [useSemanticSearch, setUseSemanticSearch] = useState(true);
   const [semanticSearchAvailable, setSemanticSearchAvailable] = useState(false);
   
+  // Helper function to deduplicate businesses by ID
+  const deduplicateBusinesses = (businesses: any[]) => {
+    const seen = new Set();
+    return businesses.filter(business => {
+      // Use a unique identifier for each business
+      const isDuplicate = seen.has(business.id);
+      seen.add(business.id);
+      return !isDuplicate;
+    });
+  };
+  
   // Add useEffect for dynamic filtering when slider changes
   useEffect(() => {
     if (allFetchedBusinesses.length > 0) {
@@ -327,7 +338,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               }));
               
               console.log(`🤖 AI enhanced search results for: ${searchQuery} (${aiGeneratedBusinesses.length} AI businesses)`);
-              const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
+              let combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
+              
+              // Deduplicate the combined results before storing them
+              const originalCount = combinedResults.length;
+              combinedResults = deduplicateBusinesses(combinedResults);
+              console.log(`🔄 Deduplicated businesses: ${originalCount} → ${combinedResults.length} (removed ${originalCount - combinedResults.length} duplicates)`);
               
               // Apply new dynamic search algorithm
               const rankedResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude);
@@ -367,12 +383,19 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             setShowCreditWarning(true);
             
             // Apply dynamic search algorithm to platform-only results
-            const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
+            let fallbackResults = [...transformedBusinesses];
+            
+            // Deduplicate fallback results
+            const originalFallbackCount = fallbackResults.length;
+            fallbackResults = deduplicateBusinesses(fallbackResults);
+            console.log(`🔄 Deduplicated fallback businesses: ${originalFallbackCount} → ${fallbackResults.length} (removed ${originalFallbackCount - fallbackResults.length} duplicates)`);
+            
+            const rankedFallbackResults = applyDynamicSearchAlgorithm(fallbackResults, latitude, longitude);
             // Store all fetched businesses for slider filtering
-            setAllFetchedBusinesses(transformedBusinesses);
+            setAllFetchedBusinesses(fallbackResults);
             
             // Apply initial filter with selected radius
-            const initialFilteredFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
+            const initialFilteredFallbackResults = applyDynamicSearchAlgorithm(fallbackResults, latitude, longitude, selectedDisplayRadius);
             
             console.log('🔍 DEBUG: Setting results state with initialFilteredFallbackResults:', initialFilteredFallbackResults.map(b => ({
               name: b.name,
@@ -390,11 +413,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             });
           }
         } else {
+          // Deduplicate platform-only results
+          let platformOnlyResults = [...transformedBusinesses];
+          const originalPlatformCount = platformOnlyResults.length;
+          platformOnlyResults = deduplicateBusinesses(platformOnlyResults);
+          console.log(`🔄 Deduplicated platform-only businesses: ${originalPlatformCount} → ${platformOnlyResults.length} (removed ${originalPlatformCount - platformOnlyResults.length} duplicates)`);
+          
           // Apply dynamic search algorithm to platform-only results
-          const initialFilteredResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
+          const initialFilteredResults = applyDynamicSearchAlgorithm(platformOnlyResults, latitude, longitude, selectedDisplayRadius);
           
           // Store all fetched businesses for slider filtering
-          setAllFetchedBusinesses(transformedBusinesses);
+          setAllFetchedBusinesses(platformOnlyResults);
           
           console.log('🔍 DEBUG: Setting results state with initialFilteredResults (platform-only):', initialFilteredResults.map(b => ({
             name: b.name,
