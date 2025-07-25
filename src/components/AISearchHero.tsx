@@ -10,11 +10,10 @@ import { BusinessService } from '../services/businessService';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { SemanticSearchService } from '../services/semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
-import { getMatchPercentage, meetsDisplayThreshold, calculateCompositeScore } from '../utils/similarityUtils';
-
-// Minimum semantic similarity threshold for displaying results
-const MINIMUM_DISPLAY_SIMILARITY = 0.0; // Allow all results for composite scoring
-const MAX_SEARCH_RADIUS_MILES = 30; // Maximum search radius in miles
+const DISTANCE_OPTIONS = [
+  { value: 10, label: '10mi' },
+  { value: 30, label: '30mi' }
+];
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
