@@ -76,7 +76,7 @@ export class SemanticSearchService {
         throw new Error(data.message || 'Semantic search failed');
       }
 
-      console.log('✅ Semantic search completed:', data.results?.length || 0, 'results');
+      console.log('✅ Semantic search completed:', data.matchCount, 'results');
 
       return {
         success: true,
