@@ -303,11 +303,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               console.log(`🤖 AI enhanced search results for: ${searchQuery} (${aiGeneratedBusinesses.length} AI businesses)`);
               const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
               
+              // De-duplicate businesses by ID before applying ranking algorithm
+              const uniqueBusinesses = combinedResults.filter((business, index, self) => 
+                index === self.findIndex(b => b.id === business.id)
+              );
+              
+              console.log(`🔄 De-duplication: ${combinedResults.length} total → ${uniqueBusinesses.length} unique businesses`);
+              
               // Apply new dynamic search algorithm
-              const rankedResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude);
+              const rankedResults = applyDynamicSearchAlgorithm(uniqueBusinesses, latitude, longitude);
               
               setResults(rankedResults);
-              console.log('✅ Dynamic search algorithm results:', rankedResults.length, 'businesses (from', combinedResults.length, 'total)');
+              console.log('✅ Dynamic search algorithm results:', rankedResults.length, 'businesses (from', uniqueBusinesses.length, 'unique)');
               
               trackEvent('search_performed', { 
                 query: searchQuery, 
@@ -316,7 +323,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 credits_deducted: creditsRequired,
                 results_count: rankedResults.length,
                 platform_results: platformBusinesses.length,
-                ai_results: aiGeneratedBusinesses.length
+                ai_results: aiGeneratedBusinesses.length,
+                duplicates_removed: combinedResults.length - uniqueBusinesses.length
               });
             } else {
               console.error('AI search failed:', data);
@@ -344,8 +352,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             });
           }
         } else {
+          // De-duplicate platform-only results before ranking
+          const uniquePlatformResults = transformedBusinesses.filter((business, index, self) => 
+            index === self.findIndex(b => b.id === business.id)
+          );
+          
+          console.log(`🔄 Platform-only de-duplication: ${transformedBusinesses.length} total → ${uniquePlatformResults.length} unique businesses`);
+          
           // Apply dynamic search algorithm to platform-only results
-          const rankedPlatformResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
+          const rankedPlatformResults = applyDynamicSearchAlgorithm(uniquePlatformResults, latitude, longitude);
           
           setResults(rankedPlatformResults);
           console.log('📊 Dynamic search platform-only results:', rankedPlatformResults.length, 'businesses for:', searchQuery);
@@ -354,7 +369,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             used_ai: false,
             used_semantic: usedSemanticSearch,
             credits_deducted: creditsRequired,
-            results_count: rankedPlatformResults.length
+            results_count: rankedPlatformResults.length,
+            duplicates_removed: transformedBusinesses.length - uniquePlatformResults.length
           });
         }
       } else {
