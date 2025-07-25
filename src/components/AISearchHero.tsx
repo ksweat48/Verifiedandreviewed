@@ -923,7 +923,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       type="range"
                       min="10"
                       max="30"
-                      step="10"
+                      step="20"
                       value={selectedDisplayRadius}
                       onChange={(e) => setSelectedDisplayRadius(parseInt(e.target.value))}
                       className="w-32 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer distance-slider"
