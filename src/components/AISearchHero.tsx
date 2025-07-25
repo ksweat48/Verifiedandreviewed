@@ -615,9 +615,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             {isSearching && (
               <div className="mb-8 animate-in fade-in duration-500">
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-6 shadow-lg text-center">
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                    <h2 className="font-cinzel text-2xl md:text-3xl font-bold text-white">
+                  <div className="flex flex-col items-center justify-center mb-4">
+                    <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mb-3"></div>
+                    <h2 className="font-cinzel text-2xl md:text-3xl font-bold text-white text-center">
                       One Moment
                     </h2>
                   </div>
