@@ -10,6 +10,7 @@ import { BusinessService } from '../services/businessService';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { SemanticSearchService } from '../services/semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { calculateCompositeScore, getMatchPercentage } from '../utils/similarityUtils';
 const DISTANCE_OPTIONS = [
   { value: 10, label: '10mi' },
   { value: 30, label: '30mi' }
