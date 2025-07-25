@@ -247,7 +247,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           
           try {
             // Calculate how many AI businesses we need (max 4 total cards)
-            const numAINeeded = Math.max(0, 20 - transformedBusinesses.length); // Get more for better ranking
+            const numAINeeded = Math.max(0, 15 - transformedBusinesses.length); // Get more for better ranking
             
             // Always try to get AI results for better ranking diversity
             console.log(`🤖 Getting ${numAINeeded} AI businesses for enhanced ranking`);
