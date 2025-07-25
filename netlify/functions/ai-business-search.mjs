@@ -144,8 +144,7 @@ Requirements:
                 description: "Google Places search query (e.g., 'trendy wine bar', 'cozy coffee shop')"
               },
               minItems: 20,
-              minItems: 50,
-              maxItems: 50
+              maxItems: 20
             }
           },
           required: ["queries"]
