@@ -11,6 +11,7 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import { SemanticSearchService } from '../services/semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { calculateCompositeScore, getMatchPercentage } from '../utils/similarityUtils';
+
 const DISTANCE_OPTIONS = [
   { value: 10, label: 'within 10mi' },
   { value: 30, label: 'within 30mi' }
@@ -533,73 +534,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     }
     
     return topBusinesses;
-      const distance = business.distance || 0;
-      console.log('🔍 DEBUG: Filtering business:', {
-        name: business.name,
-        distance: distance,
-        distanceType: typeof distance,
-        maxRadius: maxRadius,
-        maxRadiusType: typeof maxRadius,
-        comparison: `${distance} <= ${maxRadius}`,
-        result: distance <= maxRadius
-      });
-      const withinRadius = distance <= maxRadius;
-      if (!withinRadius) {
-        console.log(`🚫 Filtering out business outside ${maxRadius} mile radius: ${business.name} (${distance} miles)`);
-      } else {
-        console.log(`✅ Business PASSED filter: ${business.name} (${distance} miles <= ${maxRadius} miles)`);
-      }
-      return withinRadius;
-    });
-    
-    console.log(`📍 ${businessesWithinRadius.length} businesses within ${maxRadius} mile radius`);
-    
-    // DEBUG: Log ALL businesses that PASSED the distance filter
-    console.log('🎯 DEBUG: Businesses that PASSED distance filter:');
-    businessesWithinRadius.forEach((business, index) => {
-      console.log(`  ${index + 1}. ${business.name}: distance=${business.distance} miles`);
-    });
-    
-    // Step 2: Calculate composite scores for each business
-    const businessesWithScores = businessesWithinRadius.map(business => {
-      const compositeScore = calculateCompositeScore({
-        similarity: business.similarity,
-        distance: business.distance,
-        isOpen: business.isOpen,
-        isPlatformBusiness: business.isPlatformBusiness
-      });
-      
-      console.log(`📊 ${business.name}: similarity=${business.similarity?.toFixed(3)}, distance=${business.distance}, isOpen=${business.isOpen}, isPlatform=${business.isPlatformBusiness} → score=${compositeScore}`);
-      
-      return {
-        ...business,
-        compositeScore
-      };
-    });
-    
-    // Step 3: Sort by composite score (descending)
-    const sortedBusinesses = businessesWithScores.sort((a, b) => {
-      return b.compositeScore - a.compositeScore;
-    });
-    
-    // Step 4: Remove duplicates by ID and limit to 5
-    const uniqueResults = sortedBusinesses.filter((business, index, self) => 
-      index === self.findIndex(b => b.id === business.id)
-    ).slice(0, 5);
-    
-    // Step 5: Log final ranking
-    console.log('🏆 Final ranking:');
-    uniqueResults.forEach((business, index) => {
-      console.log(`  ${index + 1}. ${business.name} (score: ${business.compositeScore}, similarity: ${getMatchPercentage(business.similarity)}%)`);
-    });
-    
-    // Step 6: Handle no results case
-    if (uniqueResults.length === 0) {
-      console.log(`⚠️ No businesses found within ${maxRadius} mile radius`);
-      return [];
-    }
-    
-    return uniqueResults;
   };
 
   // Exit app mode
