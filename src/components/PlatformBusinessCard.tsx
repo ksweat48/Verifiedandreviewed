@@ -58,6 +58,15 @@ const PlatformBusinessCard: React.FC<{
   onRecommend: (business: BusinessCard) => void;
   onTakeMeThere: (business: BusinessCard) => void;
 }> = ({ business, onRecommend, onTakeMeThere }) => {
+  // DEBUG: Log the distance value being used for display
+  console.log('🏷️ DEBUG: PlatformBusinessCard rendering:', {
+    name: business.name,
+    distance: business.distance,
+    distanceType: typeof business.distance,
+    duration: business.duration,
+    durationType: typeof business.duration
+  });
+
   const getSentimentRating = (score: number) => {
     if (score >= 80) return { text: 'Great', color: 'bg-green-500' };
     if (score >= 70 && score < 80) return { text: 'Good', color: 'bg-blue-500' };

@@ -907,7 +907,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       {isAppModeActive && (
         <button 
           onClick={exitAppMode}
-          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[500] w-auto px-4 py-2 bg-white rounded-full shadow-md flex items-center justify-center border border-neutral-200"
+          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[999] w-auto px-4 py-2 bg-white rounded-full shadow-lg flex items-center justify-center border border-neutral-200"
           aria-label="Exit search mode"
         >
           <Icons.LogOut className="h-4 w-4 mr-2 text-neutral-600" />
