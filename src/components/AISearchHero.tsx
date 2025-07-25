@@ -16,12 +16,6 @@ import { getMatchPercentage, meetsDisplayThreshold, calculateCompositeScore } fr
 const MINIMUM_DISPLAY_SIMILARITY = 0.0; // Allow all results for composite scoring
 const MAX_SEARCH_RADIUS_MILES = 30; // Maximum search radius in miles
 
-// Distance options for the slider
-const DISTANCE_OPTIONS = [
-  { value: 10, label: 'within 10mi' },
-  { value: 30, label: 'within 30mi' }
-];
-
 interface AISearchHeroProps {
   isAppModeActive: boolean;
   setIsAppModeActive: React.Dispatch<React.SetStateAction<boolean>>;
