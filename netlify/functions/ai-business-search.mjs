@@ -143,6 +143,7 @@ Requirements:
                 type: "string",
                 description: "Google Places search query (e.g., 'trendy wine bar', 'cozy coffee shop')"
               },
+              minItems: 20,
               minItems: 50,
               maxItems: 50
             }
