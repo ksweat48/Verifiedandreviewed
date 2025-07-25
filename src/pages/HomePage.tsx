@@ -1,9 +1,9 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense } from 'react';
+import AISearchHero from '../components/AISearchHero';
 
-const AISearchHero = lazy(() => import('../components/AISearchHero')); 
-const FeaturedBlogSection = lazy(() => import('../components/FeaturedBlogSection'));
-const ExploreArea = lazy(() => import('../components/ExploreArea'));
-const WeeklyReviewDigest = lazy(() => import('../components/WeeklyReviewDigest'));
+const FeaturedBlogSection = React.lazy(() => import('../components/FeaturedBlogSection'));
+const ExploreArea = React.lazy(() => import('../components/ExploreArea'));
+const WeeklyReviewDigest = React.lazy(() => import('../components/WeeklyReviewDigest'));
 
 interface HomePageProps {
   isAppModeActive: boolean;
@@ -13,9 +13,7 @@ interface HomePageProps {
 const HomePage: React.FC<HomePageProps> = ({ isAppModeActive, setIsAppModeActive }) => {
   return (
     <>
-      <Suspense fallback={<div className="h-64 flex items-center justify-center">Loading search...</div>}>
-        <AISearchHero isAppModeActive={isAppModeActive} setIsAppModeActive={setIsAppModeActive} />
-      </Suspense>
+      <AISearchHero isAppModeActive={isAppModeActive} setIsAppModeActive={setIsAppModeActive} />
       
       {!isAppModeActive && (
         <>
