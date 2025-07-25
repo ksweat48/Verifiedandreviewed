@@ -54,6 +54,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         hasDistance: b.distance !== undefined && b.distance !== null
       })));
       console.log('🎚️ DEBUG: selectedDisplayRadius value:', selectedDisplayRadius, 'type:', typeof selectedDisplayRadius);
+      console.log('➡️ Calling applyDynamicSearchAlgorithm with selectedDisplayRadius:', selectedDisplayRadius);
       const filteredResults = applyDynamicSearchAlgorithm(allFetchedBusinesses, latitude, longitude, selectedDisplayRadius);
       setResults(filteredResults);
       console.log('✅ Filtered to', filteredResults.length, 'businesses within', selectedDisplayRadius, 'miles');
@@ -331,7 +332,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               // Apply new dynamic search algorithm
               const rankedResults = applyDynamicSearchAlgorithm(combinedResults, latitude, longitude);
               
+              console.log('🔍 DEBUG: Setting results state with rankedResults:', rankedResults.map(b => ({
+                name: b.name,
+                distance: b.distance,
+                id: b.id
+              })));
               setResults(rankedResults);
+              console.log('🔍 DEBUG: Setting results state with initialFilteredResults:', initialFilteredResults.map(b => ({
+                name: b.name,
+                distance: b.distance,
+                id: b.id
+              })));
               console.log('✅ Dynamic search algorithm results:', rankedResults.length, 'businesses (from', combinedResults.length, 'total)');
               
               trackEvent('search_performed', { 
@@ -358,10 +369,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
             // Store all fetched businesses for slider filtering
             setAllFetchedBusinesses(transformedBusinesses);
+            console.log('🔍 DEBUG: Setting results state with initialFilteredResults:', initialFilteredResults.map(b => ({
+              name: b.name,
+              distance: b.distance,
+              id: b.id
+            })));
             
             // Apply initial filter with selected radius
             const initialFilteredFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude, selectedDisplayRadius);
             
+            console.log('🔍 DEBUG: Setting results state with initialFilteredFallbackResults:', initialFilteredFallbackResults.map(b => ({
+              name: b.name,
+              distance: b.distance,
+              id: b.id
+            })));
             setResults(initialFilteredFallbackResults);
             console.log('✅ Fallback dynamic search results:', initialFilteredFallbackResults.length, 'businesses');
             trackEvent('search_performed', { 
@@ -1010,6 +1031,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         }}
       >
         <div className="max-w-7xl mx-auto px-4 relative z-20">
+          {/* DEBUG: Log results being rendered */}
+          {console.log('🎨 DEBUG: Rendering results array:', results.map(b => ({
+            name: b.name,
+            distance: b.distance,
+            id: b.id
+          })))}
+          
           {results.length > 0 && showResults && (
             <div className="relative">
               {/* Vertical scrollable layout */}
