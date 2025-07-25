@@ -165,7 +165,7 @@ Requirements:
       tool_choice: { type: "function", function: { name: "generateSearchQueries" } },
       temperature: 0.3,
       top_p: 0.9,
-      max_tokens: 200
+      max_tokens: 500
     });
 
     // Generate embedding for the original user prompt for similarity calculations
