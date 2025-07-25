@@ -178,7 +178,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           latitude,
           longitude,
           matchThreshold: 0.5, // Updated threshold for better recall
-          matchCount: 8
+          matchCount: 20
         });
         
         if (semanticResult.success && semanticResult.results.length > 0) {
@@ -247,7 +247,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           
           try {
             // Calculate how many AI businesses we need (max 4 total cards)
-            const numAINeeded = Math.max(0, 10 - transformedBusinesses.length); // Get more for better ranking
+            const numAINeeded = Math.max(0, 20 - transformedBusinesses.length); // Get more for better ranking
             
             // Always try to get AI results for better ranking diversity
             console.log(`🤖 Getting ${numAINeeded} AI businesses for enhanced ranking`);
@@ -418,7 +418,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     // Step 4: Remove duplicates by ID and limit to 5
     const uniqueResults = sortedBusinesses.filter((business, index, self) => 
       index === self.findIndex(b => b.id === business.id)
-    ).slice(0, 5);
+    ).slice(0, 10);
     
     // Step 5: Log final ranking
     console.log('🏆 Final ranking:');
@@ -428,7 +428,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     
     // Step 6: Handle no results case
     if (uniqueResults.length === 0) {
-      console.log('⚠️ No businesses found within 10 mile radius');
+      console.log('⚠️ No businesses found within 10 mile radius from initial pool of 20');
       return [];
     }
     
