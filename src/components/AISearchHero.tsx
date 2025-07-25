@@ -12,6 +12,7 @@ import { SemanticSearchService } from '../services/semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { calculateCompositeScore, getMatchPercentage } from '../utils/similarityUtils';
 const DISTANCE_OPTIONS = [
+  { value: 10, label: '10mi' },
   { value: 30, label: '30mi' }
 ];
 
@@ -470,32 +471,28 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       console.log(`  ${index + 1}. ${business.name}: distance=${business.distance} (${typeof business.distance})`);
     });
     
-    // Step 1: Filter by radius - adjust ranges based on actual data
-    // 10mi setting = 0-20 miles (to capture 12-19 mile businesses)
-    // 30mi setting = 0-30 miles (to capture most businesses)
-    const effectiveRadius = maxRadius === 10 ? 20 : maxRadius;
-    
+    // Step 1: Filter by radius (user-selected max)
     const businessesWithinRadius = businesses.filter(business => {
       const distance = business.distance || 0;
       console.log('🔍 DEBUG: Filtering business:', {
         name: business.name,
         distance: distance,
         distanceType: typeof distance,
-        maxRadius: effectiveRadius,
+        maxRadius: maxRadius,
         maxRadiusType: typeof maxRadius,
-        comparison: `${distance} <= ${effectiveRadius}`,
-        result: distance <= effectiveRadius
+        comparison: `${distance} <= ${maxRadius}`,
+        result: distance <= maxRadius
       });
-      const withinRadius = distance <= effectiveRadius;
+      const withinRadius = distance <= maxRadius;
       if (!withinRadius) {
-        console.log(`🚫 Filtering out business outside ${effectiveRadius} mile radius: ${business.name} (${distance} miles)`);
+        console.log(`🚫 Filtering out business outside ${maxRadius} mile radius: ${business.name} (${distance} miles)`);
       } else {
-        console.log(`✅ Business PASSED filter: ${business.name} (${distance} miles <= ${effectiveRadius} miles)`);
+        console.log(`✅ Business PASSED filter: ${business.name} (${distance} miles <= ${maxRadius} miles)`);
       }
       return withinRadius;
     });
     
-    console.log(`📍 ${businessesWithinRadius.length} businesses within ${effectiveRadius} mile radius`);
+    console.log(`📍 ${businessesWithinRadius.length} businesses within ${maxRadius} mile radius`);
     
     // DEBUG: Log ALL businesses that PASSED the distance filter
     console.log('🎯 DEBUG: Businesses that PASSED distance filter:');
@@ -525,10 +522,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       return b.compositeScore - a.compositeScore;
     });
     
-    // Step 4: Remove duplicates by ID and limit to 10
+    // Step 4: Remove duplicates by ID and limit to 5
     const uniqueResults = sortedBusinesses.filter((business, index, self) => 
       index === self.findIndex(b => b.id === business.id)
-    ).slice(0, 10);
+    ).slice(0, 5);
     
     // Step 5: Log final ranking
     console.log('🏆 Final ranking:');
@@ -538,7 +535,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     
     // Step 6: Handle no results case
     if (uniqueResults.length === 0) {
-      console.log(`⚠️ No businesses found within ${effectiveRadius} mile radius`);
+      console.log(`⚠️ No businesses found within ${maxRadius} mile radius`);
       return [];
     }
     
