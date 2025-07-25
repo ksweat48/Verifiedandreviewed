@@ -10,12 +10,11 @@ import { BusinessService } from '../services/businessService';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { SemanticSearchService } from '../services/semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
-import { calculateCompositeScore, getMatchPercentage } from '../utils/similarityUtils';
+import { getMatchPercentage, meetsDisplayThreshold, calculateCompositeScore } from '../utils/similarityUtils';
 
-const DISTANCE_OPTIONS = [
-  { value: 10, label: 'within 10mi' },
-  { value: 30, label: 'within 30mi' }
-];
+// Minimum semantic similarity threshold for displaying results
+const MINIMUM_DISPLAY_SIMILARITY = 0.0; // Allow all results for composite scoring
+const MAX_SEARCH_RADIUS_MILES = 30; // Maximum search radius in miles
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -143,7 +142,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     "peaceful brunch spot",
     "vibe-y wine bar",
     "cozy coffee for work",
-    "romantic dinner place",
     "energetic workout studio"
   ];
 
@@ -285,7 +283,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           
           try {
             // Calculate how many AI businesses we need (max 4 total cards)
-            const numAINeeded = Math.max(0, 50 - transformedBusinesses.length);
+            const numAINeeded = Math.max(0, 20 - transformedBusinesses.length);
             
             // Always try to get AI results for better ranking diversity
             console.log(`🤖 Getting ${numAINeeded} AI businesses for enhanced ranking`);
@@ -463,41 +461,46 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   // Dynamic Search Algorithm Implementation
   const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number, maxRadius: number = 30) => {
-    console.log('🔍 Applying dynamic search algorithm to', businesses.length, 'businesses for', maxRadius === 10 ? '0-10 mile range' : '10-30 mile range');
+    console.log('🔍 Applying dynamic search algorithm to', businesses.length, 'businesses');
+    console.log('🎯 DEBUG: maxRadius parameter:', maxRadius, 'type:', typeof maxRadius);
     
-    // Step 1: Filter by distance range based on slider setting
-    let filteredBusinesses;
+    // DEBUG: Log ALL businesses with their distances BEFORE filtering
+    console.log('🔍 DEBUG: ALL businesses before distance filter:');
+    businesses.forEach((business, index) => {
+      console.log(`  ${index + 1}. ${business.name}: distance=${business.distance} (${typeof business.distance})`);
+    });
     
-    if (maxRadius === 10) {
-      // Show only businesses 0-10 miles
-      filteredBusinesses = businesses.filter(business => {
-        const distance = business.distance || 0;
-        const withinRange = distance >= 0 && distance <= 10;
-        if (!withinRange) {
-          console.log(`🚫 Filtering out business outside 0-10 mile range: ${business.name} (${distance} miles)`);
-        } else {
-          console.log(`✅ Business in 0-10 mile range: ${business.name} (${distance} miles)`);
-        }
-        return withinRange;
+    // Step 1: Filter by radius (user-selected max)
+    const businessesWithinRadius = businesses.filter(business => {
+      const distance = business.distance || 0;
+      console.log('🔍 DEBUG: Filtering business:', {
+        name: business.name,
+        distance: distance,
+        distanceType: typeof distance,
+        maxRadius: maxRadius,
+        maxRadiusType: typeof maxRadius,
+        comparison: `${distance} <= ${maxRadius}`,
+        result: distance <= maxRadius
       });
-    } else {
-      // Show only businesses 10-30 miles (no overlap with 0-10 range)
-      filteredBusinesses = businesses.filter(business => {
-        const distance = business.distance || 0;
-        const withinRange = distance > 10 && distance <= 30;
-        if (!withinRange) {
-          console.log(`🚫 Filtering out business outside 10-30 mile range: ${business.name} (${distance} miles)`);
-        } else {
-          console.log(`✅ Business in 10-30 mile range: ${business.name} (${distance} miles)`);
-        }
-        return withinRange;
-      });
-    }
+      const withinRadius = distance <= maxRadius;
+      if (!withinRadius) {
+        console.log(`🚫 Filtering out business outside ${maxRadius} mile radius: ${business.name} (${distance} miles)`);
+      } else {
+        console.log(`✅ Business PASSED filter: ${business.name} (${distance} miles <= ${maxRadius} miles)`);
+      }
+      return withinRadius;
+    });
     
-    console.log(`📍 ${filteredBusinesses.length} businesses in ${maxRadius === 10 ? '0-10' : '10-30'} mile range`);
+    console.log(`📍 ${businessesWithinRadius.length} businesses within ${maxRadius} mile radius`);
     
-    // Step 2: Calculate composite scores for filtered businesses
-    const businessesWithScores = filteredBusinesses.map(business => {
+    // DEBUG: Log ALL businesses that PASSED the distance filter
+    console.log('🎯 DEBUG: Businesses that PASSED distance filter:');
+    businessesWithinRadius.forEach((business, index) => {
+      console.log(`  ${index + 1}. ${business.name}: distance=${business.distance} miles`);
+    });
+    
+    // Step 2: Calculate composite scores for each business
+    const businessesWithScores = businessesWithinRadius.map(business => {
       const compositeScore = calculateCompositeScore({
         similarity: business.similarity,
         distance: business.distance,
@@ -518,22 +521,24 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       return b.compositeScore - a.compositeScore;
     });
     
-    // Step 4: Return top 10 businesses from the filtered range
-    const topBusinesses = sortedBusinesses.slice(0, 10);
+    // Step 4: Remove duplicates by ID and limit to 5
+    const uniqueResults = sortedBusinesses.filter((business, index, self) => 
+      index === self.findIndex(b => b.id === business.id)
+    ).slice(0, 5);
     
     // Step 5: Log final ranking
-    console.log(`🏆 Final ranking for ${maxRadius === 10 ? '0-10' : '10-30'} mile range:`);
-    topBusinesses.forEach((business, index) => {
-      console.log(`  ${index + 1}. ${business.name} (score: ${business.compositeScore}, similarity: ${getMatchPercentage(business.similarity)}%, distance: ${business.distance}mi)`);
+    console.log('🏆 Final ranking:');
+    uniqueResults.forEach((business, index) => {
+      console.log(`  ${index + 1}. ${business.name} (score: ${business.compositeScore}, similarity: ${getMatchPercentage(business.similarity)}%)`);
     });
     
     // Step 6: Handle no results case
-    if (topBusinesses.length === 0) {
-      console.log(`⚠️ No businesses found in ${maxRadius === 10 ? '0-10' : '10-30'} mile range`);
+    if (uniqueResults.length === 0) {
+      console.log(`⚠️ No businesses found within ${maxRadius} mile radius`);
       return [];
     }
     
-    return topBusinesses;
+    return uniqueResults;
   };
 
   // Exit app mode
