@@ -53,9 +53,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         distanceType: typeof b.distance,
         hasDistance: b.distance !== undefined && b.distance !== null
       })));
+      console.log('🎚️ DEBUG: selectedDisplayRadius value:', selectedDisplayRadius, 'type:', typeof selectedDisplayRadius);
       const filteredResults = applyDynamicSearchAlgorithm(allFetchedBusinesses, latitude, longitude, selectedDisplayRadius);
       setResults(filteredResults);
       console.log('✅ Filtered to', filteredResults.length, 'businesses within', selectedDisplayRadius, 'miles');
+      console.log('🎯 DEBUG: Final filtered results:', filteredResults.map(b => ({
+        name: b.name,
+        distance: b.distance,
+        passedFilter: true
+      })));
     }
   }, [selectedDisplayRadius, allFetchedBusinesses, latitude, longitude]);
   
@@ -417,6 +423,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     console.log('🔍 Applying dynamic search algorithm to', businesses.length, 'businesses');
     console.log('🎯 DEBUG: maxRadius parameter:', maxRadius, 'type:', typeof maxRadius);
     
+    // DEBUG: Log ALL businesses with their distances BEFORE filtering
+    console.log('🔍 DEBUG: ALL businesses before distance filter:');
+    businesses.forEach((business, index) => {
+      console.log(`  ${index + 1}. ${business.name}: distance=${business.distance} (${typeof business.distance})`);
+    });
+    
     // Step 1: Filter by radius (user-selected max)
     const businessesWithinRadius = businesses.filter(business => {
       const distance = business.distance || 0;
@@ -432,11 +444,19 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       const withinRadius = distance <= maxRadius;
       if (!withinRadius) {
         console.log(`🚫 Filtering out business outside ${maxRadius} mile radius: ${business.name} (${distance} miles)`);
+      } else {
+        console.log(`✅ Business PASSED filter: ${business.name} (${distance} miles <= ${maxRadius} miles)`);
       }
       return withinRadius;
     });
     
     console.log(`📍 ${businessesWithinRadius.length} businesses within ${maxRadius} mile radius`);
+    
+    // DEBUG: Log ALL businesses that PASSED the distance filter
+    console.log('🎯 DEBUG: Businesses that PASSED distance filter:');
+    businessesWithinRadius.forEach((business, index) => {
+      console.log(`  ${index + 1}. ${business.name}: distance=${business.distance} miles`);
+    });
     
     // Step 2: Calculate composite scores for each business
     const businessesWithScores = businessesWithinRadius.map(business => {
@@ -887,7 +907,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       {isAppModeActive && (
         <button 
           onClick={exitAppMode}
-          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-auto px-4 py-2 bg-white bg-opacity-80 rounded-full shadow-lg flex items-center justify-center border border-neutral-100"
+          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[500] w-auto px-4 py-2 bg-white rounded-full shadow-md flex items-center justify-center border border-neutral-200"
           aria-label="Exit search mode"
         >
           <Icons.LogOut className="h-4 w-4 mr-2 text-neutral-600" />
