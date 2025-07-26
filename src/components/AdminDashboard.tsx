@@ -179,7 +179,7 @@ const AdminDashboard = () => {
       color: 'bg-purple-100 text-purple-600',
       bgColor: 'bg-purple-50',
       description: 'Total searches performed',
-      status: 'inactive'
+      status: 'active'
     },
     {
       id: 'total-businesses',
