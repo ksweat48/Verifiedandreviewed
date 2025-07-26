@@ -152,7 +152,7 @@ const AdminDashboard = () => {
       icon: Users,
       color: 'bg-blue-100 text-blue-600',
       bgColor: 'bg-blue-50',
-      description: 'Registered platform users'
+      description: 'Registered platform users',
      status: 'active'
     },
     {
