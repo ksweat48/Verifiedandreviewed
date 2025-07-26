@@ -180,6 +180,71 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     window.history.pushState({ appMode: true }, '', window.location.pathname + '#app-mode');
     
     try {
+      // Step 1: Check for exact business name match first (no distance limits)
+      console.log('🎯 Checking for exact business name match:', searchQuery);
+      let exactMatchBusiness = null;
+      
+      try {
+        const exactMatch = await BusinessService.getBusinessByName(searchQuery);
+        if (exactMatch) {
+          console.log('✅ [EXACT MATCH] Found business:', exactMatch.name);
+          
+          // Calculate distance for exact match
+          let exactMatchDistance = 999999;
+          let exactMatchDuration = 999999;
+          
+          if (latitude && longitude && exactMatch.latitude && exactMatch.longitude) {
+            exactMatchDistance = calculateDistance(latitude, longitude, exactMatch.latitude, exactMatch.longitude);
+            exactMatchDuration = Math.round(exactMatchDistance * 2.5); // Rough estimate
+            console.log('📏 [EXACT MATCH] Distance calculated:', exactMatchDistance.toFixed(1), 'miles');
+          }
+          
+          // Transform exact match to expected format with special flags
+          exactMatchBusiness = {
+            id: exactMatch.id,
+            name: exactMatch.name,
+            category: exactMatch.category,
+            description: exactMatch.description,
+            short_description: exactMatch.short_description,
+            phone_number: exactMatch.phone_number,
+            website_url: exactMatch.website_url,
+            social_media: exactMatch.social_media,
+            price_range: exactMatch.price_range,
+            service_area: exactMatch.service_area,
+            days_closed: exactMatch.days_closed,
+            owner_user_id: exactMatch.owner_user_id,
+            latitude: exactMatch.latitude,
+            longitude: exactMatch.longitude,
+            created_at: exactMatch.created_at,
+            updated_at: exactMatch.updated_at,
+            rating: {
+              thumbsUp: exactMatch.thumbs_up || 0,
+              thumbsDown: exactMatch.thumbs_down || 0,
+              sentimentScore: exactMatch.sentiment_score || 0
+            },
+            image: exactMatch.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+            isOpen: true,
+            hours: exactMatch.hours || 'Hours unavailable',
+            address: exactMatch.address || '',
+            reviews: [],
+            isPlatformBusiness: exactMatch.is_verified || false,
+            tags: exactMatch.tags || [],
+            distance: exactMatchDistance,
+            duration: exactMatchDuration,
+            similarity: 1.0, // Perfect match
+            isExactMatch: true, // Special flag for exact matches
+            compositeScore: 2.0 // Very high score to ensure top ranking
+          };
+          
+          console.log('🎯 [EXACT MATCH] Prepared business object with distance:', exactMatchDistance.toFixed(1), 'miles');
+        } else {
+          console.log('❌ No exact business name match found for:', searchQuery);
+        }
+      } catch (exactMatchError) {
+        console.warn('⚠️ Exact match search failed:', exactMatchError.message);
+      }
+      
+      // Step 2: Determine search strategy: semantic vs traditional
       // Determine search strategy: semantic vs traditional
       let searchResults = [];
       let usedSemanticSearch = false;
