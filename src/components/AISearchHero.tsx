@@ -860,126 +860,91 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       {showCreditWarning && (
         <div className="max-w-md mx-auto mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-4 animate-in slide-in-from-top-4 duration-300">
-          {/* Loading Message - Show when searching */}
-          {isSearching ? (
-            <div className="animate-in fade-in duration-500">
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-6 shadow-lg text-center">
-                <div className="flex flex-col items-center justify-center mb-4">
-                  <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-                  <h2 className="font-cinzel text-2xl md:text-3xl font-bold text-white text-center">
-                    One Moment
-                  </h2>
-                </div>
-                <p className="font-lora text-lg md:text-xl text-white/90 animate-pulse">
-                  Vibe Check in Progress...
-                </p>
-              </div>
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <Icons.AlertCircle className="h-5 w-5 text-yellow-500" />
             </div>
-          ) : (
-            <>
-              {/* Title and Subtitle */}
-              <div className="mb-8">
-                <h1 className="font-cinzel text-4xl md:text-7xl lg:text-8xl font-bold text-neutral-900 mb-6 mx-auto">
-                  <span className="text-white drop-shadow-lg">Discover what matters</span>
-                </h1>
-                <p className="font-lora text-xl md:text-3xl text-neutral-600 mb-4 max-w-2xl mx-auto">
-                  <span className="text-white drop-shadow-md">
-                  Find places with a vibe, a feeling, or just a word.
-                  </span>
-                </p>
-              </div>
-              
-              {/* Search Bar */}
-              <div className="w-full max-w-2xl mx-auto mb-6">
-                <div 
-                  ref={searchRef}
-                  className="relative w-full"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
-                  <div className="relative bg-white rounded-xl shadow-md border border-neutral-200 p-2 w-full">
-                    <form onSubmit={(e) => {e.preventDefault(); handleSearch();}} className="flex items-center w-full">
-                      <Icons.Sparkles className="h-5 w-5 text-primary-500 ml-1 sm:ml-4 mr-1 sm:mr-3 flex-shrink-0" />
-                      <input
-                        ref={searchInputRef}
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="peaceful brunch spot, vibe-y wine bar, cozy coffee for work..."
-                        className="flex-1 py-2 sm:py-3 px-1 text-base font-lora text-neutral-700 placeholder-neutral-400 bg-transparent border-none outline-none min-w-0"
-                      />
-                      <button
-                        onClick={startVoiceRecognition}
-                        className={`p-1 rounded-full ${isListening ? 'bg-primary-100 text-primary-600 animate-pulse' : 'text-neutral-400 hover:text-primary-500 hover:bg-primary-50'} transition-colors duration-200 flex-shrink-0`}
-                        aria-label="Voice search"
-                        type="button"
-                      >
-                        <Icons.Mic className="h-5 w-5" />
-                      </button>
-                      
-                      {/* Credit display for logged-in users */}
-                     {isAuthenticated && userCredits > 0 && (
-                        <div className="hidden sm:flex items-center mr-2 bg-primary-50 px-2 py-1 rounded-lg">
-                          {semanticSearchAvailable && useSemanticSearch ? (
-                            <Icons.Brain className="h-3 w-3 text-purple-500 mr-1" />
-                          ) : (
-                            <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
-                          )}
-                          <span className="font-poppins text-xs font-semibold text-primary-700">
-                            {userCredits} credits
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Free trial credits for non-logged-in users */}
-                      <button
-                        type="submit"
-                        disabled={isSearching || geoLoading} // Disable search if geolocation is loading
-                        className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex-shrink-0"
-                        aria-label="Search"
-                      >
-                        {isSearching ? (
-                          <span className="flex items-center">
-                            <Icons.Loader2 className="h-5 w-5 animate-spin sm:mr-2" />
-                            <span className="hidden sm:inline">Thinking...</span>
-                          </span>
-                        ) : geoLoading ? ( // Show loading state for geolocation
-                          <span className="flex items-center">
-                            <Icons.MapPin className="h-5 w-5 animate-pulse sm:mr-2" />
-                            <span className="hidden sm:inline">Locating...</span>
-                          </span>
-                        ) : (
-                          <span className="flex items-center">
-                            <Icons.Search className="h-5 w-5 sm:mr-2" />
-                            <span className="hidden sm:inline">Search</span>
-                          </span>
-                        )}
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Sample Prompts */}
-              <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
-                {samplePrompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    onClick={() => {
-                      setSearchQuery(prompt);
-                      handleSearch();
-                    }}
-                    disabled={isSearching}
-                    className="bg-white/10 border border-white/30 text-white px-3 py-1 rounded-full text-sm font-lora hover:bg-white/20 hover:border-white transition-colors duration-200"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+            <div className="ml-3">
+              <h3 className="font-poppins text-sm font-semibold text-yellow-800">
+                Insufficient Credits
+              </h3>
+              <p className="font-lora text-xs text-yellow-700 mt-1">
+                You don't have enough credits for this search. Please upgrade your plan or wait for your credits to refresh.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCreditWarning(false)}
+              className="ml-auto flex-shrink-0 text-yellow-500 hover:text-yellow-700"
+            >
+              <Icons.X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
+      {/* Results Section */}
+      {showResults && results.length > 0 && (
+        <div ref={resultsRef} className="flex-1 overflow-y-auto bg-neutral-50 px-4 sm:px-6 lg:px-8 py-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {results.map((business, index) => (
+                business.isPlatformBusiness ? (
+                  <PlatformBusinessCard
+                    key={business.id}
+                    business={business}
+                    onTakeMeThere={() => handleTakeMeThere(business)}
+                    similarity={business.similarity}
+                    index={index}
+                  />
+                ) : (
+                  <AIBusinessCard
+                    key={business.id}
+                    business={business}
+                    onRecommend={() => handleRecommend(business)}
+                    onTakeMeThere={() => handleTakeMeThere(business)}
+                    similarity={business.similarity}
+                    index={index}
+                  />
+                )
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Results Message */}
+      {showResults && results.length === 0 && !isSearching && (
+        <div className="flex-1 flex items-center justify-center bg-neutral-50 px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-md">
+            <Icons.Search className="h-16 w-16 text-neutral-400 mx-auto mb-4" />
+            <h3 className="font-cinzel text-xl font-semibold text-neutral-900 mb-2">
+              No Results Found
+            </h3>
+            <p className="font-lora text-neutral-600 mb-4">
+              We couldn't find any businesses matching your search. Try a different query or check back later.
+            </p>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setShowResults(false);
+                setIsAppModeActive(false);
+              }}
+              className="bg-primary-500 text-white px-6 py-2 rounded-lg font-poppins font-semibold hover:bg-primary-600 transition-colors duration-200"
+            >
+              Try Another Search
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Signup Prompt Modal */}
+      {showSignupPrompt && (
+        <SignupPrompt
+          onSignup={handleSignup}
+          onLogin={handleLogin}
+          onClose={() => setShowSignupPrompt(false)}
+        />
+      )}
     </div>
   );
 };
