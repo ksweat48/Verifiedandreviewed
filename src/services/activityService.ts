@@ -77,8 +77,19 @@ export class ActivityService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Activity logging failed:', errorData);
+        try {
+          const responseText = await response.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(responseText);
+          } catch (jsonError) {
+            console.error('Activity logging failed with non-JSON response:', responseText);
+            return;
+          }
+          console.error('Activity logging failed:', errorData);
+        } catch (textError) {
+          console.error('Activity logging failed - could not read response:', textError);
+        }
       }
     } catch (error) {
       console.error('Error sending activity:', error);
