@@ -121,7 +121,21 @@ const ReviewerDashboardPage = () => {
                 className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm mb-2"
               />
               <h1 className="font-poppins text-lg font-semibold text-neutral-900 text-center">
-                {user.name}
+                {(() => {
+                  const nameParts = user.name.split(' ');
+                  if (nameParts.length === 1) {
+                    return nameParts[0];
+                  }
+                  const firstName = nameParts[0];
+                  const lastName = nameParts.slice(1).join(' ');
+                  return (
+                    <>
+                      {firstName}
+                      <br />
+                      {lastName}
+                    </>
+                  );
+                })()}
               </h1>
             </div>
             
