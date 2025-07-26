@@ -153,6 +153,7 @@ const AdminDashboard = () => {
       color: 'bg-blue-100 text-blue-600',
       bgColor: 'bg-blue-50',
       description: 'Registered platform users'
+     status: 'active'
     },
     {
      id: 'daily-active',
@@ -162,6 +163,7 @@ const AdminDashboard = () => {
       color: 'bg-green-100 text-green-600',
       bgColor: 'bg-green-50',
       description: 'Users active in last 24h'
+     status: 'active'
     },
     {
      id: 'user-searches',
@@ -171,6 +173,7 @@ const AdminDashboard = () => {
       color: 'bg-purple-100 text-purple-600',
       bgColor: 'bg-purple-50',
       description: 'Total searches performed'
+     status: 'inactive'
     },
     {
      id: 'total-businesses',
@@ -180,6 +183,7 @@ const AdminDashboard = () => {
       color: 'bg-indigo-100 text-indigo-600',
       bgColor: 'bg-indigo-50',
       description: 'Businesses on platform'
+     status: 'active'
     },
     {
      id: 'ai-favorites',
@@ -189,6 +193,7 @@ const AdminDashboard = () => {
       color: 'bg-red-100 text-red-600',
       bgColor: 'bg-red-50',
       description: 'AI businesses favorited'
+     status: 'active'
     },
     {
      id: 'platform-reviews',
@@ -198,6 +203,7 @@ const AdminDashboard = () => {
       color: 'bg-yellow-100 text-yellow-600',
       bgColor: 'bg-yellow-50',
       description: 'Reviews on platform businesses'
+     status: 'active'
     },
     {
      id: 'verified-businesses',
@@ -207,6 +213,7 @@ const AdminDashboard = () => {
       color: 'bg-emerald-100 text-emerald-600',
       bgColor: 'bg-emerald-50',
       description: 'Admin verified businesses'
+     status: 'active'
     },
     {
      id: 'tokens-purchased',
@@ -216,6 +223,7 @@ const AdminDashboard = () => {
       color: 'bg-orange-100 text-orange-600',
       bgColor: 'bg-orange-50',
       description: 'Revenue from token sales'
+     status: 'inactive'
     },
     {
      id: 'tokens-earned',
@@ -225,6 +233,7 @@ const AdminDashboard = () => {
       color: 'bg-cyan-100 text-cyan-600',
       bgColor: 'bg-cyan-50',
       description: 'Tokens from referrals & reviews'
+     status: 'active'
     }
   ];
 
@@ -305,9 +314,18 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                     </div>
-                   <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-1 group-hover:text-primary-600 transition-colors duration-200">
+                   <div className="flex items-center justify-between mb-1">
+                     <h3 className="font-poppins text-lg font-semibold text-neutral-900 group-hover:text-primary-600 transition-colors duration-200">
                       {kpi.title}
-                    </h3>
+                     </h3>
+                     <div className={`px-2 py-1 rounded-full text-xs font-poppins font-bold ${
+                       kpi.status === 'active' 
+                         ? 'bg-green-100 text-green-700' 
+                         : 'bg-gray-100 text-gray-600'
+                     }`}>
+                       {kpi.status === 'active' ? 'ACTIVE' : 'INACTIVE'}
+                     </div>
+                   </div>
                     <p className="font-lora text-sm text-neutral-600">
                       {kpi.description}
                     </p>
