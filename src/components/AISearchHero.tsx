@@ -187,12 +187,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       exactMatchBusiness = await BusinessService.getBusinessByName(searchQuery.trim());
       if (exactMatchBusiness) {
         console.log('✅ [EXACT MATCH] Found business:', exactMatchBusiness.name);
-        // If it's an exact match, always include it, bypassing the distance filter
-        if (business.isExactMatch) {
-          console.log(`🎯 [EXACT MATCH BYPASS] Including ${business.name} despite distance (${business.distance?.toFixed(1)} miles)`);
-          return true;
-        }
-        
         
         // Calculate distance for exact match if user location available
         if (latitude && longitude && exactMatchBusiness.latitude && exactMatchBusiness.longitude) {
