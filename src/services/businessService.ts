@@ -277,6 +277,37 @@ export class BusinessService {
     }
   }
 
+  // Get business by exact name match (for direct searches)
+  static async getBusinessByName(name: string): Promise<Business | null> {
+    try {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('is_visible_on_platform', true)
+        .ilike('name', name) // Case-insensitive exact match
+        .single();
+      
+      if (error) {
+        // If no exact match found, try partial match
+        const { data: partialData, error: partialError } = await supabase
+          .from('businesses')
+          .select('*')
+          .eq('is_visible_on_platform', true)
+          .ilike('name', `%${name}%`) // Partial match
+          .limit(1)
+          .single();
+        
+        if (partialError) return null;
+        return partialData;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching business by name:', error);
+      return null;
+    }
+  }
+
   // Get all businesses
   static async getBusinesses(filters?: {
     category?: string;
