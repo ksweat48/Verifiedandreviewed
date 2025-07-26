@@ -627,12 +627,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         <div className="flex flex-col justify-center items-center flex-grow z-10 px-4 sm:px-6 lg:px-8">
           {/* Centered Hero Content Container */}
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-            {isSearching ? (
-              /* Loading Message - Show when searching */
+            {/* Loading Message - Show when searching */}
+            {isSearching && (
               <div className="mb-8 animate-in fade-in duration-500">
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-6 shadow-lg text-center">
                   <div className="flex flex-col items-center justify-center mb-4">
-                    <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                    <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mb-3"></div>
                     <h2 className="font-cinzel text-2xl md:text-3xl font-bold text-white text-center">
                       One Moment
                     </h2>
@@ -642,7 +642,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   </p>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {/* Initial Hero Content - Show when not searching */}
+            {!isSearching && (
               <>
                 {/* Title and Subtitle */}
                 <div className="mb-8">
