@@ -93,31 +93,31 @@ const ReviewerDashboardPage = () => {
     <div className="min-h-screen bg-neutral-50">
       {/* Header */}
       <div className="bg-white border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="font-cinzel text-3xl font-bold text-neutral-900">
+              <h1 className="font-cinzel text-xl sm:text-2xl font-bold text-neutral-900">
                 Dashboard
               </h1>
-              <p className="font-lora text-neutral-600 mt-1">
+              <p className="font-lora text-sm sm:text-base text-neutral-600 mt-1">
                 Welcome back, {user.name}
               </p>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="bg-primary-100 text-primary-700 px-4 py-2 rounded-lg">
-                <div className="flex items-center">
-                  <Zap className="h-4 w-4 mr-2" />
-                  <span className="font-poppins font-semibold">
+            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+              <div className="bg-primary-100 text-primary-700 px-3 py-1.5 rounded-lg flex-shrink-0">
+                <div className="flex items-center whitespace-nowrap">
+                  <Zap className="h-3 w-3 mr-1.5" />
+                  <span className="font-poppins text-sm font-semibold">
                     {user.credits || 0} credits
                   </span>
                 </div>
               </div>
               
-              <div className="bg-accent-100 text-accent-700 px-4 py-2 rounded-lg">
-                <div className="flex items-center">
-                  <Award className="h-4 w-4 mr-2" />
-                  <span className="font-poppins font-semibold">
+              <div className="bg-accent-100 text-accent-700 px-3 py-1.5 rounded-lg flex-shrink-0">
+                <div className="flex items-center whitespace-nowrap">
+                  <Award className="h-3 w-3 mr-1.5" />
+                  <span className="font-poppins text-sm font-semibold">
                     Level {user.level}
                   </span>
                 </div>
@@ -128,23 +128,23 @@ const ReviewerDashboardPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 mb-6">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-neutral-200 mb-6">
               <div className="flex flex-col items-center">
                 <img
                   src={user.avatar || 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100'}
                   alt={user.name}
-                  className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg mb-4"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-white shadow-lg mb-4"
                 />
-                <h2 className="font-poppins text-xl font-semibold text-neutral-900 mb-1">
+                <h2 className="font-poppins text-lg sm:text-xl font-semibold text-neutral-900 mb-1 text-center">
                   {user.name}
                 </h2>
-                <p className="font-lora text-neutral-600 mb-2">
+                <p className="font-lora text-sm sm:text-base text-neutral-600 mb-2 text-center">
                   Level {user.level} Reviewer
                 </p>
-                <div className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-poppins font-semibold">
+                <div className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-xs sm:text-sm font-poppins font-semibold">
                   {user.reviewCount} Reviews
                 </div>
               </div>
@@ -152,20 +152,20 @@ const ReviewerDashboardPage = () => {
 
             {/* Navigation Tabs */}
             <div className="bg-white rounded-2xl shadow-sm border border-neutral-200">
-              <div className="p-2">
+              <div className="p-1 sm:p-2">
                 {tabs.map((tab) => {
                   const IconComponent = tab.icon;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as any)}
-                      className={`w-full flex items-center px-4 py-3 rounded-lg font-poppins font-medium transition-colors duration-200 ${
+                      className={`w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-poppins text-sm sm:text-base font-medium transition-colors duration-200 ${
                         activeTab === tab.id
                           ? 'bg-primary-50 text-primary-600'
                           : 'text-neutral-700 hover:bg-neutral-50'
                       }`}
                     >
-                      <IconComponent className="h-5 w-5 mr-3" />
+                      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 flex-shrink-0" />
                       {tab.label}
                     </button>
                   );
@@ -179,45 +179,45 @@ const ReviewerDashboardPage = () => {
             {activeTab === 'overview' && (
               <div className="space-y-8">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-neutral-200">
                     <div className="flex items-center">
-                      <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mr-4">
-                        <ThumbsUp className="h-6 w-6 text-primary-600" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-full flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
+                        <ThumbsUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
                       </div>
                       <div>
-                        <h3 className="font-poppins text-2xl font-bold text-neutral-900">
+                        <h3 className="font-poppins text-xl sm:text-2xl font-bold text-neutral-900">
                           {user.reviewCount}
                         </h3>
-                        <p className="font-lora text-neutral-600">Total Reviews</p>
+                        <p className="font-lora text-sm sm:text-base text-neutral-600">Total Reviews</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                  <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-neutral-200">
                     <div className="flex items-center">
-                      <div className="w-12 h-12 bg-accent-100 rounded-full flex items-center justify-center mr-4">
-                        <Award className="h-6 w-6 text-accent-600" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-accent-100 rounded-full flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
+                        <Award className="h-5 w-5 sm:h-6 sm:w-6 text-accent-600" />
                       </div>
                       <div>
-                        <h3 className="font-poppins text-2xl font-bold text-neutral-900">
+                        <h3 className="font-poppins text-xl sm:text-2xl font-bold text-neutral-900">
                           {user.level}
                         </h3>
-                        <p className="font-lora text-neutral-600">Current Level</p>
+                        <p className="font-lora text-sm sm:text-base text-neutral-600">Current Level</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                  <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-neutral-200 sm:col-span-2 lg:col-span-1">
                     <div className="flex items-center">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                        <Zap className="h-6 w-6 text-green-600" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
+                        <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                       </div>
                       <div>
-                        <h3 className="font-poppins text-2xl font-bold text-neutral-900">
+                        <h3 className="font-poppins text-xl sm:text-2xl font-bold text-neutral-900">
                           {user.credits || 0}
                         </h3>
-                        <p className="font-lora text-neutral-600">Credits</p>
+                        <p className="font-lora text-sm sm:text-base text-neutral-600">Credits</p>
                       </div>
                     </div>
                   </div>
