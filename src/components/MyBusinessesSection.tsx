@@ -102,14 +102,14 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-cinzel text-2xl font-bold text-neutral-900"> 
+        <h2 className="font-cinzel text-xl sm:text-2xl font-bold text-neutral-900"> 
           My Businesses ({businesses.length})
         </h2>
         <button
           onClick={handleAddBusiness}
-          className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 flex items-center"
+          className="font-poppins bg-primary-500 text-white px-3 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 flex items-center"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-3 w-3 mr-1.5 sm:h-4 sm:w-4 sm:mr-2" />
           Add New Business
         </button>
       </div>
@@ -125,9 +125,9 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
           </p>
           <button
             onClick={handleAddBusiness}
-            className="font-poppins bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
+            className="font-poppins bg-primary-500 text-white px-4 py-2 text-sm sm:px-6 sm:py-3 sm:text-base rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
           >
-            <Plus className="h-5 w-5 mr-2" />
+            <Plus className="h-4 w-4 mr-1.5 sm:h-5 sm:w-5 sm:mr-2" />
             Add Your First Business
           </button>
         </div>
