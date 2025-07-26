@@ -64,17 +64,6 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
           <p className="font-lora text-neutral-600 mb-4">
             When you find AI-generated businesses you like, click the heart icon to save them here.
           </p>
-          <div className="bg-blue-50 rounded-lg p-4 max-w-md mx-auto">
-            <div className="flex items-center mb-2">
-              <Info className="h-4 w-4 text-blue-600 mr-2" />
-              <span className="font-poppins text-sm font-semibold text-blue-800">
-                How to add favorites:
-              </span>
-            </div>
-            <p className="font-lora text-xs text-blue-700">
-              Search for businesses using our AI search, then click the heart icon on any AI-generated result to save it to your favorites.
-            </p>
-          </div>
         </div>
       ) : (
         <div className="space-y-4">
