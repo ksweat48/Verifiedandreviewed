@@ -58,6 +58,12 @@ const PlatformBusinessCard: React.FC<{
   onRecommend: (business: BusinessCard) => void;
   onTakeMeThere: (business: BusinessCard) => void;
 }> = ({ business, onRecommend, onTakeMeThere }) => {
+ // Debug: Log the business object and its reviews
+ console.log(`🎴 PlatformBusinessCard rendering: ${business.name}`);
+ console.log(`🎴 Reviews array:`, business.reviews);
+ console.log(`🎴 Reviews length: ${business.reviews?.length || 0}`);
+ console.log(`🎴 Has reviews: ${business.reviews && business.reviews.length > 0}`);
+ 
   const getSentimentRating = (score: number) => {
     if (score >= 80) return { text: 'Great', color: 'bg-green-500' };
     if (score >= 70 && score < 80) return { text: 'Good', color: 'bg-blue-500' };

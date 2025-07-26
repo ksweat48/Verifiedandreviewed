@@ -342,7 +342,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 // Ensure all required fields are present
                 id: business.id || `ai-${Date.now()}-${Math.random()}`,
                 rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
+             console.log(`📝 Fetching reviews for business: ${business.name} (ID: ${business.id})`);
                 image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+             console.log(`📝 Found ${reviews.length} reviews for ${business.name}`);
                 isOpen: business.isOpen !== undefined ? business.isOpen : true,
                 hours: business.hours || 'Hours unavailable',
                 address: business.address || 'Address not available',
@@ -353,6 +355,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 similarity: business.similarity || 0.8 // Default high similarity for AI businesses
               }));
               
+             console.log(`📝 Formatted ${formattedReviews.length} reviews for ${business.name}:`, formattedReviews);
+             
               console.log(`🤖 AI enhanced search results for: ${searchQuery} (${aiGeneratedBusinesses.length} AI businesses)`);
               const combinedResults = [...platformBusinesses, ...aiGeneratedBusinesses];
               
@@ -418,11 +422,14 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               query: searchQuery, 
               used_ai: false, 
               credits_deducted: creditsRequired,
+           console.log(`🎯 [EXACT MATCH] Merging properties. Existing business has ${existingBusiness.reviews?.length || 0} reviews`);
               results_count: rankedFallbackResults.length,
               results_count: finalResults.length,
               duplicates_removed: combinedResults.length - uniqueBusinesses.length,
               exact_match_found: !!exactMatchBusiness
             });
+           const mergedBusiness = uniqueBusinessesMap.get(exactMatchBusiness.id);
+           console.log(`🎯 [EXACT MATCH] After merge: ${mergedBusiness.name} has ${mergedBusiness.reviews?.length || 0} reviews, isExactMatch: ${mergedBusiness.isExactMatch}`);
           }
         } else {
           // De-duplicate platform-only results before ranking
