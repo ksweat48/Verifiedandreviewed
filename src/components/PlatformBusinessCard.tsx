@@ -200,17 +200,18 @@ const PlatformBusinessCard: React.FC<{
           </div>
         </div>
         
-        <div className="relative bg-neutral-50 rounded-lg p-4 pr-14 flex-grow flex flex-col">
+        <div className="relative bg-neutral-50 rounded-lg p-4 flex-grow flex flex-col">
             {business.reviews && business.reviews.length > 0 ? (
-              <div>
+              <div className="flex-grow">
+                {/* Review Images - 3 squares under main image */}
                 {business.reviews[currentReviewIndex]?.images && business.reviews[currentReviewIndex].images.length > 0 && (
-                  <div className="review-images-row flex gap-1 mb-1">
+                  <div className="flex gap-1 mb-2">
                     {business.reviews[currentReviewIndex].images.slice(0, 3).map((image, index) => (
                       <img 
                         key={index}
                         src={image.url} 
                         alt={image.alt || `Review image ${index + 1}`}
-                        className="review-image w-[32%] h-12 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                        className="w-[32%] aspect-square object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={(e) => {
                           e.stopPropagation();
                           openImageGallery(index);
@@ -220,65 +221,84 @@ const PlatformBusinessCard: React.FC<{
                   </div>
                 )}
                 
-                <div className="flex items-center justify-between mb-0.5">
-                  <div className="flex items-center cursor-pointer" onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}>
-                    <Icons.ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-neutral-400'}`} />
-                    <span className="font-poppins text-xs font-semibold text-neutral-700">Review</span>
-                  </div>
-                  <span className="font-poppins text-xs text-neutral-500">
-                    {currentReviewIndex + 1} of {business.reviews.length}
-                  </span>
-                </div>
-                
-                <div className="flex-grow">
-                  <div className="cursor-pointer" onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}>
-                    <p className="font-lora text-xs text-neutral-700 line-clamp-none break-words flex-grow">
-                      "{business.reviews[currentReviewIndex]?.text || 'No review text available'}"
-                    </p>
-                    <div className="flex items-center mt-0.5">
-                      <div 
-                        className="w-6 h-6 rounded-full overflow-hidden mr-2 flex-shrink-0 cursor-pointer"
-                        onClick={(e) => {e.stopPropagation(); openReviewerProfile(e);}}
-                      >
-                        <img 
-                          src={business.reviews[currentReviewIndex]?.authorImage || "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100"} 
-                          alt={business.reviews[currentReviewIndex]?.author || 'Anonymous'} 
-                          className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-                        />
+                {/* Review content with GO button layout */}
+                <div className="flex items-end justify-between">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center cursor-pointer" onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}>
+                        <Icons.ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-red-500'}`} />
+                        <span className="font-poppins text-xs font-semibold text-neutral-700">Review</span>
                       </div>
-                      <p 
-                        className="font-poppins text-xs text-neutral-500 cursor-pointer hover:text-primary-500 transition-colors"
-                        onClick={(e) => {e.stopPropagation(); openReviewerProfile(e);}}
-                      >
-                        {business.reviews[currentReviewIndex]?.author || 'Anonymous'}
-                      </p>
+                      <span className="font-poppins text-xs text-neutral-500">
+                        {currentReviewIndex + 1} of {business.reviews.length}
+                      </span>
                     </div>
                     
-                    {business.reviews.length > 1 && (
-                      <div className="flex space-x-2 mt-0.5">
-                        <button onClick={() => prevReview()} className="text-neutral-400 hover:text-neutral-600 text-xs">←</button>
-                        <button onClick={() => nextReview()} className="text-neutral-400 hover:text-neutral-600 text-xs">→</button>
+                    <div className="cursor-pointer" onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}>
+                      <p className="font-lora text-xs text-neutral-700 line-clamp-none break-words mb-1">
+                        "{business.reviews[currentReviewIndex]?.text || 'No review text available'}"
+                      </p>
+                      <div className="flex items-center mb-1">
+                        <div 
+                          className="w-6 h-6 rounded-full overflow-hidden mr-2 flex-shrink-0 cursor-pointer"
+                          onClick={(e) => {e.stopPropagation(); openReviewerProfile(e);}}
+                        >
+                          <img 
+                            src={business.reviews[currentReviewIndex]?.authorImage || "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100"} 
+                            alt={business.reviews[currentReviewIndex]?.author || 'Anonymous'} 
+                            className="w-full h-full object-cover hover:opacity-90 transition-opacity"
+                          />
+                        </div>
+                        <p 
+                          className="font-poppins text-xs text-neutral-500 cursor-pointer hover:text-primary-500 transition-colors"
+                          onClick={(e) => {e.stopPropagation(); openReviewerProfile(e);}}
+                        >
+                          {business.reviews[currentReviewIndex]?.author || 'Anonymous'}
+                        </p>
                       </div>
-                    )}
+                      
+                      {business.reviews.length > 1 && (
+                        <div className="flex space-x-2">
+                          <button onClick={() => prevReview()} className="text-neutral-400 hover:text-neutral-600 text-xs">←</button>
+                          <button onClick={() => nextReview()} className="text-neutral-400 hover:text-neutral-600 text-xs">→</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-shrink-0 self-end">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onTakeMeThere(business);
+                      }}
+                      className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+                    >
+                      GO
+                    </button>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex-grow">
-                <p className="font-lora text-xs text-neutral-500 text-center py-1">No reviews available</p>
+              <div className="flex items-end justify-between flex-grow">
+                <div className="flex-1 min-w-0 pr-2">
+                  <p className="font-lora text-xs text-neutral-500 text-center py-4">No reviews available</p>
+                </div>
+                <div className="flex-shrink-0 self-end">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onTakeMeThere(business);
+                    }}
+                    className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+                  >
+                    GO
+                  </button>
+                </div>
               </div>
             )}
-            
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onTakeMeThere(business);
-              }}
-              className="absolute bottom-3 right-3 w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
-            >
-              GO
-            </button>
         </div>
       </div>
       
