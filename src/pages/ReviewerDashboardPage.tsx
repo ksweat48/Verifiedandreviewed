@@ -289,6 +289,7 @@ const ReviewerDashboardPage = () => {
           <div className="space-y-6">
             <CreditsManager 
               currentCredits={user.credits || 0}
+             userRole={user.role}
               onPurchase={async (packageId, withAutoRefill) => {
                 console.log('Purchase package:', packageId, 'with auto-refill:', withAutoRefill);
                 await new Promise(resolve => setTimeout(resolve, 1500));

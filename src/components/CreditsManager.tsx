@@ -20,11 +20,13 @@ interface CreditPackage {
 
 interface CreditsManagerProps {
   currentCredits: number;
+  userRole?: string;
   onPurchase?: (packageId: string, withAutoRefill: boolean) => Promise<boolean>;
 }
 
 const CreditsManager: React.FC<CreditsManagerProps> = ({ 
   currentCredits = 200,
+  userRole,
   onPurchase 
 }) => {
   const navigate = useNavigate();
@@ -193,7 +195,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
           </div>
           <div className="bg-primary-50 px-4 py-2 rounded-xl">
             <span className="font-poppins text-2xl font-bold text-primary-700">
-              {formatCredits(currentCredits)}
+              {formatCredits(currentCredits, userRole)}
             </span>
           </div>
         </div>
