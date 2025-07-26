@@ -288,9 +288,10 @@ export class BusinessService {
         .select('*')
         .eq('is_visible_on_platform', true)
         .ilike('name', name) // Case-insensitive exact match
-        .single();
+        .maybeSingle();
       
-      if (error) {
+      if (error || !data) {
+        console.log('❌ No unique exact match found for:', name, error?.message || 'No data returned');
         // If no exact match found, try partial match
         const { data: partialData, error: partialError } = await supabase
           .from('businesses')
@@ -298,15 +299,20 @@ export class BusinessService {
           .eq('is_visible_on_platform', true)
           .ilike('name', `%${name}%`) // Partial match
           .limit(1)
-          .single();
+          .maybeSingle();
         
-        if (partialError) return null;
+        if (partialError || !partialData) {
+          console.log('❌ No partial match found for:', name);
+          return null;
+        }
         
+        console.log('✅ Found partial match for:', name, '→', partialData.name);
         // Fetch and format reviews for partial match
         const partialBusinessWithReviews = await this.attachReviewsToBusinessData(partialData, ReviewService);
         return partialBusinessWithReviews;
       }
       
+      console.log('✅ Found unique exact match for:', name, '→', data.name);
       // Fetch and format reviews for exact match
       const businessWithReviews = await this.attachReviewsToBusinessData(data, ReviewService);
       return businessWithReviews;
