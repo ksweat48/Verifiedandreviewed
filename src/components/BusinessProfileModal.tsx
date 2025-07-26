@@ -192,7 +192,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
               }`}
             >
               <Icons.Info className="h-5 w-5 inline mr-2" />
-              Business Info
+              Info
             </button>
             
             <button
