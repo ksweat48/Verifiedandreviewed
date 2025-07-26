@@ -866,11 +866,34 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             </div>
             <div className="ml-3">
               <h3 className="font-poppins text-sm font-semibold text-yellow-800">
-                Insufficient Credits
+                {userCredits < (usedAI ? 10 : 1) ? 'Not enough credits' : 'Search temporarily unavailable'}
               </h3>
               <p className="font-lora text-xs text-yellow-700 mt-1">
-                You don't have enough credits for this search. Please upgrade your plan or wait for your credits to refresh.
+                {userCredits < (usedAI ? 10 : 1) 
+                  ? `You need ${usedAI ? '10 credits' : '1 credit'} for this search. Purchase more credits to continue searching.`
+                  : 'AI search is temporarily unavailable. Please try again in a moment.'
+                }
               </p>
+              <div className="mt-2">
+                {userCredits < (usedAI ? 10 : 1) ? (
+                  <button
+                    onClick={() => {
+                      // Navigate to credits page
+                      window.location.href = '/account';
+                    }}
+                    className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900 underline"
+                  >
+                    Get More Credits
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowCreditWarning(false)}
+                    className="font-poppins text-xs font-semibold text-yellow-800 hover:text-yellow-900 underline"
+                  >
+                    Try Again
+                  </button>
+                )}
+              </div>
             </div>
             <button
               onClick={() => setShowCreditWarning(false)}
@@ -882,69 +905,79 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         </div>
       )}
 
-      {/* Results Section */}
-      {showResults && results.length > 0 && (
-        <div ref={resultsRef} className="flex-1 overflow-y-auto bg-neutral-50 px-4 sm:px-6 lg:px-8 py-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {results.map((business, index) => (
-                business.isPlatformBusiness ? (
-                  <PlatformBusinessCard
-                    key={business.id}
-                    business={business}
-                    onTakeMeThere={() => handleTakeMeThere(business)}
-                    similarity={business.similarity}
-                    index={index}
-                  />
-                ) : (
-                  <AIBusinessCard
-                    key={business.id}
-                    business={business}
-                    onRecommend={() => handleRecommend(business)}
-                    onTakeMeThere={() => handleTakeMeThere(business)}
-                    similarity={business.similarity}
-                    index={index}
-                  />
-                )
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* No Results Message */}
-      {showResults && results.length === 0 && !isSearching && (
-        <div className="flex-1 flex items-center justify-center bg-neutral-50 px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-md">
-            <Icons.Search className="h-16 w-16 text-neutral-400 mx-auto mb-4" />
-            <h3 className="font-cinzel text-xl font-semibold text-neutral-900 mb-2">
-              No Results Found
-            </h3>
-            <p className="font-lora text-neutral-600 mb-4">
-              We couldn't find any businesses matching your search. Try a different query or check back later.
-            </p>
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setShowResults(false);
-                setIsAppModeActive(false);
-              }}
-              className="bg-primary-500 text-white px-6 py-2 rounded-lg font-poppins font-semibold hover:bg-primary-600 transition-colors duration-200"
-            >
-              Try Another Search
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Signup Prompt Modal */}
       {showSignupPrompt && (
-        <SignupPrompt
-          onSignup={handleSignup}
-          onLogin={handleLogin}
-          onClose={() => setShowSignupPrompt(false)}
-        />
+        <div className="max-w-md mx-auto mt-4 animate-in slide-in-from-top-4 duration-300">
+          <SignupPrompt 
+            onClose={() => setShowSignupPrompt(false)}
+            onSignup={handleSignup}
+            onLogin={handleLogin}
+          />
+        </div>
       )}
+
+      <div
+        ref={resultsRef} 
+        className={`transition-all duration-500 z-10 w-full ${isAppModeActive ? 'pt-20' : ''} ${
+          showResults && results.length > 0 ? 'opacity-100 mt-0 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'
+        }`}
+        style={{
+          height: isAppModeActive ? 'calc(100vh - 60px)' : 'auto',
+          maxHeight: isAppModeActive ? 'calc(100vh - 60px)' : showResults ? '800px' : '0'
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 relative z-20">
+          {results.length > 0 && showResults && (
+            <div className="relative">
+              {/* Vertical scrollable layout */}
+              <div
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-8"
+              >
+                {results.map((business, businessIndex) => (
+                  <div key={`${business.id}-${businessIndex}`} className={business.isPlatformBusiness ? "sm:col-span-2 lg:col-span-2 flex flex-col h-full" : ""}>
+                    {business.isPlatformBusiness ? (
+                      <PlatformBusinessCard
+                        business={business}
+                        onRecommend={handleRecommend}
+                        onTakeMeThere={handleTakeMeThere}
+                      />
+                    ) : (
+                      <AIBusinessCard
+                        business={business}
+                        onRecommend={handleRecommend}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {showResults && results.length === 0 && !isSearching && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icons.Search className="h-8 w-8 text-neutral-400" />
+              </div>
+              <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
+                No businesses found
+              </h3>
+              <p className="font-lora text-neutral-600 mb-4">
+                We couldn't find any businesses matching "{searchQuery}" in your area.
+              </p>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowResults(false);
+                  setIsAppModeActive(false);
+                }}
+                className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
+              >
+                Try Another Search
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 };
