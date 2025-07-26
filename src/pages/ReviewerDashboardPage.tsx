@@ -224,7 +224,34 @@ const ReviewerDashboardPage = () => {
       </div>
 
       {/* Main Content */}
-        <div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <ThumbsUp className="h-5 w-5 text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-poppins text-xl font-bold text-neutral-900">
+                      {formatReviewCount(user.reviewCount)}
+                    </h3>
+                    <p className="font-lora text-sm text-neutral-600">Total Reviews</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-accent-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <Award className="h-5 w-5 text-accent-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-poppins text-xl font-bold text-neutral-900">
+                      {user.level}
+                    </h3>
                     <p className="font-lora text-sm text-neutral-600">Current Level</p>
                   </div>
                 </div>
@@ -274,6 +301,7 @@ const ReviewerDashboardPage = () => {
               userName={user.name} 
             />
           </div>
+        )}
       </div>
     </div>
   );
