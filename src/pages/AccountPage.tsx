@@ -210,69 +210,8 @@ const AccountPage = () => {
       {/* User Profile Header - Scrollable */}
       <div className="bg-white border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {/* User Info Row */}
-          <div className="flex items-center justify-between mb-4">
-            {/* Left: User Image and Name */}
-            <div className="flex flex-col items-start">
-              <div className="relative mb-2">
-                <img
-                  src={user.avatar || '/default-avatar.png'}
-                  alt={user.name}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                />
-                <label className="absolute bottom-0 right-0 bg-primary-500 text-white p-1 rounded-full cursor-pointer hover:bg-primary-600 transition-colors duration-200">
-                  <Camera className="h-3 w-3" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-              <h1 className="font-poppins text-lg font-semibold text-neutral-900 text-left">
-                {(() => {
-                  const nameParts = user.name.split(' ');
-                  if (nameParts.length === 1) {
-                    return nameParts[0];
-                  }
-                  const firstName = nameParts[0];
-                  const lastName = nameParts.slice(1).join(' ');
-                  return (
-                    <>
-                      {firstName}
-                      <br />
-                      {lastName}
-                    </>
-                  );
-                })()}
-              </h1>
-            </div>
-            
-            {/* Right: Credits and Level */}
-            <div className="flex flex-col items-end gap-1">
-              <div className="bg-primary-100 text-primary-700 px-3 py-1.5 rounded-lg flex-shrink-0">
-                <div className="flex items-center whitespace-nowrap">
-                  <Zap className="h-3 w-3 mr-1.5" />
-                  <span className="font-poppins text-sm font-semibold">
-                    {formatCredits(user.credits, user.role)} credits
-                  </span>
-                </div>
-              </div>
-              
-              <div className="bg-accent-100 text-accent-700 px-3 py-1.5 rounded-lg flex-shrink-0">
-                <div className="flex items-center whitespace-nowrap">
-                  <Award className="h-3 w-3 mr-1.5" />
-                  <span className="font-poppins text-sm font-semibold">
-                    Level {user.level}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
           {/* Account Settings Title */}
-          <div className="mb-2">
+          <div>
             <h2 className="font-cinzel text-2xl font-bold text-neutral-900">
               Account Settings
             </h2>
