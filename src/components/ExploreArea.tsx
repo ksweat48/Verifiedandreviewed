@@ -87,12 +87,36 @@ const ExploreArea = () => {
         isOpen: true, // Default to open since we don't have real-time status
         hours: business.hours || 'Hours unavailable',
         address: business.address || '',
-        reviews: [], // We'll need to fetch reviews separately
+        reviews: [],
         isPlatformBusiness: business.is_verified || false,
         tags: business.tags || []
       }));
       
-      setBusinesses(transformedBusinesses.slice(0, 6));
+      // Fetch reviews for each business
+      const businessesWithReviews = await Promise.all(
+        transformedBusinesses.slice(0, 6).map(async (business) => {
+          try {
+            const reviews = await ReviewService.getBusinessReviews(business.id);
+            const formattedReviews = reviews.map(review => ({
+              text: review.review_text || 'No review text available',
+              author: review.profiles?.name || 'Anonymous',
+              authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+              images: (review.image_urls || []).map(url => ({ url })),
+              thumbsUp: review.rating >= 4
+            }));
+            
+            return {
+              ...business,
+              reviews: formattedReviews
+            };
+          } catch (error) {
+            console.error(`Error fetching reviews for business ${business.id}:`, error);
+            return business; // Return business without reviews if fetch fails
+          }
+        })
+      );
+      
+      setBusinesses(businessesWithReviews);
     } catch (error) {
       console.error('Error loading businesses:', error);
       setBusinesses([]);
