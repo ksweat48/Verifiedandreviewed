@@ -132,6 +132,7 @@ const AdminDashboard = () => {
 
   const getKPICards = () => [
     {
+     id: 'total-users',
       title: 'Total Users',
       value: formatNumber(stats.totalUsers),
       icon: Users,
@@ -140,6 +141,7 @@ const AdminDashboard = () => {
       description: 'Registered platform users'
     },
     {
+     id: 'daily-active',
       title: 'Daily Active Users',
       value: formatNumber(stats.dailyActiveUsers),
       icon: TrendingUp,
@@ -148,6 +150,7 @@ const AdminDashboard = () => {
       description: 'Users active in last 24h'
     },
     {
+     id: 'user-searches',
       title: 'User Searches',
       value: formatNumber(stats.userSearches),
       icon: Search,
@@ -156,6 +159,7 @@ const AdminDashboard = () => {
       description: 'Total searches performed'
     },
     {
+     id: 'total-businesses',
       title: 'Platform Businesses',
       value: formatNumber(stats.totalBusinesses),
       icon: Building,
@@ -164,6 +168,7 @@ const AdminDashboard = () => {
       description: 'Businesses on platform'
     },
     {
+     id: 'ai-favorites',
       title: 'AI Favorites',
       value: formatNumber(stats.favoriteAIBusinesses),
       icon: Heart,
@@ -172,6 +177,7 @@ const AdminDashboard = () => {
       description: 'AI businesses favorited'
     },
     {
+     id: 'platform-reviews',
       title: 'Platform Reviews',
       value: formatNumber(stats.platformReviews),
       icon: MessageSquare,
@@ -180,6 +186,7 @@ const AdminDashboard = () => {
       description: 'Reviews on platform businesses'
     },
     {
+     id: 'verified-businesses',
       title: 'Verified Businesses',
       value: formatNumber(stats.verifiedBusinesses),
       icon: Shield,
@@ -188,6 +195,7 @@ const AdminDashboard = () => {
       description: 'Admin verified businesses'
     },
     {
+     id: 'tokens-purchased',
       title: 'Tokens Purchased',
       value: formatNumber(stats.tokensPurchased),
       icon: DollarSign,
@@ -196,6 +204,7 @@ const AdminDashboard = () => {
       description: 'Revenue from token sales'
     },
     {
+     id: 'tokens-earned',
       title: 'Tokens Earned',
       value: formatNumber(stats.tokensEarned),
       icon: Award,
@@ -267,24 +276,28 @@ const AdminDashboard = () => {
               {getKPICards().map((kpi, index) => {
                 const IconComponent = kpi.icon;
                 return (
-                  <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                 <button
+                   key={index}
+                   onClick={() => setActiveTab(kpi.id)}
+                   className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 hover:shadow-lg hover:border-primary-300 transition-all duration-200 cursor-pointer text-left w-full group"
+                 >
                     <div className="flex items-center justify-between mb-4">
-                      <div className={`w-12 h-12 ${kpi.color} rounded-full flex items-center justify-center`}>
+                     <div className={`w-12 h-12 ${kpi.color} rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
                         <IconComponent className="h-6 w-6" />
                       </div>
                       <div className="text-right">
-                        <div className="font-poppins text-2xl font-bold text-neutral-900">
+                       <div className="font-poppins text-2xl font-bold text-neutral-900 group-hover:text-primary-600 transition-colors duration-200">
                           {kpi.value}
                         </div>
                       </div>
                     </div>
-                    <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-1">
+                   <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-1 group-hover:text-primary-600 transition-colors duration-200">
                       {kpi.title}
                     </h3>
                     <p className="font-lora text-sm text-neutral-600">
                       {kpi.description}
                     </p>
-                  </div>
+                 </button>
                 );
               })}
             </div>
