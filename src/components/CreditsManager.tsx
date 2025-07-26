@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import CreditUsageInfo from './CreditUsageInfo';
 
 interface CreditPackage {
@@ -25,11 +26,13 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
   currentCredits = 200,
   onPurchase 
 }) => {
+  const navigate = useNavigate();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [autoRefill, setAutoRefill] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedReferral, setCopiedReferral] = useState(false);
   const [freeCreditsInfo, setFreeCreditsInfo] = useState<{
     received: number;
     nextRefillDate: Date;
@@ -143,6 +146,23 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
     }
   };
 
+  // Generate referral link (simplified version)
+  const getReferralLink = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/?ref=user123`; // In real app, use actual user ID
+  };
+
+  // Copy referral link to clipboard
+  const copyReferralLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getReferralLink());
+      setCopiedReferral(true);
+      setTimeout(() => setCopiedReferral(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy referral link:', error);
+    }
+  };
+
   // Format date to Month DD, YYYY
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', {
@@ -195,6 +215,109 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
 
         {/* Credit usage info */}
         <CreditUsageInfo />
+      </div>
+
+      {/* Ways to Earn Credits */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+        <h3 className="font-poppins text-xl font-semibold text-neutral-900 mb-6 flex items-center">
+          <Icons.TrendingUp className="h-5 w-5 mr-2 text-green-500" />
+          Ways to Earn Credits
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Leave a Review */}
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border border-green-200">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                <Icons.Star className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <h4 className="font-poppins text-lg font-semibold text-green-900">
+                  Leave a Review
+                </h4>
+                <p className="font-poppins text-2xl font-bold text-green-600">
+                  +1 Credit
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-2 mb-4">
+              <p className="font-lora text-sm text-green-800">
+                Earn 1 credit for each complete review that includes:
+              </p>
+              <ul className="font-lora text-sm text-green-700 space-y-1 ml-4">
+                <li>• A thumbs up or down rating</li>
+                <li>• Written review text</li>
+                <li>• At least 3 photos</li>
+              </ul>
+            </div>
+            
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full bg-green-500 text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center justify-center"
+            >
+              <Icons.Edit className="h-4 w-4 mr-2" />
+              View My Activity
+            </button>
+          </div>
+
+          {/* Refer a Friend */}
+          <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-5 border border-purple-200">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                <Icons.Users className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <h4 className="font-poppins text-lg font-semibold text-purple-900">
+                  Refer a Friend
+                </h4>
+                <p className="font-poppins text-2xl font-bold text-purple-600">
+                  +100 Credits
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-2 mb-4">
+              <p className="font-lora text-sm text-purple-800">
+                Earn 100 credits when someone signs up using your referral link.
+              </p>
+              <p className="font-lora text-xs text-purple-700">
+                Your friend also gets 200 signup credits + 100 referral bonus!
+              </p>
+            </div>
+            
+            <button
+              onClick={copyReferralLink}
+              className="w-full bg-purple-500 text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:bg-purple-600 transition-colors duration-200 flex items-center justify-center"
+            >
+              {copiedReferral ? (
+                <>
+                  <Icons.Check className="h-4 w-4 mr-2" />
+                  Link Copied!
+                </>
+              ) : (
+                <>
+                  <Icons.Share2 className="h-4 w-4 mr-2" />
+                  Copy Referral Link
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        
+        {/* Monthly Free Credits Info */}
+        <div className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
+          <div className="flex items-center mb-2">
+            <Icons.Calendar className="h-5 w-5 text-blue-600 mr-2" />
+            <h4 className="font-poppins font-semibold text-blue-900">
+              Monthly Free Credits
+            </h4>
+          </div>
+          <p className="font-lora text-sm text-blue-800">
+            Get <strong>100 free credits</strong> every month just for being a member! 
+            Your next refill is on {formatDate(freeCreditsInfo.nextRefillDate)}.
+          </p>
+        </div>
       </div>
       
       {/* Credit Packages */}
