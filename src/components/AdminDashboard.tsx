@@ -53,7 +53,13 @@ const AdminDashboard = () => {
         supabase
           .from('credit_transactions')
           .select('amount')
-          .in('type', ['review-reward', 'referral-reward'])
+          .in('type', ['review-reward', 'referral-reward']),
+        
+        // 5. User Searches
+        supabase
+          .from('user_activity_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('event_type', 'search')
       ]);
 
       // 5. Get real Daily Active Users
@@ -70,7 +76,7 @@ const AdminDashboard = () => {
         console.warn('Failed to fetch real DAU, using mock data:', dauError);
       }
 
-      const [usersResult, favoritesResult, reviewsResult, tokensEarnedResult] = kpiData;
+      const [usersResult, favoritesResult, reviewsResult, tokensEarnedResult, searchesResult] = kpiData;
 
       // Calculate tokens earned
       const tokensEarned = tokensEarnedResult.data?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
@@ -79,7 +85,7 @@ const AdminDashboard = () => {
       setStats({
         totalUsers: usersResult.count || 0,
         dailyActiveUsers: realDAU, // Real DAU from activity logs
-        userSearches: Math.floor(Math.random() * 200) + 150, // Mock data - requires search logging
+        userSearches: searchesResult.count || 0, // Real data from activity logs
         totalBusinesses: businessData.length,
         favoriteAIBusinesses: favoritesResult.count || 0,
         platformReviews: reviewsResult.count || 0,
