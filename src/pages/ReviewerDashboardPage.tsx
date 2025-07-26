@@ -114,20 +114,15 @@ const ReviewerDashboardPage = () => {
           {/* User Info Row */}
           <div className="flex items-center justify-between mb-4">
             {/* Left: User Image and Name */}
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col items-center">
               <img
                 src={user.avatar || 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100'}
                 alt={user.name}
-                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm mb-2"
               />
-              <div>
-                <h1 className="font-poppins text-lg font-semibold text-neutral-900">
-                  {user.name}
-                </h1>
-                <p className="font-lora text-sm text-neutral-600">
-                  Level {user.level} Reviewer
-                </p>
-              </div>
+              <h1 className="font-poppins text-lg font-semibold text-neutral-900 text-center">
+                {user.name}
+              </h1>
             </div>
             
             {/* Right: Credits and Level */}
