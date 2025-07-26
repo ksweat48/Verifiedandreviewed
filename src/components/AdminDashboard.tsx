@@ -253,9 +253,6 @@ const AdminDashboard = () => {
               <h1 className="font-cinzel text-3xl font-bold text-neutral-900">
                 Admin Dashboard
               </h1>
-              <p className="font-lora text-neutral-600 mt-1">
-                Manage businesses, reviews, and platform analytics
-              </p>
             </div>
             
             <button
