@@ -8,6 +8,7 @@ import MyReviewsSection from '../components/MyReviewsSection';
 import RecentActivitySection from '../components/RecentActivitySection';
 import CreditsManager from '../components/CreditsManager';
 import ReferralProgram from '../components/ReferralProgram';
+import { formatCredits, formatReviewCount, formatStat } from '../utils/formatters';
 
 const ReviewerDashboardPage = () => {
   const [user, setUser] = useState<UserType | null>(null);
@@ -108,8 +109,8 @@ const ReviewerDashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Sticky App-like Header */}
-      <div className="sticky top-16 z-40 bg-white border-b border-neutral-200 shadow-sm">
+      {/* App-like Header */}
+      <div className="bg-white border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* User Info Row */}
           <div className="flex items-center justify-between mb-4">
@@ -145,7 +146,7 @@ const ReviewerDashboardPage = () => {
                 <div className="flex items-center whitespace-nowrap">
                   <Zap className="h-3 w-3 mr-1.5" />
                   <span className="font-poppins text-sm font-semibold">
-                    {user.credits || 0} credits
+                    {formatCredits(user.credits, user.role)} credits
                   </span>
                 </div>
               </div>
@@ -192,7 +193,7 @@ const ReviewerDashboardPage = () => {
         </div>
         
         {/* Tab Navigation */}
-        <div className="border-t border-neutral-100 pt-2">
+        <div className="border-t border-neutral-100 pt-2 sticky top-16 z-40 bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex">
               {tabs.map((tab) => {
@@ -235,7 +236,7 @@ const ReviewerDashboardPage = () => {
                   </div>
                   <div>
                     <h3 className="font-poppins text-xl font-bold text-neutral-900">
-                      {user.reviewCount}
+                      {formatReviewCount(user.reviewCount)}
                     </h3>
                     <p className="font-lora text-sm text-neutral-600">Total Reviews</p>
                   </div>
@@ -263,7 +264,7 @@ const ReviewerDashboardPage = () => {
                   </div>
                   <div>
                     <h3 className="font-poppins text-xl font-bold text-neutral-900">
-                      {user.credits || 0}
+                      {formatCredits(user.credits, user.role)}
                     </h3>
                     <p className="font-lora text-sm text-neutral-600">Credits</p>
                   </div>

@@ -11,6 +11,7 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import { SemanticSearchService } from '../services/semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { getMatchPercentage, meetsDisplayThreshold, calculateCompositeScore } from '../utils/similarityUtils';
+import { formatCredits } from '../utils/formatters';
 
 // Minimum semantic similarity threshold for displaying results
 const MINIMUM_DISPLAY_SIMILARITY = 0.0; // Allow all results for composite scoring
@@ -690,7 +691,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                           <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
                         )}
                         <span className="font-poppins text-xs font-semibold text-primary-700">
-                          {userCredits} credits
+                          {formatCredits(userCredits, currentUser?.role)} credits
                         </span>
                       </div>
                     )}
@@ -805,7 +806,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     </span>
                   ) : (
                     <span className="flex items-center">
-                      <Icons.Search className="h-5 w-5 sm:mr-2" />
+                        {formatCredits(userCredits, currentUser?.role)} credits
                       <span className="hidden sm:inline">Search</span>
                     </span>
                   )}

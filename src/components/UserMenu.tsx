@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
 import { UserService } from '../services/userService';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { formatCredits, formatReviewCount } from '../utils/formatters';
 
 interface UserMenuProps {
   user: User;
@@ -117,9 +118,9 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
                 <div className="flex items-center mt-1">
                   <Icons.Award className="h-3 w-3 text-primary-500 mr-1" />
                   <span className="font-poppins text-xs font-semibold text-primary-600">
-                    Level {user.level} • {user.reviewCount} reviews •
+                    Level {user.level} • {formatReviewCount(user.reviewCount)} reviews •
                     <Icons.Zap className="h-3 w-3 inline mx-1 text-yellow-500" /> 
-                    {user.credits >= 999999 ? '∞' : user.credits || 0} credits
+                    {formatCredits(user.credits, user.role)} credits
                   </span>
                 </div>
               </div>

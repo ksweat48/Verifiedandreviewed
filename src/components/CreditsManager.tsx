@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CreditUsageInfo from './CreditUsageInfo';
+import { formatCredits, formatLargeNumber } from '../utils/formatters';
 
 interface CreditPackage {
   id: string;
@@ -192,7 +193,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
           </div>
           <div className="bg-primary-50 px-4 py-2 rounded-xl">
             <span className="font-poppins text-2xl font-bold text-primary-700">
-              {currentCredits}
+              {formatCredits(currentCredits)}
             </span>
           </div>
         </div>
@@ -207,7 +208,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
               Free Monthly Credits
             </p>
             <p className="font-lora text-sm text-green-700">
-              You've received {freeCreditsInfo.received} free credits this month. Come back on {formatDate(freeCreditsInfo.nextRefillDate)} for 100 more!
+              You've received {formatLargeNumber(freeCreditsInfo.received)} free credits this month. Come back on {formatDate(freeCreditsInfo.nextRefillDate)} for 100 more!
             </p>
           </div>
         </div>
@@ -369,7 +370,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
                 <div className="flex items-baseline justify-between">
                   <span className="font-lora text-sm text-neutral-600">Credits:</span>
                   <span className="font-poppins font-semibold text-neutral-900">
-                    {pkg.credits}
+                    {formatLargeNumber(pkg.credits)}
                   </span>
                 </div>
 
@@ -377,7 +378,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
                   <div className="flex items-baseline justify-between">
                     <span className="font-lora text-sm text-neutral-600">Bonus:</span>
                     <span className="font-poppins font-semibold text-green-600">
-                      +{calculateBonusCredits(pkg.credits)}
+                      +{formatLargeNumber(calculateBonusCredits(pkg.credits))}
                     </span>
                   </div>
                 )}
@@ -386,7 +387,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
                   <div className="flex items-baseline justify-between">
                     <span className="font-lora text-sm text-neutral-600">Total:</span>
                     <span className="font-poppins font-semibold text-neutral-900">
-                      {getTotalCredits(pkg.credits)}
+                      {formatLargeNumber(getTotalCredits(pkg.credits))}
                     </span>
                   </div>
                 )}
@@ -463,17 +464,17 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="font-lora text-primary-700">Base Credits:</span>
-                  <span className="font-poppins font-semibold text-primary-900">{pkg.credits}</span>
+                  <span className="font-poppins font-semibold text-primary-900">{formatLargeNumber(pkg.credits)}</span>
                 </div>
                 {autoRefill && (
                   <>
                     <div className="flex justify-between">
                       <span className="font-lora text-primary-700">Bonus Credits (10%):</span>
-                      <span className="font-poppins font-semibold text-green-600">+{calculateBonusCredits(pkg.credits)}</span>
+                      <span className="font-poppins font-semibold text-green-600">+{formatLargeNumber(calculateBonusCredits(pkg.credits))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-lora text-primary-700">Total Credits:</span>
-                      <span className="font-poppins font-semibold text-primary-900">{getTotalCredits(pkg.credits)}</span>
+                      <span className="font-poppins font-semibold text-primary-900">{formatLargeNumber(getTotalCredits(pkg.credits))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-lora text-primary-700">Billing:</span>
