@@ -496,7 +496,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     const exactMatches = businesses.filter(business => business.isExactMatch === true);
     const otherBusinesses = businesses.filter(business => business.isExactMatch !== true);
     
-    console.log(`🎯 Found ${exactMatches.length} exact matches, ${otherBusinesses.length} other businesses`);
+    console.log('🎯 Found', exactMatches.length, 'exact matches,', otherBusinesses.length, 'other businesses');
+    
+    // Debug exact matches
+    exactMatches.forEach(business => {
+      console.log('🎯 [EXACT MATCH] In algorithm:', business.name, 'isExactMatch:', business.isExactMatch, 'compositeScore:', business.compositeScore);
+    });
     
     // Step 2: Filter other businesses by radius (10 miles max) - exact matches bypass this
     const businessesWithinRadius = otherBusinesses.filter(business => {
