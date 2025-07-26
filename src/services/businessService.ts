@@ -280,9 +280,6 @@ export class BusinessService {
   // Get business by exact name match (for direct searches)
   static async getBusinessByName(name: string): Promise<Business | null> {
     try {
-      // Import ReviewService dynamically to avoid circular dependencies
-      const { ReviewService } = await import('./reviewService');
-      
       const { data, error } = await supabase
         .from('businesses')
         .select('*')
@@ -301,51 +298,13 @@ export class BusinessService {
           .single();
         
         if (partialError) return null;
-        
-        // Fetch and format reviews for partial match
-        const partialBusinessWithReviews = await this.attachReviewsToBusinessData(partialData, ReviewService);
-        return partialBusinessWithReviews;
+        return partialData;
       }
       
-      // Fetch and format reviews for exact match
-      const businessWithReviews = await this.attachReviewsToBusinessData(data, ReviewService);
-      return businessWithReviews;
+      return data;
     } catch (error) {
       console.error('Error fetching business by name:', error);
       return null;
-    }
-  }
-
-  // Helper method to attach reviews to business data
-  private static async attachReviewsToBusinessData(businessData: any, ReviewService: any): Promise<Business> {
-    try {
-      console.log(`🔍 Fetching reviews for business: ${businessData.name} (ID: ${businessData.id})`);
-      
-      // Fetch reviews for this business
-      const reviews = await ReviewService.getBusinessReviews(businessData.id);
-      console.log(`✅ Found ${reviews.length} reviews for ${businessData.name}`);
-      
-      // Format reviews for PlatformBusinessCard
-      const formattedReviews = reviews.map((review: any) => ({
-        text: review.review_text || 'No review text available',
-        author: review.profiles?.name || 'Anonymous',
-        authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
-        images: (review.image_urls || []).map((url: string) => ({ url })),
-        thumbsUp: review.rating >= 4 // Convert numeric rating to thumbsUp boolean
-      }));
-      
-      // Return business data with formatted reviews
-      return {
-        ...businessData,
-        reviews: formattedReviews
-      };
-    } catch (reviewError) {
-      console.warn(`⚠️ Failed to fetch reviews for ${businessData.name}:`, reviewError);
-      // Return business data with empty reviews array if review fetching fails
-      return {
-        ...businessData,
-        reviews: []
-      };
     }
   }
 
