@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Lock, Camera, Save, X, Zap, Award } from 'lucide-react';
+import { User, Mail, Lock, Camera, CreditCard, Save, X, Zap } from 'lucide-react';
 import { UserService } from '../services/userService';
 import type { User as UserType } from '../types/user';
 import CreditsManager from '../components/CreditsManager';
 import ReferralProgram from '../components/ReferralProgram';
 import { supabase } from '../services/supabaseClient';
-import { formatCredits, formatReviewCount } from '../utils/formatters';
 
 const AccountPage = () => {
   const [user, setUser] = useState<UserType | null>(null);
@@ -199,130 +198,99 @@ const AccountPage = () => {
     );
   }
 
-  const tabs = [
-    { id: 'profile', label: 'Profile Information', icon: User },
-    { id: 'security', label: 'Password & Security', icon: Lock },
-    { id: 'credits', label: 'Credits', icon: Zap }
-  ];
-
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* Header */}
       <div className="bg-white border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-cinzel text-3xl font-bold text-neutral-900">
-                Account Settings
-              </h1>
-              <p className="font-lora text-neutral-600 mt-1">
-                Manage your profile, security, and payment information
-              </p>
-            </div>
-          </div>
+          <h1 className="font-cinzel text-3xl font-bold text-neutral-900">
+            Account Settings
+          </h1>
+          <p className="font-lora text-neutral-600 mt-1">
+            Manage your profile, security, and payment information
+          </p>
         </div>
       </div>
 
-      {/* User Profile Header - Scrollable */}
-      <div className="bg-white border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {/* User Info Row */}
-          <div className="flex items-center justify-between mb-4">
-            {/* Left: User Image and Name */}
-            <div className="flex flex-col items-start">
-              <div className="relative mb-2">
-                <img
-                  src={user.avatar || 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100'}
-                  alt={user.name}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                />
-                <label className="absolute bottom-0 right-0 bg-primary-500 text-white p-1 rounded-full cursor-pointer hover:bg-primary-600 transition-colors duration-200">
-                  <Camera className="h-3 w-3" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 mb-6">
+              <div className="flex flex-col items-center">
+                <div className="relative mb-4">
+                  <img
+                    src={user.avatar || '/default-avatar.png'}
+                    alt={user.name}
+                    className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
                   />
-                </label>
-              </div>
-              <h1 className="font-poppins text-lg font-semibold text-neutral-900 text-left">
-                {(() => {
-                  const nameParts = user.name.split(' ');
-                  if (nameParts.length === 1) {
-                    return nameParts[0];
-                  }
-                  const firstName = nameParts[0];
-                  const lastName = nameParts.slice(1).join(' ');
-                  return (
-                    <>
-                      {firstName}
-                      <br />
-                      {lastName}
-                    </>
-                  );
-                })()}
-              </h1>
-            </div>
-            
-            {/* Right: Credits and Level */}
-            <div className="flex flex-col items-end gap-1">
-              <div className="bg-primary-100 text-primary-700 px-3 py-1.5 rounded-lg flex-shrink-0">
-                <div className="flex items-center whitespace-nowrap">
-                  <Zap className="h-3 w-3 mr-1.5" />
-                  <span className="font-poppins text-sm font-semibold">
-                    {formatCredits(user.credits, user.role)} credits
-                  </span>
+                  <label className="absolute bottom-0 right-0 bg-primary-500 text-white p-2 rounded-full cursor-pointer hover:bg-primary-600 transition-colors duration-200">
+                    <Camera className="h-4 w-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
-              </div>
-              
-              <div className="bg-accent-100 text-accent-700 px-3 py-1.5 rounded-lg flex-shrink-0">
-                <div className="flex items-center whitespace-nowrap">
-                  <Award className="h-3 w-3 mr-1.5" />
-                  <span className="font-poppins text-sm font-semibold">
-                    Level {user.level}
-                  </span>
+                
+                <h2 className="font-poppins text-xl font-semibold text-neutral-900 mb-1">
+                  {user.name}
+                </h2>
+                <p className="font-lora text-neutral-600 mb-2">
+                  Level {user.level} Reviewer
+                </p>
+                <div className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-poppins font-semibold">
+                  {user.reviewCount} Reviews
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Tab Navigation - Sticky */}
-      <div className="sticky top-16 z-40 bg-white border-b border-neutral-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex">
-            {tabs.map((tab) => {
-              const IconComponent = tab.icon;
-              return (
+            {/* Navigation Tabs */}
+            <div className="bg-white rounded-2xl shadow-sm border border-neutral-200">
+              <div className="p-2">
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 flex flex-col items-center px-2 py-3 font-poppins text-xs font-medium transition-colors duration-200 ${
-                    activeTab === tab.id
-                      ? 'text-primary-600 border-b-2 border-primary-500'
-                      : 'text-neutral-600 hover:text-neutral-900'
+                  onClick={() => setActiveTab('profile')}
+                  className={`w-full flex items-center px-4 py-3 rounded-lg font-poppins font-medium transition-colors duration-200 ${
+                    activeTab === 'profile'
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-700 hover:bg-neutral-50'
                   }`}
                 >
-                  <IconComponent className="h-5 w-5 mb-1" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">
-                    {tab.id === 'profile' ? 'Profile' : 
-                     tab.id === 'security' ? 'Security' : 'Credits'}
-                  </span>
+                  <User className="h-5 w-5 mr-3" />
+                  Profile Information
                 </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+                
+                <button
+                  onClick={() => setActiveTab('security')}
+                  className={`w-full flex items-center px-4 py-3 rounded-lg font-poppins font-medium transition-colors duration-200 ${
+                    activeTab === 'security'
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-700 hover:bg-neutral-50'
+                  }`}
+                >
+                  <Lock className="h-5 w-5 mr-3" />
+                  Password & Security
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('credits')}
+                  className={`w-full flex items-center px-4 py-3 rounded-lg font-poppins font-medium transition-colors duration-200 ${
+                    activeTab === 'credits'
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-700 hover:bg-neutral-50'
+                  }`}
+                >
+                  <Zap className="h-5 w-5 mr-3" />
+                  Credits
+                </button>
+              </div>
             </div>
           </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="space-y-6">
+          {/* Main Content */}
+          <div className="lg:col-span-3">
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
@@ -377,7 +345,7 @@ const AccountPage = () => {
                         name="email"
                         value={formData.email}
                         readOnly
-                        className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-neutral-50"
+                        className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         required
                       />
                     </div>
@@ -419,7 +387,7 @@ const AccountPage = () => {
                         setError('');
                         setSuccess('');
                       }}
-                      className="font-poppins border border-neutral-300 text-neutral-700 px-6 py-3 rounded-lg font-semibold hover:bg-neutral-50 transition-colors duration-200"
+                      className="font-poppins border border-neutral-200 text-neutral-700 px-6 py-3 rounded-lg font-semibold hover:bg-neutral-50 transition-colors duration-200"
                     >
                       Cancel
                     </button>
@@ -527,7 +495,7 @@ const AccountPage = () => {
                         setError('');
                         setSuccess('');
                       }}
-                      className="font-poppins border border-neutral-300 text-neutral-700 px-6 py-3 rounded-lg font-semibold hover:bg-neutral-50 transition-colors duration-200"
+                      className="font-poppins border border-neutral-200 text-neutral-700 px-6 py-3 rounded-lg font-semibold hover:bg-neutral-50 transition-colors duration-200"
                     >
                       Cancel
                     </button>
@@ -536,9 +504,13 @@ const AccountPage = () => {
               </div>
             )}
 
-            {/* Credits Tab */}
+            {/* Payment Tab */}
             {activeTab === 'credits' && (
-              <div className="space-y-6">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+                <h3 className="font-poppins text-xl font-semibold text-neutral-900 mb-6">
+                  Credits Management
+                </h3>
+                
                 <CreditsManager 
                   currentCredits={user?.credits || 200}
                   onPurchase={async (packageId, withAutoRefill) => {
@@ -548,13 +520,9 @@ const AccountPage = () => {
                     return true;
                   }}
                 />
-                
-                <ReferralProgram 
-                  userId={parseInt(user.id)} 
-                  userName={user.name} 
-                />
               </div>
             )}
+          </div>
         </div>
       </div>
     </div>
