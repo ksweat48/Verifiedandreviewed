@@ -284,7 +284,7 @@ export class BusinessService {
         .from('businesses')
         .select('*')
         .eq('is_visible_on_platform', true)
-        .ilike('name', name) // Case-insensitive exact match
+        .filter('name', 'ilike', name) // Case-insensitive exact match
         .single();
       
       if (error) {
@@ -293,7 +293,7 @@ export class BusinessService {
           .from('businesses')
           .select('*')
           .eq('is_visible_on_platform', true)
-          .ilike('name', `%${name}%`) // Partial match
+          .filter('name', 'ilike', `%${name}%`) // Partial match
           .limit(1)
           .single();
         
