@@ -298,64 +298,7 @@ export class BusinessService {
           .single();
         
         if (partialError) return null;
-        
-        // Fetch reviews for the business
-        if (partialData) {
-          try {
-            const { ReviewService } = await import('./reviewService');
-            const reviews = await ReviewService.getBusinessReviews(partialData.id);
-            
-            // Format reviews for PlatformBusinessCard
-            const formattedReviews = reviews.map(review => ({
-              text: review.review_text || 'No review text available',
-              author: review.profiles?.name || 'Anonymous',
-              authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
-              images: (review.image_urls || []).map(url => ({ url })),
-              thumbsUp: review.rating >= 4
-            }));
-            
-            return {
-              ...partialData,
-              reviews: formattedReviews
-            };
-          } catch (reviewError) {
-            console.warn('Failed to fetch reviews for business:', reviewError);
-            return {
-              ...partialData,
-              reviews: []
-            };
-          }
-        }
-        
         return partialData;
-      }
-      
-      // Fetch reviews for the exact match business
-      if (data) {
-        try {
-          const { ReviewService } = await import('./reviewService');
-          const reviews = await ReviewService.getBusinessReviews(data.id);
-          
-          // Format reviews for PlatformBusinessCard
-          const formattedReviews = reviews.map(review => ({
-            text: review.review_text || 'No review text available',
-            author: review.profiles?.name || 'Anonymous',
-            authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
-            images: (review.image_urls || []).map(url => ({ url })),
-            thumbsUp: review.rating >= 4
-          }));
-          
-          return {
-            ...data,
-            reviews: formattedReviews
-          };
-        } catch (reviewError) {
-          console.warn('Failed to fetch reviews for business:', reviewError);
-          return {
-            ...data,
-            reviews: []
-          };
-        }
       }
       
       return data;
