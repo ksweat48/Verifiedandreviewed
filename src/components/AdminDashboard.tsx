@@ -146,94 +146,94 @@ const AdminDashboard = () => {
 
   const getKPICards = () => [
     {
-     id: 'total-users',
+      id: 'total-users',
       title: 'Total Users',
       value: formatNumber(stats.totalUsers),
       icon: Users,
       color: 'bg-blue-100 text-blue-600',
       bgColor: 'bg-blue-50',
       description: 'Registered platform users',
-     status: 'active'
+      status: 'active'
     },
     {
-     id: 'daily-active',
+      id: 'daily-active',
       title: 'Daily Active Users',
       value: formatNumber(stats.dailyActiveUsers),
       icon: TrendingUp,
       color: 'bg-green-100 text-green-600',
       bgColor: 'bg-green-50',
-      description: 'Users active in last 24h'
-     status: 'active'
+      description: 'Users active in last 24h',
+      status: 'active'
     },
     {
-     id: 'user-searches',
+      id: 'user-searches',
       title: 'User Searches',
       value: formatNumber(stats.userSearches),
       icon: Search,
       color: 'bg-purple-100 text-purple-600',
       bgColor: 'bg-purple-50',
-      description: 'Total searches performed'
-     status: 'inactive'
+      description: 'Total searches performed',
+      status: 'inactive'
     },
     {
-     id: 'total-businesses',
+      id: 'total-businesses',
       title: 'Platform Businesses',
       value: formatNumber(stats.totalBusinesses),
       icon: Building,
       color: 'bg-indigo-100 text-indigo-600',
       bgColor: 'bg-indigo-50',
-      description: 'Businesses on platform'
-     status: 'active'
+      description: 'Businesses on platform',
+      status: 'active'
     },
     {
-     id: 'ai-favorites',
+      id: 'ai-favorites',
       title: 'AI Favorites',
       value: formatNumber(stats.favoriteAIBusinesses),
       icon: Heart,
       color: 'bg-red-100 text-red-600',
       bgColor: 'bg-red-50',
-      description: 'AI businesses favorited'
-     status: 'active'
+      description: 'AI businesses favorited',
+      status: 'active'
     },
     {
-     id: 'platform-reviews',
+      id: 'platform-reviews',
       title: 'Platform Reviews',
       value: formatNumber(stats.platformReviews),
       icon: MessageSquare,
       color: 'bg-yellow-100 text-yellow-600',
       bgColor: 'bg-yellow-50',
-      description: 'Reviews on platform businesses'
-     status: 'active'
+      description: 'Reviews on platform businesses',
+      status: 'active'
     },
     {
-     id: 'verified-businesses',
+      id: 'verified-businesses',
       title: 'Verified Businesses',
       value: formatNumber(stats.verifiedBusinesses),
       icon: Shield,
       color: 'bg-emerald-100 text-emerald-600',
       bgColor: 'bg-emerald-50',
-      description: 'Admin verified businesses'
-     status: 'active'
+      description: 'Admin verified businesses',
+      status: 'active'
     },
     {
-     id: 'tokens-purchased',
+      id: 'tokens-purchased',
       title: 'Tokens Purchased',
       value: formatNumber(stats.tokensPurchased),
       icon: DollarSign,
       color: 'bg-orange-100 text-orange-600',
       bgColor: 'bg-orange-50',
-      description: 'Revenue from token sales'
-     status: 'inactive'
+      description: 'Revenue from token sales',
+      status: 'inactive'
     },
     {
-     id: 'tokens-earned',
+      id: 'tokens-earned',
       title: 'Tokens Earned',
       value: formatNumber(stats.tokensEarned),
       icon: Award,
       color: 'bg-cyan-100 text-cyan-600',
       bgColor: 'bg-cyan-50',
-      description: 'Tokens from referrals & reviews'
-     status: 'active'
+      description: 'Tokens from referrals & reviews',
+      status: 'active'
     }
   ];
 
