@@ -9,6 +9,7 @@ import { CreditService } from '../services/creditService';
 import { BusinessService } from '../services/businessService';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { SemanticSearchService } from '../services/semanticSearchService';
+import { ReviewService } from '../services/reviewService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { getMatchPercentage, meetsDisplayThreshold, calculateCompositeScore } from '../utils/similarityUtils';
 import { formatCredits } from '../utils/formatters';
@@ -479,6 +480,38 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           error: 'Insufficient credits'
         });
       }
+      
+      // Fetch reviews for platform businesses
+      console.log('📝 Fetching reviews for', platformBusinesses.length, 'platform businesses');
+      const platformBusinessesWithReviews = await Promise.all(
+        platformBusinesses.map(async (business) => {
+          try {
+            const reviews = await ReviewService.getBusinessReviews(business.id);
+            const formattedReviews = reviews.map(review => ({
+              text: review.review_text || 'No review text available',
+              author: review.profiles?.name || 'Anonymous',
+              authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+              images: (review.image_urls || []).map(url => ({ url })),
+              thumbsUp: review.rating >= 4
+            }));
+            
+            return {
+              ...business,
+              reviews: formattedReviews
+            };
+          } catch (error) {
+            console.error(`Error fetching reviews for business ${business.id}:`, error);
+            return {
+              ...business,
+              reviews: []
+            };
+          }
+        })
+      );
+      
+      // Update platformBusinesses with reviews
+      platformBusinesses = platformBusinessesWithReviews;
+      console.log('✅ Reviews fetched for platform businesses');
     } catch (error) {
       console.error('Search error:', error);
     } finally {
