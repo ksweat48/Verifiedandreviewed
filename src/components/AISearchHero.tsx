@@ -883,7 +883,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       {/* Results Section */}
       {showResults && results.length > 0 && (
-        <div ref={resultsRef} className="flex-1 overflow-y-auto bg-neutral-50 px-4 sm:px-6 lg:px-8 py-6">
+        <div ref={resultsRef} className="relative z-10 flex-1 overflow-y-auto bg-neutral-50 px-4 sm:px-6 lg:px-8 py-6">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {results.map((business, index) => (
