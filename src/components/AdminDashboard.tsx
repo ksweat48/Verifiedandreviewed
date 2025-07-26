@@ -78,7 +78,7 @@ const AdminDashboard = () => {
       // Update stats with real and mock data
       setStats({
         totalUsers: usersResult.count || 0,
-        dailyActiveUsers: Math.floor(Math.random() * 50) + 20, // Mock data - requires session tracking
+        dailyActiveUsers: realDAU, // Real DAU from activity logs
         userSearches: Math.floor(Math.random() * 200) + 150, // Mock data - requires search logging
         totalBusinesses: businessData.length,
         favoriteAIBusinesses: favoritesResult.count || 0,
