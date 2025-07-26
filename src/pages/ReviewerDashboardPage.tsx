@@ -114,13 +114,13 @@ const ReviewerDashboardPage = () => {
           {/* User Info Row */}
           <div className="flex items-center justify-between mb-4">
             {/* Left: User Image and Name */}
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-start">
               <img
                 src={user.avatar || 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100'}
                 alt={user.name}
                 className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm mb-2"
               />
-              <h1 className="font-poppins text-lg font-semibold text-neutral-900 text-center">
+              <h1 className="font-poppins text-lg font-semibold text-neutral-900 text-left">
                 {(() => {
                   const nameParts = user.name.split(' ');
                   if (nameParts.length === 1) {
