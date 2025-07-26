@@ -226,7 +226,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             isOpen: true,
             hours: exactMatch.hours || 'Hours unavailable',
             address: exactMatch.address || '',
-            reviews: [],
+            reviews: exactMatch.reviews || [], // Use reviews fetched by getBusinessByName
             isPlatformBusiness: exactMatch.is_verified || false,
             tags: exactMatch.tags || [],
             distance: exactMatchDistance,
