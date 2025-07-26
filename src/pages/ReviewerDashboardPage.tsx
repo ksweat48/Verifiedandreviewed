@@ -56,6 +56,21 @@ const ReviewerDashboardPage = () => {
     fetchUserData();
   }, []);
 
+  // Calculate review progress for next level
+  const getReviewProgress = (reviewCount: number) => {
+    const reviewsPerLevel = 10;
+    const currentLevelReviews = reviewCount % reviewsPerLevel;
+    const progress = (currentLevelReviews / reviewsPerLevel) * 100;
+    const reviewsNeeded = reviewsPerLevel - currentLevelReviews;
+    
+    return {
+      progress,
+      reviewsNeeded: reviewsNeeded === reviewsPerLevel ? 0 : reviewsNeeded,
+      currentLevelReviews,
+      totalForLevel: reviewsPerLevel
+    };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -82,6 +97,8 @@ const ReviewerDashboardPage = () => {
     );
   }
 
+  const reviewProgress = getReviewProgress(user.reviewCount);
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
     { id: 'reviews', label: 'My Reviews', icon: ThumbsUp },
@@ -91,20 +108,30 @@ const ReviewerDashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Header */}
-      <div className="bg-white border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="font-cinzel text-xl sm:text-2xl font-bold text-neutral-900">
-                Dashboard
-              </h1>
-              <p className="font-lora text-sm sm:text-base text-neutral-600 mt-1">
-                Welcome back, {user.name}
-              </p>
+      {/* Sticky App-like Header */}
+      <div className="sticky top-16 z-40 bg-white border-b border-neutral-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          {/* User Info Row */}
+          <div className="flex items-center justify-between mb-4">
+            {/* Left: User Image and Name */}
+            <div className="flex items-center space-x-3">
+              <img
+                src={user.avatar || 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100'}
+                alt={user.name}
+                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+              />
+              <div>
+                <h1 className="font-poppins text-lg font-semibold text-neutral-900">
+                  {user.name}
+                </h1>
+                <p className="font-lora text-sm text-neutral-600">
+                  Level {user.level} Reviewer
+                </p>
+              </div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+            {/* Right: Credits and Level */}
+            <div className="flex items-center gap-3">
               <div className="bg-primary-100 text-primary-700 px-3 py-1.5 rounded-lg flex-shrink-0">
                 <div className="flex items-center whitespace-nowrap">
                   <Zap className="h-3 w-3 mr-1.5" />
@@ -124,137 +151,147 @@ const ReviewerDashboardPage = () => {
               </div>
             </div>
           </div>
+          
+          {/* Review Progress Bar */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-poppins text-xs font-medium text-neutral-600">
+                Progress to Level {user.level + 1}
+              </span>
+              <span className="font-poppins text-xs text-neutral-500">
+                {reviewProgress.reviewsNeeded > 0 
+                  ? `${reviewProgress.reviewsNeeded} reviews needed`
+                  : 'Level complete!'
+                }
+              </span>
+            </div>
+            <div className="w-full bg-neutral-200 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-primary-500 to-accent-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${reviewProgress.progress}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="font-poppins text-xs text-neutral-500">
+                {reviewProgress.currentLevelReviews} reviews
+              </span>
+              <span className="font-poppins text-xs text-neutral-500">
+                {reviewProgress.totalForLevel} reviews
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Tab Navigation */}
+        <div className="border-t border-neutral-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex">
+              {tabs.map((tab) => {
+                const IconComponent = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`flex-1 flex flex-col items-center px-2 py-3 font-poppins text-xs font-medium transition-colors duration-200 ${
+                      activeTab === tab.id
+                        ? 'text-primary-600 border-b-2 border-primary-500'
+                        : 'text-neutral-600 hover:text-neutral-900'
+                    }`}
+                  >
+                    <IconComponent className="h-5 w-5 mb-1" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">
+                      {tab.id === 'overview' ? 'Home' : 
+                       tab.id === 'reviews' ? 'Reviews' :
+                       tab.id === 'businesses' ? 'Business' : 'Credits'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-neutral-200 mb-6">
-              <div className="flex flex-col items-center">
-                <img
-                  src={user.avatar || 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100'}
-                  alt={user.name}
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-4 border-white shadow-lg mb-4"
-                />
-                <h2 className="font-poppins text-lg sm:text-xl font-semibold text-neutral-900 mb-1 text-center">
-                  {user.name}
-                </h2>
-                <p className="font-lora text-sm sm:text-base text-neutral-600 mb-2 text-center">
-                  Level {user.level} Reviewer
-                </p>
-                <div className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-xs sm:text-sm font-poppins font-semibold">
-                  {user.reviewCount} Reviews
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <ThumbsUp className="h-5 w-5 text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-poppins text-xl font-bold text-neutral-900">
+                      {user.reviewCount}
+                    </h3>
+                    <p className="font-lora text-sm text-neutral-600">Total Reviews</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-accent-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <Award className="h-5 w-5 text-accent-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-poppins text-xl font-bold text-neutral-900">
+                      {user.level}
+                    </h3>
+                    <p className="font-lora text-sm text-neutral-600">Current Level</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200 sm:col-span-2 lg:col-span-1">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <Zap className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-poppins text-xl font-bold text-neutral-900">
+                      {user.credits || 0}
+                    </h3>
+                    <p className="font-lora text-sm text-neutral-600">Credits</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="bg-white rounded-2xl shadow-sm border border-neutral-200">
-              <div className="p-1 sm:p-2">
-                {tabs.map((tab) => {
-                  const IconComponent = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
-                      className={`w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-poppins text-sm sm:text-base font-medium transition-colors duration-200 ${
-                        activeTab === tab.id
-                          ? 'bg-primary-50 text-primary-600'
-                          : 'text-neutral-700 hover:bg-neutral-50'
-                      }`}
-                    >
-                      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 flex-shrink-0" />
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Recent Activity */}
+            <RecentActivitySection />
           </div>
+        )}
 
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            {activeTab === 'overview' && (
-              <div className="space-y-8">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-neutral-200">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-full flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
-                        <ThumbsUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-poppins text-xl sm:text-2xl font-bold text-neutral-900">
-                          {user.reviewCount}
-                        </h3>
-                        <p className="font-lora text-sm sm:text-base text-neutral-600">Total Reviews</p>
-                      </div>
-                    </div>
-                  </div>
+        {activeTab === 'reviews' && (
+          <MyReviewsSection reviews={userReviews} />
+        )}
 
-                  <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-neutral-200">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-accent-100 rounded-full flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
-                        <Award className="h-5 w-5 sm:h-6 sm:w-6 text-accent-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-poppins text-xl sm:text-2xl font-bold text-neutral-900">
-                          {user.level}
-                        </h3>
-                        <p className="font-lora text-sm sm:text-base text-neutral-600">Current Level</p>
-                      </div>
-                    </div>
-                  </div>
+        {activeTab === 'businesses' && (
+          <MyBusinessesSection user={user} />
+        )}
 
-                  <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-neutral-200 sm:col-span-2 lg:col-span-1">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
-                        <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-poppins text-xl sm:text-2xl font-bold text-neutral-900">
-                          {user.credits || 0}
-                        </h3>
-                        <p className="font-lora text-sm sm:text-base text-neutral-600">Credits</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Activity */}
-                <RecentActivitySection />
-              </div>
-            )}
-
-            {activeTab === 'reviews' && (
-              <MyReviewsSection reviews={userReviews} />
-            )}
-
-            {activeTab === 'businesses' && (
-              <MyBusinessesSection user={user} />
-            )}
-
-            {activeTab === 'credits' && (
-              <div className="space-y-8">
-                <CreditsManager 
-                  currentCredits={user.credits || 0}
-                  onPurchase={async (packageId, withAutoRefill) => {
-                    console.log('Purchase package:', packageId, 'with auto-refill:', withAutoRefill);
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    return true;
-                  }}
-                />
-                
-                <ReferralProgram 
-                  userId={parseInt(user.id)} 
-                  userName={user.name} 
-                />
-              </div>
-            )}
+        {activeTab === 'credits' && (
+          <div className="space-y-6">
+            <CreditsManager 
+              currentCredits={user.credits || 0}
+              onPurchase={async (packageId, withAutoRefill) => {
+                console.log('Purchase package:', packageId, 'with auto-refill:', withAutoRefill);
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                return true;
+              }}
+            />
+            
+            <ReferralProgram 
+              userId={parseInt(user.id)} 
+              userName={user.name} 
+            />
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
