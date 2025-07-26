@@ -392,17 +392,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             
             // Apply dynamic search algorithm to platform-only results
             const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
+            
             // Add exact match to the beginning if found and not already included
-            let finalResults = rankedResults;
+            let finalResults = rankedFallbackResults;
             if (exactMatchBusiness) {
-              const exactMatchExists = rankedResults.some(b => b.id === exactMatchBusiness.id);
+              const exactMatchExists = rankedFallbackResults.some(b => b.id === exactMatchBusiness.id);
               if (!exactMatchExists) {
                 console.log('🎯 [EXACT MATCH] Adding to top of results:', exactMatchBusiness.name);
-                finalResults = [exactMatchBusiness, ...rankedResults];
+                finalResults = [exactMatchBusiness, ...rankedFallbackResults];
               } else {
                 console.log('🎯 [EXACT MATCH] Already in results, ensuring top position');
                 // Remove from current position and add to top
-                const filteredResults = rankedResults.filter(b => b.id !== exactMatchBusiness.id);
+                const filteredResults = rankedFallbackResults.filter(b => b.id !== exactMatchBusiness.id);
                 finalResults = [exactMatchBusiness, ...filteredResults];
               }
             }
@@ -950,7 +951,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       <Icons.Zap className="h-3 w-3 text-primary-500 mr-1" />
                     )}
                     <span className="font-poppins text-xs font-semibold text-primary-700">
-                      {userCredits} credits
+                      {formatCredits(userCredits, currentUser?.role)} credits
                     </span>
                   </div>
                 )}
@@ -974,7 +975,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     </span>
                   ) : (
                     <span className="flex items-center">
-                        {formatCredits(userCredits, currentUser?.role)} credits
+                      <Icons.Search className="h-5 w-5 sm:mr-2" />
                       <span className="hidden sm:inline">Search</span>
                     </span>
                   )}
