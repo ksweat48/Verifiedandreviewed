@@ -56,6 +56,20 @@ const AdminDashboard = () => {
           .in('type', ['review-reward', 'referral-reward'])
       ]);
 
+      // 5. Get real Daily Active Users
+      let realDAU = Math.floor(Math.random() * 50) + 20; // Fallback to mock data
+      try {
+        const dauResponse = await fetch('/.netlify/functions/get-daily-active-users');
+        if (dauResponse.ok) {
+          const dauData = await dauResponse.json();
+          if (dauData.success) {
+            realDAU = dauData.dailyActiveUsers;
+          }
+        }
+      } catch (dauError) {
+        console.warn('Failed to fetch real DAU, using mock data:', dauError);
+      }
+
       const [usersResult, favoritesResult, reviewsResult, tokensEarnedResult] = kpiData;
 
       // Calculate tokens earned
@@ -64,7 +78,7 @@ const AdminDashboard = () => {
       // Update stats with real and mock data
       setStats({
         totalUsers: usersResult.count || 0,
-        dailyActiveUsers: realDAU,
+        dailyActiveUsers: Math.floor(Math.random() * 50) + 20, // Mock data - requires session tracking
         userSearches: Math.floor(Math.random() * 200) + 150, // Mock data - requires search logging
         totalBusinesses: businessData.length,
         favoriteAIBusinesses: favoritesResult.count || 0,
