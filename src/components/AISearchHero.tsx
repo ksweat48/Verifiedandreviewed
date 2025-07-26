@@ -359,6 +359,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               
               console.log(`📝 Formatted ${formattedReviews.length} reviews for ${business.name}:`, formattedReviews);
               
+              console.log(`📝 Formatted ${formattedReviews.length} reviews for ${business.name}:`, formattedReviews);
+              
              console.log(`📝 Formatted ${formattedReviews.length} reviews for ${business.name}:`, formattedReviews);
              
               console.log(`🤖 AI enhanced search results for: ${searchQuery} (${aiGeneratedBusinesses.length} AI businesses)`);
@@ -427,12 +429,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               used_ai: false, 
               credits_deducted: creditsRequired,
             console.log(`🎯 [EXACT MATCH] Merging properties. Existing business has ${existingBusiness.reviews?.length || 0} reviews`);
+            console.log(`🎯 [EXACT MATCH] Merging properties. Existing business has ${existingBusiness.reviews?.length || 0} reviews`);
            console.log(`🎯 [EXACT MATCH] Merging properties. Existing business has ${existingBusiness.reviews?.length || 0} reviews`);
-              results_count: rankedFallbackResults.length,
+            const mergedBusiness = {
               results_count: finalResults.length,
               duplicates_removed: combinedResults.length - uniqueBusinesses.length,
               exact_match_found: !!exactMatchBusiness
-            });
+            };
+            console.log(`🎯 [EXACT MATCH] After merge: ${mergedBusiness.name} has ${mergedBusiness.reviews?.length || 0} reviews, isExactMatch: ${mergedBusiness.isExactMatch}`);
+            uniqueBusinessesMap.set(exactMatchBusiness.id, mergedBusiness);
             const mergedBusiness = uniqueBusinessesMap.get(exactMatchBusiness.id);
             console.log(`🎯 [EXACT MATCH] After merge: ${mergedBusiness.name} has ${mergedBusiness.reviews?.length || 0} reviews, isExactMatch: ${mergedBusiness.isExactMatch}`);
            const mergedBusiness = uniqueBusinessesMap.get(exactMatchBusiness.id);
