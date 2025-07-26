@@ -109,7 +109,7 @@ const ReviewerDashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* App-like Header */}
+      {/* User Profile Header - Scrollable */}
       <div className="bg-white border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* User Info Row */}
@@ -191,34 +191,34 @@ const ReviewerDashboardPage = () => {
             </div>
           </div>
         </div>
-        
-        {/* Tab Navigation */}
-        <div className="border-t border-neutral-100 pt-2 sticky top-16 z-40 bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex">
-              {tabs.map((tab) => {
-                const IconComponent = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex-1 flex flex-col items-center px-2 py-3 font-poppins text-xs font-medium transition-colors duration-200 ${
-                      activeTab === tab.id
-                        ? 'text-primary-600 border-b-2 border-primary-500'
-                        : 'text-neutral-600 hover:text-neutral-900'
-                    }`}
-                  >
-                    <IconComponent className="h-5 w-5 mb-1" />
-                    <span className="hidden sm:inline">{tab.label}</span>
-                    <span className="sm:hidden">
-                      {tab.id === 'overview' ? 'Home' : 
-                       tab.id === 'reviews' ? 'Reviews' :
-                       tab.id === 'businesses' ? 'Business' : 'Credits'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+      </div>
+
+      {/* Tab Navigation - Sticky */}
+      <div className="sticky top-16 z-40 bg-white border-b border-neutral-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex">
+            {tabs.map((tab) => {
+              const IconComponent = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex-1 flex flex-col items-center px-2 py-3 font-poppins text-xs font-medium transition-colors duration-200 ${
+                    activeTab === tab.id
+                      ? 'text-primary-600 border-b-2 border-primary-500'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  <IconComponent className="h-5 w-5 mb-1" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">
+                    {tab.id === 'overview' ? 'Home' : 
+                     tab.id === 'reviews' ? 'Reviews' :
+                     tab.id === 'businesses' ? 'Business' : 'Credits'}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
