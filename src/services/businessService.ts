@@ -280,28 +280,61 @@ export class BusinessService {
   // Get business by exact name match (for direct searches)
   static async getBusinessByName(name: string): Promise<Business | null> {
     try {
+      console.log('🔍 Searching for exact business name:', name);
+      
       const { data, error } = await supabase
         .from('businesses')
         .select('*')
-        .eq('is_visible_on_platform', true)
-        .ilike('name', name) // Case-insensitive exact match
-        .single();
+        .ilike('name', name)
+        .limit(1);
       
       if (error) {
-        // If no exact match found, try partial match
+        console.warn('⚠️ Error in exact name search:', error);
+        // If error in exact match, try partial match
         const { data: partialData, error: partialError } = await supabase
           .from('businesses')
           .select('*')
-          .eq('is_visible_on_platform', true)
-          .ilike('name', `%${name}%`) // Partial match
-          .limit(1)
-          .single();
+          .ilike('name', `%${name}%`)
+          .limit(1);
         
-        if (partialError) return null;
-        return partialData;
+        if (partialError) {
+          console.warn('⚠️ Error in partial name search:', partialError);
+          return null;
+        }
+        
+        if (partialData && partialData.length > 0) {
+          console.log('✅ Found partial match:', partialData[0].name);
+          return partialData[0];
+        }
+        
+        return null;
       }
       
-      return data;
+      if (data && data.length > 0) {
+        console.log('✅ Found exact match:', data[0].name);
+        return data[0];
+      }
+      
+      // If no exact match found, try partial match
+      console.log('🔍 No exact match, trying partial match...');
+      const { data: partialData, error: partialError } = await supabase
+        .from('businesses')
+        .select('*')
+        .ilike('name', `%${name}%`)
+        .limit(1);
+      
+      if (partialError) {
+        console.warn('⚠️ Error in partial name search:', partialError);
+        return null;
+      }
+      
+      if (partialData && partialData.length > 0) {
+        console.log('✅ Found partial match:', partialData[0].name);
+        return partialData[0];
+      }
+      
+      console.log('❌ No business found with name:', name);
+      return null;
     } catch (error) {
       console.error('Error fetching business by name:', error);
       return null;
