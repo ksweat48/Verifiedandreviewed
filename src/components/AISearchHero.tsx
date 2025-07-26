@@ -179,6 +179,38 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     // Add app mode state to history
     window.history.pushState({ appMode: true }, '', window.location.pathname + '#app-mode');
     
+    // Step 1: Check for exact business name match first (no distance limits)
+    console.log('🎯 Checking for exact business name match:', searchQuery);
+    let exactMatchBusiness = null;
+    try {
+      exactMatchBusiness = await BusinessService.getBusinessByName(searchQuery.trim());
+      if (exactMatchBusiness) {
+        console.log('✅ [EXACT MATCH] Found business:', exactMatchBusiness.name);
+        
+        // Calculate distance for exact match if user location available
+        if (latitude && longitude && exactMatchBusiness.latitude && exactMatchBusiness.longitude) {
+          const exactDistance = calculateDistance(
+            latitude, longitude,
+            exactMatchBusiness.latitude, exactMatchBusiness.longitude
+          );
+          exactMatchBusiness.distance = exactDistance;
+          exactMatchBusiness.duration = Math.round(exactDistance * 2); // Rough estimate
+          console.log(`📍 [EXACT MATCH] Distance: ${exactDistance.toFixed(1)} miles`);
+        }
+        
+        // Mark as exact match and give highest priority
+        exactMatchBusiness.isExactMatch = true;
+        exactMatchBusiness.similarity = 1.0; // Perfect match
+        exactMatchBusiness.compositeScore = 2.0; // Highest possible score
+        exactMatchBusiness.isPlatformBusiness = true;
+        exactMatchBusiness.isOpen = exactMatchBusiness.isOpen !== undefined ? exactMatchBusiness.isOpen : true;
+      } else {
+        console.log('ℹ️ No exact business name match found');
+      }
+    } catch (error) {
+      console.warn('⚠️ Error checking for exact match:', error);
+    }
+    
     try {
       // Determine search strategy: semantic vs traditional
       let searchResults = [];
@@ -359,16 +391,35 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             
             // Apply dynamic search algorithm to platform-only results
             const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
+            // Add exact match to the beginning if found and not already included
+            let finalResults = rankedResults;
+            if (exactMatchBusiness) {
+              const exactMatchExists = rankedResults.some(b => b.id === exactMatchBusiness.id);
+              if (!exactMatchExists) {
+                console.log('🎯 [EXACT MATCH] Adding to top of results:', exactMatchBusiness.name);
+                finalResults = [exactMatchBusiness, ...rankedResults];
+              } else {
+                console.log('🎯 [EXACT MATCH] Already in results, ensuring top position');
+                // Remove from current position and add to top
+                const filteredResults = rankedResults.filter(b => b.id !== exactMatchBusiness.id);
+                finalResults = [exactMatchBusiness, ...filteredResults];
+              }
+            }
             
-            setResults(rankedFallbackResults);
+            setResults(finalResults);
+            console.log('✅ Final search results:', finalResults.length, 'businesses (from', uniqueBusinesses.length, 'unique)');
+            if (exactMatchBusiness) {
+              console.log('🎯 [EXACT MATCH] Prioritized at top:', exactMatchBusiness.name, `(${exactMatchBusiness.distance?.toFixed(1) || 'unknown'} miles)`);
+            }
             console.log('✅ Fallback dynamic search results:', rankedFallbackResults.length, 'businesses');
             trackEvent('search_performed', { 
               query: searchQuery, 
               used_ai: false, 
               credits_deducted: creditsRequired,
               results_count: rankedFallbackResults.length,
-              error: aiError.message,
-              fallback: true
+              results_count: finalResults.length,
+              duplicates_removed: combinedResults.length - uniqueBusinesses.length,
+              exact_match_found: !!exactMatchBusiness
             });
           }
         } else {
@@ -387,15 +438,34 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           // Apply dynamic search algorithm to platform-only results
           const rankedPlatformResults = applyDynamicSearchAlgorithm(uniquePlatformResults, latitude, longitude);
           
-          setResults(rankedPlatformResults);
-          console.log('📊 Dynamic search platform-only results:', rankedPlatformResults.length, 'businesses for:', searchQuery);
+          // Add exact match to the beginning if found and not already included
+          let finalPlatformResults = rankedPlatformResults;
+          if (exactMatchBusiness) {
+            const exactMatchExists = rankedPlatformResults.some(b => b.id === exactMatchBusiness.id);
+            if (!exactMatchExists) {
+              console.log('🎯 [EXACT MATCH] Adding to top of platform-only results:', exactMatchBusiness.name);
+              finalPlatformResults = [exactMatchBusiness, ...rankedPlatformResults];
+            } else {
+              console.log('🎯 [EXACT MATCH] Already in platform results, ensuring top position');
+              // Remove from current position and add to top
+              const filteredResults = rankedPlatformResults.filter(b => b.id !== exactMatchBusiness.id);
+              finalPlatformResults = [exactMatchBusiness, ...filteredResults];
+            }
+          }
+          
+          setResults(finalPlatformResults);
+          console.log('📊 Final platform-only results:', finalPlatformResults.length, 'businesses for:', searchQuery);
+          if (exactMatchBusiness) {
+            console.log('🎯 [EXACT MATCH] Prioritized at top:', exactMatchBusiness.name, `(${exactMatchBusiness.distance?.toFixed(1) || 'unknown'} miles)`);
+          }
           trackEvent('search_performed', { 
             query: searchQuery, 
             used_ai: false,
             used_semantic: usedSemanticSearch,
             credits_deducted: creditsRequired,
-            results_count: rankedPlatformResults.length,
-            duplicates_removed: transformedBusinesses.length - uniquePlatformResults.length
+            results_count: finalPlatformResults.length,
+            duplicates_removed: transformedBusinesses.length - uniquePlatformResults.length,
+            exact_match_found: !!exactMatchBusiness
           });
         }
       } else {
@@ -422,8 +492,14 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number) => {
     console.log('🔍 Applying dynamic search algorithm to', businesses.length, 'businesses');
     
-    // Step 1: Filter by radius (10 miles max)
-    const businessesWithinRadius = businesses.filter(business => {
+    // Step 1: Separate exact matches from other businesses
+    const exactMatches = businesses.filter(business => business.isExactMatch === true);
+    const otherBusinesses = businesses.filter(business => business.isExactMatch !== true);
+    
+    console.log(`🎯 Found ${exactMatches.length} exact matches, ${otherBusinesses.length} other businesses`);
+    
+    // Step 2: Filter other businesses by radius (10 miles max) - exact matches bypass this
+    const businessesWithinRadius = otherBusinesses.filter(business => {
       const distance = business.distance || 0;
       const withinRadius = distance <= MAX_SEARCH_RADIUS_MILES;
       if (!withinRadius) {
@@ -434,8 +510,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     
     console.log(`📍 ${businessesWithinRadius.length} businesses within ${MAX_SEARCH_RADIUS_MILES} mile radius`);
     
-    // Step 2: Calculate composite scores for each business
-    const businessesWithScores = businessesWithinRadius.map(business => {
+    // Step 3: Combine exact matches with businesses within radius
+    const allBusinessesToRank = [...exactMatches, ...businessesWithinRadius];
+    console.log(`📊 Total businesses to rank: ${allBusinessesToRank.length} (${exactMatches.length} exact + ${businessesWithinRadius.length} within radius)`);
+    
+    // Step 4: Calculate composite scores for each business
+    const businessesWithScores = allBusinessesToRank.map(business => {
+      // Exact matches already have compositeScore = 2.0, skip calculation
+      if (business.isExactMatch) {
+        console.log(`🎯 [EXACT MATCH] ${business.name}: PRIORITY SCORE = ${business.compositeScore}`);
+        return business;
+      }
+      
       const compositeScore = calculateCompositeScore({
         similarity: business.similarity,
         distance: business.distance,
@@ -451,25 +537,27 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       };
     });
     
-    // Step 3: Sort by composite score (descending)
+    // Step 5: Sort by composite score (descending) - exact matches will be first due to score = 2.0
     const sortedBusinesses = businessesWithScores.sort((a, b) => {
       return b.compositeScore - a.compositeScore;
     });
     
-    // Step 4: Remove duplicates by ID and limit to 5
+    // Step 6: Remove duplicates by ID and limit to 10
     const uniqueResults = sortedBusinesses.filter((business, index, self) => 
       index === self.findIndex(b => b.id === business.id)
     ).slice(0, 10);
     
-    // Step 5: Log final ranking
+    // Step 7: Log final ranking
     console.log('🏆 Final ranking:');
     uniqueResults.forEach((business, index) => {
-      console.log(`  ${index + 1}. ${business.name} (score: ${business.compositeScore}, similarity: ${getMatchPercentage(business.similarity)}%)`);
+      const matchType = business.isExactMatch ? '[EXACT MATCH]' : '';
+      const distance = business.distance ? `${business.distance.toFixed(1)}mi` : 'unknown distance';
+      console.log(`  ${index + 1}. ${business.name} ${matchType} (score: ${business.compositeScore}, similarity: ${getMatchPercentage(business.similarity)}%, ${distance})`);
     });
     
-    // Step 6: Handle no results case
+    // Step 8: Handle no results case
     if (uniqueResults.length === 0) {
-      console.log('⚠️ No businesses found within 10 mile radius from initial pool of 20');
+      console.log('⚠️ No businesses found (no exact matches and none within 10 mile radius)');
       return [];
     }
     
