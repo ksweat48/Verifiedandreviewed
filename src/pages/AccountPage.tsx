@@ -201,8 +201,7 @@ const AccountPage = () => {
 
   const tabs = [
     { id: 'profile', label: 'Profile Information', icon: User },
-    { id: 'security', label: 'Password & Security', icon: Lock },
-    { id: 'credits', label: 'Credits', icon: Zap }
+    { id: 'security', label: 'Password & Security', icon: Lock }
   ];
 
   return (
@@ -469,24 +468,6 @@ const AccountPage = () => {
               </div>
             )}
 
-            {/* Credits Tab */}
-            {activeTab === 'credits' && (
-              <div>
-                <h3 className="font-poppins text-xl font-semibold text-neutral-900 mb-6">
-                  Credits Management
-                </h3>
-                
-                <CreditsManager 
-                  currentCredits={user?.credits || 200}
-                  onPurchase={async (packageId, withAutoRefill) => {
-                    // In a real app, this would call an API to process the purchase
-                    console.log('Purchase package:', packageId, 'with auto-refill:', withAutoRefill);
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    return true;
-                  }}
-                />
-              </div>
-            )}
           </div>
         </div>
       </div>
