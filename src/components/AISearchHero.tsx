@@ -500,9 +500,27 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleRecommend = async (business) => {
-    // Log to Supabase for admin approval
-    console.log('Recommending business:', business.name);
-    alert(`Thanks! We'll review ${business.name} for addition to our platform.`);
+    if (!currentUser || !currentUser.id) {
+      setShowSignupPrompt(true);
+      return;
+    }
+
+    try {
+      const success = await BusinessService.saveAIRecommendation(business, currentUser.id);
+      if (success) {
+        alert(`❤️ ${business.name} has been added to your favorites!`);
+        trackEvent('ai_business_favorited', { 
+          business_name: business.name,
+          user_id: currentUser.id,
+          similarity: business.similarity
+        });
+      } else {
+        alert('Failed to add to favorites. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error favoriting business:', error);
+      alert('Failed to add to favorites. Please try again.');
+    }
   };
 
   const handleTakeMeThere = (business) => {

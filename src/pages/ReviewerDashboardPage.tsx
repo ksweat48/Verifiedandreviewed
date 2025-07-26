@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { User, Zap, Award, Calendar, MapPin, ThumbsUp, ThumbsDown, Edit, Trash2, Eye } from 'lucide-react';
+import { User, Zap, Award, Calendar, MapPin, ThumbsUp, ThumbsDown, Edit, Trash2, Eye, Heart } from 'lucide-react';
 import { UserService } from '../services/userService';
+import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
 import type { User as UserType } from '../types/user';
 import MyBusinessesSection from '../components/MyBusinessesSection';
 import MyReviewsSection from '../components/MyReviewsSection';
+import MyFavoritesSection from '../components/MyFavoritesSection';
 import RecentActivitySection from '../components/RecentActivitySection';
 import CreditsManager from '../components/CreditsManager';
 import ReferralProgram from '../components/ReferralProgram';
@@ -16,6 +18,7 @@ const ReviewerDashboardPage = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'businesses' | 'credits'>('overview');
   const [userReviews, setUserReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [favoritedAIBusinesses, setFavoritedAIBusinesses] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -44,6 +47,10 @@ const ReviewerDashboardPage = () => {
           
           setUserReviews(formattedReviews);
           setLoadingReviews(false);
+          
+          // Fetch favorited AI businesses
+          const favorites = await BusinessService.getUserFavorites(userData.id);
+          setFavoritedAIBusinesses(favorites);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -103,6 +110,7 @@ const ReviewerDashboardPage = () => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
     { id: 'reviews', label: 'My Reviews', icon: ThumbsUp },
+    { id: 'favorites', label: 'Favorites', icon: Heart },
     { id: 'businesses', label: 'My Businesses', icon: Award },
     { id: 'credits', label: 'Credits', icon: Zap }
   ];
@@ -214,6 +222,7 @@ const ReviewerDashboardPage = () => {
                   <span className="sm:hidden">
                     {tab.id === 'overview' ? 'Home' : 
                      tab.id === 'reviews' ? 'Reviews' :
+                     tab.id === 'favorites' ? 'Favorites' :
                      tab.id === 'businesses' ? 'Business' : 'Credits'}
                   </span>
                 </button>
@@ -279,6 +288,18 @@ const ReviewerDashboardPage = () => {
 
         {activeTab === 'reviews' && (
           <MyReviewsSection reviews={userReviews} />
+        )}
+
+        {activeTab === 'favorites' && (
+          <MyFavoritesSection 
+            businesses={favoritedAIBusinesses} 
+            onRemoveFavorite={async (recommendationId) => {
+              const success = await BusinessService.removeFavorite(recommendationId);
+              if (success) {
+                setFavoritedAIBusinesses(prev => prev.filter(b => b.id !== recommendationId));
+              }
+            }}
+          />
         )}
 
         {activeTab === 'businesses' && (

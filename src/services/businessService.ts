@@ -614,6 +614,67 @@ export class BusinessService {
     }
   }
 
+  // Save AI business recommendation to favorites
+  static async saveAIRecommendation(business: any, userId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('business_recommendations')
+        .insert({
+          name: business.name,
+          address: business.address || business.location || 'Address not available',
+          location: business.location || business.address || 'Location not available',
+          category: business.category || 'AI Generated',
+          description: `AI-generated business with ${Math.round((business.similarity || 0.8) * 100)}% match. ${business.shortDescription || business.description || ''}`,
+          image_url: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+          recommended_by: userId,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error saving AI recommendation:', error);
+      return false;
+    }
+  }
+
+  // Get user's favorited AI businesses
+  static async getUserFavorites(userId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('business_recommendations')
+        .select('*')
+        .eq('recommended_by', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching user favorites:', error);
+      return [];
+    }
+  }
+
+  // Remove a favorite AI business
+  static async removeFavorite(recommendationId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('business_recommendations')
+        .delete()
+        .eq('id', recommendationId);
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+      return false;
+    }
+  }
+
   // Get businesses owned by a user
   static async getUserBusinesses(userId: string): Promise<Business[]> {
     try {
