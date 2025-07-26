@@ -484,31 +484,56 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   // Dynamic Search Algorithm Implementation
-  const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number) => {
+  const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number, exactMatchBusiness?: any) => {
     console.log('🔍 Applying dynamic search algorithm to', businesses.length, 'businesses');
     
-    // Step 1: Filter by radius (10 miles max)
-    const businessesWithinRadius = businesses.filter(business => {
-      const distance = business.distance || 0;
-      const withinRadius = distance <= MAX_SEARCH_RADIUS_MILES;
-      if (!withinRadius) {
-        console.log(`🚫 Filtering out business outside radius: ${business.name} (${distance} miles)`);
+    // Step 0: Add exact match business if it exists and isn't already in the list
+    let allBusinesses = [...businesses];
+    if (exactMatchBusiness) {
+      const isDuplicate = businesses.some(b => b.id === exactMatchBusiness.id);
+      if (!isDuplicate) {
+        console.log('➕ Adding exact match business to results:', exactMatchBusiness.name);
+        allBusinesses.unshift(exactMatchBusiness); // Add to beginning
+      } else {
+        console.log('🔄 Exact match already in results, updating with exact match flags');
+        // Update the existing business with exact match properties
+        allBusinesses = allBusinesses.map(b => 
+          b.id === exactMatchBusiness.id 
+            ? { ...b, isExactMatch: true, compositeScore: 2.0, similarity: 1.0 }
+            : b
+        );
       }
+    }
+    
+    // Step 1: Filter by radius (10 miles max)
+    const businessesWithinRadius = allBusinesses.filter(business => {
+      const distance = business.distance || 0;
+      const isExactMatch = business.isExactMatch === true;
+      const withinRadius = distance <= MAX_SEARCH_RADIUS_MILES || isExactMatch;
+      
+      if (!withinRadius) {
+        console.log(`🚫 Filtering out business outside radius: ${business.name} (${distance.toFixed(1)} miles)`);
+      } else if (isExactMatch && distance > MAX_SEARCH_RADIUS_MILES) {
+        console.log(`✅ [EXACT MATCH] Including business despite distance: ${business.name} (${distance.toFixed(1)} miles)`);
+      }
+      
       return withinRadius;
     });
     
-    console.log(`📍 ${businessesWithinRadius.length} businesses within ${MAX_SEARCH_RADIUS_MILES} mile radius`);
+    console.log(`📍 ${businessesWithinRadius.length} businesses within ${MAX_SEARCH_RADIUS_MILES} mile radius (including exact matches)`);
     
     // Step 2: Calculate composite scores for each business
     const businessesWithScores = businessesWithinRadius.map(business => {
-      const compositeScore = calculateCompositeScore({
+      // Use pre-calculated score for exact matches, otherwise calculate normally
+      const compositeScore = business.compositeScore || calculateCompositeScore({
         similarity: business.similarity,
         distance: business.distance,
         isOpen: business.isOpen,
         isPlatformBusiness: business.isPlatformBusiness
       });
       
-      console.log(`📊 ${business.name}: similarity=${business.similarity?.toFixed(3)}, distance=${business.distance}, isOpen=${business.isOpen}, isPlatform=${business.isPlatformBusiness} → score=${compositeScore}`);
+      const logPrefix = business.isExactMatch ? '[EXACT MATCH] ' : '';
+      console.log(`📊 ${logPrefix}${business.name}: similarity=${business.similarity?.toFixed(3)}, distance=${business.distance?.toFixed(1)}, isOpen=${business.isOpen}, isPlatform=${business.isPlatformBusiness} → score=${compositeScore}`);
       
       return {
         ...business,
@@ -529,12 +554,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     // Step 5: Log final ranking
     console.log('🏆 Final ranking:');
     uniqueResults.forEach((business, index) => {
-      console.log(`  ${index + 1}. ${business.name} (score: ${business.compositeScore}, similarity: ${getMatchPercentage(business.similarity)}%)`);
+      const logPrefix = business.isExactMatch ? '[EXACT MATCH] ' : '';
+      console.log(`  ${index + 1}. ${logPrefix}${business.name} (score: ${business.compositeScore}, similarity: ${getMatchPercentage(business.similarity)}%, distance: ${business.distance?.toFixed(1)}mi)`);
     });
     
     // Step 6: Handle no results case
     if (uniqueResults.length === 0) {
-      console.log('⚠️ No businesses found within 10 mile radius from initial pool of 20');
+      console.log('⚠️ No businesses found within 10 mile radius (including exact matches) from initial pool');
       return [];
     }
     
