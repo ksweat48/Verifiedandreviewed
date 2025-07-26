@@ -188,6 +188,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       if (exactMatchBusiness) {
         console.log('✅ [EXACT MATCH] Found business:', exactMatchBusiness.name);
         
+          console.log(`🎯 [EXACT MATCH] Merging properties. Existing business has ${existingBusiness.reviews?.length || 0} reviews`);
         // Calculate distance for exact match if user location available
         if (latitude && longitude && exactMatchBusiness.latitude && exactMatchBusiness.longitude) {
           const exactDistance = calculateDistance(
@@ -483,30 +484,21 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             query: searchQuery, 
             used_ai: false,
             used_semantic: usedSemanticSearch,
-            credits_deducted: creditsRequired,
+          const mergedBusiness = {
             results_count: finalPlatformResults.length,
             duplicates_removed: transformedBusinesses.length - uniquePlatformResults.length,
             exact_match_found: !!exactMatchBusiness
-          });
+          };
+          uniqueBusinessesMap.set(exactMatchBusiness.id, mergedBusiness);
+          console.log(`🎯 [EXACT MATCH] After merge: ${mergedBusiness.name} has ${mergedBusiness.reviews?.length || 0} reviews, isExactMatch: ${mergedBusiness.isExactMatch}`);
         }
-      } else {
-        setShowCreditWarning(true);
-        setResults([]);
-        trackEvent('search_performed', { 
-          query: searchQuery, 
-          used_ai: false,
-          used_semantic: false,
-          credits_deducted: 0,
-          error: 'Insufficient credits'
-        });
-      }
-      
-      // Fetch reviews for platform businesses
-      console.log('📝 Fetching reviews for', platformBusinesses.length, 'platform businesses');
       const platformBusinessesWithReviews = await Promise.all(
         platformBusinesses.map(async (business) => {
           try {
+            console.log(`📝 Fetching reviews for business: ${business.name} (ID: ${business.id})`);
             const reviews = await ReviewService.getBusinessReviews(business.id);
+            console.log(`📝 Found ${reviews.length} reviews for ${business.name}`);
+            
             const formattedReviews = reviews.map(review => ({
               text: review.review_text || 'No review text available',
               author: review.profiles?.name || 'Anonymous',
@@ -515,12 +507,31 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               thumbsUp: review.rating >= 4
             }));
             
-            return {
+            console.log(`📝 Formatted ${formattedReviews.length} reviews for ${business.name}:`, formattedReviews);
+            
+            const businessWithReviews = {
               ...business,
-              reviews: formattedReviews
+              id: business.id || `ai-${Date.now()}-${Math.random()}`,
+              rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
+              image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+              isOpen: business.isOpen !== undefined ? business.isOpen : true,
+              reviews: formattedReviews,
+              isPlatformBusiness: true,
+              tags: business.tags || [],
+              distance: business.distance || 999999,
+              duration: business.duration || 999999,
+              similarity: business.similarity || 0
             };
+            
+            console.log(`📝 Business with reviews created for ${business.name}:`, {
+              name: businessWithReviews.name,
+              reviewCount: businessWithReviews.reviews.length,
+              isPlatformBusiness: businessWithReviews.isPlatformBusiness
+            });
+            
+            return businessWithReviews;
           } catch (error) {
-            console.error(`Error fetching reviews for business ${business.id}:`, error);
+            console.error(`❌ Error fetching reviews for business ${business.id}:`, error);
             return {
               ...business,
               reviews: []
