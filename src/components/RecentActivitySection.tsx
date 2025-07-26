@@ -187,22 +187,13 @@ const RecentActivitySection: React.FC = () => {
                   className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                 />
                 <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-poppins font-semibold text-neutral-900">{business.name}</h4>
-                      <p className="font-lora text-xs text-neutral-600 mb-1">{business.address} • Visited {business.visitDate}</p>
-                    </div>
-                    {business.hasReviewed ? (
-                      <div className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-poppins font-semibold">
+                  <div>
+                    <h4 className="font-poppins font-semibold text-neutral-900">{business.name}</h4>
+                    <p className="font-lora text-xs text-neutral-600 mb-1">{business.address} • Visited {business.visitDate}</p>
+                    {business.hasReviewed && (
+                      <div className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-poppins font-semibold inline-block">
                         Reviewed
                       </div>
-                    ) : (
-                      <button 
-                        onClick={() => openReviewModal(business)}
-                        className="bg-primary-500 text-white px-3 py-1 rounded-lg text-xs font-poppins font-semibold hover:bg-primary-600 transition-colors duration-200"
-                      >
-                        Leave a Review
-                      </button>
                     )}
                   </div>
                   {business.hasReviewed && business.rating && (
@@ -222,6 +213,16 @@ const RecentActivitySection: React.FC = () => {
                   )}
                 </div>
               </div>
+              
+              {/* Full-width review button */}
+              {!business.hasReviewed && (
+                <button 
+                  onClick={() => openReviewModal(business)}
+                  className="w-full bg-primary-500 text-white px-4 py-2 rounded-lg text-sm font-poppins font-semibold hover:bg-primary-600 transition-colors duration-200 mt-3"
+                >
+                  Leave a Review
+                </button>
+              )}
             </div>
           ))}
         </div>
