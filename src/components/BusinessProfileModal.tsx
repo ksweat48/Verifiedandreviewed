@@ -128,7 +128,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
       <div 
-        className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl my-8 max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl max-w-full sm:max-w-xl md:max-w-2xl lg:max-w-4xl w-full shadow-2xl my-8 max-h-[90vh] overflow-y-auto overflow-x-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header with Cover Image */}
@@ -142,8 +142,8 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
           <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-70"></div>
           
           {/* Business Name and Category */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-            <h2 className="font-cinzel text-3xl font-bold mb-2">{business.name}</h2>
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white">
+            <h2 className="font-cinzel text-2xl sm:text-3xl font-bold mb-2">{business.name}</h2>
             
             <div className="flex flex-wrap items-center gap-4">
               {business.category && (
@@ -182,10 +182,10 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
         
         {/* Tabs Navigation */}
         <div className="border-b border-neutral-200">
-          <div className="flex px-6">
+          <div className="flex px-4 sm:px-6">
             <button
               onClick={() => setActiveTab('info')}
-              className={`py-4 px-6 font-poppins font-medium transition-colors duration-200 ${
+              className={`py-4 px-3 sm:px-6 font-poppins font-medium transition-colors duration-200 ${
                 activeTab === 'info'
                   ? 'text-primary-500 border-b-2 border-primary-500'
                   : 'text-neutral-600 hover:text-neutral-900'
@@ -197,7 +197,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
             
             <button
               onClick={() => setActiveTab('gallery')}
-              className={`py-4 px-6 font-poppins font-medium transition-colors duration-200 ${
+              className={`py-4 px-3 sm:px-6 font-poppins font-medium transition-colors duration-200 ${
                 activeTab === 'gallery'
                   ? 'text-primary-500 border-b-2 border-primary-500'
                   : 'text-neutral-600 hover:text-neutral-900'
@@ -214,7 +214,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
             
             <button
               onClick={() => setActiveTab('reviews')}
-              className={`py-4 px-6 font-poppins font-medium transition-colors duration-200 ${
+              className={`py-4 px-3 sm:px-6 font-poppins font-medium transition-colors duration-200 ${
                 activeTab === 'reviews'
                   ? 'text-primary-500 border-b-2 border-primary-500'
                   : 'text-neutral-600 hover:text-neutral-900'
@@ -232,7 +232,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
         </div>
         
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Info Tab */}
           {activeTab === 'info' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -576,7 +576,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
         </div>
         
         {/* Footer with Action Buttons */}
-        <div className="border-t border-neutral-200 p-6 bg-neutral-50 rounded-b-2xl">
+        <div className="border-t border-neutral-200 p-4 sm:p-6 bg-neutral-50 rounded-b-2xl">
           <div className="flex flex-wrap gap-4 justify-center">
             <button
               onClick={handleTakeMeThere}
