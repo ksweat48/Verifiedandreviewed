@@ -3,6 +3,7 @@ import * as Icons from 'lucide-react';
 import { UserService } from '../services/userService';
 import { useAnalytics } from '../hooks/useAnalytics';
 import type { User } from '../types/user';
+import { ActivityService } from '../services/activityService';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -114,6 +115,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
             email: formData.email,
             username: formData.username
           });
+          
+          // Log signup activity
+          ActivityService.logSignup(result.user.id);
 
           // Auto-login after successful registration
           const loginResult = await UserService.loginUser({
@@ -124,6 +128,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
           if (loginResult.success && loginResult.user) {
             onAuthSuccess?.(loginResult.user);
             onClose();
+            
+            // Log login activity
+            ActivityService.logLogin(loginResult.user.id);
+            
             // Force a refresh of the user data to ensure credits are displayed
             window.dispatchEvent(new Event('auth-state-changed'));
           } else {
@@ -145,6 +153,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
             email: formData.username,
             method: 'password'
           });
+          
+          // Log login activity
+          ActivityService.logLogin(result.user.id);
 
           onAuthSuccess?.(result.user);
           onClose();

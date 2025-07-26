@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import ImageGallery from './ImageGallery';
 import { ReviewService } from '../services/reviewService';
+import { ActivityService } from '../services/activityService';
+import { UserService } from '../services/userService';
 
 interface BusinessProfileModalProps {
   isOpen: boolean;
@@ -59,6 +61,17 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
   useEffect(() => {
     const fetchBusinessReviews = async () => {
       if (!isOpen || !business?.id) return;
+      
+      // Log business view activity when modal opens
+      try {
+        const user = await UserService.getCurrentUser();
+        if (user && business) {
+          ActivityService.logBusinessView(user.id, business.id, business.name);
+        }
+      } catch (error) {
+        // Silently fail - don't disrupt user experience
+        console.debug('Business view tracking failed:', error);
+      }
       
       setLoadingReviews(true);
       try {

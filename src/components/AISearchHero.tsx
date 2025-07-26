@@ -12,6 +12,7 @@ import { SemanticSearchService } from '../services/semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { getMatchPercentage, meetsDisplayThreshold, calculateCompositeScore } from '../utils/similarityUtils';
 import { formatCredits } from '../utils/formatters';
+import { ActivityService } from '../services/activityService';
 
 // Minimum semantic similarity threshold for displaying results
 const MINIMUM_DISPLAY_SIMILARITY = 0.0; // Allow all results for composite scoring
@@ -246,6 +247,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           // Call OpenAI API through our serverless function
           setIsSearching(true);
           
+          // Log search activity
+          if (currentUser && currentUser.id) {
+            ActivityService.logSearch(currentUser.id, searchQuery, usedSemanticSearch ? 'semantic' : 'ai');
+          }
+          
           try {
             // Calculate how many AI businesses we need (max 4 total cards)
             const numAINeeded = Math.max(0, 15 - transformedBusinesses.length); // Get more for better ranking
@@ -357,6 +363,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           const uniquePlatformResults = transformedBusinesses.filter((business, index, self) => 
             index === self.findIndex(b => b.id === business.id)
           );
+          
+          // Log search activity for platform-only searches
+          if (currentUser && currentUser.id) {
+            ActivityService.logSearch(currentUser.id, searchQuery, usedSemanticSearch ? 'semantic' : 'platform');
+          }
           
           console.log(`🔄 Platform-only de-duplication: ${transformedBusinesses.length} total → ${uniquePlatformResults.length} unique businesses`);
           

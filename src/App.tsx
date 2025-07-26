@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import ScrollToTop from './components/ScrollToTop';
 import Footer from './components/Footer';
+import { useActivityTracking } from './hooks/useActivityTracking';
 
 // Lazy load pages to reduce initial bundle size
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -17,6 +18,9 @@ const AddBusinessPage = lazy(() => import('./pages/AddBusinessPage'));
 function App() {
   const [isAppModeActive, setIsAppModeActive] = useState(false);
   const location = useLocation();
+  
+  // Enable automatic activity tracking
+  useActivityTracking();
   
   // Apply no-scroll class to body when in app mode
   useEffect(() => {

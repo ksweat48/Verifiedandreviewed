@@ -5,6 +5,7 @@ import type { User } from '../types/user';
 import { UserService } from '../services/userService';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { formatCredits, formatReviewCount } from '../utils/formatters';
+import { ActivityService } from '../services/activityService';
 
 interface UserMenuProps {
   user: User;
@@ -31,6 +32,11 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
   const handleLogout = () => {
     // Show confirmation before logout
     if (confirm('Are you sure you want to log out completely?')) {
+    // Log logout activity before clearing session
+    if (user) {
+      ActivityService.logLogout(user.id);
+    }
+    
     trackEvent('user_logout', { user_id: user.id });
     UserService.logout();
     onLogout();

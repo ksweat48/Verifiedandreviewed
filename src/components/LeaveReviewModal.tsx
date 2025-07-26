@@ -3,6 +3,7 @@ import { X, Camera, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { CreditService } from '../services/creditService';
 import { UserService } from '../services/userService';
+import { ActivityService } from '../services/activityService';
 
 interface ReviewImage {
   file: File;
@@ -211,6 +212,9 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
 
           if (error) throw error;
           console.log('Review inserted:', data);
+          
+          // Log review submission activity
+          ActivityService.logReviewSubmit(user.id, business.id, business.name);
         }
 
         // Check if review qualifies for credit reward (only for new reviews)
