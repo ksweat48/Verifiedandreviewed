@@ -380,10 +380,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     ...business,        // Overlay with current business properties
                     isExactMatch: existingBusiness.isExactMatch || business.isExactMatch, // Preserve true if either is true
                     isPlatformBusiness: existingBusiness.isPlatformBusiness || business.isPlatformBusiness, // Preserve true if either is true
-                    // CRITICAL: Explicitly preserve reviews from platform business
-                    reviews: existingBusiness.reviews || business.reviews || [],
                   };
                   
+                  // Explicitly preserve reviews from platform business
+                  if (existingBusiness.reviews?.length > 0) {
+                    mergedBusiness.reviews = existingBusiness.reviews;
+                  } else if (business.reviews?.length > 0) {
+                    mergedBusiness.reviews = business.reviews;
+                  } else {
+                    mergedBusiness.reviews = [];
+                  }
+                  
+                  console.log("✅ Final merged reviews count:", mergedBusiness.reviews?.length);
                   console.log(`🔄 [MERGE] Final merged isExactMatch: ${mergedBusiness.isExactMatch}, isPlatformBusiness: ${mergedBusiness.isPlatformBusiness}`);
                   console.log('🔄 [MERGE] Final merged reviews count:', mergedBusiness.reviews?.length || 0);
                   uniqueBusinessesMap.set(key, mergedBusiness);
