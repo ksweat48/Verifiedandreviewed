@@ -140,6 +140,18 @@ export type Business = {
   longitude?: number;
   distance?: number;
   duration?: number;
+  // Reviews array for platform businesses
+  reviews?: Array<{
+    text: string;
+    author: string;
+    authorImage?: string;
+    images?: Array<{ url: string; alt?: string }>;
+    thumbsUp: boolean;
+  }>;
+  // Dynamic properties added during search processing
+  isExactMatch?: boolean;
+  isPlatformBusiness?: boolean;
+  similarity?: number;
 };
 
 export type BusinessRating = {
