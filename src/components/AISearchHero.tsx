@@ -568,7 +568,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const applyDynamicSearchAlgorithm = (businesses: any[], userLatitude?: number, userLongitude?: number) => {
     console.log('🔍 Applying dynamic search algorithm to', businesses.length, 'businesses');
     
-    // Step 1: Separate exact matches from other businesses
+        enrichedExactMatchBusiness
     const exactMatches = businesses.filter(business => business.isExactMatch === true);
     const otherBusinesses = businesses.filter(business => business.isExactMatch !== true);
     
