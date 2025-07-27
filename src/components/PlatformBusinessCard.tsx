@@ -60,6 +60,7 @@ const PlatformBusinessCard: React.FC<{
 }> = ({ business, onRecommend, onTakeMeThere }) => {
  // Debug: Log the business object and its reviews
  console.log(`🎴 PlatformBusinessCard rendering: ${business.name}`);
+ console.log("Card received reviews:", business.reviews);
  console.log(`🎴 Reviews array:`, business.reviews);
  console.log(`🎴 Reviews length: ${business.reviews?.length || 0}`);
  console.log(`🎴 Has reviews: ${business.reviews && business.reviews.length > 0}`);
