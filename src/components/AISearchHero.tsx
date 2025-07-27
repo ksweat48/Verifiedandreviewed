@@ -355,6 +355,53 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               
               console.log(`🤖 AI enhanced search results for: ${searchQuery} (${aiGeneratedBusinesses.length} AI businesses)`);
               
+              console.log('📝 ENRICHING platform businesses with reviews BEFORE deduplication...');
+              
+              // Enrich platform businesses with reviews BEFORE deduplication
+              const enrichedPlatformBusinesses = await Promise.all(
+                platformBusinesses.map(async (business) => {
+                  if (business.isPlatformBusiness) {
+                    console.log(`📝 Fetching reviews for platform business: ${business.name} (ID: ${business.id})`);
+                    
+                    try {
+                      const reviews = await ReviewService.getBusinessReviews(business.id);
+                      console.log(`📝 Found ${reviews.length} reviews for ${business.name}`);
+                      
+                      const formattedReviews = reviews.map(review => ({
+                        text: review.review_text || 'No review text available',
+                        author: review.profiles?.name || 'Anonymous',
+                        authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+                        images: (review.image_urls || []).map(url => ({ url })),
+                        thumbsUp: review.rating >= 4
+                      }));
+                      
+                      console.log(`📝 Formatted ${formattedReviews.length} reviews for ${business.name}:`, formattedReviews);
+                      
+                      const enrichedBusiness = {
+                        ...business,
+                        reviews: formattedReviews
+                      };
+                      
+                      console.log(`✅ Reviews fetched:`, enrichedBusiness.name, "has", enrichedBusiness.reviews?.length || 0, "reviews");
+                      
+                      return enrichedBusiness;
+                    } catch (error) {
+                      console.error(`❌ Error fetching reviews for ${business.name}:`, error);
+                      return {
+                        ...business,
+                        reviews: []
+                      };
+                    }
+                  }
+                  return business;
+                })
+              );
+              
+              console.log('📝 Platform businesses enriched with reviews');
+              
+              // Now combine enriched platform businesses with AI businesses for deduplication
+              const allBusinesses = [...enrichedPlatformBusinesses, ...aiGeneratedBusinesses];
+              
               // Combine all businesses for de-duplication
               let allBusinesses = [];
               if (exactMatchBusiness) {
