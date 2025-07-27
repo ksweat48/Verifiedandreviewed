@@ -66,6 +66,11 @@ const PlatformBusinessCard: React.FC<{
  console.log(`🎴 Reviews length: ${business.reviews?.length || 0}`);
  console.log(`🎴 Has reviews: ${business.reviews && business.reviews.length > 0}`);
  
+  // ✅ Check if the reviews are still there before rendering
+  useEffect(() => {
+    console.log("🎴 PlatformBusinessCard received reviews:", business.reviews);
+  }, [business]);
+  
   const getSentimentRating = (score: number) => {
     if (score >= 80) return { text: 'Great', color: 'bg-green-500' };
     if (score >= 70 && score < 80) return { text: 'Good', color: 'bg-blue-500' };
