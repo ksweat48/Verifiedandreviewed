@@ -380,7 +380,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     ...business,        // Overlay with current business properties
                     isExactMatch: existingBusiness.isExactMatch || business.isExactMatch, // Preserve true if either is true
                     isPlatformBusiness: existingBusiness.isPlatformBusiness || business.isPlatformBusiness, // Preserve true if either is true
-                    reviews: existingBusiness.reviews || business.reviews || [] // Preserve reviews
                   };
                   
                   console.log(`🔄 [MERGE] Final merged isExactMatch: ${mergedBusiness.isExactMatch}, isPlatformBusiness: ${mergedBusiness.isPlatformBusiness}`);
