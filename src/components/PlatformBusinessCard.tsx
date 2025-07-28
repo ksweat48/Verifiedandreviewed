@@ -316,6 +316,8 @@ const PlatformBusinessCard: React.FC<{
                 </div>
               </div>
             )}
+        </div>
+      </div>
 
       {/* Reviewer Profile Modal */}
       {reviewerProfileOpen && selectedReviewer && (
@@ -357,9 +359,6 @@ const PlatformBusinessCard: React.FC<{
       />
     </>
   );
-};
-
-export default PlatformBusinessCard;
 };
 
 export default PlatformBusinessCard;
