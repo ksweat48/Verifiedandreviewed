@@ -1310,20 +1310,50 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 No businesses found
               </h3>
               <p className="font-lora text-neutral-600 mb-4">
-                We couldn't find any businesses matching "{searchQuery}" in your area.
-              </p>
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setShowResults(false);
-                  setIsAppModeActive(false);
-                }}
-                className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
-              >
-                Try Another Search
-              </button>
-            </div>
-          )}
+
+          // Create a standardized business object for the card components
+          const standardizedBusiness = {
+            ...business, // Start with all properties from the search result
+
+            // Standardize image property
+            image: business.image_url || business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+
+            // Standardize rating property based on whether it's a platform business or AI business
+            // Platform businesses use the object structure, AI businesses use a number
+            rating: business.isPlatformBusiness
+              ? { // For platform businesses, ensure rating is an object
+                  thumbsUp: business.thumbs_up !== undefined ? business.thumbs_up : (business.rating?.thumbsUp || 0),
+                  thumbsDown: business.thumbs_down !== undefined ? business.thumbs_down : (business.rating?.thumbsDown || 0),
+                  sentimentScore: business.sentiment_score !== undefined ? business.sentiment_score : (business.rating?.sentimentScore || 0),
+                }
+              : (typeof business.rating === 'number' ? business.rating : 0), // For AI businesses, ensure rating is a number
+
+            // Ensure reviews is an array
+            reviews: business.reviews || [],
+
+            // Ensure isPlatformBusiness is explicitly set
+            isPlatformBusiness: business.isPlatformBusiness || false,
+
+            // Add other properties that might be missing or named differently
+            address: business.address || business.location || '',
+            location: business.location || business.address || '',
+            isOpen: business.isOpen !== undefined ? business.isOpen : true,
+          };
+
+          return standardizedBusiness.isPlatformBusiness ? (
+            <PlatformBusinessCard
+              key={standardizedBusiness.id}
+              business={standardizedBusiness}
+              onRecommend={handleRecommend}
+              onTakeMeThere={handleTakeMeThere}
+            />
+          ) : (
+            <AIBusinessCard
+              key={standardizedBusiness.id}
+              business={standardizedBusiness}
+              onRecommend={handleRecommend}
+            />
+          );
         </div>
       </div>
 
