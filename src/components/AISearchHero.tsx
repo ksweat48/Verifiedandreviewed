@@ -432,19 +432,16 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               }
               console.log("--- END DEDUPLICATE INPUT VERIFICATION ---");
 
-              // Combine and deduplicate results
-              const allBusinesses = deduplicateBusinesses(enrichedPlatformBusinesses, aiBusinesses);
-              
               // Combine all businesses for de-duplication
-              let allBusinesses = [];
+              let combinedBusinesses = [];
               if (exactMatchBusiness) {
-                allBusinesses.push(exactMatchBusiness); // Add exact match first
+                combinedBusinesses.push(exactMatchBusiness); // Add exact match first
               }
-              allBusinesses.push(...platformBusinesses, ...aiGeneratedBusinesses);
+              combinedBusinesses.push(...platformBusinesses, ...aiGeneratedBusinesses);
               
               // De-duplicate businesses with robust property merging
               const uniqueBusinessesMap = new Map();
-              allBusinesses.forEach(business => {
+              combinedBusinesses.forEach(business => {
                 // Use name-address combination for more reliable de-duplication
                 const key = `${business.name.toLowerCase().trim()}-${(business.address || '').toLowerCase().trim()}`;
                 
@@ -502,7 +499,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 }
               });
               const uniqueBusinesses = Array.from(uniqueBusinessesMap.values());
-              console.log(`🔄 De-duplication: ${allBusinesses.length} total → ${uniqueBusinesses.length} unique businesses`);
+              console.log(`🔄 De-duplication: ${combinedBusinesses.length} total → ${uniqueBusinesses.length} unique businesses`);
               
               // Debug: Show which businesses have isExactMatch flag after de-duplication
               const exactMatchesAfterDedup = uniqueBusinesses.filter(b => b.isExactMatch);
@@ -522,7 +519,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 results_count: rankedResults.length,
                 platform_results: platformBusinesses.length,
                 ai_results: aiGeneratedBusinesses.length,
-                duplicates_removed: allBusinesses.length - uniqueBusinesses.length
+                duplicates_removed: combinedBusinesses.length - uniqueBusinesses.length
               });
             } else {
               console.error('AI search failed:', data);
@@ -564,7 +561,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               used_ai: false, 
               credits_deducted: creditsRequired,
               results_count: finalResults.length,
-              duplicates_removed: allBusinesses.length - uniqueBusinesses.length,
+              duplicates_removed: combinedBusinesses.length - uniqueBusinesses.length,
               exact_match_found: !!exactMatchBusiness
             });
           }
