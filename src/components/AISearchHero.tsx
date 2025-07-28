@@ -149,6 +149,55 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     return { text: 'Improve', color: 'bg-red-500' };
   };
 
+  // Enrich platform businesses with reviews
+  const enrichPlatformBusinessesWithReviews = async (businesses: Business[]): Promise<Business[]> => {
+    console.log("📝 ENRICHING platform businesses with reviews BEFORE deduplication...");
+    const enrichedBusinesses: Business[] = [];
+    
+    for (const business of businesses) {
+      if (business.isPlatformBusiness) {
+        try {
+          console.log(`📝 Fetching reviews for business: ${business.name} (ID: ${business.id})`);
+          const reviews = await ReviewService.getBusinessReviews(business.id);
+          console.log(`📝 Found ${reviews.length} reviews for ${business.name}`);
+          
+          // Transform reviews to match expected format
+          const formattedReviews = reviews.map(review => ({
+            text: review.review_text || 'No review text available',
+            author: review.profiles?.name || 'Anonymous',
+            authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+            images: (review.image_urls || []).map(url => ({ url })),
+            thumbsUp: review.rating >= 4
+          }));
+          
+          console.log(`📝 Formatted ${formattedReviews.length} reviews for ${business.name}:`, formattedReviews);
+          
+          const enrichedBusiness = {
+            ...business,
+            reviews: formattedReviews
+          };
+          
+          console.log(`📝 Business with reviews created for ${business.name}:`, {
+            name: enrichedBusiness.name,
+            reviewCount: enrichedBusiness.reviews.length,
+            isPlatformBusiness: enrichedBusiness.isPlatformBusiness
+          });
+          
+          enrichedBusinesses.push(enrichedBusiness);
+        } catch (error) {
+          console.error(`❌ Error enriching business ${business.name} with reviews:`, error);
+          enrichedBusinesses.push(business); // Include original business if enrichment fails
+        }
+      } else {
+        enrichedBusinesses.push(business); // Non-platform businesses don't need review enrichment
+      }
+    }
+    
+    console.log("✅ Reviews fetched for platform businesses");
+    console.log("✅ Platform businesses enriched with reviews BEFORE deduplication.");
+    return enrichedBusinesses;
+  };
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
@@ -354,6 +403,37 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               }));
               
               console.log(`🤖 AI enhanced search results for: ${searchQuery} (${aiGeneratedBusinesses.length} AI businesses)`);
+              
+              // Enrich platform businesses with reviews BEFORE deduplication
+              const enrichedPlatformBusinesses = await enrichPlatformBusinessesWithReviews(platformBusinesses);
+              
+              // --- POST-ENRICHMENT VERIFICATION ---
+              console.log("--- POST-ENRICHMENT VERIFICATION ---");
+              console.log("🔍 enrichedPlatformBusinesses array:", enrichedPlatformBusinesses);
+              const davidaBosticPostEnrichment = enrichedPlatformBusinesses.find(b => b.name === 'Davida Bostic Health Coach');
+              if (davidaBosticPostEnrichment) {
+                console.log("🔍 Davida Bostic Health Coach (after enrichment) reviews count:", davidaBosticPostEnrichment.reviews?.length);
+                console.log("🔍 Davida Bostic Health Coach (after enrichment) full object:", davidaBosticPostEnrichment);
+              } else {
+                console.log("🔍 Davida Bostic Health Coach not found in enrichedPlatformBusinesses array after enrichment.");
+              }
+              console.log("--- END POST-ENRICHMENT VERIFICATION ---");
+              
+              const aiBusinesses = semanticSearchResults.results || [];
+
+              // --- DEDUPLICATE INPUT VERIFICATION ---
+              console.log("--- DEDUPLICATE INPUT VERIFICATION ---");
+              const davidaBosticDedupeInput = enrichedPlatformBusinesses.find(b => b.name === 'Davida Bostic Health Coach');
+              if (davidaBosticDedupeInput) {
+                console.log("🔍 Davida Bostic Health Coach (as input to deduplicateBusinesses) reviews count:", davidaBosticDedupeInput.reviews?.length);
+                console.log("🔍 Davida Bostic Health Coach (as input to deduplicateBusinesses) object reference:", davidaBosticDedupeInput);
+              } else {
+                console.log("🔍 Davida Bostic Health Coach not found in deduplicateBusinesses input array.");
+              }
+              console.log("--- END DEDUPLICATE INPUT VERIFICATION ---");
+
+              // Combine and deduplicate results
+              const allBusinesses = deduplicateBusinesses(enrichedPlatformBusinesses, aiBusinesses);
               
               // Combine all businesses for de-duplication
               let allBusinesses = [];
