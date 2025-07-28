@@ -233,7 +233,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     // Add app mode state to history
     window.history.pushState({ appMode: true }, '', window.location.pathname + '#app-mode');
     
-    // Step 1: Check for exact business name match first (no distance limits)
+    // Step 1: Comprehensive platform business search
+    console.log('🔍 Step 1: Comprehensive platform business search');
+    let platformBusinesses: any[] = [];
+    
+    // 1a: Check for exact match in platform businesses
     try {
       exactMatchBusiness = await BusinessService.getBusinessByName(searchQuery.trim());
       if (exactMatchBusiness) {
@@ -256,6 +260,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         exactMatchBusiness.compositeScore = 2.0; // Highest possible score
         exactMatchBusiness.isPlatformBusiness = true;
         exactMatchBusiness.isOpen = exactMatchBusiness.isOpen !== undefined ? exactMatchBusiness.isOpen : true;
+        platformBusinesses.push(exactMatchBusiness);
       } else {
         console.log('ℹ️ No exact business name match found');
       }
@@ -263,6 +268,31 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       console.warn('⚠️ Error checking for exact match:', error);
     }
     
+    // 1b: Broad keyword search for platform businesses
+    console.log('🔍 Step 1b: Broad keyword search for platform businesses');
+    try {
+      const keywordResults = await BusinessService.getBusinesses({
+        search: searchQuery,
+        userLatitude: latitude,
+        userLongitude: longitude
+      });
+      
+      console.log('✅ Keyword search found', keywordResults.length, 'platform businesses');
+      
+      // Add keyword results to platform businesses (avoid duplicates)
+      keywordResults.forEach(business => {
+        const existingBusiness = platformBusinesses.find(pb => pb.id === business.id);
+        if (!existingBusiness) {
+          business.isPlatformBusiness = true;
+          platformBusinesses.push(business);
+        }
+      });
+    } catch (error) {
+      console.warn('⚠️ Keyword search failed:', error);
+    }
+    
+    // 1c: Semantic search for platform businesses (additional layer)
+    console.log('🔍 Step 1c: Semantic search for platform businesses');
     try {
       // Determine search strategy: semantic vs traditional
       let searchResults = [];
@@ -281,396 +311,365 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         });
         
         if (semanticResult.success && semanticResult.results.length > 0) {
-          searchResults = semanticResult.results;
-          usedSemanticSearch = true;
-          console.log('✅ Semantic search successful:', searchResults.length, 'results');
-          console.log('🏢 Platform businesses found:', searchResults.filter(r => r.isPlatformBusiness).length);
-          console.log('🎯 Similarity scores:', searchResults.map(r => ({ name: r.name, similarity: r.similarity })));
+          console.log('✅ Semantic search found', semanticResult.results.length, 'platform businesses');
+          
+          // Add semantic results to platform businesses (avoid duplicates)
+          semanticResult.results.forEach(business => {
+            const existingBusiness = platformBusinesses.find(pb => pb.id === business.id);
+            if (existingBusiness) {
+              // Update existing business with semantic similarity if higher
+              if (business.similarity > (existingBusiness.similarity || 0)) {
+                existingBusiness.similarity = business.similarity;
+              }
+            } else {
+              const semanticBusiness = {
+                ...business,
+                isPlatformBusiness: true,
+                isOpen: true,
+                distance: business.distance || 999999,
+                duration: business.duration || 999999,
+                reviews: business.reviews || []
+              };
+              platformBusinesses.push(semanticBusiness);
+            }
+          });
         } else {
-          console.log('⚠️ Semantic search failed or no results, falling back to traditional search');
-          console.log('Semantic search error:', semanticResult.error);
+          console.log('⚠️ Semantic search returned no results or failed');
         }
-      }
-      
-      // Fallback to traditional search if semantic search failed or unavailable
-      let transformedBusinesses = [];
-      let platformBusinesses = [];
-      let aiBusinesses = [];
-      let needsAI = false; // Will be determined based on semantic results only
-
-      if (usedSemanticSearch) {
-        // Use semantic search results
-        transformedBusinesses = searchResults;
-        platformBusinesses = searchResults;
-        needsAI = searchResults.length < 5; // Use AI to fill up to 5 total results
       } else {
-        // No semantic search results - only use AI if semantic search is unavailable
         console.log('⚠️ Semantic search failed or unavailable, using AI only');
-        transformedBusinesses = [];
-        platformBusinesses = [];
-        needsAI = true;
       }
+    } catch (error) {
+      console.warn('⚠️ Semantic search failed:', error);
+    }
+    
+    console.log('📊 Total platform businesses found:', platformBusinesses.length);
+    platformBusinesses.forEach(business => {
+      console.log(`  - ${business.name} (exact: ${business.isExactMatch || false}, similarity: ${business.similarity || 'N/A'})`);
+    });
+    
+    // Step 2: Fetch reviews for platform businesses
+    console.log('🔍 Step 2: Fetching reviews for', platformBusinesses.length, 'platform businesses');
 
-      setUsedAI(needsAI && !usedSemanticSearch);
-
-      let canProceed = true;
-      const creditsRequired = usedSemanticSearch ? 5 : (needsAI ? 10 : 1); // Semantic search costs 5 credits
+    try {
+      // Enrich platform businesses with reviews BEFORE deduplication
+      const enrichedPlatformBusinesses = await enrichPlatformBusinessesWithReviews(platformBusinesses);
       
-      if (currentUser && currentUser.id) {
-        // Skip deduction for admin or unlimited credit users
-        if (currentUser.role === 'administrator' || userCredits >= 999999) {
-          canProceed = true;
+      // --- POST-ENRICHMENT VERIFICATION ---
+      console.log("--- POST-ENRICHMENT VERIFICATION ---");
+      console.log("🔍 enrichedPlatformBusinesses array:", enrichedPlatformBusinesses);
+      const davidaBosticPostEnrichment = enrichedPlatformBusinesses.find(b => b.name === 'Davida Bostic Health Coach');
+      if (davidaBosticPostEnrichment) {
+        console.log("🔍 Davida Bostic Health Coach (after enrichment) reviews count:", davidaBosticPostEnrichment.reviews?.length);
+        console.log("🔍 Davida Bostic Health Coach (after enrichment) full object:", davidaBosticPostEnrichment);
+      } else {
+        console.log("🔍 Davida Bostic Health Coach not found in enrichedPlatformBusinesses array after enrichment.");
+      }
+      console.log("--- END POST-ENRICHMENT VERIFICATION ---");
+      
+      // --- DEDUPLICATE INPUT VERIFICATION ---
+      console.log("--- DEDUPLICATE INPUT VERIFICATION ---");
+      const davidaBosticDedupeInput = enrichedPlatformBusinesses.find(b => b.name === 'Davida Bostic Health Coach');
+      if (davidaBosticDedupeInput) {
+        console.log("🔍 Davida Bostic Health Coach (as input to deduplicateBusinesses) reviews count:", davidaBosticDedupeInput.reviews?.length);
+        console.log("🔍 Davida Bostic Health Coach (as input to deduplicateBusinesses) object reference:", davidaBosticDedupeInput);
+      } else {
+        console.log("🔍 Davida Bostic Health Coach not found in deduplicateBusinesses input array.");
+      }
+      console.log("--- END DEDUPLICATE INPUT VERIFICATION ---");
+
+      // Update platformBusinesses with enriched data
+      platformBusinesses = enrichedPlatformBusinesses;
+    } catch (error) {
+      console.error('❌ Error enriching platform businesses with reviews:', error);
+    }
+    
+    // Step 3: Check if we need AI augmentation
+    const needsAIAugmentation = platformBusinesses.length < 6;
+    console.log('🤖 Step 3: AI augmentation needed?', needsAIAugmentation, `(${platformBusinesses.length}/6 platform businesses)`);
+    
+    let aiBusinesses: any[] = [];
+    let usedAI = false;
+
+    setUsedAI(needsAIAugmentation);
+
+    let canProceed = true;
+    const creditsRequired = needsAIAugmentation ? 10 : 5; // AI costs 10, semantic costs 5
+    
+    if (currentUser && currentUser.id) {
+      // Skip deduction for admin or unlimited credit users
+      if (currentUser.role === 'administrator' || userCredits >= 999999) {
+        canProceed = true;
+      } else {
+        // Check credit balance for regular users
+        if (userCredits < creditsRequired) {
+          setShowCreditWarning(true);
+          canProceed = false;
         } else {
-          // Check credit balance for regular users
-          if (userCredits < creditsRequired) {
+          // Deduct credits using secure backend function
+          const success = await CreditService.deductSearchCredits(currentUser.id, needsAIAugmentation ? 'ai' : 'semantic');
+          if (success) {
+            // Update local credit count
+            setUserCredits(prev => prev - creditsRequired);
+          } else {
             setShowCreditWarning(true);
             canProceed = false;
-          } else {
-            // Deduct credits using secure backend function
-            const success = await CreditService.deductSearchCredits(currentUser.id, usedSemanticSearch ? 'semantic' : (needsAI ? 'ai' : 'platform'));
-            if (success) {
-              // Update local credit count
-              setUserCredits(prev => prev - creditsRequired);
-            } else {
-              setShowCreditWarning(true);
-              canProceed = false;
-            }
           }
         }
       }
-      
-      if (canProceed) {
-        if (needsAI) {
-          // Call OpenAI API through our serverless function
-          setIsSearching(true);
-          
-          // Log search activity
-          if (currentUser && currentUser.id) {
-            ActivityService.logSearch(currentUser.id, searchQuery, usedSemanticSearch ? 'semantic' : 'ai');
-          }
-          
-          try {
-            // Calculate how many AI businesses we need (max 4 total cards)
-            const numAINeeded = Math.max(0, 15 - transformedBusinesses.length); // Get more for better ranking
-            
-            // Always try to get AI results for better ranking diversity
-            console.log(`🤖 Getting ${numAINeeded} AI businesses for enhanced ranking`);
-            
-            // Prepare the AI prompt with context about existing results
-            const aiPrompt = transformedBusinesses.length > 0 
-              ? `Find businesses similar to "${searchQuery}". I already have ${transformedBusinesses.length} results, so provide ${numAINeeded} different but related businesses that match this search intent.`
-              : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
-
-            const response = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({ 
-                prompt: aiPrompt,
-                searchQuery: searchQuery,
-                existingResultsCount: transformedBusinesses.length,
-                numToGenerate: numAINeeded,
-                latitude: latitude,   // Pass user's latitude from hook
-                longitude: longitude  // Pass user's longitude from hook
-              })
-            }, 25000); // 25 second timeout for AI business search
-            
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error('AI search API error:', response.status, errorText);
-              throw new Error(`AI search failed: ${response.status} - ${errorText}`);
-            }
-            
-            const data = await response.json();
-            console.log('🎯 AI search response:', data);
-            
-            if (data.success && data.results) {
-              // Combine platform businesses with AI-generated businesses
-              const aiGeneratedBusinesses = data.results.map(business => ({
-                ...business,
-                // Ensure all required fields are present
-                id: business.id || `ai-${Date.now()}-${Math.random()}`,
-                rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
-                image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-                isOpen: business.isOpen !== undefined ? business.isOpen : true,
-                hours: business.hours || 'Hours unavailable',
-                address: business.address || 'Address not available',
-                distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10, // Ensure distance is present
-                duration: business.duration || Math.floor(Math.random() * 10 + 5), // Ensure duration is present
-                reviews: business.reviews || [],
-                isPlatformBusiness: false,
-                similarity: business.similarity || 0.8 // Default high similarity for AI businesses
-              }));
-              
-              console.log(`🤖 AI enhanced search results for: ${searchQuery} (${aiGeneratedBusinesses.length} AI businesses)`);
-              
-              // Enrich platform businesses with reviews BEFORE deduplication
-              const enrichedPlatformBusinesses = await enrichPlatformBusinessesWithReviews(platformBusinesses);
-              
-              // --- POST-ENRICHMENT VERIFICATION ---
-              console.log("--- POST-ENRICHMENT VERIFICATION ---");
-              console.log("🔍 enrichedPlatformBusinesses array:", enrichedPlatformBusinesses);
-              const davidaBosticPostEnrichment = enrichedPlatformBusinesses.find(b => b.name === 'Davida Bostic Health Coach');
-              if (davidaBosticPostEnrichment) {
-                console.log("🔍 Davida Bostic Health Coach (after enrichment) reviews count:", davidaBosticPostEnrichment.reviews?.length);
-                console.log("🔍 Davida Bostic Health Coach (after enrichment) full object:", davidaBosticPostEnrichment);
-              } else {
-                console.log("🔍 Davida Bostic Health Coach not found in enrichedPlatformBusinesses array after enrichment.");
-              }
-              console.log("--- END POST-ENRICHMENT VERIFICATION ---");
-              
-              // --- DEDUPLICATE INPUT VERIFICATION ---
-              console.log("--- DEDUPLICATE INPUT VERIFICATION ---");
-              const davidaBosticDedupeInput = enrichedPlatformBusinesses.find(b => b.name === 'Davida Bostic Health Coach');
-              if (davidaBosticDedupeInput) {
-                console.log("🔍 Davida Bostic Health Coach (as input to deduplicateBusinesses) reviews count:", davidaBosticDedupeInput.reviews?.length);
-                console.log("🔍 Davida Bostic Health Coach (as input to deduplicateBusinesses) object reference:", davidaBosticDedupeInput);
-              } else {
-                console.log("🔍 Davida Bostic Health Coach not found in deduplicateBusinesses input array.");
-              }
-              console.log("--- END DEDUPLICATE INPUT VERIFICATION ---");
-
-              // Combine all businesses for de-duplication
-              let combinedBusinesses = [];
-              if (exactMatchBusiness) {
-                combinedBusinesses.push(exactMatchBusiness); // Add exact match first
-              }
-              combinedBusinesses.push(...enrichedPlatformBusinesses, ...aiGeneratedBusinesses);
-              
-              // De-duplicate businesses with robust property merging
-              const uniqueBusinessesMap = new Map();
-              combinedBusinesses.forEach(business => {
-                // Use name-address combination for more reliable de-duplication
-                const key = `${business.name.toLowerCase().trim()}-${(business.address || '').toLowerCase().trim()}`;
-                
-                if (uniqueBusinessesMap.has(key)) {
-                  const existingBusinessInMap = uniqueBusinessesMap.get(key)!;
-                  const currentBusiness = business; // Renaming for clarity
-
-                  // --- ADDED LOGGING FOR DIAGNOSIS ---
-                  console.log("--- MERGE DIAGNOSIS ---");
-                  console.log("🔁 Merging:", currentBusiness.name);
-                  console.log("  Existing in map (reviews, isPlatform):", existingBusinessInMap.reviews?.length, existingBusinessInMap.isPlatformBusiness);
-                  console.log("  Current business (reviews, isPlatform):", currentBusiness.reviews?.length, currentBusiness.isPlatformBusiness);
-                  // --- END ADDED LOGGING ---
-
-                  // 1. Determine if the merged business should be considered a platform business
-                  // It's a platform business if either the existing one or the current one is
-                  const isMergedPlatformBusiness = existingBusinessInMap.isPlatformBusiness || currentBusiness.isPlatformBusiness;
-                  
-                  // 2. Perform a general merge, prioritizing properties from currentBusiness
-                  let mergedBusiness = { ...existingBusinessInMap, ...currentBusiness };
-                  
-                  // 3. Explicitly set isPlatformBusiness to ensure it's not overwritten incorrectly
-                  mergedBusiness.isPlatformBusiness = isMergedPlatformBusiness;
-                  
-                  // 4. Preserve important flags
-                  mergedBusiness.isExactMatch = existingBusinessInMap.isExactMatch || currentBusiness.isExactMatch;
-                  
-                  // 5. Explicitly handle the 'reviews' property to ensure platform reviews are preserved
-                  // Prioritize reviews from the business that is a platform business and has reviews
-                  if (existingBusinessInMap.isPlatformBusiness && existingBusinessInMap.reviews && existingBusinessInMap.reviews.length > 0) {
-                    console.log('🔄 [MERGE] Using existing platform reviews:', existingBusinessInMap.reviews.length, 'reviews');
-                    mergedBusiness.reviews = existingBusinessInMap.reviews;
-                  } else if (currentBusiness.isPlatformBusiness && currentBusiness.reviews && currentBusiness.reviews.length > 0) {
-                    console.log('🔄 [MERGE] Using current platform reviews:', currentBusiness.reviews.length, 'reviews');
-                    mergedBusiness.reviews = currentBusiness.reviews;
-                  } else if (existingBusinessInMap.reviews && existingBusinessInMap.reviews.length > 0) {
-                    console.log('🔄 [MERGE] Using existing non-platform reviews:', existingBusinessInMap.reviews.length, 'reviews');
-                    mergedBusiness.reviews = existingBusinessInMap.reviews;
-                  } else if (currentBusiness.reviews && currentBusiness.reviews.length > 0) {
-                    console.log('🔄 [MERGE] Using current non-platform reviews:', currentBusiness.reviews.length, 'reviews');
-                    mergedBusiness.reviews = currentBusiness.reviews;
-                  } else {
-                    console.log('🔄 [MERGE] No reviews found in either business, defaulting to empty array');
-                    mergedBusiness.reviews = [];
-                  }
-                  
-                  // --- END OF CRITICAL FIX ---
-                  
-                  console.log('✅ Final merged reviews count:', mergedBusiness.reviews?.length);
-                  console.log('🔄 [MERGE] Final merged isExactMatch:', mergedBusiness.isExactMatch, ', isPlatformBusiness:', mergedBusiness.isPlatformBusiness, ', reviews:', mergedBusiness.reviews?.length || 0);
-                  uniqueBusinessesMap.set(key, mergedBusiness);
-                } else {
-                  console.log('🔄 [NEW] Adding new business:', business.name, '(isExactMatch:', business.isExactMatch, ', reviews:', business.reviews?.length || 0, ')');
-                  uniqueBusinessesMap.set(key, business);
-                }
-              });
-              uniqueBusinesses = Array.from(uniqueBusinessesMap.values());
-              console.log(`🔄 De-duplication: ${combinedBusinesses.length} total → ${uniqueBusinesses.length} unique businesses`);
-              
-              // Debug: Show which businesses have isExactMatch flag after de-duplication
-              const exactMatchesAfterDedup = uniqueBusinesses.filter(b => b.isExactMatch);
-              console.log(`🎯 Exact matches after de-duplication: ${exactMatchesAfterDedup.length}`, exactMatchesAfterDedup.map(b => b.name));
-              
-              // Apply new dynamic search algorithm
-              console.log('🔍 Applying dynamic search algorithm to', uniqueBusinesses.length, 'businesses');
-              const rankedBusinesses = applyDynamicSearchAlgorithm(uniqueBusinesses, latitude, longitude);
-              
-              setResults(rankedBusinesses);
-              console.log('✅ Dynamic search algorithm results:', rankedBusinesses.length, 'businesses (from', uniqueBusinesses.length, 'unique)');
-              
-              trackEvent('search_performed', { 
-                query: searchQuery, 
-                used_ai: needsAI,
-                used_semantic: usedSemanticSearch,
-                credits_deducted: creditsRequired,
-                results_count: rankedBusinesses.length,
-                platform_results: platformBusinesses.length,
-                ai_results: aiGeneratedBusinesses.length,
-                duplicates_removed: combinedBusinesses.length - uniqueBusinesses.length
-              });
-            } else {
-              console.error('AI search failed:', data);
-              throw new Error(data.error || data.message || 'Failed to get AI business suggestions');
-            }
-          } catch (aiError) {
-            console.error('AI search error:', aiError);
-            console.log('🔄 Falling back to platform-only results');
-            
-            // Show error message to user
-            setShowCreditWarning(true);
-            
-            // Apply dynamic search algorithm to platform-only results
-            const rankedFallbackResults = applyDynamicSearchAlgorithm(transformedBusinesses, latitude, longitude);
-            
-            // Add exact match to the beginning if found and not already included
-            let finalResults = rankedFallbackResults;
-            if (exactMatchBusiness) {
-              const exactMatchExists = rankedFallbackResults.some(b => b.id === exactMatchBusiness.id);
-              if (!exactMatchExists) {
-                console.log('🎯 [EXACT MATCH] Adding to top of results:', exactMatchBusiness.name);
-                finalResults = [exactMatchBusiness, ...rankedFallbackResults];
-              } else {
-                console.log('🎯 [EXACT MATCH] Already in results, ensuring top position');
-                // Remove from current position and add to top
-                const filteredResults = rankedFallbackResults.filter(b => b.id !== exactMatchBusiness.id);
-                finalResults = [exactMatchBusiness, ...filteredResults];
-              }
-            }
-            
-            setResults(finalResults);
-            console.log('✅ Final search results:', finalResults.length, 'businesses (from', uniqueBusinesses.length, 'unique)');
-            if (exactMatchBusiness) {
-              console.log('🎯 [EXACT MATCH] Prioritized at top:', exactMatchBusiness.name, `(${exactMatchBusiness.distance?.toFixed(1) || 'unknown'} miles)`);
-            }
-            console.log('✅ Fallback dynamic search results:', rankedFallbackResults.length, 'businesses');
-            trackEvent('search_performed', { 
-              query: searchQuery, 
-              used_ai: false, 
-              credits_deducted: creditsRequired,
-              results_count: finalResults.length,
-              duplicates_removed: combinedBusinesses.length - uniqueBusinesses.length,
-              exact_match_found: !!exactMatchBusiness
-            });
-          }
-        } else {
-          // De-duplicate platform-only results before ranking
-          const uniquePlatformResults = transformedBusinesses.filter((business, index, self) => 
-            index === self.findIndex(b => b.id === business.id)
-          );
-          
-          // Log search activity for platform-only searches
-          if (currentUser && currentUser.id) {
-            ActivityService.logSearch(currentUser.id, searchQuery, usedSemanticSearch ? 'semantic' : 'platform');
-          }
-          
-          console.log(`🔄 Platform-only de-duplication: ${transformedBusinesses.length} total → ${uniquePlatformResults.length} unique businesses`);
-          
-          // Apply dynamic search algorithm to platform-only results
-          console.log('🔍 Applying dynamic search algorithm to', uniquePlatformResults.length, 'businesses');
-          const rankedPlatformResults = applyDynamicSearchAlgorithm(uniquePlatformResults, latitude, longitude);
-          
-          // Add exact match to the beginning if found and not already included
-          let finalPlatformResults = rankedPlatformResults;
-          if (exactMatchBusiness) {
-            const exactMatchExists = rankedPlatformResults.some(b => b.id === exactMatchBusiness.id);
-            if (!exactMatchExists) {
-              console.log('🎯 [EXACT MATCH] Adding to top of platform-only results:', exactMatchBusiness.name);
-              finalPlatformResults = [exactMatchBusiness, ...rankedPlatformResults];
-            } else {
-              console.log('🎯 [EXACT MATCH] Already in platform results, ensuring top position');
-              // Remove from current position and add to top
-              const filteredResults = rankedPlatformResults.filter(b => b.id !== exactMatchBusiness.id);
-              finalPlatformResults = [exactMatchBusiness, ...filteredResults];
-            }
-          }
-          
-          setResults(finalPlatformResults);
-          console.log('📊 Final platform-only results:', finalPlatformResults.length, 'businesses for:', searchQuery);
-          if (exactMatchBusiness) {
-            console.log('🎯 [EXACT MATCH] Prioritized at top:', exactMatchBusiness.name, `(${exactMatchBusiness.distance?.toFixed(1) || 'unknown'} miles)`);
-          }
-          trackEvent('search_performed', { 
-            query: searchQuery, 
-            used_ai: false,
-            used_semantic: usedSemanticSearch,
-            results_count: finalPlatformResults.length,
-            duplicates_removed: transformedBusinesses.length - uniquePlatformResults.length,
-            exact_match_found: !!exactMatchBusiness
-          });
+    }
+    
+    if (canProceed) {
+      if (needsAIAugmentation) {
+        // Call OpenAI API through our serverless function
+        setIsSearching(true);
+        
+        // Log search activity
+        if (currentUser && currentUser.id) {
+          ActivityService.logSearch(currentUser.id, searchQuery, 'ai');
         }
-      }
-      
-      const platformBusinessesWithReviews = await Promise.all(
-        platformBusinesses.map(async (business) => {
-          try {
-            console.log(`📝 Fetching reviews for business: ${business.name} (ID: ${business.id})`);
-            const reviews = await ReviewService.getBusinessReviews(business.id);
-            console.log(`📝 Found ${reviews.length} reviews for ${business.name}`);
-            
-            const formattedReviews = reviews.map(review => ({
-              text: review.review_text || 'No review text available',
-              author: review.profiles?.name || 'Anonymous',
-              authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
-              images: (review.image_urls || []).map(url => ({ url })),
-              thumbsUp: review.rating >= 4
-            }));
-            
-            console.log(`📝 Formatted ${formattedReviews.length} reviews for ${business.name}:`, formattedReviews);
-            
-            const businessWithReviews = {
+        
+        try {
+          // Calculate how many AI businesses we need (max 4 total cards)
+          const numAINeeded = Math.max(0, 15 - platformBusinesses.length); // Get more for better ranking
+          
+          // Always try to get AI results for better ranking diversity
+          console.log(`🤖 Getting ${numAINeeded} AI businesses for enhanced ranking`);
+          
+          // Prepare the AI prompt with context about existing results
+          const aiPrompt = platformBusinesses.length > 0 
+            ? `Find businesses similar to "${searchQuery}". I already have ${platformBusinesses.length} results, so provide ${numAINeeded} different but related businesses that match this search intent.`
+            : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
+
+          const response = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ 
+              prompt: aiPrompt,
+              searchQuery: searchQuery,
+              existingResultsCount: platformBusinesses.length,
+              numToGenerate: numAINeeded,
+              latitude: latitude,   // Pass user's latitude from hook
+              longitude: longitude  // Pass user's longitude from hook
+            })
+          }, 25000); // 25 second timeout for AI business search
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('AI search API error:', response.status, errorText);
+            throw new Error(`AI search failed: ${response.status} - ${errorText}`);
+          }
+          
+          const data = await response.json();
+          console.log('🎯 AI search response:', data);
+          
+          if (data.success && data.results) {
+            // Combine platform businesses with AI-generated businesses
+            const aiGeneratedBusinesses = data.results.map(business => ({
               ...business,
+              // Ensure all required fields are present
               id: business.id || `ai-${Date.now()}-${Math.random()}`,
               rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
               image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
               isOpen: business.isOpen !== undefined ? business.isOpen : true,
-              reviews: formattedReviews,
-              isPlatformBusiness: true,
-              tags: business.tags || [],
-              distance: business.distance || 999999,
-              duration: business.duration || 999999,
-              similarity: business.similarity || 0
-            };
+              hours: business.hours || 'Hours unavailable',
+              address: business.address || 'Address not available',
+              distance: business.distance || Math.round((Math.random() * 4 + 1) * 10) / 10, // Ensure distance is present
+              duration: business.duration || Math.floor(Math.random() * 10 + 5), // Ensure duration is present
+              reviews: business.reviews || [],
+              isPlatformBusiness: false,
+              similarity: business.similarity || 0.8 // Default high similarity for AI businesses
+            }));
             
-            console.log(`📝 Business with reviews created for ${business.name}:`, {
-              name: businessWithReviews.name,
-              reviewCount: businessWithReviews.reviews.length,
-              isPlatformBusiness: businessWithReviews.isPlatformBusiness
+            console.log(`🤖 AI enhanced search results for: ${searchQuery} (${aiGeneratedBusinesses.length} AI businesses)`);
+            
+            // Step 4: Combine and deduplicate results
+            console.log('🔄 Combining results: Platform =', platformBusinesses.length, ', AI =', aiGeneratedBusinesses.length);
+            
+            // Combine all businesses for de-duplication
+            let combinedBusinesses = [...platformBusinesses, ...aiGeneratedBusinesses];
+            
+            // De-duplicate businesses with robust property merging
+            const uniqueBusinessesMap = new Map();
+            combinedBusinesses.forEach(business => {
+              // Use name-address combination for more reliable de-duplication
+              const key = `${business.name.toLowerCase().trim()}-${(business.address || '').toLowerCase().trim()}`;
+              
+              if (uniqueBusinessesMap.has(key)) {
+                const existingBusinessInMap = uniqueBusinessesMap.get(key)!;
+                const currentBusiness = business; // Renaming for clarity
+
+                // --- ADDED LOGGING FOR DIAGNOSIS ---
+                console.log("--- MERGE DIAGNOSIS ---");
+                console.log("🔁 Merging:", currentBusiness.name);
+                console.log("  Existing in map (reviews, isPlatform):", existingBusinessInMap.reviews?.length, existingBusinessInMap.isPlatformBusiness);
+                console.log("  Current business (reviews, isPlatform):", currentBusiness.reviews?.length, currentBusiness.isPlatformBusiness);
+                // --- END ADDED LOGGING ---
+
+                // 1. Determine if the merged business should be considered a platform business
+                // It's a platform business if either the existing one or the current one is
+                const isMergedPlatformBusiness = existingBusinessInMap.isPlatformBusiness || currentBusiness.isPlatformBusiness;
+                
+                // 2. Perform a general merge, prioritizing properties from currentBusiness
+                let mergedBusiness = { ...existingBusinessInMap, ...currentBusiness };
+                
+                // 3. Explicitly set isPlatformBusiness to ensure it's not overwritten incorrectly
+                mergedBusiness.isPlatformBusiness = isMergedPlatformBusiness;
+                
+                // 4. Preserve important flags
+                mergedBusiness.isExactMatch = existingBusinessInMap.isExactMatch || currentBusiness.isExactMatch;
+                
+                // 5. Explicitly handle the 'reviews' property to ensure platform reviews are preserved
+                // Prioritize reviews from the business that is a platform business and has reviews
+                if (existingBusinessInMap.isPlatformBusiness && existingBusinessInMap.reviews && existingBusinessInMap.reviews.length > 0) {
+                  console.log('🔄 [MERGE] Using existing platform reviews:', existingBusinessInMap.reviews.length, 'reviews');
+                  mergedBusiness.reviews = existingBusinessInMap.reviews;
+                } else if (currentBusiness.isPlatformBusiness && currentBusiness.reviews && currentBusiness.reviews.length > 0) {
+                  console.log('🔄 [MERGE] Using current platform reviews:', currentBusiness.reviews.length, 'reviews');
+                  mergedBusiness.reviews = currentBusiness.reviews;
+                } else if (existingBusinessInMap.reviews && existingBusinessInMap.reviews.length > 0) {
+                  console.log('🔄 [MERGE] Using existing non-platform reviews:', existingBusinessInMap.reviews.length, 'reviews');
+                  mergedBusiness.reviews = existingBusinessInMap.reviews;
+                } else if (currentBusiness.reviews && currentBusiness.reviews.length > 0) {
+                  console.log('🔄 [MERGE] Using current non-platform reviews:', currentBusiness.reviews.length, 'reviews');
+                  mergedBusiness.reviews = currentBusiness.reviews;
+                } else {
+                  console.log('🔄 [MERGE] No reviews found in either business, defaulting to empty array');
+                  mergedBusiness.reviews = [];
+                }
+                
+                // --- END OF CRITICAL FIX ---
+                
+                console.log('✅ Final merged reviews count:', mergedBusiness.reviews?.length);
+                console.log('🔄 [MERGE] Final merged isExactMatch:', mergedBusiness.isExactMatch, ', isPlatformBusiness:', mergedBusiness.isPlatformBusiness, ', reviews:', mergedBusiness.reviews?.length || 0);
+                uniqueBusinessesMap.set(key, mergedBusiness);
+              } else {
+                console.log('🔄 [NEW] Adding new business:', business.name, '(isExactMatch:', business.isExactMatch, ', reviews:', business.reviews?.length || 0, ')');
+                uniqueBusinessesMap.set(key, business);
+              }
             });
+            uniqueBusinesses = Array.from(uniqueBusinessesMap.values());
+            console.log(`🔄 De-duplication: ${combinedBusinesses.length} total → ${uniqueBusinesses.length} unique businesses`);
             
-            return businessWithReviews;
-          } catch (error) {
-            console.error(`❌ Error fetching reviews for business ${business.id}:`, error);
-            return {
-              ...business,
-              reviews: []
-            };
+            // Debug: Show which businesses have isExactMatch flag after de-duplication
+            const exactMatchesAfterDedup = uniqueBusinesses.filter(b => b.isExactMatch);
+            console.log(`🎯 Exact matches after de-duplication: ${exactMatchesAfterDedup.length}`, exactMatchesAfterDedup.map(b => b.name));
+            
+            // Apply new dynamic search algorithm
+            console.log('🔍 Applying dynamic search algorithm to', uniqueBusinesses.length, 'businesses');
+            const rankedBusinesses = applyDynamicSearchAlgorithm(uniqueBusinesses, latitude, longitude);
+            
+            setResults(rankedBusinesses);
+            console.log('✅ Dynamic search algorithm results:', rankedBusinesses.length, 'businesses (from', uniqueBusinesses.length, 'unique)');
+            
+            trackEvent('search_performed', { 
+              query: searchQuery, 
+              used_ai: needsAIAugmentation,
+              used_semantic: false,
+              credits_deducted: creditsRequired,
+              results_count: rankedBusinesses.length,
+              platform_results: platformBusinesses.length,
+              ai_results: aiGeneratedBusinesses.length,
+              duplicates_removed: combinedBusinesses.length - uniqueBusinesses.length
+            });
+          } else {
+            console.error('AI search failed:', data);
+            throw new Error(data.error || data.message || 'Failed to get AI business suggestions');
           }
-        })
-      );
-      
-      // Update platformBusinesses with reviews
-      console.log('✅ Reviews fetched for platform businesses');
-    } catch (error) {
-      console.error('Search error:', error);
-    } finally {
-      setIsSearching(false);
-      setShowResults(true);
-      setInitialResultsLoaded(true);
+        } catch (aiError) {
+          console.error('AI search error:', aiError);
+          console.log('🔄 Falling back to platform-only results');
+          
+          // Show error message to user
+          setShowCreditWarning(true);
+          
+          // Apply dynamic search algorithm to platform-only results
+          const rankedFallbackResults = applyDynamicSearchAlgorithm(platformBusinesses, latitude, longitude);
+          
+          // Add exact match to the beginning if found and not already included
+          let finalResults = rankedFallbackResults;
+          if (exactMatchBusiness) {
+            const exactMatchExists = rankedFallbackResults.some(b => b.id === exactMatchBusiness.id);
+            if (!exactMatchExists) {
+              console.log('🎯 [EXACT MATCH] Adding to top of results:', exactMatchBusiness.name);
+              finalResults = [exactMatchBusiness, ...rankedFallbackResults];
+            } else {
+              console.log('🎯 [EXACT MATCH] Already in results, ensuring top position');
+              // Remove from current position and add to top
+              const filteredResults = rankedFallbackResults.filter(b => b.id !== exactMatchBusiness.id);
+              finalResults = [exactMatchBusiness, ...filteredResults];
+            }
+          }
+          
+          setResults(finalResults);
+          console.log('✅ Final search results:', finalResults.length, 'businesses (from', uniqueBusinesses.length, 'unique)');
+          if (exactMatchBusiness) {
+            console.log('🎯 [EXACT MATCH] Prioritized at top:', exactMatchBusiness.name, `(${exactMatchBusiness.distance?.toFixed(1) || 'unknown'} miles)`);
+          }
+          console.log('✅ Fallback dynamic search results:', rankedFallbackResults.length, 'businesses');
+          trackEvent('search_performed', { 
+            query: searchQuery, 
+            used_ai: false, 
+            credits_deducted: creditsRequired,
+            results_count: finalResults.length,
+            duplicates_removed: combinedBusinesses.length - uniqueBusinesses.length,
+            exact_match_found: !!exactMatchBusiness
+          });
+        }
+      } else {
+        // De-duplicate platform-only results before ranking
+        const uniquePlatformResults = platformBusinesses.filter((business, index, self) => 
+          index === self.findIndex(b => b.id === business.id)
+        );
+        
+        // Log search activity for platform-only searches
+        if (currentUser && currentUser.id) {
+          ActivityService.logSearch(currentUser.id, searchQuery, 'semantic');
+        }
+        
+        console.log(`🔄 Platform-only de-duplication: ${platformBusinesses.length} total → ${uniquePlatformResults.length} unique businesses`);
+        
+        // Apply dynamic search algorithm to platform-only results
+        console.log('🔍 Applying dynamic search algorithm to', uniquePlatformResults.length, 'businesses');
+        const rankedPlatformResults = applyDynamicSearchAlgorithm(uniquePlatformResults, latitude, longitude);
+        
+        // Add exact match to the beginning if found and not already included
+        let finalPlatformResults = rankedPlatformResults;
+        if (exactMatchBusiness) {
+          const exactMatchExists = rankedPlatformResults.some(b => b.id === exactMatchBusiness.id);
+          if (!exactMatchExists) {
+            console.log('🎯 [EXACT MATCH] Adding to top of platform-only results:', exactMatchBusiness.name);
+            finalPlatformResults = [exactMatchBusiness, ...rankedPlatformResults];
+          } else {
+            console.log('🎯 [EXACT MATCH] Already in platform results, ensuring top position');
+            // Remove from current position and add to top
+            const filteredResults = rankedPlatformResults.filter(b => b.id !== exactMatchBusiness.id);
+            finalPlatformResults = [exactMatchBusiness, ...filteredResults];
+          }
+        }
+        
+        setResults(finalPlatformResults);
+        console.log('📊 Final platform-only results:', finalPlatformResults.length, 'businesses for:', searchQuery);
+        if (exactMatchBusiness) {
+          console.log('🎯 [EXACT MATCH] Prioritized at top:', exactMatchBusiness.name, `(${exactMatchBusiness.distance?.toFixed(1) || 'unknown'} miles)`);
+        }
+        trackEvent('search_performed', { 
+          query: searchQuery, 
+          used_ai: false,
+          used_semantic: true,
+          results_count: finalPlatformResults.length,
+          duplicates_removed: platformBusinesses.length - uniquePlatformResults.length,
+          exact_match_found: !!exactMatchBusiness
+        });
+      }
     }
+    
+    setIsSearching(false);
+    setShowResults(true);
+    setInitialResultsLoaded(true);
   };
 
   // Dynamic Search Algorithm Implementation

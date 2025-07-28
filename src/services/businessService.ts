@@ -352,6 +352,8 @@ export class BusinessService {
     userLongitude?: number;
   }): Promise<Business[]> {
     try {
+      console.log('🔍 BusinessService.getBusinesses called with filters:', filters);
+      
       let query = supabase
         .from('businesses')
         .select('*');
@@ -371,6 +373,7 @@ export class BusinessService {
       }
       
       if (filters?.search) {
+        console.log('🔍 Applying search filter for:', filters.search);
         // Build search conditions array to avoid malformed query strings
         const searchConditions = [
           `name.ilike.%${filters.search}%`,
@@ -388,6 +391,7 @@ export class BusinessService {
         query = query.or(searchConditions.join(','));
       }
       
+      console.log('🔍 Executing Supabase query...');
 
       // Execute query
       const { data, error } = await query;
@@ -395,9 +399,11 @@ export class BusinessService {
       if (error) throw error;
       
       let businesses = data || [];
+      console.log('✅ Supabase query returned', businesses.length, 'businesses');
       
       // Calculate accurate distances if user location is provided
       if (filters?.userLatitude && filters?.userLongitude && businesses.length > 0) {
+        console.log('📏 Calculating distances for', businesses.length, 'businesses');
         try {
           businesses = await this.calculateBusinessDistances(
             businesses,
@@ -406,6 +412,7 @@ export class BusinessService {
           );
         } catch (distanceError) {
           console.warn('Distance calculation failed, using fallback values:', distanceError);
+          console.warn('⚠️ Distance calculation failed, using fallback values:', distanceError);
           // Add fallback distance/duration values - mark as very far to be filtered out
           businesses = businesses.map(business => ({
             ...business,
@@ -415,6 +422,7 @@ export class BusinessService {
         }
       } else {
         // Add fallback distance/duration values when no user location - mark as very far
+        console.log('⚠️ No user location provided, using fallback distance values');
         businesses = businesses.map(business => ({
           ...business,
           distance: 999999, // Mark as very far to be filtered out by 10-mile cap
@@ -422,8 +430,13 @@ export class BusinessService {
         }));
       }
       
+      console.log('📊 Final businesses with distances:', businesses.map(b => ({
+        name: b.name,
+        distance: b.distance
+      })));
       return businesses;
     } catch (error) {
+      console.error('❌ Error in getBusinesses:', error);
       return [];
     }
   }
