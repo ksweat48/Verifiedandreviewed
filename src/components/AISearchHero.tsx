@@ -1300,20 +1300,53 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               </div>
             </div>
           )}
-          
-          {showResults && results.length === 0 && !isSearching && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Icons.Search className="h-8 w-8 text-neutral-400" />
-              </div>
-              <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
-                No businesses found
-              </h3>
-              <p className="font-lora text-neutral-600 mb-4">
-                Try adjusting your search terms or location.
-              </p>
-            </div>
-          )}
+
+          const isPlatform = business.isPlatformBusiness;
+
+          let cardBusiness;
+
+          if (isPlatform) {
+            // For Platform Businesses, rating is an object
+            cardBusiness = {
+              ...business,
+              image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+              rating: {
+                thumbsUp: business.thumbs_up ?? 0,
+                thumbsDown: business.thumbs_down ?? 0,
+                sentimentScore: business.sentiment_score ?? 0,
+              },
+              reviews: business.reviews || [],
+              isPlatformBusiness: true,
+              address: business.address || business.location || '',
+              location: business.location || business.address || '',
+              isOpen: business.isOpen ?? true,
+            };
+          } else {
+            // For AI Businesses, rating is a number
+            cardBusiness = {
+              ...business,
+              image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+              rating: business.rating, // This should already be a number from the AI search function
+              reviews: business.reviews || [], // Ensure reviews is an array
+              isPlatformBusiness: false,
+              // Other properties like address, location, isOpen should already be correctly formatted by the AI search function
+            };
+          }
+
+          return isPlatform ? (
+            <PlatformBusinessCard
+              key={cardBusiness.id}
+              business={cardBusiness}
+              onRecommend={handleRecommend}
+              onTakeMeThere={handleTakeMeThere}
+            />
+          ) : (
+            <AIBusinessCard
+              key={cardBusiness.id} // Use cardBusiness.id here too
+              business={cardBusiness} // Pass the standardized cardBusiness
+              onRecommend={handleRecommend}
+            />
+          );
         </div>
       </div>
     </div>
