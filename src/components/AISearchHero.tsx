@@ -369,38 +369,40 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 const key = `${business.name.toLowerCase().trim()}-${(business.address || '').toLowerCase().trim()}`;
                 
                 if (uniqueBusinessesMap.has(key)) {
-                  const existingBusiness = uniqueBusinessesMap.get(key);
+                  const existingBusinessInMap = uniqueBusinessesMap.get(key)!;
                   const currentBusiness = business; // Renaming for clarity
-                  console.log(`🔄 [MERGE] Merging duplicate business: ${business.name}`);
-                  console.log(`🔄 [MERGE] Existing isExactMatch: ${existingBusiness.isExactMatch}, isPlatformBusiness: ${existingBusiness.isPlatformBusiness}, reviews: ${existingBusiness.reviews?.length || 0}`);
-                  console.log(`🔄 [MERGE] Current isExactMatch: ${currentBusiness.isExactMatch}, isPlatformBusiness: ${currentBusiness.isPlatformBusiness}, reviews: ${currentBusiness.reviews?.length || 0}`);
-                  
-                  // --- START OF CRITICAL FIX ---
-                  
+
+                  // --- ADDED LOGGING FOR DIAGNOSIS ---
+                  console.log("--- MERGE DIAGNOSIS ---");
+                  console.log("🔁 Merging:", currentBusiness.name);
+                  console.log("  Existing in map (reviews, isPlatform):", existingBusinessInMap.reviews?.length, existingBusinessInMap.isPlatformBusiness);
+                  console.log("  Current business (reviews, isPlatform):", currentBusiness.reviews?.length, currentBusiness.isPlatformBusiness);
+                  // --- END ADDED LOGGING ---
+
                   // 1. Determine if the merged business should be considered a platform business
                   // It's a platform business if either the existing one or the current one is
-                  const isMergedPlatformBusiness = existingBusiness.isPlatformBusiness || currentBusiness.isPlatformBusiness;
+                  const isMergedPlatformBusiness = existingBusinessInMap.isPlatformBusiness || currentBusiness.isPlatformBusiness;
                   
                   // 2. Perform a general merge, prioritizing properties from currentBusiness
-                  let mergedBusiness = { ...existingBusiness, ...currentBusiness };
+                  let mergedBusiness = { ...existingBusinessInMap, ...currentBusiness };
                   
                   // 3. Explicitly set isPlatformBusiness to ensure it's not overwritten incorrectly
                   mergedBusiness.isPlatformBusiness = isMergedPlatformBusiness;
                   
                   // 4. Preserve important flags
-                  mergedBusiness.isExactMatch = existingBusiness.isExactMatch || currentBusiness.isExactMatch;
+                  mergedBusiness.isExactMatch = existingBusinessInMap.isExactMatch || currentBusiness.isExactMatch;
                   
                   // 5. Explicitly handle the 'reviews' property to ensure platform reviews are preserved
                   // Prioritize reviews from the business that is a platform business and has reviews
-                  if (existingBusiness.isPlatformBusiness && existingBusiness.reviews && existingBusiness.reviews.length > 0) {
-                    console.log('🔄 [MERGE] Using existing platform reviews:', existingBusiness.reviews.length, 'reviews');
-                    mergedBusiness.reviews = existingBusiness.reviews;
+                  if (existingBusinessInMap.isPlatformBusiness && existingBusinessInMap.reviews && existingBusinessInMap.reviews.length > 0) {
+                    console.log('🔄 [MERGE] Using existing platform reviews:', existingBusinessInMap.reviews.length, 'reviews');
+                    mergedBusiness.reviews = existingBusinessInMap.reviews;
                   } else if (currentBusiness.isPlatformBusiness && currentBusiness.reviews && currentBusiness.reviews.length > 0) {
                     console.log('🔄 [MERGE] Using current platform reviews:', currentBusiness.reviews.length, 'reviews');
                     mergedBusiness.reviews = currentBusiness.reviews;
-                  } else if (existingBusiness.reviews && existingBusiness.reviews.length > 0) {
-                    console.log('🔄 [MERGE] Using existing non-platform reviews:', existingBusiness.reviews.length, 'reviews');
-                    mergedBusiness.reviews = existingBusiness.reviews;
+                  } else if (existingBusinessInMap.reviews && existingBusinessInMap.reviews.length > 0) {
+                    console.log('🔄 [MERGE] Using existing non-platform reviews:', existingBusinessInMap.reviews.length, 'reviews');
+                    mergedBusiness.reviews = existingBusinessInMap.reviews;
                   } else if (currentBusiness.reviews && currentBusiness.reviews.length > 0) {
                     console.log('🔄 [MERGE] Using current non-platform reviews:', currentBusiness.reviews.length, 'reviews');
                     mergedBusiness.reviews = currentBusiness.reviews;
