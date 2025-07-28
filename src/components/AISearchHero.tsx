@@ -221,6 +221,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // For now, we'll proceed with the default location in the Netlify function
     }
     
+    // Declare variables that will be used across different scopes
+    let semanticSearchResults: any[] = [];
+    let uniqueBusinesses: any[] = [];
+    
     setIsSearching(true);
     
     // Enter app mode
@@ -230,8 +234,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     window.history.pushState({ appMode: true }, '', window.location.pathname + '#app-mode');
     
     // Step 1: Check for exact business name match first (no distance limits)
-    console.log('🎯 Checking for exact business name match:', searchQuery);
-    let exactMatchBusiness = null;
+      console.log('🔍 Applying dynamic search algorithm to', uniqueBusinesses.length, 'businesses');
+      const rankedBusinesses = applyDynamicSearchAlgorithm(uniqueBusinesses, searchQuery, userLocation);
     try {
       exactMatchBusiness = await BusinessService.getBusinessByName(searchQuery.trim());
       if (exactMatchBusiness) {
@@ -287,7 +291,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         } else {
           console.log('⚠️ Semantic search failed or no results, falling back to traditional search');
           console.log('Semantic search error:', semanticResult.error);
-        }
+          semanticSearchResults = semanticResults.results;
       }
       
       // Fallback to traditional search if semantic search failed or unavailable
@@ -546,7 +550,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 console.log('🎯 [EXACT MATCH] Already in results, ensuring top position');
                 // Remove from current position and add to top
                 const filteredResults = rankedFallbackResults.filter(b => b.id !== exactMatchBusiness.id);
-                finalResults = [exactMatchBusiness, ...filteredResults];
+          const enrichedPlatformBusinesses = await enrichPlatformBusinessesWithReviews(semanticSearchResults);
               }
             }
             
@@ -579,11 +583,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           console.log(`🔄 Platform-only de-duplication: ${transformedBusinesses.length} total → ${uniquePlatformResults.length} unique businesses`);
           
           // Apply dynamic search algorithm to platform-only results
-          const rankedPlatformResults = applyDynamicSearchAlgorithm(uniquePlatformResults, latitude, longitude);
+          const uniqueBusinesses = deduplicateBusinesses(combinedBusinesses);
           
           // Add exact match to the beginning if found and not already included
-          let finalPlatformResults = rankedPlatformResults;
-          if (exactMatchBusiness) {
+          console.log('🔍 Applying dynamic search algorithm to', uniqueBusinesses.length, 'businesses');
+          const rankedBusinesses = applyDynamicSearchAlgorithm(uniqueBusinesses, searchQuery, userLocation);
             const exactMatchExists = rankedPlatformResults.some(b => b.id === exactMatchBusiness.id);
             if (!exactMatchExists) {
               console.log('🎯 [EXACT MATCH] Adding to top of platform-only results:', exactMatchBusiness.name);
@@ -605,7 +609,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             query: searchQuery, 
             used_ai: false,
             used_semantic: usedSemanticSearch,
-            credits_deducted: creditsRequired,
+          setSearchResults(uniqueBusinesses);
             results_count: finalPlatformResults.length,
             duplicates_removed: transformedBusinesses.length - uniquePlatformResults.length,
             exact_match_found: !!exactMatchBusiness
@@ -662,7 +666,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       );
       
       // Update platformBusinesses with reviews
-      platformBusinesses = platformBusinessesWithReviews;
+      setSearchResults(uniqueBusinesses);
       console.log('✅ Reviews fetched for platform businesses');
     } catch (error) {
       console.error('Search error:', error);
