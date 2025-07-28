@@ -6,6 +6,7 @@ interface BusinessCard {
   id: string;
   name: string;
   address: string;
+  image: string;
   shortDescription?: string;
   rating: number;
   hours?: string;
