@@ -543,41 +543,69 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 // It's a platform business if either the existing one or the current one is
                 const isMergedPlatformBusiness = existingBusinessInMap.isPlatformBusiness || currentBusiness.isPlatformBusiness;
                 
-                // 2. Perform a general merge, prioritizing properties from currentBusiness
-                let mergedBusiness = { ...existingBusinessInMap, ...currentBusiness };
+                // 2. Determine which business has the most complete data
+                // Priority: Platform business with reviews > Platform business > Business with reviews > Any business
+                let primaryBusiness, secondaryBusiness;
                 
-                // 3. Explicitly set isPlatformBusiness to ensure it's not overwritten incorrectly
-                mergedBusiness.isPlatformBusiness = isMergedPlatformBusiness;
-                
-                // 4. Preserve important flags
-                mergedBusiness.isExactMatch = existingBusinessInMap.isExactMatch || currentBusiness.isExactMatch;
-                
-                // 5. Explicitly handle the 'reviews' property to ensure platform reviews are preserved
-                // Prioritize reviews from the business that is a platform business and has reviews
-                if (existingBusinessInMap.isPlatformBusiness && existingBusinessInMap.reviews && existingBusinessInMap.reviews.length > 0) {
-                  console.log('🔄 [MERGE] Using existing platform reviews:', existingBusinessInMap.reviews.length, 'reviews');
-                  mergedBusiness.reviews = existingBusinessInMap.reviews;
-                } else if (currentBusiness.isPlatformBusiness && currentBusiness.reviews && currentBusiness.reviews.length > 0) {
-                  console.log('🔄 [MERGE] Using current platform reviews:', currentBusiness.reviews.length, 'reviews');
-                  mergedBusiness.reviews = currentBusiness.reviews;
-                } else if (existingBusinessInMap.reviews && existingBusinessInMap.reviews.length > 0) {
-                  console.log('🔄 [MERGE] Using existing non-platform reviews:', existingBusinessInMap.reviews.length, 'reviews');
-                  mergedBusiness.reviews = existingBusinessInMap.reviews;
-                } else if (currentBusiness.reviews && currentBusiness.reviews.length > 0) {
-                  console.log('🔄 [MERGE] Using current non-platform reviews:', currentBusiness.reviews.length, 'reviews');
-                  mergedBusiness.reviews = currentBusiness.reviews;
+                if (existingBusinessInMap.isPlatformBusiness && existingBusinessInMap.reviews?.length > 0) {
+                  primaryBusiness = existingBusinessInMap;
+                  secondaryBusiness = currentBusiness;
+                  console.log('🔄 [MERGE] Existing business is platform with reviews - using as primary');
+                } else if (currentBusiness.isPlatformBusiness && currentBusiness.reviews?.length > 0) {
+                  primaryBusiness = currentBusiness;
+                  secondaryBusiness = existingBusinessInMap;
+                  console.log('🔄 [MERGE] Current business is platform with reviews - using as primary');
+                } else if (existingBusinessInMap.isPlatformBusiness) {
+                  primaryBusiness = existingBusinessInMap;
+                  secondaryBusiness = currentBusiness;
+                  console.log('🔄 [MERGE] Existing business is platform - using as primary');
+                } else if (currentBusiness.isPlatformBusiness) {
+                  primaryBusiness = currentBusiness;
+                  secondaryBusiness = existingBusinessInMap;
+                  console.log('🔄 [MERGE] Current business is platform - using as primary');
+                } else if (existingBusinessInMap.reviews?.length > 0) {
+                  primaryBusiness = existingBusinessInMap;
+                  secondaryBusiness = currentBusiness;
+                  console.log('🔄 [MERGE] Existing business has reviews - using as primary');
+                } else if (currentBusiness.reviews?.length > 0) {
+                  primaryBusiness = currentBusiness;
+                  secondaryBusiness = existingBusinessInMap;
+                  console.log('🔄 [MERGE] Current business has reviews - using as primary');
                 } else {
-                  console.log('🔄 [MERGE] No reviews found in either business, defaulting to empty array');
-                  mergedBusiness.reviews = [];
+                  primaryBusiness = existingBusinessInMap;
+                  secondaryBusiness = currentBusiness;
+                  console.log('🔄 [MERGE] No clear priority - using existing as primary');
                 }
                 
-                // --- END OF CRITICAL FIX ---
+                // 3. Merge businesses with primary taking precedence for critical data
+                let mergedBusiness = {
+                  ...secondaryBusiness, // Start with secondary as base
+                  ...primaryBusiness,   // Override with primary data
+                  // Explicitly preserve critical properties
+                  isPlatformBusiness: isMergedPlatformBusiness,
+                  isExactMatch: existingBusinessInMap.isExactMatch || currentBusiness.isExactMatch,
+                  reviews: primaryBusiness.reviews || secondaryBusiness.reviews || [],
+                  // Preserve the best available data for each field
+                  similarity: Math.max(existingBusinessInMap.similarity || 0, currentBusiness.similarity || 0),
+                  distance: Math.min(existingBusinessInMap.distance || 999999, currentBusiness.distance || 999999),
+                  duration: Math.min(existingBusinessInMap.duration || 999999, currentBusiness.duration || 999999)
+                };
                 
-                console.log('✅ Final merged reviews count:', mergedBusiness.reviews?.length);
-                console.log('🔄 [MERGE] Final merged isExactMatch:', mergedBusiness.isExactMatch, ', isPlatformBusiness:', mergedBusiness.isPlatformBusiness, ', reviews:', mergedBusiness.reviews?.length || 0);
+                console.log('🔄 [MERGE] Final merged business:', {
+                  name: mergedBusiness.name,
+                  isPlatformBusiness: mergedBusiness.isPlatformBusiness,
+                  reviewsCount: mergedBusiness.reviews?.length || 0,
+                  isExactMatch: mergedBusiness.isExactMatch,
+                  similarity: mergedBusiness.similarity
+                });
+                
                 uniqueBusinessesMap.set(key, mergedBusiness);
               } else {
-                console.log('🔄 [NEW] Adding new business:', business.name, '(isExactMatch:', business.isExactMatch, ', reviews:', business.reviews?.length || 0, ')');
+                console.log('🔄 [NEW] Adding new business:', business.name, {
+                  isExactMatch: business.isExactMatch,
+                  isPlatformBusiness: business.isPlatformBusiness,
+                  reviewsCount: business.reviews?.length || 0
+                });
                 uniqueBusinessesMap.set(key, business);
               }
             });
