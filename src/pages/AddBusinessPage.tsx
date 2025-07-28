@@ -5,6 +5,7 @@ import { BusinessService } from '../services/businessService';
 import { useAuth } from '../hooks/useAuth';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { supabase } from '../services/supabaseClient';
+import { resizeImage } from '../utils/imageResizer';
 
 interface UploadedImage {
   file: File | null;
@@ -218,20 +219,38 @@ export default function AddBusinessPage() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'gallery') => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    if (type === 'cover' && files[0]) {
-      const file = files[0];
-      setCoverImage({
-        file,
-        preview: URL.createObjectURL(file)
-      });
-    } else if (type === 'gallery') {
-      const newImages: UploadedImage[] = Array.from(files).map(file => ({
-        file,
-        preview: URL.createObjectURL(file)
-      }));
-      setGalleryImages(prev => [...prev, ...newImages]);
+    const processImages = async () => {
+      try {
+        if (type === 'cover' && files[0]) {
+          console.log('📤 Resizing cover image...');
+          const resizedFile = await resizeImage(files[0], 1200, 800, 0.8); // Max 1200px width, 800px height, 80% quality
+          setCoverImage({
+            file: resizedFile,
+            preview: URL.createObjectURL(resizedFile)
+          });
+          console.log('✅ Cover image resized successfully');
+        } else if (type === 'gallery') {
+          console.log('📤 Resizing gallery images...');
+          const newImages: UploadedImage[] = [];
+          for (const file of Array.from(files)) {
+            const resizedFile = await resizeImage(file, 800, 600, 0.7); // Max 800px width, 600px height, 70% quality
+            newImages.push({
+              file: resizedFile,
+              preview: URL.createObjectURL(resizedFile)
+            });
+          }
+          setGalleryImages(prev => [...prev, ...newImages]);
+          console.log('✅ Gallery images resized successfully');
+        }
+      } catch (error) {
+        console.error('Error resizing image:', error);
+        alert('Failed to process image. Please try a different file or a smaller image.');
+      }
+    };
+    
+    processImages();
     }
   };
 
