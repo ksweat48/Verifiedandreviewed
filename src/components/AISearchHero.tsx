@@ -373,38 +373,27 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   console.log(`🔄 [MERGE] Merging duplicate business: ${business.name}`);
                   console.log(`🔄 [MERGE] Existing isExactMatch: ${existingBusiness.isExactMatch}, isPlatformBusiness: ${existingBusiness.isPlatformBusiness}`);
                   console.log(`🔄 [MERGE] Current isExactMatch: ${business.isExactMatch}, isPlatformBusiness: ${business.isPlatformBusiness}`);
-                  console.log(`🔄 [MERGE] Existing reviews: ${existingBusiness.reviews?.length || 0}, Current reviews: ${business.reviews?.length || 0}`);
                   
                   // Merge properties, prioritizing exact match and platform business flags
-                  let mergedBusiness = {
+                  const mergedBusiness = {
                     ...existingBusiness, // Start with existing properties
                     ...business,        // Overlay with current business properties
                     isExactMatch: existingBusiness.isExactMatch || business.isExactMatch, // Preserve true if either is true
                     isPlatformBusiness: existingBusiness.isPlatformBusiness || business.isPlatformBusiness, // Preserve true if either is true
                   };
                   
-                  // ✅ EXPLICIT REVIEW PRESERVATION: Platform reviews take absolute priority
-                  if (existingBusiness.isPlatformBusiness && existingBusiness.reviews && existingBusiness.reviews.length > 0) {
-                    console.log(`🔄 [MERGE] Using existing platform reviews: ${existingBusiness.reviews.length} reviews`);
+                  // Explicitly preserve reviews from platform business
+                  if (existingBusiness.reviews?.length > 0) {
                     mergedBusiness.reviews = existingBusiness.reviews;
-                  } else if (business.isPlatformBusiness && business.reviews && business.reviews.length > 0) {
-                    console.log(`🔄 [MERGE] Using current platform reviews: ${business.reviews.length} reviews`);
-                    mergedBusiness.reviews = business.reviews;
-                  } else if (existingBusiness.reviews && existingBusiness.reviews.length > 0) {
-                    console.log(`🔄 [MERGE] Using existing reviews: ${existingBusiness.reviews.length} reviews`);
-                    mergedBusiness.reviews = existingBusiness.reviews;
-                  } else if (business.reviews && business.reviews.length > 0) {
-                    console.log(`🔄 [MERGE] Using current reviews: ${business.reviews.length} reviews`);
+                  } else if (business.reviews?.length > 0) {
                     mergedBusiness.reviews = business.reviews;
                   } else {
-                    console.log(`🔄 [MERGE] No reviews found, defaulting to empty array`);
                     mergedBusiness.reviews = [];
                   }
                   
-                  console.log(`✅ Final merged reviews count: ${mergedBusiness.reviews?.length || 0}`);
+                  console.log("✅ Final merged reviews count:", mergedBusiness.reviews?.length);
                   console.log(`🔄 [MERGE] Final merged isExactMatch: ${mergedBusiness.isExactMatch}, isPlatformBusiness: ${mergedBusiness.isPlatformBusiness}`);
-                  console.log(`🔄 [MERGE] Final merged reviews count: ${mergedBusiness.reviews?.length || 0}`);
-                  
+                  console.log('🔄 [MERGE] Final merged reviews count:', mergedBusiness.reviews?.length || 0);
                   uniqueBusinessesMap.set(key, mergedBusiness);
                 } else {
                   console.log(`🔄 [NEW] Adding new business: ${business.name} (isExactMatch: ${business.isExactMatch})`);
@@ -417,6 +406,14 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               // Debug: Show which businesses have isExactMatch flag after de-duplication
               const exactMatchesAfterDedup = uniqueBusinesses.filter(b => b.isExactMatch);
               console.log(`🎯 Exact matches after de-duplication: ${exactMatchesAfterDedup.length}`, exactMatchesAfterDedup.map(b => b.name));
+              
+              // ✅ VALIDATION: Check that platform businesses still have reviews after deduplication
+              console.log('🔍 Post-deduplication validation:');
+              uniqueBusinesses.forEach(business => {
+                if (business.isPlatformBusiness) {
+                  console.log(`📝 Platform business "${business.name}" has ${business.reviews?.length || 0} reviews after dedup`);
+                }
+              });
               
               // Apply new dynamic search algorithm
               const rankedResults = applyDynamicSearchAlgorithm(uniqueBusinesses, latitude, longitude);
