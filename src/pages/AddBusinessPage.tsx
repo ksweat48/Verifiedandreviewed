@@ -251,7 +251,6 @@ export default function AddBusinessPage() {
     };
     
     processImages();
-    }
   };
 
   const removeImage = (index: number, type: 'cover' | 'gallery') => {
