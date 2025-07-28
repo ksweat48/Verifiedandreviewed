@@ -80,9 +80,9 @@ export class ActivityService {
         try {
           const errorData = await response.json();
           console.error('Activity logging failed:', errorData);
-        } catch (jsonError) {
-          const errorText = await response.text();
-          console.error('Activity logging failed with non-JSON response:', errorText);
+        } catch {
+          // If JSON parsing fails, the response is likely not JSON
+          console.error('Activity logging failed with non-JSON response');
         }
       }
     } catch (error) {
