@@ -60,7 +60,7 @@ const AIBusinessCard: React.FC<{
             )}
             {business.isGoogleVerified && (
               <span className="font-poppins text-xs text-green-600 font-semibold ml-2">
-                Google Verified
+                Google
               </span>
             )}
           </div>
