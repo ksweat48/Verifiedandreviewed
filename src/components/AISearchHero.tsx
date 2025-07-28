@@ -265,6 +265,36 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             isOpen: business.isOpen !== undefined ? business.isOpen : true, // Default to true if not specified
           };
 
+          
+          // Determine if it's a platform business based on the source or a flag
+          const isPlatform = business.isPlatformBusiness;
+          
+          // Construct the business object to pass to the card component
+          // This ensures all expected properties are present and correctly mapped
+          const cardBusiness = {
+            ...business, // Spread existing properties
+            // Map image_url to image for platform businesses, or use existing image for AI businesses
+            image: business.image_url || business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+            
+            // Map individual rating fields to the nested 'rating' object expected by PlatformBusinessCard
+            rating: {
+              thumbsUp: business.thumbs_up !== undefined ? business.thumbs_up : (business.rating?.thumbsUp || 0),
+              thumbsDown: business.thumbs_down !== undefined ? business.thumbs_down : (business.rating?.thumbsDown || 0),
+              sentimentScore: business.sentiment_score !== undefined ? business.sentiment_score : (business.rating?.sentimentScore || 0),
+            },
+            
+            // Ensure reviews is an array, even if empty
+            reviews: business.reviews || [],
+            
+            // Ensure isPlatformBusiness is explicitly set
+            isPlatformBusiness: isPlatform,
+            
+            // Add other properties that might be missing or named differently
+            address: business.address || business.location || '', // Ensure address is always present
+            location: business.location || business.address || '', // Ensure location is always present
+            isOpen: business.isOpen !== undefined ? business.isOpen : true, // Default to true if not specified
+          };
+          
           return isPlatform ? (
             <PlatformBusinessCard
               key={cardBusiness.id}
@@ -274,15 +304,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             />
           ) : (
             <AIBusinessCard
-              key={business.id}
-              business={business} // AIBusinessCard already expects 'image' and 'rating' in its format
+              key={cardBusiness.id}
+              business={cardBusiness}
               onRecommend={handleRecommend}
             />
           );
           exactMatchBusiness.distance = exactDistance;
           exactMatchBusiness.duration = Math.round(exactDistance * 2); // Rough estimate
           console.log(`📍 [EXACT MATCH] Distance: ${exactDistance.toFixed(1)} miles`);
-        }
+              business={business} // AIBusinessCard already expects 'image' and 'rating' in its format
         
         // Mark as exact match and give highest priority
         exactMatchBusiness.isExactMatch = true;
