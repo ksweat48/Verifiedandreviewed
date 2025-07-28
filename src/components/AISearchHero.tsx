@@ -407,14 +407,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               const exactMatchesAfterDedup = uniqueBusinesses.filter(b => b.isExactMatch);
               console.log(`🎯 Exact matches after de-duplication: ${exactMatchesAfterDedup.length}`, exactMatchesAfterDedup.map(b => b.name));
               
-              // ✅ VALIDATION: Check that platform businesses still have reviews after deduplication
-              console.log('🔍 Post-deduplication validation:');
-              uniqueBusinesses.forEach(business => {
-                if (business.isPlatformBusiness) {
-                  console.log(`📝 Platform business "${business.name}" has ${business.reviews?.length || 0} reviews after dedup`);
-                }
-              });
-              
               // Apply new dynamic search algorithm
               const rankedResults = applyDynamicSearchAlgorithm(uniqueBusinesses, latitude, longitude);
               
