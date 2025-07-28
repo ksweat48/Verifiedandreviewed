@@ -1251,8 +1251,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   console.log("Platform Business object in AISearchHero:", business);
                   
                   // Determine if it's a platform business based on the source or a flag
-                  const isPlatform = business.isPlatformBusiness; // Assuming this flag is reliable
-
+                  const isPlatform = business.isPlatformBusiness;
+                  
                   // Construct the business object to pass to the card component
                   // This ensures all expected properties are present and correctly mapped
                   const cardBusiness = {
@@ -1278,7 +1278,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     location: business.location || business.address || '', // Ensure location is always present
                     isOpen: business.isOpen !== undefined ? business.isOpen : true, // Default to true if not specified
                   };
-
+                  
                   return (
                     <div key={`${business.id}-${businessIndex}`} className={business.isPlatformBusiness ? "sm:col-span-2 lg:col-span-2 flex flex-col h-full" : ""}>
                       {isPlatform ? (
@@ -1290,8 +1290,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                         />
                       ) : (
                         <AIBusinessCard
-                          key={business.id}
-                          business={business} // AIBusinessCard already expects 'image' and 'rating' in its format
+                          key={cardBusiness.id}
+                          business={cardBusiness}
                           onRecommend={handleRecommend}
                         />
                       )}
