@@ -182,9 +182,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             isPlatformBusiness: enrichedBusiness.isPlatformBusiness
           });
           
-          // Set the final search results
-          setSearchResults(uniqueBusinesses);
-          
           enrichedBusinesses.push(enrichedBusiness);
         } catch (error) {
           console.error(`❌ Error enriching business ${business.name} with reviews:`, error);
@@ -226,6 +223,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     // Declare variables that will be used across different scopes
     let semanticSearchResults: any[] = [];
     let uniqueBusinesses: any[] = [];
+    let exactMatchBusiness = null;
     
     setIsSearching(true);
     
@@ -236,8 +234,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     window.history.pushState({ appMode: true }, '', window.location.pathname + '#app-mode');
     
     // Step 1: Check for exact business name match first (no distance limits)
-      console.log('🔍 Applying dynamic search algorithm to', uniqueBusinesses.length, 'businesses');
-      const rankedBusinesses = applyDynamicSearchAlgorithm(uniqueBusinesses, searchQuery, userLocation);
     try {
       exactMatchBusiness = await BusinessService.getBusinessByName(searchQuery.trim());
       if (exactMatchBusiness) {
@@ -293,7 +289,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         } else {
           console.log('⚠️ Semantic search failed or no results, falling back to traditional search');
           console.log('Semantic search error:', semanticResult.error);
-          semanticSearchResults = semanticResults.results;
+        }
       }
       
       // Fallback to traditional search if semantic search failed or unavailable
@@ -425,8 +421,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               }
               console.log("--- END POST-ENRICHMENT VERIFICATION ---");
               
-              const aiBusinesses = semanticSearchResults.results || [];
-
               // --- DEDUPLICATE INPUT VERIFICATION ---
               console.log("--- DEDUPLICATE INPUT VERIFICATION ---");
               const davidaBosticDedupeInput = enrichedPlatformBusinesses.find(b => b.name === 'Davida Bostic Health Coach');
@@ -443,7 +437,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               if (exactMatchBusiness) {
                 combinedBusinesses.push(exactMatchBusiness); // Add exact match first
               }
-              combinedBusinesses.push(...platformBusinesses, ...aiGeneratedBusinesses);
+              combinedBusinesses.push(...enrichedPlatformBusinesses, ...aiGeneratedBusinesses);
               
               // De-duplicate businesses with robust property merging
               const uniqueBusinessesMap = new Map();
@@ -504,7 +498,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   uniqueBusinessesMap.set(key, business);
                 }
               });
-              const uniqueBusinesses = Array.from(uniqueBusinessesMap.values());
+              uniqueBusinesses = Array.from(uniqueBusinessesMap.values());
               console.log(`🔄 De-duplication: ${combinedBusinesses.length} total → ${uniqueBusinesses.length} unique businesses`);
               
               // Debug: Show which businesses have isExactMatch flag after de-duplication
@@ -512,17 +506,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               console.log(`🎯 Exact matches after de-duplication: ${exactMatchesAfterDedup.length}`, exactMatchesAfterDedup.map(b => b.name));
               
               // Apply new dynamic search algorithm
-              const rankedResults = applyDynamicSearchAlgorithm(uniqueBusinesses, latitude, longitude);
+              console.log('🔍 Applying dynamic search algorithm to', uniqueBusinesses.length, 'businesses');
+              const rankedBusinesses = applyDynamicSearchAlgorithm(uniqueBusinesses, latitude, longitude);
               
-              setResults(rankedResults);
-              console.log('✅ Dynamic search algorithm results:', rankedResults.length, 'businesses (from', uniqueBusinesses.length, 'unique)');
+              setResults(rankedBusinesses);
+              console.log('✅ Dynamic search algorithm results:', rankedBusinesses.length, 'businesses (from', uniqueBusinesses.length, 'unique)');
               
               trackEvent('search_performed', { 
                 query: searchQuery, 
                 used_ai: needsAI,
                 used_semantic: usedSemanticSearch,
                 credits_deducted: creditsRequired,
-                results_count: rankedResults.length,
+                results_count: rankedBusinesses.length,
                 platform_results: platformBusinesses.length,
                 ai_results: aiGeneratedBusinesses.length,
                 duplicates_removed: combinedBusinesses.length - uniqueBusinesses.length
@@ -552,7 +547,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 console.log('🎯 [EXACT MATCH] Already in results, ensuring top position');
                 // Remove from current position and add to top
                 const filteredResults = rankedFallbackResults.filter(b => b.id !== exactMatchBusiness.id);
-          const enrichedPlatformBusinesses = await enrichPlatformBusinessesWithReviews(semanticSearchResults);
+                finalResults = [exactMatchBusiness, ...filteredResults];
               }
             }
             
@@ -585,11 +580,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           console.log(`🔄 Platform-only de-duplication: ${transformedBusinesses.length} total → ${uniquePlatformResults.length} unique businesses`);
           
           // Apply dynamic search algorithm to platform-only results
-          const uniqueBusinesses = deduplicateBusinesses(combinedBusinesses);
+          console.log('🔍 Applying dynamic search algorithm to', uniquePlatformResults.length, 'businesses');
+          const rankedPlatformResults = applyDynamicSearchAlgorithm(uniquePlatformResults, latitude, longitude);
           
           // Add exact match to the beginning if found and not already included
-          console.log('🔍 Applying dynamic search algorithm to', uniqueBusinesses.length, 'businesses');
-          const rankedBusinesses = applyDynamicSearchAlgorithm(uniqueBusinesses, searchQuery, userLocation);
+          let finalPlatformResults = rankedPlatformResults;
+          if (exactMatchBusiness) {
             const exactMatchExists = rankedPlatformResults.some(b => b.id === exactMatchBusiness.id);
             if (!exactMatchExists) {
               console.log('🎯 [EXACT MATCH] Adding to top of platform-only results:', exactMatchBusiness.name);
@@ -615,9 +611,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             duplicates_removed: transformedBusinesses.length - uniquePlatformResults.length,
             exact_match_found: !!exactMatchBusiness
           });
-          
-          // Set the final search results
-          setSearchResults(uniqueBusinesses);
         }
       }
       
@@ -670,7 +663,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       );
       
       // Update platformBusinesses with reviews
-      setSearchResults(uniqueBusinesses);
       console.log('✅ Reviews fetched for platform businesses');
     } catch (error) {
       console.error('Search error:', error);
@@ -871,12 +863,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
       // Priority 2: Use valid address string
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
-    let userLocation: { latitude?: number; longitude?: number } | null = null;
       console.log('🗺️ DEBUG: Using address for maps URL:', business.address.trim());
     } else if (business.name && typeof business.name === 'string' && business.name.trim().length > 0) {
       // Priority 3: Use business name as fallback
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
-      userLocation = { latitude: userLatitude, longitude: userLongitude };
       console.log('🗺️ DEBUG: Using business name for maps URL:', business.name.trim());
     } else {
       // Last resort: Generic search
