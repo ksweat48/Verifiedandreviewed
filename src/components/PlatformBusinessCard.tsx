@@ -316,19 +316,20 @@ const PlatformBusinessCard: React.FC<{
                 </div>
               </div>
             )}
-        </div>
-      </div>
-      
-            thumbs_up: thumbsUp,
-            thumbs_down: thumbsDown,
-            sentiment_score: sentimentScore,
+
+      {/* Reviewer Profile Modal */}
+      {reviewerProfileOpen && selectedReviewer && (
+        <ReviewerProfile
+          isOpen={reviewerProfileOpen}
           onClose={() => setReviewerProfileOpen(false)}
           reviewer={selectedReviewer}
         />
       )}
       
+      {/* Image Gallery Popup */}
       {business.reviews && 
-       business.reviews[currentReviewIndex]?.images && business.reviews[currentReviewIndex].images.length > 0 && (
+       business.reviews[currentReviewIndex]?.images && 
+       business.reviews[currentReviewIndex].images.length > 0 && (
          <ImageGalleryPopup
            isOpen={galleryOpen}
            onClose={() => setGalleryOpen(false)}
@@ -337,6 +338,7 @@ const PlatformBusinessCard: React.FC<{
          />
        )}
       
+      {/* Business Profile Modal */}
       <BusinessProfileModal
         isOpen={businessProfileOpen}
         onClose={() => setBusinessProfileOpen(false)}
@@ -355,6 +357,9 @@ const PlatformBusinessCard: React.FC<{
       />
     </>
   );
+};
+
+export default PlatformBusinessCard;
 };
 
 export default PlatformBusinessCard;
