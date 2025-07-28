@@ -871,10 +871,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
       // Priority 2: Use valid address string
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
+    let userLocation: { latitude?: number; longitude?: number } | null = null;
       console.log('🗺️ DEBUG: Using address for maps URL:', business.address.trim());
     } else if (business.name && typeof business.name === 'string' && business.name.trim().length > 0) {
       // Priority 3: Use business name as fallback
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
+      userLocation = { latitude: userLatitude, longitude: userLongitude };
       console.log('🗺️ DEBUG: Using business name for maps URL:', business.name.trim());
     } else {
       // Last resort: Generic search
