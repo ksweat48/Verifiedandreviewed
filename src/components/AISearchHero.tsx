@@ -179,9 +179,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           
           console.log(`📝 Business with reviews created for ${business.name}:`, {
             name: enrichedBusiness.name,
-            reviewCount: enrichedBusiness.reviews.length,
             isPlatformBusiness: enrichedBusiness.isPlatformBusiness
           });
+          
+          // Set the final search results
+          setSearchResults(uniqueBusinesses);
           
           enrichedBusinesses.push(enrichedBusiness);
         } catch (error) {
