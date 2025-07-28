@@ -235,6 +235,38 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           console.log('✅ Semantic search successful:', searchResults.length, 'results');
           console.log('🏢 Platform businesses found:', searchResults.filter(r => r.isPlatformBusiness).length);
           console.log('🎯 Similarity scores:', searchResults.map(r => ({ name: r.name, similarity: r.similarity })));
+          
+          // ✅ CRITICAL FIX: Fetch and attach reviews IN-PLACE to platform businesses BEFORE merging
+          console.log('📝 ENRICHING platform businesses with reviews IN-PLACE...');
+          for (const business of searchResults) {
+            if (business.isPlatformBusiness && business.id) {
+              console.log(`📝 Fetching reviews for platform business: ${business.name} (ID: ${business.id})`);
+              try {
+                const reviews = await ReviewService.getBusinessReviews(business.id);
+                console.log(`📝 Found ${reviews.length} reviews for ${business.name}`);
+                
+                // Format reviews for the card component
+                const formattedReviews = reviews.map(review => ({
+                  text: review.review_text || 'No review text available',
+                  author: review.profiles?.name || 'Anonymous',
+                  authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+                  images: (review.image_urls || []).map(url => ({ url })),
+                  thumbsUp: review.rating >= 4
+                }));
+                
+                console.log(`📝 Formatted ${formattedReviews.length} reviews for ${business.name}:`, formattedReviews);
+                
+                // ✅ ATTACH DIRECTLY TO SAME OBJECT (in-place modification)
+                business.reviews = formattedReviews;
+                
+                console.log(`✅ Reviews attached IN-PLACE: ${business.name} now has ${business.reviews.length} reviews`);
+              } catch (error) {
+                console.error(`❌ Error fetching reviews for ${business.name}:`, error);
+                business.reviews = [];
+              }
+            }
+          }
+          console.log('✅ Platform businesses enriched with reviews IN-PLACE');
         } else {
           console.log('⚠️ Semantic search failed or no results, falling back to traditional search');
           console.log('Semantic search error:', semanticResult.error);
