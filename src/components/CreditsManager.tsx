@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as Icons from 'lucide-react';
+import { Zap, RefreshCw, TrendingUp, Users, Edit, Share2, Check, Calendar, CreditCard, Star, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CreditUsageInfo from './CreditUsageInfo';
 import { formatCredits, formatLargeNumber } from '../utils/formatters';
@@ -182,7 +182,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-4">
-              <Icons.Zap className="h-5 w-5 text-primary-600" />
+              <Zap className="h-5 w-5 text-primary-600" />
             </div>
             <div>
               <h3 className="font-poppins text-xl font-semibold text-neutral-900">
@@ -203,7 +203,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
         <div className="bg-green-50 rounded-xl p-4 mb-4">
         <div className="flex items-start">
           <div className="bg-green-100 rounded-full p-2 mr-3 mt-1">
-            <Icons.RefreshCw className="h-4 w-4 text-green-600" />
+            <RefreshCw className="h-4 w-4 text-green-600" />
           </div>
           <div>
             <p className="font-poppins font-semibold text-green-800 mb-1">
@@ -223,7 +223,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
       {/* Ways to Earn Credits */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
         <h3 className="font-poppins text-xl font-semibold text-neutral-900 mb-6 flex items-center">
-          <Icons.TrendingUp className="h-5 w-5 mr-2 text-green-500" />
+          <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
           Ways to Earn Credits
         </h3>
         
@@ -232,7 +232,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border border-green-200">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                <Icons.Star className="h-6 w-6 text-green-600" />
+                <Star className="h-6 w-6 text-green-600" />
               </div>
               <div>
                 <h4 className="font-poppins text-lg font-semibold text-green-900">
@@ -259,7 +259,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
               onClick={() => navigate('/dashboard')}
               className="w-full bg-green-500 text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center justify-center"
             >
-              <Icons.Edit className="h-4 w-4 mr-2" />
+              <Edit className="h-4 w-4 mr-2" />
               View My Activity
             </button>
           </div>
@@ -268,7 +268,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
           <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-5 border border-purple-200">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
-                <Icons.Users className="h-6 w-6 text-purple-600" />
+                <Users className="h-6 w-6 text-purple-600" />
               </div>
               <div>
                 <h4 className="font-poppins text-lg font-semibold text-purple-900">
@@ -295,12 +295,12 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
             >
               {copiedReferral ? (
                 <>
-                  <Icons.Check className="h-4 w-4 mr-2" />
+                  <Check className="h-4 w-4 mr-2" />
                   Link Copied!
                 </>
               ) : (
                 <>
-                  <Icons.Share2 className="h-4 w-4 mr-2" />
+                  <Share2 className="h-4 w-4 mr-2" />
                   Copy Referral Link
                 </>
               )}
@@ -311,7 +311,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
         {/* Monthly Free Credits Info */}
         <div className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
           <div className="flex items-center mb-2">
-            <Icons.Calendar className="h-5 w-5 text-blue-600 mr-2" />
+            <Calendar className="h-5 w-5 text-blue-600 mr-2" />
             <h4 className="font-poppins font-semibold text-blue-900">
               Monthly Free Credits
             </h4>
@@ -406,7 +406,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
               {/* Selection indicator */}
               {selectedPackage === pkg.id && (
                 <div className="absolute bottom-3 right-3 bg-primary-500 text-white rounded-full p-1">
-                  <Icons.Check className="h-4 w-4" />
+                  <Check className="h-4 w-4" />
                 </div>
               )}
             </div>
@@ -418,7 +418,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
       <div className="bg-neutral-50 rounded-xl p-4 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Icons.RefreshCw className="h-5 w-5 text-primary-500 mr-3" />
+            <RefreshCw className="h-5 w-5 text-primary-500 mr-3" />
             <div>
               <p className="font-poppins font-semibold text-neutral-900">
                 🔁 Enable Monthly Auto-Refill
@@ -494,7 +494,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <div className="flex items-center">
-            <Icons.AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
             <p className="font-lora text-red-700">{error}</p>
           </div>
         </div>
@@ -504,7 +504,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
       {purchaseSuccess && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-center">
-            <Icons.Check className="h-5 w-5 text-green-500 mr-2" />
+            <Check className="h-5 w-5 text-green-500 mr-2" />
             <p className="font-lora text-green-700">✅ Credits added to your account!</p>
           </div>
         </div>
@@ -522,12 +522,12 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
       >
         {isProcessing ? (
           <span className="flex items-center justify-center">
-            <Icons.RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+            <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
             Processing...
           </span>
         ) : (
           <span className="flex items-center justify-center">
-            <Icons.CreditCard className="h-5 w-5 mr-2" />
+            <CreditCard className="h-5 w-5 mr-2" />
             Buy Credits
           </span>
         )}

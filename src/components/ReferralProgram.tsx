@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as Icons from 'lucide-react';
+import { Users, Zap, Copy, Check, Share2 } from 'lucide-react';
 
 interface ReferralProgramProps {
   userId: number;
@@ -45,7 +45,7 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ userId, userName }) =
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
       <div className="flex items-center mb-6">
         <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
-          <Icons.Users className="h-6 w-6 text-purple-600" />
+          <Users className="h-6 w-6 text-purple-600" />
         </div>
         <div>
           <h3 className="font-poppins text-xl font-semibold text-neutral-900">
@@ -60,7 +60,7 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ userId, userName }) =
       <div className="bg-purple-50 rounded-xl p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
-            <Icons.Zap className="h-5 w-5 text-purple-600 mr-2" />
+            <Zap className="h-5 w-5 text-purple-600 mr-2" />
             <p className="font-poppins font-semibold text-purple-900">
               Earn 100 credits per referral
             </p>
@@ -80,7 +80,7 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ userId, userName }) =
             className="bg-purple-100 text-purple-700 p-2 rounded-lg hover:bg-purple-200 transition-colors duration-200 flex-shrink-0"
             title="Copy to clipboard"
           >
-            {copied ? <Icons.Check className="h-5 w-5" /> : <Icons.Copy className="h-5 w-5" />}
+            {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
           </button>
         </div>
       </div>
@@ -90,7 +90,7 @@ const ReferralProgram: React.FC<ReferralProgramProps> = ({ userId, userName }) =
           onClick={shareReferralLink}
           className="w-full font-poppins bg-purple-500 text-white px-4 py-3 rounded-lg font-semibold hover:bg-purple-600 transition-colors duration-200 flex items-center justify-center"
         >
-          <Icons.Share2 className="h-5 w-5 mr-2" />
+          <Share2 className="h-5 w-5 mr-2" />
           Share Your Referral Link
         </button>
         

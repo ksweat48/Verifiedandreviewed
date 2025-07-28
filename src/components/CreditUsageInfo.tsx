@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as Icons from 'lucide-react';
+import { Zap, Info } from 'lucide-react';
 
 interface CreditUsageInfoProps {
   className?: string;
@@ -12,14 +12,14 @@ const CreditUsageInfo: React.FC<CreditUsageInfoProps> = ({ className = '' }) => 
     <div className={`bg-primary-50 rounded-xl p-4 ${className}`}>
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-poppins font-semibold text-primary-900 flex items-center">
-          <Icons.Zap className="h-4 w-4 mr-2 text-primary-500" />
+          <Zap className="h-4 w-4 mr-2 text-primary-500" />
           Credit Usage
         </h4>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-primary-700 hover:text-primary-900 transition-colors duration-200"
         >
-          <Icons.Info className="h-4 w-4" />
+          <Info className="h-4 w-4" />
         </button>
       </div>
       

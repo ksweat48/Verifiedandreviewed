@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as Icons from 'lucide-react';
+import { RefreshCw, Clock, ThumbsUp, MapPin, Navigation } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BusinessProfileModal from './BusinessProfileModal';
 import LeaveReviewModal from './LeaveReviewModal';
@@ -239,7 +239,7 @@ const ExploreArea = () => {
             onClick={handleRefresh}
             className="p-2 rounded-full hover:bg-neutral-100 transition-all duration-300 group"
           >
-            <Icons.RefreshCw className={`h-5 w-5 text-neutral-400 ${loading ? 'animate-spin' : 'group-hover:rotate-90'} transition-transform duration-300`} />
+            <RefreshCw className={`h-5 w-5 text-neutral-400 ${loading ? 'animate-spin' : 'group-hover:rotate-90'} transition-transform duration-300`} />
           </button>
         </div>
 
@@ -293,7 +293,7 @@ const ExploreArea = () => {
                       
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center">
-                          <Icons.Clock className="h-3 w-3 mr-1" />
+                          <Clock className="h-3 w-3 mr-1" />
                           <span className="font-lora text-xs">{business.hours || 'Hours unavailable'}</span>
                           {business.distance && (
                             <span className="font-lora text-xs ml-2">• {business.distance.toFixed(1)} mi • 10 min</span>
@@ -322,7 +322,7 @@ const ExploreArea = () => {
                         
                         {/* Combined Rating Badge */}
                         <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-xs font-poppins font-semibold flex items-center shadow-md ml-auto`}>
-                          <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                          <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
                           <span className="mr-1">{business.rating?.thumbsUp || 0}</span> 
                           <span className="mr-1">{business.rating?.thumbsDown ? `/${business.rating.thumbsDown}` : ''}</span>
                           <span>{sentimentRating.text}</span>
@@ -360,7 +360,7 @@ const ExploreArea = () => {
                           >
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center">
-                               <Icons.ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-neutral-400'}`} />
+                               <ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-neutral-400'}`} />
                                 <span className="font-poppins text-xs font-semibold text-neutral-700">Review</span>
                               </div>
                               <span className="font-poppins text-xs text-neutral-500">

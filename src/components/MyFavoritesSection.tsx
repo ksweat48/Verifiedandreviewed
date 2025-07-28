@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MapPin, Calendar, Trash2, Navigation, Star, Info } from 'lucide-react';
+import * as Icons from 'lucide-react';
 
 interface MyFavoritesSectionProps {
   businesses: any[];
@@ -50,14 +50,14 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="font-cinzel text-2xl font-bold text-neutral-900 flex items-center">
-          <Heart className="h-6 w-6 mr-3 text-red-500" />
+          <Icons.Heart className="h-6 w-6 mr-3 text-red-500" />
           My Favorites ({businesses.length})
         </h2>
       </div>
 
       {businesses.length === 0 ? (
         <div className="bg-neutral-50 rounded-2xl p-8 text-center">
-          <Heart className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
+          <Icons.Heart className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
           <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
             No Favorites Yet
           </h3>
@@ -92,14 +92,14 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                         
                         <div className="flex items-center gap-4 mb-2">
                           <div className="flex items-center">
-                            <MapPin className="h-4 w-4 text-neutral-500 mr-1" />
+                            <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
                             <span className="font-lora text-sm text-neutral-600">
                               {business.address || business.location}
                             </span>
                           </div>
                           
                           <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-neutral-500 mr-1" />
+                            <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
                             <span className="font-lora text-sm text-neutral-600">
                               Added {new Date(business.created_at).toLocaleDateString()}
                             </span>
@@ -119,7 +119,7 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                           )}
                           
                           <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-poppins font-semibold flex items-center">
-                            <Star className="h-3 w-3 mr-1" />
+                            <Icons.Star className="h-3 w-3 mr-1" />
                             AI Generated
                           </span>
                         </div>
@@ -140,7 +140,7 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                       onClick={() => handleTakeMeThere(business)}
                       className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 py-2 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center"
                     >
-                      <Navigation className="h-4 w-4 mr-2" />
+                      <Icons.Navigation className="h-4 w-4 mr-2" />
                       GO
                     </button>
                     
@@ -153,7 +153,7 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                       {removingId === business.id ? (
                         <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                       ) : (
-                        <Trash2 className="h-4 w-4" />
+                        <Icons.Trash2 className="h-4 w-4" />
                       )}
                     </button>
                   </div>

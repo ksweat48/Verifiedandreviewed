@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, CheckCircle } from 'lucide-react';
+import * as Icons from 'lucide-react';
 
 const WeeklyReviewDigest = () => {
   const [email, setEmail] = useState('');
@@ -42,7 +42,7 @@ const WeeklyReviewDigest = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="text-white text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start mb-2">
-                <Mail className="h-6 w-6 mr-2" />
+                <Icons.Mail className="h-6 w-6 mr-2" />
                 <h3 className="font-cinzel text-xl md:text-2xl font-bold">
                   Weekly Review Digest
                 </h3>
@@ -56,7 +56,7 @@ const WeeklyReviewDigest = () => {
               {isSubmitted ? (
                 <div className="bg-white bg-opacity-20 rounded-lg p-4 text-white">
                   <div className="flex items-center mb-2">
-                    <CheckCircle className="h-5 w-5 mr-2" />
+                    <Icons.CheckCircle className="h-5 w-5 mr-2" />
                     <span className="font-poppins font-semibold">Successfully subscribed!</span>
                   </div>
                   <p className="font-lora text-sm text-white text-opacity-90">Your first digest arrives this Sunday</p>

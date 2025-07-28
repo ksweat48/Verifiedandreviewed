@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Building, MessageSquare, Settings, BarChart3, Shield, Zap, RefreshCw, Heart, DollarSign, Search, TrendingUp, Calendar, Award } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
 import { UserService } from '../services/userService';
@@ -131,17 +131,17 @@ const AdminDashboard = () => {
   };
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'total-users', label: 'Total Users', icon: Users },
-    { id: 'daily-active', label: 'Daily Active', icon: TrendingUp },
-    { id: 'user-searches', label: 'User Searches', icon: Search },
-    { id: 'total-businesses', label: 'Platform Businesses', icon: Building },
-    { id: 'ai-favorites', label: 'AI Favorites', icon: Heart },
-    { id: 'platform-reviews', label: 'Platform Reviews', icon: MessageSquare },
-    { id: 'verified-businesses', label: 'Verified Businesses', icon: Shield },
-    { id: 'tokens-purchased', label: 'Tokens Purchased', icon: DollarSign },
-    { id: 'tokens-earned', label: 'Tokens Earned', icon: Award },
-    { id: 'tools', label: 'Tools', icon: Settings }
+    { id: 'overview', label: 'Overview', icon: Icons.BarChart3 },
+    { id: 'total-users', label: 'Total Users', icon: Icons.Users },
+    { id: 'daily-active', label: 'Daily Active', icon: Icons.TrendingUp },
+    { id: 'user-searches', label: 'User Searches', icon: Icons.Search },
+    { id: 'total-businesses', label: 'Platform Businesses', icon: Icons.Building },
+    { id: 'ai-favorites', label: 'AI Favorites', icon: Icons.Heart },
+    { id: 'platform-reviews', label: 'Platform Reviews', icon: Icons.MessageSquare },
+    { id: 'verified-businesses', label: 'Verified Businesses', icon: Icons.Shield },
+    { id: 'tokens-purchased', label: 'Tokens Purchased', icon: Icons.DollarSign },
+    { id: 'tokens-earned', label: 'Tokens Earned', icon: Icons.Award },
+    { id: 'tools', label: 'Tools', icon: Icons.Settings }
   ];
 
   const formatNumber = (num: number) => {
@@ -155,7 +155,7 @@ const AdminDashboard = () => {
       id: 'total-users',
       title: 'Total Users',
       value: formatNumber(stats.totalUsers),
-      icon: Users,
+      icon: Icons.Users,
       color: 'bg-blue-100 text-blue-600',
       bgColor: 'bg-blue-50',
       description: 'Registered platform users',
@@ -165,7 +165,7 @@ const AdminDashboard = () => {
       id: 'daily-active',
       title: 'Daily Active Users',
       value: formatNumber(stats.dailyActiveUsers),
-      icon: TrendingUp,
+      icon: Icons.TrendingUp,
       color: 'bg-green-100 text-green-600',
       bgColor: 'bg-green-50',
       description: 'Users active in last 24h',
@@ -175,7 +175,7 @@ const AdminDashboard = () => {
       id: 'user-searches',
       title: 'User Searches',
       value: formatNumber(stats.userSearches),
-      icon: Search,
+      icon: Icons.Search,
       color: 'bg-purple-100 text-purple-600',
       bgColor: 'bg-purple-50',
       description: 'Total searches performed',
@@ -185,7 +185,7 @@ const AdminDashboard = () => {
       id: 'total-businesses',
       title: 'Platform Businesses',
       value: formatNumber(stats.totalBusinesses),
-      icon: Building,
+      icon: Icons.Building,
       color: 'bg-indigo-100 text-indigo-600',
       bgColor: 'bg-indigo-50',
       description: 'Businesses on platform',
@@ -195,7 +195,7 @@ const AdminDashboard = () => {
       id: 'ai-favorites',
       title: 'AI Favorites',
       value: formatNumber(stats.favoriteAIBusinesses),
-      icon: Heart,
+      icon: Icons.Heart,
       color: 'bg-red-100 text-red-600',
       bgColor: 'bg-red-50',
       description: 'AI businesses favorited',
@@ -205,7 +205,7 @@ const AdminDashboard = () => {
       id: 'platform-reviews',
       title: 'Platform Reviews',
       value: formatNumber(stats.platformReviews),
-      icon: MessageSquare,
+      icon: Icons.MessageSquare,
       color: 'bg-yellow-100 text-yellow-600',
       bgColor: 'bg-yellow-50',
       description: 'Reviews on platform businesses',
@@ -215,7 +215,7 @@ const AdminDashboard = () => {
       id: 'verified-businesses',
       title: 'Verified Businesses',
       value: formatNumber(stats.verifiedBusinesses),
-      icon: Shield,
+      icon: Icons.Shield,
       color: 'bg-emerald-100 text-emerald-600',
       bgColor: 'bg-emerald-50',
       description: 'Admin verified businesses',
@@ -225,7 +225,7 @@ const AdminDashboard = () => {
       id: 'tokens-purchased',
       title: 'Tokens Purchased',
       value: formatNumber(stats.tokensPurchased),
-      icon: DollarSign,
+      icon: Icons.DollarSign,
       color: 'bg-orange-100 text-orange-600',
       bgColor: 'bg-orange-50',
       description: 'Revenue from token sales',
@@ -235,7 +235,7 @@ const AdminDashboard = () => {
       id: 'tokens-earned',
       title: 'Tokens Earned',
       value: formatNumber(stats.tokensEarned),
-      icon: Award,
+      icon: Icons.Award,
       color: 'bg-cyan-100 text-cyan-600',
       bgColor: 'bg-cyan-50',
       description: 'Tokens from referrals & reviews',
@@ -260,7 +260,7 @@ const AdminDashboard = () => {
               disabled={loading}
               className="flex items-center font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 disabled:opacity-50"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              <Icons.RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh Data
             </button>
           </div>

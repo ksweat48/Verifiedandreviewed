@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { useWordPressPosts } from '../hooks/useWordPress';
   
 const FeaturedBlogSection = () => {
@@ -101,7 +101,7 @@ const FeaturedBlogSection = () => {
               }`}
               aria-label="Previous"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <Icons.ChevronLeft className="h-5 w-5" />
             </button>
             <button
               onClick={() => scroll('right')}
@@ -113,7 +113,7 @@ const FeaturedBlogSection = () => {
               }`}
               aria-label="Next"
             >
-              <ChevronRight className="h-5 w-5" />
+              <Icons.ChevronRight className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -137,7 +137,7 @@ const FeaturedBlogSection = () => {
                     
                     {post.isVerified && (
                       <div className="absolute top-1 left-1 bg-green-500 text-white rounded-full px-2 py-0.5 flex items-center">
-                        <Shield className="h-2 w-2 mr-0.5" />
+                        <Icons.Shield className="h-2 w-2 mr-0.5" />
                         <span className="font-poppins text-[8px] font-bold">VERIFIED</span>
                       </div>
                     )}
@@ -146,7 +146,7 @@ const FeaturedBlogSection = () => {
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center text-neutral-500 mb-1">
-                    <Calendar className="h-3 w-3 mr-1" />
+                    <Icons.Calendar className="h-3 w-3 mr-1" />
                     <span className="font-lora text-xs">{post.date}</span>
                   </div>
                   
@@ -186,7 +186,7 @@ const FeaturedBlogSection = () => {
                       
                       {post.isVerified && (
                         <div className="absolute top-1 left-1 bg-green-500 text-white rounded-full px-1.5 py-0.5 flex items-center">
-                          <Shield className="h-2 w-2 mr-0.5" />
+                         <Icons.Shield className="h-2 w-2 mr-0.5" />
                           <span className="font-poppins text-[8px] font-bold">VERIFIED</span>
                         </div>
                       )}
@@ -195,7 +195,7 @@ const FeaturedBlogSection = () => {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center text-neutral-500 mb-1">
-                      <Calendar className="h-3 w-3 mr-1" />
+                      <Icons.Calendar className="h-3 w-3 mr-1" />
                       <span className="font-lora text-xs">{post.date}</span>
                     </div>
                     

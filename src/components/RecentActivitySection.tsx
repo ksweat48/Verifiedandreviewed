@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Navigation, Star } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import LeaveReviewModal from './LeaveReviewModal';
 import { supabase } from '../services/supabaseClient';
@@ -150,7 +149,7 @@ const RecentActivitySection: React.FC = () => {
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-poppins text-lg font-semibold text-neutral-900 flex items-center">
-          <Navigation className="h-5 w-5 mr-2 text-primary-500" />
+          <Icons.Navigation className="h-5 w-5 mr-2 text-primary-500" />
           Activity
         </h3>
         
@@ -163,7 +162,7 @@ const RecentActivitySection: React.FC = () => {
       
       {visitedBusinesses.length === 0 ? (
         <div className="bg-neutral-50 rounded-lg p-6 text-center">
-          <Navigation className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
+          <Icons.Navigation className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
           <h4 className="font-poppins font-semibold text-neutral-700 mb-1">
             No activity yet
           </h4>
