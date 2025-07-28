@@ -611,11 +611,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             query: searchQuery, 
             used_ai: false,
             used_semantic: usedSemanticSearch,
-          setSearchResults(uniqueBusinesses);
             results_count: finalPlatformResults.length,
             duplicates_removed: transformedBusinesses.length - uniquePlatformResults.length,
             exact_match_found: !!exactMatchBusiness
           });
+          
+          // Set the final search results
+          setSearchResults(uniqueBusinesses);
         }
       }
       
