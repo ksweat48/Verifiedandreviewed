@@ -976,7 +976,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             {/* Search Bar */}
             <div className={`w-full max-w-2xl mx-auto mb-6 transition-all duration-500 ${isSearching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
               <div 
-                ref={searchRef}
+                        image: business.image_url || business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
                 className="relative w-full"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
