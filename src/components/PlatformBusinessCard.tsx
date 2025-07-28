@@ -85,7 +85,11 @@ const PlatformBusinessCard: React.FC<{
   const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
   const [businessProfileOpen, setBusinessProfileOpen] = useState(false);
 
-  const sentimentRating = getSentimentRating(business.rating.sentimentScore);
+  // Add null checks and default values for rating object
+  const sentimentScore = business.rating?.sentimentScore ?? 0;
+  const thumbsUp = business.rating?.thumbsUp ?? 0;
+  const thumbsDown = business.rating?.thumbsDown ?? 0;
+  const sentimentRating = getSentimentRating(sentimentScore);
 
   const nextReview = () => {
     if (business.reviews && business.reviews.length > 0) {
