@@ -319,9 +319,9 @@ const PlatformBusinessCard: React.FC<{
         </div>
       </div>
       
-      {selectedReviewer && (
-        <ReviewerProfile
-          isOpen={reviewerProfileOpen}
+            thumbs_up: thumbsUp,
+            thumbs_down: thumbsDown,
+            sentiment_score: sentimentScore,
           onClose={() => setReviewerProfileOpen(false)}
           reviewer={selectedReviewer}
         />
