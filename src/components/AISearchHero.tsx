@@ -440,11 +440,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             ? `Find businesses similar to "${searchQuery}". I already have ${platformBusinesses.length} results, so provide ${numAINeeded} different but related businesses that match this search intent.`
             : `Find businesses that match: "${searchQuery}". Focus on the mood, vibe, or specific needs expressed in this search.`;
 
-            // Map individual rating fields to the nested 'rating' object expected by PlatformBusinessCard
-            rating: {
-              thumbsUp: business.thumbs_up !== undefined ? business.thumbs_up : (typeof business.rating === 'object' && business.rating?.thumbsUp !== undefined ? business.rating.thumbsUp : 0),
-              thumbsDown: business.thumbs_down !== undefined ? business.thumbs_down : (typeof business.rating === 'object' && business.rating?.thumbsDown !== undefined ? business.rating.thumbsDown : 0),
-              sentimentScore: business.sentiment_score !== undefined ? business.sentiment_score : (typeof business.rating === 'object' && business.rating?.sentimentScore !== undefined ? business.rating.sentimentScore : 0),
+          const response = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
               prompt: aiPrompt,
