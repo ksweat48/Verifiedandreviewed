@@ -4,6 +4,7 @@ import { Upload, X, Plus, MapPin, Clock, Phone, Globe, DollarSign, Tag, Trending
 import { BusinessService } from '../services/businessService';
 import { useAuth } from '../hooks/useAuth';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { supabase } from '../services/supabaseClient';
 
 interface UploadedImage {
   file: File | null;
@@ -59,6 +60,43 @@ export default function AddBusinessPage() {
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
   const [geocodingError, setGeocodingError] = useState<string>('');
   const [contentQualityScore, setContentQualityScore] = useState(0);
+
+  // Helper function to upload image to Supabase Storage
+  const uploadImageToSupabase = async (file: File, imageType: 'cover' | 'gallery'): Promise<string | null> => {
+    try {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+      const filePath = `${user.id}/businesses/${imageType}/${fileName}`;
+
+      console.log('📤 Uploading image to Supabase:', filePath);
+
+      const { error: uploadError } = await supabase.storage
+        .from('review-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from('review-images')
+        .getPublicUrl(filePath);
+
+      console.log('✅ Image uploaded successfully:', data.publicUrl);
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
 
   // Fetch business data if in edit mode
   useEffect(() => {
@@ -317,8 +355,13 @@ export default function AddBusinessPage() {
       // Handle cover image upload
       if (coverImage) {
         if (coverImage.file) {
-          // For now, use a placeholder URL since uploadImage method doesn't exist
-          coverImageUrl = 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400';
+          console.log('📤 Uploading cover image...');
+          const uploadedUrl = await uploadImageToSupabase(coverImage.file, 'cover');
+          if (uploadedUrl) {
+            coverImageUrl = uploadedUrl;
+          } else {
+            throw new Error('Failed to upload cover image');
+          }
         } else {
           // Existing image URL
           coverImageUrl = coverImage.preview;
@@ -328,13 +371,20 @@ export default function AddBusinessPage() {
       // Handle gallery images upload
       for (const image of galleryImages) {
         if (image.file) {
-          // For now, use a placeholder URL since uploadImage method doesn't exist
-          galleryUrls.push('https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400');
+          console.log('📤 Uploading gallery image...');
+          const uploadedUrl = await uploadImageToSupabase(image.file, 'gallery');
+          if (uploadedUrl) {
+            galleryUrls.push(uploadedUrl);
+          } else {
+            console.warn('Failed to upload gallery image, skipping...');
+          }
         } else {
           // Existing image URL
           galleryUrls.push(image.preview);
         }
       }
+
+      console.log('📊 Final image URLs:', { coverImageUrl, galleryUrls });
 
       const businessData = {
         ...formData,
@@ -343,15 +393,17 @@ export default function AddBusinessPage() {
       };
 
       if (isEditMode && editBusinessId) {
+        console.log('✏️ Updating business with image URLs...');
         await BusinessService.updateBusiness(editBusinessId, businessData);
       } else {
+        console.log('➕ Creating business with image URLs...');
         await BusinessService.createBusiness(businessData, user.id);
       }
 
       navigate('/dashboard');
     } catch (error) {
       console.error('Error saving business:', error);
-      alert('Error saving business. Please try again.');
+      alert(`Error saving business: ${error instanceof Error ? error.message : 'Please try again.'}`);
     } finally {
       setIsSubmitting(false);
     }
