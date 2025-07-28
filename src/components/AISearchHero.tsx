@@ -1303,50 +1303,63 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
           const isPlatform = business.isPlatformBusiness;
 
-          let cardBusiness;
-
+          
+          // Determine if this is a platform business
+          const isPlatform = business.isPlatformBusiness === true;
+          
           if (isPlatform) {
-            // For Platform Businesses, rating is an object
-            cardBusiness = {
+            // Create standardized object for PlatformBusinessCard
+            const platformBusiness = {
               ...business,
+              // Map image_url to image for platform businesses
               image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+              // Create rating object structure expected by PlatformBusinessCard
               rating: {
-                thumbsUp: business.thumbs_up ?? 0,
-                thumbsDown: business.thumbs_down ?? 0,
-                sentimentScore: business.sentiment_score ?? 0,
+                thumbsUp: business.thumbs_up || 0,
+                thumbsDown: business.thumbs_down || 0,
+                sentimentScore: business.sentiment_score || 0,
               },
+              // Ensure reviews is an array
               reviews: business.reviews || [],
-              isPlatformBusiness: true,
+              // Ensure other required properties
               address: business.address || business.location || '',
               location: business.location || business.address || '',
-              isOpen: business.isOpen ?? true,
+              isOpen: business.isOpen !== undefined ? business.isOpen : true,
+              isPlatformBusiness: true,
             };
+            
+            return (
+              <PlatformBusinessCard
+                key={platformBusiness.id}
+                business={platformBusiness}
+                onRecommend={handleRecommend}
+                onTakeMeThere={handleTakeMeThere}
+              />
+            );
           } else {
-            // For AI Businesses, rating is a number
-            cardBusiness = {
+            // Create standardized object for AIBusinessCard
+            const aiBusiness = {
               ...business,
+              // Ensure rating is a number for AIBusinessCard
+              rating: typeof business.rating === 'number' ? business.rating : 0,
+              // Ensure image property exists
               image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-              rating: business.rating, // This should already be a number from the AI search function
-              reviews: business.reviews || [], // Ensure reviews is an array
+              // Ensure reviews is an array
+              reviews: business.reviews || [],
+              // Ensure other required properties
+              address: business.address || business.location || '',
+              isOpen: business.isOpen !== undefined ? business.isOpen : true,
               isPlatformBusiness: false,
-              // Other properties like address, location, isOpen should already be correctly formatted by the AI search function
             };
+            
+            return (
+              <AIBusinessCard
+                key={aiBusiness.id}
+                business={aiBusiness}
+                onRecommend={handleRecommend}
+              />
+            );
           }
-
-          return isPlatform ? (
-            <PlatformBusinessCard
-              key={cardBusiness.id}
-              business={cardBusiness}
-              onRecommend={handleRecommend}
-              onTakeMeThere={handleTakeMeThere}
-            />
-          ) : (
-            <AIBusinessCard
-              key={cardBusiness.id} // Use cardBusiness.id here too
-              business={cardBusiness} // Pass the standardized cardBusiness
-              onRecommend={handleRecommend}
-            />
-          );
         </div>
       </div>
     </div>
