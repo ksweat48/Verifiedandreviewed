@@ -473,7 +473,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               // Ensure all required fields are present
               id: business.id || `ai-${Date.now()}-${Math.random()}`,
               rating: business.rating || { thumbsUp: 0, thumbsDown: 0, sentimentScore: 75 },
-              image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+              image: business.image_url || business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
               isOpen: business.isOpen !== undefined ? business.isOpen : true,
               hours: business.hours || 'Hours unavailable',
               address: business.address || 'Address not available',
@@ -976,7 +976,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             {/* Search Bar */}
             <div className={`w-full max-w-2xl mx-auto mb-6 transition-all duration-500 ${isSearching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
               <div 
-                        image: business.image_url || business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
                 className="relative w-full"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl blur opacity-20"></div>
