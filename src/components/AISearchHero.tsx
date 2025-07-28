@@ -224,6 +224,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     let semanticSearchResults: any[] = [];
     let uniqueBusinesses: any[] = [];
     let exactMatchBusiness = null;
+    let platformBusinesses: any[] = [];
     
     setIsSearching(true);
     
@@ -236,49 +237,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     // Step 1: Comprehensive platform business search
     console.log('🔍 Step 1: Comprehensive platform business search');
 
-          // Determine if it's a platform business based on the source or a flag
-          const isPlatform = business.isPlatformBusiness; // Assuming this flag is reliable
-
-          // Construct the business object to pass to the card component
-          // This ensures all expected properties are present and correctly mapped
-          const cardBusiness = {
-            ...business, // Spread existing properties
-            // Map image_url to image for platform businesses, or use existing image for AI businesses
-            image: business.image_url || business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-            
-            // Map individual rating fields to the nested 'rating' object expected by PlatformBusinessCard
-            rating: {
-              thumbsUp: business.thumbs_up !== undefined ? business.thumbs_up : (business.rating?.thumbsUp || 0),
-              thumbsDown: business.thumbs_down !== undefined ? business.thumbs_down : (business.rating?.thumbsDown || 0),
-              sentimentScore: business.sentiment_score !== undefined ? business.sentiment_score : (business.rating?.sentimentScore || 0),
-            },
-            
-            // Ensure reviews is an array, even if empty
-            reviews: business.reviews || [],
-            
-            // Ensure isPlatformBusiness is explicitly set
-            isPlatformBusiness: isPlatform,
-            
-            // Add other properties that might be missing or named differently
-            address: business.address || business.location || '', // Ensure address is always present
-            location: business.location || business.address || '', // Ensure location is always present
-            isOpen: business.isOpen !== undefined ? business.isOpen : true, // Default to true if not specified
-          };
-
-          return isPlatform ? (
-            <PlatformBusinessCard
-              key={cardBusiness.id}
-              business={cardBusiness}
-              onRecommend={handleRecommend}
-              onTakeMeThere={handleTakeMeThere}
-            />
-          ) : (
-            <AIBusinessCard
-              key={business.id}
-              business={business} // AIBusinessCard already expects 'image' and 'rating' in its format
-              onRecommend={handleRecommend}
-            />
-          );
+    // 1a: Check for exact business name match first
+    console.log('🔍 Step 1a: Checking for exact business name match');
+    try {
+      const exactMatch = await BusinessService.getBusinessByName(searchQuery.trim());
+      if (exactMatch) {
+        console.log('🎯 [EXACT MATCH] Found exact business name match:', exactMatch.name);
+        exactMatchBusiness = { ...exactMatch };
+        
+        // Calculate distance if coordinates are available
+        if (exactMatchBusiness.latitude && exactMatchBusiness.longitude && latitude && longitude) {
+          const exactDistance = calculateDistance(latitude, longitude, exactMatchBusiness.latitude, exactMatchBusiness.longitude);
           exactMatchBusiness.distance = exactDistance;
           exactMatchBusiness.duration = Math.round(exactDistance * 2); // Rough estimate
           console.log(`📍 [EXACT MATCH] Distance: ${exactDistance.toFixed(1)} miles`);
@@ -1307,22 +1276,48 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-8"
               >
                 {results.map((business, businessIndex) => {
-                  console.log("Platform Business object in AISearchHero:", business);
-                  return (
-                    <div key={`${business.id}-${businessIndex}`} className={business.isPlatformBusiness ? "sm:col-span-2 lg:col-span-2 flex flex-col h-full" : ""}>
-                      {business.isPlatformBusiness ? (
-                        <PlatformBusinessCard
-                          business={business}
-                          onRecommend={handleRecommend}
-                          onTakeMeThere={handleTakeMeThere}
-                        />
-                      ) : (
-                        <AIBusinessCard
-                          business={business}
-                          onRecommend={handleRecommend}
-                        />
-                      )}
-                    </div>
+                  // Determine if it's a platform business based on the source or a flag
+                  const isPlatform = business.isPlatformBusiness; // Assuming this flag is reliable
+
+                  // Construct the business object to pass to the card component
+                  // This ensures all expected properties are present and correctly mapped
+                  const cardBusiness = {
+                    ...business, // Spread existing properties
+                    // Map image_url to image for platform businesses, or use existing image for AI businesses
+                    image: business.image_url || business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+                    
+                    // Map individual rating fields to the nested 'rating' object expected by PlatformBusinessCard
+                    rating: {
+                      thumbsUp: business.thumbs_up !== undefined ? business.thumbs_up : (business.rating?.thumbsUp || 0),
+                      thumbsDown: business.thumbs_down !== undefined ? business.thumbs_down : (business.rating?.thumbsDown || 0),
+                      sentimentScore: business.sentiment_score !== undefined ? business.sentiment_score : (business.rating?.sentimentScore || 0),
+                    },
+                    
+                    // Ensure reviews is an array, even if empty
+                    reviews: business.reviews || [],
+                    
+                    // Ensure isPlatformBusiness is explicitly set
+                    isPlatformBusiness: isPlatform,
+                    
+                    // Add other properties that might be missing or named differently
+                    address: business.address || business.location || '', // Ensure address is always present
+                    location: business.location || business.address || '', // Ensure location is always present
+                    isOpen: business.isOpen !== undefined ? business.isOpen : true, // Default to true if not specified
+                  };
+
+                  return isPlatform ? (
+                    <PlatformBusinessCard
+                      key={cardBusiness.id}
+                      business={cardBusiness}
+                      onRecommend={handleRecommend}
+                      onTakeMeThere={handleTakeMeThere}
+                    />
+                  ) : (
+                    <AIBusinessCard
+                      key={business.id}
+                      business={business} // AIBusinessCard already expects 'image' and 'rating' in its format
+                      onRecommend={handleRecommend}
+                    />
                   );
                 })}
               </div>
