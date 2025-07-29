@@ -301,26 +301,15 @@ const ExploreArea = () => {
                         </div>
                       </div>
                       
-                      {/* Combined Rating Badge */}
-                      {/* Tags */}
-                      <div className="flex flex-nowrap gap-1 items-center justify-between">
-                        <div className="flex flex-nowrap gap-1 overflow-hidden max-w-[70%]">
-                          {business.tags?.slice(0, 2).map((tag, index) => (
-                            <span
-                              key={index}
-                              className="bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-xs font-lora"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {(business.tags?.length || 0) > 2 && (
-                            <span className="bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-xs font-lora">
-                              +{business.tags!.length - 2}
-                            </span>
-                          )}
-                        </div>
+                      {/* Badges positioned at bottom-left */}
+                      <div className="flex items-center gap-2">
+                        {/* Semantic Similarity Score - Only show if available and > 0 */}
+                        {business.similarity && business.similarity > 0 && (
+                          <div className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
+                            {getMatchPercentage(business.similarity)}% match
+                          </div>
+                        )}
                         
-                        {/* Combined Rating Badge */}
                         <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-xs font-poppins font-semibold flex items-center shadow-md ml-auto`}>
                           <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
                           <span className="mr-1">{business.rating?.thumbsUp || 0}</span> 
