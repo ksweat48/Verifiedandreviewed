@@ -990,14 +990,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             
             {/* Title and Subtitle */}
             <div className={`mb-8 transition-all duration-500 ${isSearching ? 'opacity-30 scale-95' : 'opacity-100 scale-100'}`}>
-              <h1 className="font-cinzel text-4xl md:text-7xl lg:text-8xl font-bold text-neutral-900 mb-6 mx-auto">
-                <span className="text-white drop-shadow-lg font-black text-3xl md:text-6xl lg:text-7xl">Experience Something New</span>
+              <h1 className="font-black text-3xl md:text-6xl lg:text-7xl text-white mb-6 drop-shadow-lg leading-tight">
+                Experience Something New
               </h1>
-              <p className="font-lora text-xl md:text-3xl text-neutral-600 mb-4 max-w-2xl mx-auto">
-                <span className="text-white drop-shadow-md">
-                Experience something new
-                </span>
-              </p>
             </div>
             
             {/* Search Bar */}
