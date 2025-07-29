@@ -259,6 +259,7 @@ Requirements:
             location: `${searchLatitude},${searchLongitude}`,
             radius: searchRadius,
             type: 'establishment',
+            fields: 'name,formatted_address,geometry,rating,opening_hours,types,place_id',
             key: GOOGLE_PLACES_API_KEY
           },
           timeout: 10000 // Increased timeout for more thorough search
