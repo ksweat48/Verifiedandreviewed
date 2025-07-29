@@ -160,6 +160,7 @@ const PlatformBusinessCard: React.FC<{
           />
           
           <div className="absolute top-3 left-3 z-10">
+          </div>
           <div className="absolute top-3 right-3 z-10">
             <div className={`px-3 py-1 rounded-full text-white text-sm font-poppins font-semibold ${
               business.isOpen ? 'bg-green-500' : 'bg-red-500'
