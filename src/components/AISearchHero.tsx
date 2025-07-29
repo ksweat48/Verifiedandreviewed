@@ -995,7 +995,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               </h1>
               <p className="font-lora text-xl md:text-3xl text-neutral-600 mb-4 max-w-2xl mx-auto">
                 <span className="text-white drop-shadow-md">
-                Explore something new
+                Find places with a vibe, a feeling, or just a word.
                 </span>
               </p>
             </div>
