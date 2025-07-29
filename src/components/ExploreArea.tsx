@@ -34,7 +34,6 @@ interface Business {
     images?: ReviewImage[];
     thumbsUp: boolean;
   }>;
-  hours: string;
   isPlatformBusiness: boolean;
   tags: string[];
   distance?: number; // Added during processing
