@@ -309,7 +309,7 @@ const ExploreArea = () => {
                           </div>
                         )}
                         
-                        <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-xs font-poppins font-semibold flex items-center shadow-md ml-auto`}>
+                        <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-xs font-poppins font-semibold flex items-center shadow-md`}>
                           <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
                           <span className="mr-1">{business.rating?.thumbsUp || 0}</span> 
                           <span className="mr-1">{business.rating?.thumbsDown ? `/${business.rating.thumbsDown}` : ''}</span>
