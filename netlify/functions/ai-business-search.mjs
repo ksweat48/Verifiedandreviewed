@@ -67,7 +67,7 @@ export default async function handler(req) {
       prompt, 
       searchQuery, 
       existingResultsCount = 0, 
-      numToGenerate = 20,
+      numToGenerate = 10,
       latitude,
       longitude 
     } = await req.json();
