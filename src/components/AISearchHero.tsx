@@ -501,7 +501,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     ) : (
                       <>
                         <Sparkles className="h-5 w-5 mr-2" />
-                        Search
+                        Vibe
                       </>
                     )}
                   </button>
