@@ -39,11 +39,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [userCredits, setUserCredits] = useState<number>(0);
   const [isLoadingCredits, setIsLoadingCredits] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   const { latitude, longitude, error: locationError } = useGeolocation();
 
   // Check for current user and load credits
+  useEffect(() => {
     const checkUser = async () => {
       try {
         const user = await UserService.getCurrentUser();
@@ -411,6 +413,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       setIsListening(false);
     }
   };
+  
   const handleAuthSuccess = (user: any) => {
     setCurrentUser(user);
     setUserCredits(user.credits || 0);
