@@ -280,7 +280,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           isOpen: business.isOpen,
           isPlatformBusiness: business.isPlatformBusiness || platformResults.some(p => p.id === business.id)
         })
-      })).sort((a, b) => b.compositeScore - a.compositeScore);
+      })).sort((a, b) => {
+        // First priority: Platform businesses always come before Google businesses
+        const aIsPlatform = a.isPlatformBusiness || platformResults.some(p => p.id === a.id);
+        const bIsPlatform = b.isPlatformBusiness || platformResults.some(p => p.id === b.id);
+        
+        if (aIsPlatform && !bIsPlatform) return -1; // a comes first
+        if (!aIsPlatform && bIsPlatform) return 1;  // b comes first
+        
+        // Second priority: Within the same business type, sort by composite score
+        return b.compositeScore - a.compositeScore;
+      });
 
       console.log(`🎯 Final ranked results: ${rankedResults.length} businesses`);
       setSearchResults(rankedResults);
