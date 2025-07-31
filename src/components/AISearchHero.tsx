@@ -94,6 +94,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     setHasSearched(true);
     setLastSearchQuery(searchTerm);
     setCurrentCardIndex(0);
+    setIsAppModeActive(true); // Show loading screen immediately
     
     try {
       // Check if user is authenticated for credit-based searches
