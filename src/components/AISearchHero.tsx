@@ -527,7 +527,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
             {/* Quick Search Tags */}
             <div className="text-center">
-              <p className="font-lora text-white/70 text-sm mb-4">Try these vibes:</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {quickSearches.map((suggestion, index) => (
                   <button
