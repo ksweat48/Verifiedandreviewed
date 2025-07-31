@@ -557,10 +557,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         {/* Search Results */}
         <div className="pt-16 h-full overflow-hidden">
           {isSearching ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-                <p className="font-lora text-neutral-600">Finding your vibe...</p>
+                <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/20 border-t-white mx-auto mb-6"></div>
+                <p className="font-cinzel text-2xl font-bold text-white animate-pulse">
+                  ONE MOMENT...
+                </p>
+                <p className="font-lora text-lg text-white/80 animate-pulse mt-2">
+                  Vibe search in progress
+                </p>
               </div>
             </div>
           ) : searchResults.length === 0 ? (
