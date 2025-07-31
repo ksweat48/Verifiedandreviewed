@@ -163,7 +163,7 @@ const PlatformBusinessCard: React.FC<{
           </div>
           <div className="absolute top-3 right-3 z-10">
             <div className="flex gap-2">
-              <div className="bg-purple-500 text-white px-3 py-1 rounded-full text-sm font-poppins font-semibold">
+              <div className="bg-white text-purple-500 px-3 py-1 rounded-full text-sm font-poppins font-semibold">
                 Vibe
               </div>
               <div className={`px-3 py-1 rounded-full text-white text-sm font-poppins font-semibold ${
