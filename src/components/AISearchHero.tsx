@@ -223,14 +223,45 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       }
 
       // Step 3: Combine platform and semantic results
-      let combinedResults = [...platformResults];
+      // Step 3: Combine and deduplicate all results using Map for guaranteed uniqueness
+      console.log('🔄 Deduplicating results...');
+      console.log('📊 Before deduplication:', {
+        platform: platformResults.length,
+        semantic: semanticResults.length,
+        ai: aiResults.length
+      });
       
-      // Add semantic results that aren't already in platform results
-      if (semanticResults.length > 0) {
-        const platformIds = new Set(platformResults.map(b => b.id));
-        const uniqueSemanticResults = semanticResults.filter(b => !platformIds.has(b.id));
-        combinedResults = [...combinedResults, ...uniqueSemanticResults];
-      }
+      // Use Map for deduplication with priority: Platform > Semantic > AI
+      const businessMap = new Map();
+      
+      // Add AI results first (lowest priority)
+      aiResults.forEach(business => {
+        if (business.id) {
+          businessMap.set(business.id, business);
+        }
+      });
+      
+      // Add semantic results (medium priority - will overwrite AI if same ID)
+      semanticResults.forEach(business => {
+        if (business.id) {
+          businessMap.set(business.id, business);
+        }
+      });
+      
+      // Add platform results last (highest priority - will overwrite semantic/AI if same ID)
+      platformResults.forEach(business => {
+        if (business.id) {
+          businessMap.set(business.id, business);
+        }
+      });
+      
+      // Convert Map back to array
+      let combinedResults = Array.from(businessMap.values());
+      
+      console.log('📊 After deduplication:', {
+        total: combinedResults.length,
+        uniqueIds: new Set(combinedResults.map(b => b.id)).size
+      });
 
       // Calculate distances for all businesses that need it (batch operation)
       if (latitude && longitude && combinedResults.length > 0) {
