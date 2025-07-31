@@ -507,9 +507,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       <section className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
         {/* Credits Display - Top Left */}
         {currentUser && !isAppModeActive && (
-          <div className="absolute top-4 left-4 z-20 bg-white/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/40 flex items-center">
+          <div className="absolute top-4 left-4 z-20 flex items-center">
             <Zap className="h-5 w-5 mr-2 text-white" />
-            <span className="font-poppins text-lg font-bold text-white">{userCredits} credits</span>
+            <span className="font-poppins text-lg font-bold text-white">
+              {currentUser.role === 'administrator' && userCredits >= 999999 ? '∞' : userCredits} credits
+            </span>
           </div>
         )}
 
