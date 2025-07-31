@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Zap, Award, Calendar, MapPin, ThumbsUp, ThumbsDown, Edit, Trash2, Eye, Heart } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { UserService } from '../services/userService';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
@@ -13,12 +13,20 @@ import ReferralProgram from '../components/ReferralProgram';
 import { formatCredits, formatReviewCount, formatStat } from '../utils/formatters';
 
 const ReviewerDashboardPage = () => {
+  const location = useLocation();
   const [user, setUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'businesses' | 'credits'>('overview');
   const [userReviews, setUserReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [favoritedAIBusinesses, setFavoritedAIBusinesses] = useState<any[]>([]);
+
+  // Handle navigation state to set active tab
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchUserData = async () => {

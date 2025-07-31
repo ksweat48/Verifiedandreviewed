@@ -519,7 +519,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         {currentUser && !isAppModeActive && (
           <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
             <button
-              onClick={() => navigate('/dashboard')}
+             onClick={() => navigate('/dashboard', { state: { activeTab: 'favorites' } })}
               className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
               title="Favorites"
             >
