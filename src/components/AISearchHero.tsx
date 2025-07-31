@@ -437,6 +437,14 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     <>
       {/* Hero Section */}
       <section className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
+        {/* Credits Display - Top Left */}
+        {currentUser && !isAppModeActive && (
+          <div className="absolute top-4 left-4 z-20 bg-white/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/40 flex items-center">
+            <Zap className="h-5 w-5 mr-2 text-white" />
+            <span className="font-poppins text-lg font-bold text-white">{userCredits} credits</span>
+          </div>
+        )}
+
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]"></div>
@@ -477,7 +485,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           <div className="w-full max-w-2xl mx-auto mb-12">
             <div className="relative mb-6">
               <div className="absolute inset-0 bg-white/10 backdrop-blur-sm rounded-2xl"></div>
-              <div className="relative bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/20">
+              <div className="relative bg-white/40 backdrop-blur-md rounded-2xl p-6 border border-white/50">
                 <div className="flex items-center gap-4">
                   <div className="flex-1 relative">
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/70" />
@@ -488,7 +496,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                       placeholder="Describe your perfect vibe..."
-                      className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl font-lora text-white placeholder-white/90 focus:ring-2 focus:ring-white/30 focus:border-white/30 backdrop-blur-sm"
+                      className="w-full pl-12 pr-4 py-4 bg-white/30 border border-white/40 rounded-xl font-lora text-white placeholder-white/90 focus:ring-2 focus:ring-white/30 focus:border-white/30 backdrop-blur-sm"
                     />
                   </div>
                   <button
@@ -506,22 +514,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     )}
                   </button>
                 </div>
-
-                {/* Credit Info */}
-                {currentUser && (
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/20">
-                    <div className="flex items-center text-white/95">
-                      <Zap className="h-4 w-4 mr-2" />
-                      <span className="font-poppins text-sm">
-                        {userCredits} credits available
-                      </span>
-                      <CreditInfoTooltip placement="top" />
-                    </div>
-                    <div className="text-white/85 text-xs font-lora">
-                      Platform: 1 • Semantic: 5 • AI: 10 credits
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
