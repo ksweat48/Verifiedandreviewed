@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Zap, X, ArrowRight, Navigation, Sparkles, Mic, LayoutDashboard, Heart } from 'lucide-react';
+import { Search, MapPin, Zap, X, ArrowRight, Navigation, Sparkles, Mic, LayoutDashboard } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { useSwipeable } from 'react-swipeable';
 import { useNavigate } from 'react-router-dom';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { BusinessService } from '../services/businessService';
+import { ReviewService } from '../services/reviewService';
 import { SemanticSearchService } from '../services/semanticSearchService';
 import { CreditService } from '../services/creditService';
 import { UserService } from '../services/userService';
@@ -140,24 +142,57 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         userLongitude: longitude || undefined
       });
 
-      // Transform platform businesses to match expected interface
-      platformResults = rawPlatformResults.map(business => ({
-        ...business,
-        // Ensure platform business identification
-        isPlatformBusiness: true,
-        // Transform rating structure for compatibility
-        rating: {
-          thumbsUp: business.thumbs_up || 0,
-          thumbsDown: business.thumbs_down || 0,
-          sentimentScore: business.sentiment_score || 0
-        },
-        // Ensure image property is available
-        image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-        // Ensure isOpen property
-        isOpen: true, // Default to open since we don't have real-time status
-        // Ensure reviews array exists
-        reviews: business.reviews || []
-      }));
+      // Transform platform businesses and fetch their reviews
+      platformResults = await Promise.all(
+        rawPlatformResults.map(async (business) => {
+          try {
+            // Fetch reviews for this business
+            const businessReviews = await ReviewService.getBusinessReviews(business.id);
+            
+            // Transform reviews to match expected format
+            const formattedReviews = businessReviews.map(review => ({
+              text: review.review_text || 'No review text available',
+              author: review.profiles?.name || 'Anonymous',
+              authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+              images: (review.image_urls || []).map(url => ({ url })),
+              thumbsUp: review.rating >= 4
+            }));
+            
+            return {
+              ...business,
+              // Ensure platform business identification
+              isPlatformBusiness: true,
+              // Transform rating structure for compatibility
+              rating: {
+                thumbsUp: business.thumbs_up || 0,
+                thumbsDown: business.thumbs_down || 0,
+                sentimentScore: business.sentiment_score || 0
+              },
+              // Ensure image property is available
+              image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+              // Ensure isOpen property
+              isOpen: true, // Default to open since we don't have real-time status
+              // Add fetched reviews
+              reviews: formattedReviews
+            };
+          } catch (error) {
+            console.error(`Error fetching reviews for business ${business.id}:`, error);
+            // Return business without reviews if fetch fails
+            return {
+              ...business,
+              isPlatformBusiness: true,
+              rating: {
+                thumbsUp: business.thumbs_up || 0,
+                thumbsDown: business.thumbs_down || 0,
+                sentimentScore: business.sentiment_score || 0
+              },
+              image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+              isOpen: true,
+              reviews: []
+            };
+          }
+        })
+      );
 
       console.log(`✅ Found ${platformResults.length} platform businesses`);
 
@@ -603,7 +638,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-neutral-100 transition-colors duration-200"
                       title={isListening ? 'Stop listening' : 'Voice search'}
                     >
-                      <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : 'text-neutral-600'}`} />
+                      <Icons.Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
+                      <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
                     </button>
                     <input
                       ref={searchInputRef}
