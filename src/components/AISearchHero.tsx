@@ -638,7 +638,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-neutral-100 transition-colors duration-200"
                       title={isListening ? 'Stop listening' : 'Voice search'}
                     >
-                      <Icons.Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
+                      <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : 'text-neutral-400'}`} />
                     </button>
                     <input
                       ref={searchInputRef}
@@ -662,7 +662,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                         {/* Mobile: Search icon only */}
                         <Search className="h-5 w-5 md:hidden" />
                         {/* Desktop: Sparkles icon + Vibe text */}
-                          <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+                        <Sparkles className="h-4 w-4 mr-2" />
                         <span className="hidden md:inline">Vibe</span>
                       </>
                     )}
