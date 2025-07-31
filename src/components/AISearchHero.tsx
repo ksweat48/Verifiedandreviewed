@@ -308,7 +308,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       }
 
       // Step 4: If we have fewer than 6 total results and user has AI credits, use AI search
-      if (combinedResults.length < 6 && user && effectiveSearchType !== 'platform') {
+      if (combinedResults.length < 6 && user && effectiveSearchType !== 'platform' && aiResults.length === 0) {
         console.log('🤖 Using AI search to fill remaining slots...');
         try {
           // Deduct credits for AI search
@@ -335,7 +335,21 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               if (aiData.success && aiData.results) {
                 aiResults = aiData.results;
                 console.log(`✅ AI search generated ${aiResults.length} results`);
-                combinedResults = [...combinedResults, ...aiResults];
+                
+                // Re-deduplicate with new AI results
+                aiResults.forEach(business => {
+                  if (business.id && !businessMap.has(business.id)) {
+                    businessMap.set(business.id, business);
+                  }
+                });
+                
+                // Update combined results
+                combinedResults = Array.from(businessMap.values());
+                
+                console.log('📊 After adding AI results:', {
+                  total: combinedResults.length,
+                  uniqueIds: new Set(combinedResults.map(b => b.id)).size
+                });
               }
             }
           }
