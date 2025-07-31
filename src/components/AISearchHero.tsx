@@ -496,7 +496,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                       placeholder="Describe your perfect vibe..."
-                      className="w-full pl-12 pr-4 py-4 bg-white/30 border border-white/40 rounded-xl font-lora text-white placeholder-white/90 focus:ring-2 focus:ring-white/30 focus:border-white/30 backdrop-blur-sm"
+                      className="w-full pl-12 pr-4 py-4 bg-white border border-white rounded-xl font-lora text-neutral-700 placeholder-neutral-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                   <button
