@@ -466,7 +466,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           {/* Main Heading */}
           <div className="mb-8">
             <h1 className="font-cinzel text-6xl md:text-8xl lg:text-9xl font-black text-white mb-4 tracking-tight">
-              VIBE
+              Vibe Search
             </h1>
             <p className="font-lora text-xl md:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed">
               Where vibes lead to new experiences
