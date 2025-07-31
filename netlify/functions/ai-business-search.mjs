@@ -388,10 +388,38 @@ Requirements:
     console.log('⚡ Executing up to', searchQueries.length, 'Google Places searches in parallel...');
     const searchResults = await Promise.all(searchPromises);
     
-    // Filter out null results and add to foundBusinesses
-    const validResults = searchResults.filter(result => result !== null);
-    foundBusinesses.push(...validResults);
-    console.log('🎯 AI search results before distance filtering:', foundBusinesses.length, 'businesses');
+    // Collect all valid results into a single array
+    const allPotentialBusinesses = [];
+    searchResults.forEach(result => {
+      if (result !== null) {
+        allPotentialBusinesses.push(result);
+      }
+    });
+    
+    console.log('🎯 AI search collected', allPotentialBusinesses.length, 'potential businesses before deduplication');
+    
+    // Deduplicate by place_id using Map
+    const uniqueBusinessesMap = new Map();
+    allPotentialBusinesses.forEach(business => {
+      if (business.placeId && !uniqueBusinessesMap.has(business.placeId)) {
+        uniqueBusinessesMap.set(business.placeId, business);
+      } else if (!business.placeId && !uniqueBusinessesMap.has(business.id)) {
+        // Fallback for businesses without placeId
+        uniqueBusinessesMap.set(business.id, business);
+      }
+    });
+    
+    // Convert Map back to array and sort by similarity
+    const uniqueBusinesses = Array.from(uniqueBusinessesMap.values())
+      .sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+    
+    console.log('🎯 After deduplication:', uniqueBusinesses.length, 'unique businesses');
+    
+    // Take only the requested number of businesses
+    const finalBusinesses = uniqueBusinesses.slice(0, numToGenerate);
+    foundBusinesses.push(...finalBusinesses);
+    
+    console.log('🎯 AI search results after deduplication and limiting:', foundBusinesses.length, 'businesses');
     
     // Filter businesses by 10-mile radius if user location is available
     let radiusFilteredBusinesses = foundBusinesses;
