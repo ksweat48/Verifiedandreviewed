@@ -38,6 +38,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [lastSearchQuery, setLastSearchQuery] = useState('');
   const [userCredits, setUserCredits] = useState<number>(0);
   const [isLoadingCredits, setIsLoadingCredits] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   const { latitude, longitude, error: locationError } = useGeolocation();
@@ -307,6 +308,73 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     window.open(mapsUrl, '_blank');
   };
 
+  const handleVoiceSearch = async () => {
+    // Check if Speech Recognition is available
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in your browser. Please try Chrome, Safari, or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      // Stop listening if already active
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        console.log('🎤 Voice recognition started');
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        
+        // Update search query with the transcript
+        setSearchQuery(transcript);
+        console.log('🎤 Voice transcript:', transcript);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        console.log('🎤 Voice recognition ended');
+        
+        // Auto-search if we have a query
+        if (searchQuery.trim()) {
+          setTimeout(() => handleSearch(), 500);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        setIsListening(false);
+        console.error('🎤 Voice recognition error:', event.error);
+        
+        if (event.error === 'not-allowed') {
+          alert('Microphone access denied. Please allow microphone access and try again.');
+        } else if (event.error === 'no-speech') {
+          alert('No speech detected. Please try again.');
+        } else {
+          alert('Voice recognition error. Please try again.');
+        }
+      };
+
+      recognition.start();
+    } catch (error) {
+      console.error('🎤 Error starting voice recognition:', error);
+      alert('Failed to start voice recognition. Please try again.');
+      setIsListening(false);
+    }
+  };
   const handleAuthSuccess = (user: any) => {
     setCurrentUser(user);
     setUserCredits(user.credits || 0);
@@ -488,7 +556,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               <div className="relative bg-white/40 backdrop-blur-md rounded-2xl p-6 border border-white/50">
                 <div className="flex items-center gap-4">
                   <div className="flex-1 relative">
-                    <Mic className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-600" />
+                    <button
+                      onClick={handleVoiceSearch}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-neutral-100 transition-colors duration-200"
+                      title={isListening ? 'Stop listening' : 'Voice search'}
+                    >
+                      <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : 'text-neutral-600'}`} />
+                    </button>
                     <input
                       ref={searchInputRef}
                       type="text"
@@ -496,7 +570,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                       placeholder="Describe your perfect vibe..."
-                      className="w-full pl-4 pr-12 py-4 bg-white border border-white rounded-xl font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full pl-4 pr-16 py-4 bg-white border border-white rounded-xl font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                   <button
