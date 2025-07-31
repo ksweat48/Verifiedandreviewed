@@ -142,6 +142,42 @@ export const handler = async (event, context) => {
       } else {
         console.log('✅ Fetched full details for', fullBusinessDetails?.length || 0, 'businesses');
         
+        // Fetch reviews for all platform businesses in a single batch query
+        let allBusinessReviews = [];
+        if (fullBusinessDetails && fullBusinessDetails.length > 0) {
+          console.log('📦 Batch fetching reviews for', fullBusinessDetails.length, 'platform businesses from semantic search');
+          
+          const { data: reviewsData, error: reviewsError } = await supabase
+            .from('user_reviews')
+            .select(`
+              *,
+              profiles!inner (
+                id,
+                name,
+                avatar_url
+              )
+            `)
+            .in('business_id', businessIds)
+            .eq('status', 'approved')
+            .order('created_at', { ascending: false });
+          
+          if (reviewsError) {
+            console.error('❌ Error fetching reviews for semantic search businesses:', reviewsError);
+          } else {
+            allBusinessReviews = reviewsData || [];
+            console.log('✅ Fetched', allBusinessReviews.length, 'reviews for semantic search businesses');
+          }
+        }
+        
+        // Create a map of business ID to reviews for quick lookup
+        const reviewsMap = new Map();
+        allBusinessReviews.forEach(review => {
+          if (!reviewsMap.has(review.business_id)) {
+            reviewsMap.set(review.business_id, []);
+          }
+          reviewsMap.get(review.business_id).push(review);
+        });
+        
         // Create a map of business ID to full details for quick lookup
         const businessDetailsMap = new Map();
         if (fullBusinessDetails) {
@@ -154,19 +190,35 @@ export const handler = async (event, context) => {
         enrichedResults = searchResults.map(searchResult => {
           const fullDetails = businessDetailsMap.get(searchResult.id);
           if (fullDetails) {
+            // Get reviews for this business
+            const businessReviews = reviewsMap.get(searchResult.id) || [];
+            
+            // Transform reviews to match expected format
+            const formattedReviews = businessReviews.map(review => ({
+              text: review.review_text || 'No review text available',
+              author: review.profiles?.name || 'Anonymous',
+              authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+              images: (review.image_urls || []).map(url => ({ url })),
+              thumbsUp: review.rating >= 4
+            }));
+            
             // Merge full details with search result, preserving similarity score
             return {
               ...fullDetails,
-              similarity: searchResult.similarity
+              similarity: searchResult.similarity,
+              reviews: formattedReviews
             };
           } else {
             // Fall back to search result if full details not found
             console.warn(`⚠️ Full details not found for business ID: ${searchResult.id}`);
-            return searchResult;
+            return {
+              ...searchResult,
+              reviews: []
+            };
           }
         });
         
-        console.log('✅ Successfully enriched', enrichedResults.length, 'business results with full details');
+        console.log('✅ Successfully enriched', enrichedResults.length, 'business results with full details and reviews');
       }
     } else {
       enrichedResults = searchResults || [];
@@ -189,7 +241,7 @@ export const handler = async (event, context) => {
       isOpen: true, // Default to open since we don't have real-time status
       distance: 999999, // Will be calculated accurately below
       duration: 999999, // Will be calculated accurately below
-      reviews: [], // Reviews would be fetched separately if needed
+      reviews: business.reviews || [], // Reviews are now included from the enrichment process
       similarity: business.similarity || 0
     }));
 
