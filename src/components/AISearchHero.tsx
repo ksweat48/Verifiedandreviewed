@@ -469,7 +469,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               Vibe Search
             </h1>
             <p className="font-lora text-xl md:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed">
-              Where vibes lead to new experiences
+              Experience something new
             </p>
           </div>
 
