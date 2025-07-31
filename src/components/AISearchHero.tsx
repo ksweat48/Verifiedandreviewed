@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Zap, X, ArrowRight, Navigation, Sparkles, Mic, LayoutDashboard } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import { useSwipeable } from 'react-swipeable';
 import { useNavigate } from 'react-router-dom';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { BusinessService } from '../services/businessService';
@@ -29,7 +28,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
@@ -46,7 +44,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const { latitude, longitude, error: locationError } = useGeolocation();
 
   // Check for current user and load credits
-  useEffect(() => {
     const checkUser = async () => {
       try {
         const user = await UserService.getCurrentUser();
@@ -295,25 +292,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     }
   };
 
-  const handleCardSwipe = (direction: 'left' | 'right') => {
-    if (direction === 'left' && currentCardIndex < searchResults.length - 1) {
-      setCurrentCardIndex(prev => prev + 1);
-    } else if (direction === 'right' && currentCardIndex > 0) {
-      setCurrentCardIndex(prev => prev - 1);
-    }
-  };
-
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => handleCardSwipe('left'),
-    onSwipedRight: () => handleCardSwipe('right'),
-    trackMouse: true,
-    preventScrollOnSwipe: true
-  });
 
   const handleBackToSearch = () => {
     setIsAppModeActive(false);
     setSearchResults([]);
-    setCurrentCardIndex(0);
     setHasSearched(false);
     setShowBackToast(true);
     setTimeout(() => setShowBackToast(false), 2000);
@@ -499,47 +481,24 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               </div>
             </div>
           ) : (
-            <div {...swipeHandlers} className="h-full overflow-hidden">
-              <div className="h-full px-4 py-4 flex items-center justify-center">
-                <div className="w-full max-w-sm">
-                  {searchResults[currentCardIndex] && (
-                    searchResults[currentCardIndex].isPlatformBusiness || searchResults[currentCardIndex].id?.startsWith('platform-') ? (
+            <div className="h-full overflow-y-auto">
+              <div className="px-4 py-4 space-y-4">
+                {searchResults.map((business, index) => (
+                  <div key={business.id || index} className="w-full max-w-sm mx-auto">
+                    {business.isPlatformBusiness || business.id?.startsWith('platform-') ? (
                       <PlatformBusinessCard
-                        business={searchResults[currentCardIndex]}
+                        business={business}
                         onRecommend={handleRecommendBusiness}
                         onTakeMeThere={handleTakeMeThere}
                       />
                     ) : (
                       <AIBusinessCard
-                        business={searchResults[currentCardIndex]}
+                        business={business}
                         onRecommend={handleRecommendBusiness}
                       />
-                    )
-                  )}
-                </div>
-              </div>
-              
-              {/* Card Navigation */}
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-white bg-opacity-90 backdrop-blur-sm rounded-full px-4 py-2">
-                <button
-                  onClick={() => handleCardSwipe('right')}
-                  disabled={currentCardIndex === 0}
-                  className="p-2 rounded-full bg-white shadow-sm disabled:opacity-50"
-                >
-                  <ArrowRight className="h-4 w-4 rotate-180" />
-                </button>
-                
-                <span className="font-poppins text-sm font-semibold text-neutral-700 px-3">
-                  {currentCardIndex + 1} of {searchResults.length}
-                </span>
-                
-                <button
-                  onClick={() => handleCardSwipe('left')}
-                  disabled={currentCardIndex === searchResults.length - 1}
-                  className="p-2 rounded-full bg-white shadow-sm disabled:opacity-50"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -548,7 +507,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         {/* Back Toast */}
         {showBackToast && (
           <div className="back-toast">
-            Swipe right or tap back to search again
+            Tap back to search again
           </div>
         )}
       </div>
