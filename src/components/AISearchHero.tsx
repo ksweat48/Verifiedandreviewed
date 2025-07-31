@@ -599,14 +599,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   <button
                     onClick={() => handleSearch()}
                     disabled={isSearching || !searchQuery.trim()}
-                    className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-8 py-4 rounded-xl font-poppins font-semibold hover:shadow-lg hover:shadow-primary-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 py-4 md:px-8 rounded-xl font-poppins font-semibold hover:shadow-lg hover:shadow-primary-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                   >
                     {isSearching ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     ) : (
                       <>
-                        <Sparkles className="h-5 w-5 mr-2" />
-                        Vibe
+                        {/* Mobile: Search icon only */}
+                        <Search className="h-5 w-5 md:hidden" />
+                        {/* Desktop: Sparkles icon + Vibe text */}
+                        <Sparkles className="h-5 w-5 mr-2 hidden md:block" />
+                        <span className="hidden md:inline">Vibe</span>
                       </>
                     )}
                   </button>
