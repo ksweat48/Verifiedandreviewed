@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Zap, X, ArrowRight, Navigation, Heart, Sparkles } from 'lucide-react';
+import { Search, MapPin, Zap, X, ArrowRight, Navigation, Heart, Sparkles, Mic } from 'lucide-react';
 import { useSwipeable } from 'react-swipeable';
 import { useNavigate } from 'react-router-dom';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -488,7 +488,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               <div className="relative bg-white/40 backdrop-blur-md rounded-2xl p-6 border border-white/50">
                 <div className="flex items-center gap-4">
                   <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-600" />
+                    <Mic className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-600" />
                     <input
                       ref={searchInputRef}
                       type="text"
@@ -496,7 +496,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                       placeholder="Describe your perfect vibe..."
-                      className="w-full pl-12 pr-4 py-4 bg-white border border-white rounded-xl font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full pl-4 pr-12 py-4 bg-white border border-white rounded-xl font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                   <button
