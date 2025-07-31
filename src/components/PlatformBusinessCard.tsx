@@ -169,6 +169,21 @@ const PlatformBusinessCard: React.FC<{
             </div>
           </div>
 
+          {/* Favorite Button - Bottom Right */}
+          <div className="absolute bottom-3 right-3 z-10">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRecommend(business);
+              }}
+              className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
+              title="Add to favorites"
+            >
+              <Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+            </button>
+          </div>
+
           <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80"></div>
           <div className="absolute bottom-0 left-0 right-0 p-2 text-white">
             <h3 className="font-poppins text-base font-bold mb-1 text-shadow line-clamp-1 cursor-pointer" onClick={handleBusinessClick}>

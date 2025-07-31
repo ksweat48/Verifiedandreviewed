@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Clock, ThumbsUp, MapPin, Navigation } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import BusinessProfileModal from './BusinessProfileModal';
 import LeaveReviewModal from './LeaveReviewModal';
@@ -41,6 +42,7 @@ interface Business {
 
 const ExploreArea = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentReviewIndices, setCurrentReviewIndices] = useState<{ [key: string]: number }>({});
@@ -216,6 +218,48 @@ const ExploreArea = () => {
     alert(`Thanks! We'll review ${business.name} for addition to our platform.`);
   };
 
+  // Handle favoriting platform businesses
+  const handleFavoritePlatformBusiness = async (business: Business) => {
+    if (!currentUser) {
+      // Dispatch custom event to open auth modal
+      const event = new CustomEvent('open-auth-modal', {
+        detail: { mode: 'signup' }
+      });
+      document.dispatchEvent(event);
+      return;
+    }
+
+    try {
+      // Transform platform business to recommendation format
+      const businessData = {
+        name: business.name,
+        address: business.address || business.location || 'Address not available',
+        location: business.location || business.address || 'Location not available',
+        category: business.category || 'Platform Business',
+        description: business.description || business.short_description || `Platform business: ${business.name}`,
+        image: business.image,
+        shortDescription: business.short_description || business.description,
+        rating: 5, // Default high rating for platform businesses
+        hours: business.hours,
+        isOpen: true,
+        reviews: business.reviews || [],
+        isPlatformBusiness: true,
+        tags: business.tags || [],
+        similarity: 0.9 // High similarity for platform businesses
+      };
+
+      const success = await BusinessService.saveAIRecommendation(businessData, currentUser.id);
+      if (success) {
+        alert(`${business.name} has been added to your favorites!`);
+      } else {
+        alert('Failed to add to favorites. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error adding platform business to favorites:', error);
+      alert('Failed to add to favorites. Please try again.');
+    }
+  };
+
   // Get sentiment rating text based on score
   const getSentimentRating = (score: number) => {
     if (score >= 80) return { text: 'Great', color: 'bg-green-500' };
@@ -277,6 +321,23 @@ const ExploreArea = () => {
                         {business.isOpen ? 'Open' : 'Closed'}
                       </div>
                     </div>
+                    
+                    {/* Favorite Button - Bottom Right */}
+                    {currentUser && (
+                      <div className="absolute bottom-3 right-3 z-10">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleFavoritePlatformBusiness(business);
+                          }}
+                          className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
+                          title="Add to favorites"
+                        >
+                          <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+                        </button>
+                      </div>
+                    )}
                     
                     {/* Dark Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80"></div>
