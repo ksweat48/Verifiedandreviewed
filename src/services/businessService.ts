@@ -401,33 +401,13 @@ export class BusinessService {
       console.log('✅ Supabase query returned', businesses.length, 'businesses');
       
       // Calculate accurate distances if user location is provided
-      if (filters?.userLatitude && filters?.userLongitude && businesses.length > 0) {
-        console.log('📏 Calculating distances for', businesses.length, 'businesses');
-        try {
-          businesses = await this.calculateBusinessDistances(
-            businesses,
-            filters.userLatitude,
-            filters.userLongitude
-          );
-        } catch (distanceError) {
-          console.warn('Distance calculation failed, using fallback values:', distanceError);
-          console.warn('⚠️ Distance calculation failed, using fallback values:', distanceError);
-          // Add fallback distance/duration values - mark as very far to be filtered out
-          businesses = businesses.map(business => ({
-            ...business,
-            distance: 999999, // Mark as very far to be filtered out by 10-mile cap
-            duration: 999999
-          }));
-        }
-      } else {
-        // Add fallback distance/duration values when no user location - mark as very far
-        console.log('⚠️ No user location provided, using fallback distance values');
-        businesses = businesses.map(business => ({
-          ...business,
-          distance: 999999, // Mark as very far to be filtered out by 10-mile cap
-          duration: 999999
-        }));
-      }
+      // Distance calculation is now handled externally for better performance
+      // Add placeholder distance/duration values
+      businesses = businesses.map(business => ({
+        ...business,
+        distance: 999999, // Will be calculated externally
+        duration: 999999
+      }));
       
       console.log('📊 Final businesses with distances:', businesses.map(b => ({
         name: b.name,
@@ -441,7 +421,7 @@ export class BusinessService {
   }
 
   // Calculate accurate distances using Google Distance Matrix API
-  private static async calculateBusinessDistances(
+  static async calculateBusinessDistances(
     businesses: Business[],
     userLatitude: number,
     userLongitude: number

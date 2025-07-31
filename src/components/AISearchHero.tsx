@@ -142,56 +142,54 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       });
 
       // Transform platform businesses and fetch their reviews
-      platformResults = await Promise.all(
-        rawPlatformResults.map(async (business) => {
-          try {
-            // Fetch reviews for this business
-            const businessReviews = await ReviewService.getBusinessReviews(business.id);
-            
-            // Transform reviews to match expected format
-            const formattedReviews = businessReviews.map(review => ({
-              text: review.review_text || 'No review text available',
-              author: review.profiles?.name || 'Anonymous',
-              authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
-              images: (review.image_urls || []).map(url => ({ url })),
-              thumbsUp: review.rating >= 4
-            }));
-            
-            return {
-              ...business,
-              // Ensure platform business identification
-              isPlatformBusiness: true,
-              // Transform rating structure for compatibility
-              rating: {
-                thumbsUp: business.thumbs_up || 0,
-                thumbsDown: business.thumbs_down || 0,
-                sentimentScore: business.sentiment_score || 0
-              },
-              // Ensure image property is available
-              image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-              // Ensure isOpen property
-              isOpen: true, // Default to open since we don't have real-time status
-              // Add fetched reviews
-              reviews: formattedReviews
-            };
-          } catch (error) {
-            console.error(`Error fetching reviews for business ${business.id}:`, error);
-            // Return business without reviews if fetch fails
-            return {
-              ...business,
-              isPlatformBusiness: true,
-              rating: {
-                thumbsUp: business.thumbs_up || 0,
-                thumbsDown: business.thumbs_down || 0,
-                sentimentScore: business.sentiment_score || 0
-              },
-              image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-              isOpen: true,
-              reviews: []
-            };
-          }
-        })
-      );
+      // Batch fetch reviews for all platform businesses
+      let allBusinessReviews: any[] = [];
+      if (rawPlatformResults.length > 0) {
+        const businessIds = rawPlatformResults.map(business => business.id);
+        console.log('📦 Batch fetching reviews for', businessIds.length, 'platform businesses');
+        allBusinessReviews = await ReviewService.getBusinessReviews(businessIds);
+      }
+      
+      // Create a map of business ID to reviews for quick lookup
+      const reviewsMap = new Map();
+      allBusinessReviews.forEach(review => {
+        if (!reviewsMap.has(review.business_id)) {
+          reviewsMap.set(review.business_id, []);
+        }
+        reviewsMap.get(review.business_id).push(review);
+      });
+      
+      // Transform platform businesses with their reviews
+      platformResults = rawPlatformResults.map(business => {
+        const businessReviews = reviewsMap.get(business.id) || [];
+        
+        // Transform reviews to match expected format
+        const formattedReviews = businessReviews.map((review: any) => ({
+          text: review.review_text || 'No review text available',
+          author: review.profiles?.name || 'Anonymous',
+          authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+          images: (review.image_urls || []).map((url: string) => ({ url })),
+          thumbsUp: review.rating >= 4
+        }));
+        
+        return {
+          ...business,
+          // Ensure platform business identification
+          isPlatformBusiness: true,
+          // Transform rating structure for compatibility
+          rating: {
+            thumbsUp: business.thumbs_up || 0,
+            thumbsDown: business.thumbs_down || 0,
+            sentimentScore: business.sentiment_score || 0
+          },
+          // Ensure image property is available
+          image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+          // Ensure isOpen property
+          isOpen: true, // Default to open since we don't have real-time status
+          // Add fetched reviews
+          reviews: formattedReviews
+        };
+      });
 
       console.log(`✅ Found ${platformResults.length} platform businesses`);
 
@@ -232,6 +230,50 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         const platformIds = new Set(platformResults.map(b => b.id));
         const uniqueSemanticResults = semanticResults.filter(b => !platformIds.has(b.id));
         combinedResults = [...combinedResults, ...uniqueSemanticResults];
+      }
+
+      // Calculate distances for all businesses that need it (batch operation)
+      if (latitude && longitude && combinedResults.length > 0) {
+        console.log('📏 Batch calculating distances for', combinedResults.length, 'businesses');
+        try {
+          const businessesNeedingDistance = combinedResults.filter(business => 
+            business.latitude && business.longitude && (business.distance === 999999 || !business.distance)
+          );
+          
+          if (businessesNeedingDistance.length > 0) {
+            const updatedBusinesses = await BusinessService.calculateBusinessDistances(
+              businessesNeedingDistance,
+              latitude,
+              longitude
+            );
+            
+            // Create a map of business ID to distance data
+            const distanceMap = new Map();
+            updatedBusinesses.forEach(business => {
+              distanceMap.set(business.id, {
+                distance: business.distance,
+                duration: business.duration
+              });
+            });
+            
+            // Update combinedResults with calculated distances
+            combinedResults = combinedResults.map(business => {
+              const distanceData = distanceMap.get(business.id);
+              if (distanceData) {
+                return {
+                  ...business,
+                  distance: distanceData.distance,
+                  duration: distanceData.duration
+                };
+              }
+              return business;
+            });
+            
+            console.log('✅ Batch distance calculation completed');
+          }
+        } catch (distanceError) {
+          console.warn('⚠️ Batch distance calculation failed:', distanceError);
+        }
       }
 
       // Step 4: If we have fewer than 6 total results and user has AI credits, use AI search

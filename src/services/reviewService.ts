@@ -97,8 +97,12 @@ export class ReviewService {
   }
 
   // Get approved reviews for a business
-  static async getBusinessReviews(businessId: string): Promise<UserReview[]> {
+  static async getBusinessReviews(businessId: string | string[]): Promise<UserReview[]> {
     try {
+      // Handle both single businessId and array of businessIds
+      const isArray = Array.isArray(businessId);
+      const businessIds = isArray ? businessId : [businessId];
+      
       const { data, error } = await supabase
         .from('user_reviews')
         .select(`
@@ -109,7 +113,7 @@ export class ReviewService {
             avatar_url
           )
         `)
-        .eq('business_id', businessId)
+        .in('business_id', businessIds)
         .eq('status', 'approved')
         .order('created_at', { ascending: false });
 
