@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import * as Icons from 'lucide-react';
 import { UserService } from '../services/userService';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
@@ -116,11 +117,11 @@ const ReviewerDashboardPage = () => {
   const reviewProgress = getReviewProgress(user.reviewCount);
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: User },
-    { id: 'reviews', label: 'My Reviews', icon: ThumbsUp },
-    { id: 'favorites', label: 'Favorites', icon: Heart },
-    { id: 'businesses', label: 'My Businesses', icon: Award },
-    { id: 'credits', label: 'Credits', icon: Zap }
+    { id: 'overview', label: 'Overview', icon: Icons.User },
+    { id: 'reviews', label: 'My Reviews', icon: Icons.ThumbsUp },
+    { id: 'favorites', label: 'Favorites', icon: Icons.Heart },
+    { id: 'businesses', label: 'My Businesses', icon: Icons.Award },
+    { id: 'credits', label: 'Credits', icon: Icons.Zap }
   ];
 
   return (
@@ -160,7 +161,7 @@ const ReviewerDashboardPage = () => {
             <div className="flex flex-col items-end gap-1">
               <div className="bg-primary-100 text-primary-700 px-3 py-1.5 rounded-lg flex-shrink-0">
                 <div className="flex items-center whitespace-nowrap">
-                  <Zap className="h-3 w-3 mr-1.5" />
+                  <Icons.Zap className="h-3 w-3 mr-1.5" />
                   <span className="font-poppins text-sm font-semibold">
                     {formatCredits(user.credits, user.role)} credits
                   </span>
@@ -169,7 +170,7 @@ const ReviewerDashboardPage = () => {
               
               <div className="bg-accent-100 text-accent-700 px-3 py-1.5 rounded-lg flex-shrink-0">
                 <div className="flex items-center whitespace-nowrap">
-                  <Award className="h-3 w-3 mr-1.5" />
+                  <Icons.Award className="h-3 w-3 mr-1.5" />
                   <span className="font-poppins text-sm font-semibold">
                     Level {user.level}
                   </span>
@@ -249,7 +250,7 @@ const ReviewerDashboardPage = () => {
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200">
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                    <ThumbsUp className="h-5 w-5 text-primary-600" />
+                    <Icons.ThumbsUp className="h-5 w-5 text-primary-600" />
                   </div>
                   <div>
                     <h3 className="font-poppins text-xl font-bold text-neutral-900">
@@ -263,7 +264,7 @@ const ReviewerDashboardPage = () => {
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200">
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-accent-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                    <Award className="h-5 w-5 text-accent-600" />
+                    <Icons.Award className="h-5 w-5 text-accent-600" />
                   </div>
                   <div>
                     <h3 className="font-poppins text-xl font-bold text-neutral-900">
@@ -277,7 +278,7 @@ const ReviewerDashboardPage = () => {
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200 sm:col-span-2 lg:col-span-1">
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                    <Zap className="h-5 w-5 text-green-600" />
+                    <Icons.Zap className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
                     <h3 className="font-poppins text-xl font-bold text-neutral-900">
