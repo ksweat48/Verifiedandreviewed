@@ -634,7 +634,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                         {/* Mobile: Search icon only */}
                         <Search className="h-5 w-5 md:hidden" />
                         {/* Desktop: Sparkles icon + Vibe text */}
-                        <Sparkles className="h-4 w-4 mr-2" />
                         <span className="hidden md:inline">Vibe</span>
                       </>
                     )}
