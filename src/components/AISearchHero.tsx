@@ -488,7 +488,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                       placeholder="Describe your perfect vibe..."
-                      className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl font-lora text-white placeholder-white/60 focus:ring-2 focus:ring-white/30 focus:border-white/30 backdrop-blur-sm"
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl font-lora text-white placeholder-white/90 focus:ring-2 focus:ring-white/30 focus:border-white/30 backdrop-blur-sm"
                     />
                   </div>
                   <button
@@ -510,14 +510,14 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 {/* Credit Info */}
                 {currentUser && (
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/20">
-                    <div className="flex items-center text-white/80">
+                    <div className="flex items-center text-white/95">
                       <Zap className="h-4 w-4 mr-2" />
                       <span className="font-poppins text-sm">
                         {userCredits} credits available
                       </span>
                       <CreditInfoTooltip placement="top" />
                     </div>
-                    <div className="text-white/60 text-xs font-lora">
+                    <div className="text-white/85 text-xs font-lora">
                       Platform: 1 • Semantic: 5 • AI: 10 credits
                     </div>
                   </div>
