@@ -134,11 +134,30 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       // Step 1: Always search platform businesses first
       console.log('🔍 Searching platform businesses...');
-      platformResults = await BusinessService.getBusinesses({
+      const rawPlatformResults = await BusinessService.getBusinesses({
         search: searchTerm,
         userLatitude: latitude || undefined,
         userLongitude: longitude || undefined
       });
+
+      // Transform platform businesses to match expected interface
+      platformResults = rawPlatformResults.map(business => ({
+        ...business,
+        // Ensure platform business identification
+        isPlatformBusiness: true,
+        // Transform rating structure for compatibility
+        rating: {
+          thumbsUp: business.thumbs_up || 0,
+          thumbsDown: business.thumbs_down || 0,
+          sentimentScore: business.sentiment_score || 0
+        },
+        // Ensure image property is available
+        image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+        // Ensure isOpen property
+        isOpen: true, // Default to open since we don't have real-time status
+        // Ensure reviews array exists
+        reviews: business.reviews || []
+      }));
 
       console.log(`✅ Found ${platformResults.length} platform businesses`);
 
