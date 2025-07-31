@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Zap, X, ArrowRight, Navigation, Heart, Sparkles, Mic } from 'lucide-react';
+import { Search, MapPin, Zap, X, ArrowRight, Navigation, Heart, Sparkles, Mic, LayoutDashboard } from 'lucide-react';
 import { useSwipeable } from 'react-swipeable';
 import { useNavigate } from 'react-router-dom';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -512,6 +512,27 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <span className="font-poppins text-lg font-bold text-white">
               {currentUser.role === 'administrator' && userCredits >= 999999 ? '∞' : userCredits} credits
             </span>
+          </div>
+        )}
+
+        {/* Favorites and Dashboard Icons - Top Right */}
+        {currentUser && !isAppModeActive && (
+          <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+              title="Favorites"
+            >
+              <Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
+            </button>
+            
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+              title="Dashboard"
+            >
+              <LayoutDashboard className="h-5 w-5 text-white group-hover:text-primary-300 transition-colors duration-200" />
+            </button>
           </div>
         )}
 
