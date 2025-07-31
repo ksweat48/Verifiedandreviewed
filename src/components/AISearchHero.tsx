@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Zap, X, ArrowRight, Navigation, Sparkles, Mic, LayoutDashboard } from 'lucide-react';
+import { Search, MapPin, Zap, X, ArrowRight, Navigation, Sparkles, Mic, LayoutDashboard, Heart } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useSwipeable } from 'react-swipeable';
 import { useNavigate } from 'react-router-dom';
@@ -638,8 +638,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-neutral-100 transition-colors duration-200"
                       title={isListening ? 'Stop listening' : 'Voice search'}
                     >
-                      <Icons.Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
-                      <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+                      <Mic className={`h-4 w-4 ${isListening ? 'text-red-500 animate-pulse' : 'text-neutral-600'}`} />
                     </button>
                     <input
                       ref={searchInputRef}
