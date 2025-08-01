@@ -67,7 +67,7 @@ export default async function handler(req) {
       prompt, 
       searchQuery, 
       existingResultsCount = 0, 
-      numToGenerate = 10,
+      numToGenerate = 15,
       latitude,
       longitude 
     } = await req.json();
@@ -127,18 +127,20 @@ export default async function handler(req) {
     });
 
     // Enhanced system prompt for generating Google Places search queries
-    const systemPrompt = `You are a search query generator for Google Places API. Your job is to interpret user queries about business vibes/moods and convert them into effective Google Places search terms.
+    const systemPrompt = `You are a search query generator for Google Places API. Your job is to interpret user queries about business vibes/moods and convert them into effective Google Places search terms that will find diverse, interesting businesses.
 
 CRITICAL: Use the generateSearchQueries function. Do not return raw JSON or explanations.
 
 Requirements:
 • Generate exactly ${numToGenerate} different search queries
-• Each query should be a string suitable for Google Places Text Search
+• Each query should be a unique string suitable for Google Places Text Search
 • Focus on business type + descriptive keywords that match the user's vibe
-• Include variety in business types and locations
-• Use terms like "cozy", "trendy", "upscale", "casual", "romantic" etc. when appropriate
-• Examples: "trendy wine bar", "cozy coffee shop", "upscale cocktail lounge", "casual brewery"
-• Keep queries concise (2-4 words typically)`;
+• Include MAXIMUM variety in business types (restaurants, cafes, bars, shops, services, entertainment, etc.)
+• Use diverse descriptive terms like "cozy", "trendy", "upscale", "casual", "romantic", "modern", "vintage", "artisan", "boutique", "local", "authentic", etc.
+• Examples: "trendy wine bar", "cozy coffee shop", "upscale cocktail lounge", "casual brewery", "artisan bakery", "boutique bookstore", "vintage clothing store", "local art gallery"
+• Keep queries concise (2-4 words typically)
+• Ensure each query is DIFFERENT and will find DIFFERENT types of businesses
+• Mix different business categories to provide variety`;
 
     // Define function schema for generating search queries
     const tools = [{
@@ -391,7 +393,7 @@ Requirements:
     console.log('🎯 After deduplication:', uniqueBusinesses.length, 'unique businesses');
     
     // Take only the requested number of businesses
-    const finalBusinesses = uniqueBusinesses.slice(0, numToGenerate);
+    const finalBusinesses = uniqueBusinesses.slice(0, Math.min(numToGenerate, 15));
     
     console.log('🎯 AI search results after deduplication and limiting:', finalBusinesses.length, 'businesses');
     
