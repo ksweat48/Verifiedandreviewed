@@ -26,26 +26,26 @@ const CreditUsageInfo: React.FC<CreditUsageInfoProps> = ({ className = '' }) => 
       <div className="font-lora text-sm text-primary-700">
         <div className="flex justify-between mb-2">
           <span>Platform-only searches:</span>
-          <span className="font-semibold">1 credit</span>
+          <span className="font-semibold">2 credits</span>
         </div>
         <div className="flex justify-between mb-2">
           <span>Semantic vibe searches:</span>
-          <span className="font-semibold">5 credits</span>
+          <span className="font-semibold">2 credits</span>
         </div>
         <div className="flex justify-between">
           <span>AI-assisted searches:</span>
-          <span className="font-semibold">10 credits</span>
+          <span className="font-semibold">2 credits</span>
         </div>
       </div>
       
       {isExpanded && (
         <div className="mt-3 pt-3 border-t border-primary-200 font-lora text-xs text-primary-600 space-y-2 animate-in slide-in-from-top-4 duration-300">
-          <p>Semantic search understands vibe and mood. AI is used when fewer than 6 platform matches are found.</p>
+          <p>All searches now cost the same amount. Semantic search understands vibe and mood. AI is used when fewer than 10 platform matches are found.</p>
           <p className="font-semibold">Earn credits by:</p>
           <ul className="space-y-1 pl-4">
-            <li>• Reviews (1 credit each)</li>
-            <li>• Referrals (100 credits each)</li>
-            <li>• Monthly refills (100 credits)</li>
+            <li>• Reviews (2 credits each)</li>
+            <li>• Referrals (20 credits each)</li>
+            <li>• Monthly refills (50 credits)</li>
           </ul>
         </div>
       )}

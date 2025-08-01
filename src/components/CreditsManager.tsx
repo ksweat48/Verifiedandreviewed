@@ -210,7 +210,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
               Free Monthly Credits
             </p>
             <p className="font-lora text-sm text-green-700">
-              You've received {formatLargeNumber(freeCreditsInfo.received)} free credits this month. Come back on {formatDate(freeCreditsInfo.nextRefillDate)} for 100 more!
+              You've received {formatLargeNumber(freeCreditsInfo.received)} free credits this month. Come back on {formatDate(freeCreditsInfo.nextRefillDate)} for 50 more!
             </p>
           </div>
         </div>
@@ -239,14 +239,14 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
                   Leave a Review
                 </h4>
                 <p className="font-poppins text-2xl font-bold text-green-600">
-                  +1 Credit
+                  +2 Credits
                 </p>
               </div>
             </div>
             
             <div className="space-y-2 mb-4">
               <p className="font-lora text-sm text-green-800">
-                Earn 1 credit for each complete review that includes:
+                Earn 2 credits for each complete review that includes:
               </p>
               <ul className="font-lora text-sm text-green-700 space-y-1 ml-4">
                 <li>• A thumbs up or down rating</li>
@@ -275,17 +275,17 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
                   Refer a Friend
                 </h4>
                 <p className="font-poppins text-2xl font-bold text-purple-600">
-                  +100 Credits
+                  +20 Credits
                 </p>
               </div>
             </div>
             
             <div className="space-y-2 mb-4">
               <p className="font-lora text-sm text-purple-800">
-                Earn 100 credits when someone signs up using your referral link.
+                Earn 20 credits when someone signs up using your referral link.
               </p>
               <p className="font-lora text-xs text-purple-700">
-                Your friend also gets 200 signup credits + 100 referral bonus!
+                Your friend also gets 100 signup credits + 20 referral bonus!
               </p>
             </div>
             
@@ -317,7 +317,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
             </h4>
           </div>
           <p className="font-lora text-sm text-blue-800">
-            Get <strong>100 free credits</strong> every month just for being a member! 
+            Get <strong>50 free credits</strong> every month just for being a member! 
             Your next refill is on {formatDate(freeCreditsInfo.nextRefillDate)}.
           </p>
         </div>

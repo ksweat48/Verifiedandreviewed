@@ -14,7 +14,7 @@ export class CreditService {
   // Deduct credits for a search
   static async deductSearchCredits(userId: string, searchType: 'platform' | 'ai' | 'semantic'): Promise<boolean> {
     try {
-      const creditsToDeduct = searchType === 'semantic' ? 5 : (searchType === 'ai' ? 10 : 1);
+      const creditsToDeduct = 2; // All searches now cost 2 credits
       
       // Call the secure credit deduction function
       const response = await fetch('/.netlify/functions/deduct-credits', {
@@ -25,8 +25,8 @@ export class CreditService {
         body: JSON.stringify({
           userId: userId,
           amount: creditsToDeduct,
-          type: searchType === 'semantic' ? 'semantic-search' : (searchType === 'ai' ? 'ai-search' : 'search'),
-          description: searchType === 'semantic' ? 'Semantic vibe search' : (searchType === 'ai' ? 'AI-assisted search' : 'Platform-only search')
+          type: 'search',
+          description: `${searchType.charAt(0).toUpperCase() + searchType.slice(1)} search`
         })
       });
 
@@ -63,16 +63,16 @@ export class CreditService {
       
       // In a real app, this would call an API to update the user's credits
       const updatedUser = await UserService.updateUser(userId, {
-        credits: (user.credits || 0) + 1
+        credits: (user.credits || 0) + 2
       });
       
       // Log transaction
       this.logTransaction({
         id: Date.now().toString(),
         userId,
-        amount: 1,
+        amount: 2,
         type: 'review-reward',
-        description: 'Credit for submitting a review',
+        description: 'Credits for submitting a review',
         timestamp: new Date().toISOString()
       });
       
@@ -95,14 +95,14 @@ export class CreditService {
       
       // In a real app, this would call an API to update the user's credits
       const updatedUser = await UserService.updateUser(userId, {
-        credits: (user.credits || 0) + 100
+        credits: (user.credits || 0) + 20
       });
       
       // Log transaction
       this.logTransaction({
         id: Date.now().toString(),
         userId,
-        amount: 100,
+        amount: 20,
         type: 'referral-reward',
         description: 'Referral bonus',
         timestamp: new Date().toISOString()
@@ -126,14 +126,14 @@ export class CreditService {
       
       // In a real app, this would call an API to update the user's credits
       const updatedUser = await UserService.updateUser(userId, {
-        credits: (user.credits || 0) + 100
+        credits: (user.credits || 0) + 50
       });
       
       // Log transaction
       this.logTransaction({
         id: Date.now().toString(),
         userId,
-        amount: 100,
+        amount: 50,
         type: 'monthly-refill',
         description: 'Monthly free credits',
         timestamp: new Date().toISOString()
@@ -164,16 +164,16 @@ export class CreditService {
      
       // In a real app, this would call an API to update the user's credits
       const updatedUser = await UserService.updateUser(userId, {
-        credits: (user.credits || 0) + 200
+        credits: (user.credits || 0) + 100
       });
       
       // Log transaction
       this.logTransaction({
         id: Date.now().toString(),
         userId,
-        amount: 200,
+        amount: 100,
         type: 'signup-bonus',
-        description: 'New account bonus',
+        description: 'Signup bonus',
         timestamp: new Date().toISOString()
       });
       
@@ -302,7 +302,7 @@ export class CreditService {
        return;
      }
      
-      const requiredCredits = searchType === 'semantic' ? 5 : (searchType === 'ai' ? 10 : 1);
+      const requiredCredits = 2; // All searches now cost 2 credits
       resolve((user.credits || 0) >= requiredCredits);
     });
   }
