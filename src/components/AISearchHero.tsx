@@ -45,6 +45,37 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   
   const { latitude, longitude, error: locationError } = useGeolocation();
 
+  // Handle browser back button when in app mode
+  useEffect(() => {
+    if (isAppModeActive) {
+      // Push a new state when entering app mode
+      window.history.pushState({ appMode: true }, '', window.location.href);
+      
+      const handlePopState = (event) => {
+        // If we're in app mode and user presses back, exit app mode instead of leaving the site
+        if (isAppModeActive) {
+          setIsAppModeActive(false);
+          setSearchResults([]);
+          setHasSearched(false);
+          
+          // Show back toast
+          setShowBackToast(true);
+          setTimeout(() => setShowBackToast(false), 2000);
+          
+          // Focus search input after a brief delay
+          setTimeout(() => {
+            searchInputRef.current?.focus();
+          }, 100);
+        }
+      };
+      
+      window.addEventListener('popstate', handlePopState);
+      
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [isAppModeActive]);
   // Check for current user and load credits
   useEffect(() => {
     const checkUser = async () => {
@@ -418,16 +449,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
 
   const handleBackToSearch = () => {
-    setIsAppModeActive(false);
-    setSearchResults([]);
-    setHasSearched(false);
-    setShowBackToast(true);
-    setTimeout(() => setShowBackToast(false), 2000);
-    
-    // Focus search input after a brief delay
-    setTimeout(() => {
-      searchInputRef.current?.focus();
-    }, 100);
+    // Use browser's back functionality to trigger the popstate handler
+    window.history.back();
   };
 
   const handleRecommendBusiness = async (business: any) => {
