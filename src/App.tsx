@@ -22,6 +22,16 @@ function App() {
   // Enable automatic activity tracking
   useActivityTracking();
   
+  // Prevent immediate exit from the application by adding a dummy history entry
+  useEffect(() => {
+    // Only push state once when the app first loads
+    const hasInitialState = sessionStorage.getItem('app-initial-state');
+    if (!hasInitialState) {
+      window.history.pushState(null, '', window.location.href);
+      sessionStorage.setItem('app-initial-state', 'true');
+    }
+  }, []);
+  
   // Apply no-scroll class to body when in app mode
   useEffect(() => {
     if (isAppModeActive) {
