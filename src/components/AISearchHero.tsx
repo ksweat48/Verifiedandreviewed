@@ -596,7 +596,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <div className="flex items-center justify-center h-full px-4 text-white">
               <div className="text-center">
                 <Search className="h-16 w-16 text-white/60 mx-auto mb-4" />
-                <h3 className="font-cinzel text-xl font-semibold text-neutral-900 mb-2">
                 <h3 className="font-cinzel text-xl font-semibold text-white mb-2">
                   No Vibes Found
                 </h3>
@@ -807,20 +806,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           onSignup={() => {
             setShowSignupPrompt(false);
             setSignupPromptConfig(null);
-            setSignupPromptConfig(null);
             setAuthMode('signup');
             setShowAuthModal(true);
           }}
           onLogin={() => {
             setShowSignupPrompt(false);
             setSignupPromptConfig(null);
-            setSignupPromptConfig(null);
             setAuthMode('login');
             setShowAuthModal(true);
           }}
           onClose={() => {
             setShowSignupPrompt(false);
-            setSignupPromptConfig(null);
             setSignupPromptConfig(null);
           }}
         />
