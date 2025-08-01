@@ -364,7 +364,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       }
 
       // Step 4: If we have fewer than 6 total results and user has AI credits, use AI search
-      if (combinedResults.length < 10 && user && effectiveSearchType !== 'platform' && aiResults.length === 0) {
+      if (combinedResults.length < 15 && user && effectiveSearchType !== 'platform' && aiResults.length === 0) {
         console.log('🤖 Using AI search to fill remaining slots...');
         try {
           // Deduct credits for AI search
@@ -380,7 +380,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 prompt: searchTerm,
                 searchQuery: searchTerm,
                 existingResultsCount: combinedResults.length,
-                numToGenerate: Math.max(1, 10 - combinedResults.length),
+                numToGenerate: Math.max(1, 15 - combinedResults.length),
                 latitude: latitude || undefined,
                 longitude: longitude || undefined
               })
