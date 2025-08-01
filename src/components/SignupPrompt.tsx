@@ -82,21 +82,20 @@ const SignupPrompt: React.FC<SignupPromptProps> = ({
         )}
         
         {/* Full background image with overlay */}
-        <div className="relative h-[500px] overflow-hidden">
-          {/* Background image */}
-          <img
-            src="/ChatGPT Image Jul 12, 2025, 05_41_06 AM.png" 
-            alt="Women using phones"
-            className="w-full h-full object-cover"
-          />
-
-          {/* Dark gradient overlay for text visibility */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/70"></div>
+        <div className="relative h-[500px] overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
           
           {/* Content overlay */}
           <div className="absolute inset-0 flex flex-col justify-between">
             {/* Text content - centered in the middle */}
-            <div className="flex-1 flex flex-col justify-center items-center text-center px-8"></div>
+            <div className="flex-1 flex flex-col justify-center items-center text-center px-8">
+              <h2 className="font-cinzel text-3xl md:text-4xl font-bold text-white mb-6">
+                {title}
+              </h2>
+              <p 
+                className="font-lora text-lg md:text-xl text-white/90 max-w-md leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: message }}
+              />
+            </div>
             
             {/* Button section at the bottom */}
             <div className="bg-gradient-to-r from-primary-50 to-primary-100 p-8 space-y-4">
