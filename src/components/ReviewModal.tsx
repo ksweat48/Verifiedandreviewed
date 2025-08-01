@@ -63,6 +63,26 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     };
   }, [isOpen]);
 
+  // Handle browser back button for modal
+  useEffect(() => {
+    if (isOpen) {
+      // Push a new state when modal opens
+      window.history.pushState(null, '', window.location.href);
+      
+      const handlePopState = (event) => {
+        if (isOpen) {
+          onClose();
+        }
+      };
+      
+      window.addEventListener('popstate', handlePopState);
+      
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [isOpen, onClose]);
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!isOpen) return;

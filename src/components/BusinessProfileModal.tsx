@@ -57,6 +57,26 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
     };
   }, [isOpen]);
 
+  // Handle browser back button for modal
+  useEffect(() => {
+    if (isOpen) {
+      // Push a new state when modal opens
+      window.history.pushState(null, '', window.location.href);
+      
+      const handlePopState = (event) => {
+        if (isOpen) {
+          onClose();
+        }
+      };
+      
+      window.addEventListener('popstate', handlePopState);
+      
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [isOpen, onClose]);
+
   // Fetch business reviews when modal opens or business changes
   useEffect(() => {
     const fetchBusinessReviews = async () => {
