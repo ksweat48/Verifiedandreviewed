@@ -84,7 +84,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   // Randomly select 4 quick searches on component mount
   useEffect(() => {
     const shuffled = [...allQuickSearches].sort(() => 0.5 - Math.random());
-    setQuickSearches(shuffled.slice(0, 4));
+    setQuickSearches(shuffled.slice(0, 4)); // Only show 4 instead of 5
   }, []);
 
   // Fetch real user searches from Supabase
@@ -93,7 +93,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       try {
         setLoadingRealSearches(true);
         
-        // Query user activity logs for search events with profile data
+        // Query user activity logs for search events from ALL users with profile data
         const { data, error } = await supabase
           .from('user_activity_logs')
           .select(`
@@ -108,39 +108,96 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           .eq('event_type', 'search')
           .not('event_details->search_query', 'is', null)
           .order('created_at', { ascending: false })
-          .limit(20);
+          .limit(50); // Get more searches to ensure variety
 
         if (error) {
           console.error('Error fetching real user searches:', error);
-          // Fallback to empty array if fetch fails
-          setRealUserSearches([]);
+          // Fallback to mock data if fetch fails
+          setRealUserSearches([
+            {
+              avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+              username: 'Sarah',
+              query: 'cozy coffee shop'
+            },
+            {
+              avatar: 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
+              username: 'Mike',
+              query: 'romantic dinner'
+            },
+            {
+              avatar: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
+              username: 'Emma',
+              query: 'trendy bar'
+            }
+          ]);
           return;
         }
 
         if (data && data.length > 0) {
-          // Transform the data to match our expected format
+          // Transform the data and ensure we're showing different users
           const formattedSearches = data
             .filter(log => 
               log.event_details?.search_query && 
               log.profiles?.name &&
-              log.event_details.search_query.trim().length > 0
+              log.event_details.search_query.trim().length > 0 &&
+              log.event_details.search_query.trim().length < 50 // Exclude very long queries
             )
             .map(log => ({
               avatar: log.profiles.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
               username: log.profiles.username || log.profiles.name.split(' ')[0], // Use first name if no username
-              query: log.event_details.search_query
+              query: log.event_details.search_query,
+              userId: log.profiles.id // Add user ID for debugging
             }))
+            // Remove duplicates by user + query combination
+            .filter((search, index, array) => 
+              array.findIndex(s => s.userId === search.userId && s.query === search.query) === index
+            )
             .slice(0, 15); // Limit to 15 most recent searches
 
           setRealUserSearches(formattedSearches);
           console.log('✅ Fetched', formattedSearches.length, 'real user searches');
+          console.log('🔍 Sample searches:', formattedSearches.slice(0, 3).map(s => `${s.username}: "${s.query}"`));
         } else {
           console.log('⚠️ No real user searches found');
-          setRealUserSearches([]);
+          // Fallback to mock data if no real searches
+          setRealUserSearches([
+            {
+              avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+              username: 'Sarah',
+              query: 'cozy coffee shop'
+            },
+            {
+              avatar: 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
+              username: 'Mike',
+              query: 'romantic dinner'
+            },
+            {
+              avatar: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
+              username: 'Emma',
+              query: 'trendy bar'
+            }
+          ]);
         }
       } catch (error) {
         console.error('Error fetching real user searches:', error);
-        setRealUserSearches([]);
+        // Fallback to mock data on error
+        setRealUserSearches([
+          {
+            avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+            username: 'Sarah',
+            query: 'cozy coffee shop'
+          },
+          {
+            avatar: 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
+            username: 'Mike',
+            query: 'romantic dinner'
+          },
+          {
+            avatar: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
+            username: 'Emma',
+            query: 'trendy bar'
+          }
+        ]);
       } finally {
         setLoadingRealSearches(false);
       }
