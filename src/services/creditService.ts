@@ -14,7 +14,7 @@ export class CreditService {
   // Deduct credits for a search
   static async deductSearchCredits(userId: string, searchType: 'platform' | 'ai' | 'semantic'): Promise<boolean> {
     try {
-      const creditsToDeduct = 2; // All searches now cost 2 credits
+      const creditsToDeduct = 2; // All searches cost 2 credits regardless of type
       
       // Call the secure credit deduction function
       const response = await fetch('/.netlify/functions/deduct-credits', {

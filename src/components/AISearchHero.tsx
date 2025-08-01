@@ -370,7 +370,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           const creditDeducted = await CreditService.deductSearchCredits(user.id, 'semantic');
           if (creditDeducted) {
             // Update local credits display
-            setUserCredits(prev => Math.max(0, prev - 5));
+            setUserCredits(prev => Math.max(0, prev - 2));
             
             const semanticResponse = await SemanticSearchService.searchByVibe(searchTerm, {
               latitude: latitude || undefined,
@@ -484,7 +484,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           const creditDeducted = await CreditService.deductSearchCredits(user.id, 'ai');
           if (creditDeducted) {
             // Update local credits display
-            setUserCredits(prev => Math.max(0, prev - 10));
+            setUserCredits(prev => Math.max(0, prev - 2));
             
             const aiResponse = await fetch('/.netlify/functions/ai-business-search', {
               method: 'POST',
