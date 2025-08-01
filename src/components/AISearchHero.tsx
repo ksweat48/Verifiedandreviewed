@@ -43,7 +43,71 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [signupPromptConfig, setSignupPromptConfig] = useState<any>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
+  // Random user search display state
+  const [currentUserSearchIndex, setCurrentUserSearchIndex] = useState(0);
+  const [isSearchAnimating, setIsSearchAnimating] = useState(false);
+  
+  // Mock user search data
+  const userSearches = [
+    {
+      avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+      username: 'Sarah',
+      query: 'cozy coffee shop with wifi'
+    },
+    {
+      avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100',
+      username: 'Mike',
+      query: 'romantic dinner spot'
+    },
+    {
+      avatar: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=100',
+      username: 'Emma',
+      query: 'energetic workout class'
+    },
+    {
+      avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100',
+      username: 'David',
+      query: 'peaceful brunch place'
+    },
+    {
+      avatar: 'https://images.pexels.com/photos/1212984/pexels-photo-1212984.jpeg?auto=compress&cs=tinysrgb&w=100',
+      username: 'Lisa',
+      query: 'trendy cocktail bar'
+    },
+    {
+      avatar: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=100',
+      username: 'Alex',
+      query: 'authentic sushi restaurant'
+    },
+    {
+      avatar: 'https://images.pexels.com/photos/1674752/pexels-photo-1674752.jpeg?auto=compress&cs=tinysrgb&w=100',
+      username: 'Maya',
+      query: 'vintage bookstore cafe'
+    },
+    {
+      avatar: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=100',
+      username: 'James',
+      query: 'upscale steakhouse'
+    }
+  ];
+  
   const { latitude, longitude, error: locationError } = useGeolocation();
+
+  // Cycle through user searches every 3 seconds
+  useEffect(() => {
+    if (isAppModeActive) return; // Don't cycle when in app mode
+    
+    const interval = setInterval(() => {
+      setIsSearchAnimating(true);
+      
+      setTimeout(() => {
+        setCurrentUserSearchIndex((prev) => (prev + 1) % userSearches.length);
+        setIsSearchAnimating(false);
+      }, 150); // Half of the transition duration
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [isAppModeActive, userSearches.length]);
 
   // Handle browser back button when in app mode
   useEffect(() => {
@@ -721,13 +785,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
         {/* Main Content */}
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 text-center">
-          {/* Brand Logo */}
-          <div className="mb-8">
-            <img 
-              src="/verified and reviewed logo-coral copy copy.png" 
-              alt="Verified & Reviewed" 
-              className="h-16 w-16 mx-auto mb-4 opacity-90"
-            />
+          {/* Random User Search Display */}
+          <div className="mb-8 h-24 flex flex-col items-center justify-center">
+            <div className={`transition-opacity duration-300 ${isSearchAnimating ? 'opacity-0' : 'opacity-100'}`}>
+              <div className="flex flex-col items-center">
+                <img 
+                  src={userSearches[currentUserSearchIndex].avatar}
+                  alt={userSearches[currentUserSearchIndex].username}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg mb-2"
+                />
+                <p className="font-lora text-white/80 text-sm">
+                  {userSearches[currentUserSearchIndex].username} searched: "{userSearches[currentUserSearchIndex].query}"
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Main Heading */}
