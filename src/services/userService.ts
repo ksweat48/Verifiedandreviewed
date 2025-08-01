@@ -43,7 +43,7 @@ export class UserService {
         console.log('🔍 Fetching user profile from profiles table...');
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, email, username, name, avatar_url, credits, level, review_count, bio, created_at, updated_at, is_business_owner, role')
           .eq('id', authUser.id)
           .single();
           
@@ -114,6 +114,7 @@ export class UserService {
       // The profile will be created by the database trigger
       const newUser: User = {
         id: data.user?.id || '0',
+        username: userData.username,
         name: userData.name,
         email: userData.email,
         credits: 200,

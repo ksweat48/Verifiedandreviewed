@@ -39,7 +39,7 @@ export const useAuth = () => {
           // Get user profile data
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('*')
+            .select('id, email, username, name, avatar_url, credits, level, review_count, bio, created_at, updated_at, is_business_owner, role')
             .eq('id', session.user.id)
             .single();
           
@@ -47,8 +47,7 @@ export const useAuth = () => {
           
           setUser({
             ...profile,
-            id: session.user.id,
-            username: profile.username
+            id: session.user.id
           });
           setIsAuthenticated(true);
         }
@@ -69,7 +68,7 @@ export const useAuth = () => {
             // Get user profile data
             const { data: profile, error } = await supabase
               .from('profiles')
-              .select('*')
+              .select('id, email, username, name, avatar_url, credits, level, review_count, bio, created_at, updated_at, is_business_owner, role')
               .eq('id', session.user.id)
               .single();
             
@@ -78,8 +77,7 @@ export const useAuth = () => {
             if (profile) {
               setUser({
                 ...profile,
-                id: data.user.id,
-                username: profile.username
+                id: session.user.id
               });
               setIsAuthenticated(true);
             }

@@ -230,6 +230,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   required
                 />
               </div>
+              <p className="font-lora text-xs text-neutral-500 mt-1">
+                You can use this username to log in instead of your email
+              </p>
             </div>
           )}
 

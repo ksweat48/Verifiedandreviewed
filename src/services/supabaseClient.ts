@@ -93,6 +93,7 @@ export type Profile = {
   id: string;
   email: string;
   username: string;
+  username: string;
   name: string;
   avatar_url?: string;
   credits: number;
