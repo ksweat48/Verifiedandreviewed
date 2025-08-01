@@ -34,6 +34,24 @@ const SignupPrompt: React.FC<SignupPromptProps> = ({
     };
   }, [onSignup, onLogin]);
 
+  // Handle browser back button for modal
+  useEffect(() => {
+    // Push a new state when modal opens
+    window.history.pushState(null, '', window.location.href);
+    
+    const handlePopState = (event) => {
+      if (onClose) {
+        onClose();
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="relative max-w-md w-full overflow-hidden animate-in zoom-in-50 duration-300 my-4 mx-auto rounded-3xl shadow-2xl">

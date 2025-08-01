@@ -354,87 +354,84 @@ export class BusinessService {
     try {
       console.log('🔍 BusinessService.getBusinesses called with filters:', filters);
       
-      let data, error;
-      
-      // Use geographic filtering if user location is provided
-      if (filters?.userLatitude && filters?.userLongitude && !filters?.adminView) {
-        console.log('🗺️ Using geographic filtering within 10-mile radius');
-        
-        const { data: nearbyData, error: nearbyError } = await supabase.rpc('get_nearby_businesses', {
-          p_latitude: filters.userLatitude,
-          p_longitude: filters.userLongitude,
-          p_radius_miles: 10,
-          p_search_term: filters.search || null,
-          p_category: filters.category || null,
-          p_verified_only: filters.verified_only || false
-        });
-        
-        data = nearbyData;
-        error = nearbyError;
-      } else {
-        // Fallback to original query for admin views or when no location is available
-        console.log('🔍 Using standard query (no geographic filtering)');
-        
-        let query = supabase
-          .from('businesses')
-          .select('*');
+      let query = supabase
+        .from('businesses')
+        .select('*');
 
-        // By default, only show visible businesses for public views
-        if (!filters?.adminView) {
-          query = query.eq('is_visible_on_platform', true);
-        }
-        
-        // Apply filters
-        if (filters?.category) {
-          query = query.eq('category', filters.category);
-        }
-        
-        if (filters?.verified_only) {
-          query = query.eq('is_verified', true);
-        }
-        
-        if (filters?.search) {
-          console.log('🔍 Applying search filter for:', filters.search);
-          // Build search conditions array to avoid malformed query strings
-          const searchConditions = [
-            `name.ilike.%${filters.search}%`,
-            `description.ilike.%${filters.search}%`,
-            `location.ilike.%${filters.search}%`,
-            `category.ilike.%${filters.search}%`,
-            `short_description.ilike.%${filters.search}%`,
-            `address.ilike.%${filters.search}%`
-          ];
-          
-          query = query.or(searchConditions.join(','));
-        }
-        
-        const result = await query;
-        data = result.data;
-        error = result.error;
+      // By default, only show visible businesses for public views
+      if (!filters?.adminView) {
+        query = query.eq('is_visible_on_platform', true);
       }
+      
+      // Apply filters
+      if (filters?.category) {
+        query = query.eq('category', filters.category);
+      }
+      
+      if (filters?.verified_only) {
+        query = query.eq('is_verified', true);
+      }
+      
+      if (filters?.search) {
+        console.log('🔍 Applying search filter for:', filters.search);
+        // Build search conditions array to avoid malformed query strings
+        const searchConditions = [
+          `name.ilike.%${filters.search}%`,
+          `description.ilike.%${filters.search}%`,
+          `location.ilike.%${filters.search}%`,
+          `category.ilike.%${filters.search}%`,
+          `short_description.ilike.%${filters.search}%`,
+          `address.ilike.%${filters.search}%`
+        ];
+        
+        query = query.or(searchConditions.join(','));
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       
       let businesses = data || [];
       console.log('✅ Query returned', businesses.length, 'businesses');
       
-      // If we used geographic filtering, distances are already optimized by the database
-      // If not, add placeholder values for external calculation
+      // Filter by 10-mile radius if user location is provided and not admin view
       if (filters?.userLatitude && filters?.userLongitude && !filters?.adminView) {
-        // Businesses are already sorted by distance from the database function
-        businesses = businesses.map(business => ({
-          ...business,
-          distance: 999999, // Will be calculated accurately by external service
-          duration: 999999
-        }));
-      } else {
-        // Add placeholder distance/duration values for non-geographic queries
-        businesses = businesses.map(business => ({
-          ...business,
-          distance: 999999, // Will be calculated externally
-          duration: 999999
-        }));
+        console.log('🗺️ Filtering businesses within 10-mile radius');
+        
+        businesses = businesses.filter(business => {
+          if (!business.latitude || !business.longitude) {
+            console.log(`⚠️ Business ${business.name} has no coordinates, excluding from radius filter`);
+            return false;
+          }
+          
+          // Calculate distance using Haversine formula
+          const R = 3959; // Earth's radius in miles
+          const dLat = (business.latitude - filters.userLatitude) * Math.PI / 180;
+          const dLon = (business.longitude - filters.userLongitude) * Math.PI / 180;
+          const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(filters.userLatitude * Math.PI / 180) * Math.cos(business.latitude * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const distance = R * c;
+          
+          if (distance > 10) {
+            console.log(`🚫 Filtering out business outside 10-mile radius: ${business.name} (${distance.toFixed(1)} miles)`);
+            return false;
+          }
+          
+          return true;
+        });
+        
+        console.log('✅ After 10-mile radius filter:', businesses.length, 'businesses remain');
       }
+      
+      // Add placeholder distance/duration values for external calculation
+      businesses = businesses.map(business => ({
+        ...business,
+        distance: 999999, // Will be calculated externally
+        duration: 999999
+      }));
       
       console.log('📊 Final businesses with distances:', businesses.map(b => ({
         name: b.name,

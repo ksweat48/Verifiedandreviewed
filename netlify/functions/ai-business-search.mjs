@@ -238,7 +238,7 @@ Requirements:
     }
 
     console.log('🔍 Searching Google Places with AI-generated queries...');
-    const foundBusinesses = [];
+    const allPotentialBusinesses = [];
 
     // Parallelize Google Places API calls for better performance
     const searchPromises = searchQueries.map(async (query, index) => {
@@ -364,8 +364,7 @@ Requirements:
     console.log('⚡ Executing up to', searchQueries.length, 'Google Places searches in parallel...');
     const searchResults = await Promise.all(searchPromises);
     
-    // Collect all valid results into a single array
-    const allPotentialBusinesses = [];
+    // Collect all valid results
     searchResults.forEach(result => {
       if (result !== null) {
         allPotentialBusinesses.push(result);
@@ -449,7 +448,7 @@ Requirements:
       }
     }
     
-    foundBusinesses.push(...finalBusinesses);
+    const foundBusinesses = finalBusinesses;
     
     // Filter businesses by 10-mile radius if user location is available
     let radiusFilteredBusinesses = foundBusinesses;
