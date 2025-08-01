@@ -87,7 +87,7 @@ export const handler = async (event, context) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           error: 'Insufficient credits',
-          message: `User has ${currentCredits} credits but needs ${creditsToDeduct}`
+          message: `You need ${creditsToDeduct} credits to search. You have ${currentCredits} credits.`
         })
       };
     }

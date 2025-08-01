@@ -311,7 +311,7 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
         {/* Credit Reward Info */}
         {!reviewToEdit && (
           <div className="bg-primary-50 rounded-lg p-3 mb-6">
-            <p className="font-lora text-sm text-primary-700">Earn 1 credit with a complete review.</p>
+            <p className="font-lora text-sm text-primary-700">Earn 2 credits with a complete review.</p>
           </div>
         )}
         
