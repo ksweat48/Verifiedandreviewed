@@ -783,17 +783,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           onSignup={() => {
             setShowSignupPrompt(false);
             setSignupPromptConfig(null);
+            setSignupPromptConfig(null);
             setAuthMode('signup');
             setShowAuthModal(true);
           }}
           onLogin={() => {
             setShowSignupPrompt(false);
             setSignupPromptConfig(null);
+            setSignupPromptConfig(null);
             setAuthMode('login');
             setShowAuthModal(true);
           }}
           onClose={() => {
             setShowSignupPrompt(false);
+            setSignupPromptConfig(null);
             setSignupPromptConfig(null);
           }}
         />
