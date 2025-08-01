@@ -103,8 +103,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // If user is not logged in, show signup prompt instead of searching
       if (!user) {
         setSignupPromptConfig({
-          title: "You Need Credits to Vibe Search",
-          message: "Get 100 free credits per month when you create an account. Discover amazing places with AI-powered vibe matching!",
+          title: "You need credits to Vibe",
+          message: "Get <strong>100 free credits</strong> per month when you create an account",
           signupButtonText: "Let's Vibe",
           loginButtonText: "Already have an account? Log in",
           benefits: [
