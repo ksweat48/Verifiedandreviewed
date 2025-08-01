@@ -51,6 +51,36 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [quickSearches, setQuickSearches] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
+  // Diverse default avatars for users without custom avatars
+  const defaultAvatars = [
+    'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1484794/pexels-photo-1484794.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1674752/pexels-photo-1674752.jpeg?auto=compress&cs=tinysrgb&w=100'
+  ];
+  
+  // Function to get a consistent avatar for a user ID
+  const getAvatarForUser = (userId: string, customAvatar?: string) => {
+    if (customAvatar && customAvatar.trim() !== '') {
+      return customAvatar;
+    }
+    
+    // Use user ID to consistently assign the same default avatar
+    const hash = userId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    const index = Math.abs(hash) % defaultAvatars.length;
+    return defaultAvatars[index];
+  };
+  
   // Random user search display state
   const [currentUserSearchIndex, setCurrentUserSearchIndex] = useState(0);
   const [isSearchAnimating, setIsSearchAnimating] = useState(false);
@@ -100,6 +130,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             event_details,
             created_at,
             profiles!inner (
+              id,
               name,
               username,
               avatar_url
@@ -115,17 +146,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           // Fallback to mock data if fetch fails
           setRealUserSearches([
             {
-              avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+              avatar: defaultAvatars[0],
               username: 'Sarah',
               query: 'cozy coffee shop'
             },
             {
-              avatar: 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
+              avatar: defaultAvatars[1],
               username: 'Mike',
               query: 'romantic dinner'
             },
             {
-              avatar: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
+              avatar: defaultAvatars[2],
               username: 'Emma',
               query: 'trendy bar'
             }
@@ -139,11 +170,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             .filter(log => 
               log.event_details?.search_query && 
               log.profiles?.name &&
+              log.profiles?.id &&
               log.event_details.search_query.trim().length > 0 &&
               log.event_details.search_query.trim().length < 50 // Exclude very long queries
             )
             .map(log => ({
-              avatar: log.profiles.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+              avatar: getAvatarForUser(log.profiles.id, log.profiles.avatar_url),
               username: log.profiles.username || log.profiles.name.split(' ')[0], // Use first name if no username
               query: log.event_details.search_query,
               userId: log.profiles.id // Add user ID for debugging
@@ -157,22 +189,23 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           setRealUserSearches(formattedSearches);
           console.log('✅ Fetched', formattedSearches.length, 'real user searches');
           console.log('🔍 Sample searches:', formattedSearches.slice(0, 3).map(s => `${s.username}: "${s.query}"`));
+          console.log('🖼️ Sample avatars:', formattedSearches.slice(0, 3).map(s => `${s.username}: ${s.avatar}`));
         } else {
           console.log('⚠️ No real user searches found');
           // Fallback to mock data if no real searches
           setRealUserSearches([
             {
-              avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+              avatar: defaultAvatars[0],
               username: 'Sarah',
               query: 'cozy coffee shop'
             },
             {
-              avatar: 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
+              avatar: defaultAvatars[1],
               username: 'Mike',
               query: 'romantic dinner'
             },
             {
-              avatar: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
+              avatar: defaultAvatars[2],
               username: 'Emma',
               query: 'trendy bar'
             }
@@ -183,17 +216,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         // Fallback to mock data on error
         setRealUserSearches([
           {
-            avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+            avatar: defaultAvatars[0],
             username: 'Sarah',
             query: 'cozy coffee shop'
           },
           {
-            avatar: 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
+            avatar: defaultAvatars[1],
             username: 'Mike',
             query: 'romantic dinner'
           },
           {
-            avatar: 'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
+            avatar: defaultAvatars[2],
             username: 'Emma',
             query: 'trendy bar'
           }
