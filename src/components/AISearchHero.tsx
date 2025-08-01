@@ -40,6 +40,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [isLoadingCredits, setIsLoadingCredits] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [signupPromptConfig, setSignupPromptConfig] = useState<any>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   const { latitude, longitude, error: locationError } = useGeolocation();
