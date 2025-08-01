@@ -16,6 +16,7 @@ import AIBusinessCard from './AIBusinessCard';
 import SignupPrompt from './SignupPrompt';
 import AuthModal from './AuthModal';
 import CreditInfoTooltip from './CreditInfoTooltip';
+import { supabase } from '../services/supabaseClient';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -41,73 +42,97 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [isListening, setIsListening] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [signupPromptConfig, setSignupPromptConfig] = useState<any>(null);
+  const [realUserSearches, setRealUserSearches] = useState<Array<{
+    avatar: string;
+    username: string;
+    query: string;
+  }>>([]);
+  const [loadingRealSearches, setLoadingRealSearches] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Random user search display state
   const [currentUserSearchIndex, setCurrentUserSearchIndex] = useState(0);
   const [isSearchAnimating, setIsSearchAnimating] = useState(false);
   
-  // Mock user search data
-  const userSearches = [
-    {
-      avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
-      username: 'Sarah',
-      query: 'cozy coffee shop with wifi'
-    },
-    {
-      avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100',
-      username: 'Mike',
-      query: 'romantic dinner spot'
-    },
-    {
-      avatar: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=100',
-      username: 'Emma',
-      query: 'energetic workout class'
-    },
-    {
-      avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100',
-      username: 'David',
-      query: 'peaceful brunch place'
-    },
-    {
-      avatar: 'https://images.pexels.com/photos/1212984/pexels-photo-1212984.jpeg?auto=compress&cs=tinysrgb&w=100',
-      username: 'Lisa',
-      query: 'trendy cocktail bar'
-    },
-    {
-      avatar: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=100',
-      username: 'Alex',
-      query: 'authentic sushi restaurant'
-    },
-    {
-      avatar: 'https://images.pexels.com/photos/1674752/pexels-photo-1674752.jpeg?auto=compress&cs=tinysrgb&w=100',
-      username: 'Maya',
-      query: 'vintage bookstore cafe'
-    },
-    {
-      avatar: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=100',
-      username: 'James',
-      query: 'upscale steakhouse'
-    }
-  ];
-  
   const { latitude, longitude, error: locationError } = useGeolocation();
+
+  // Fetch real user searches from Supabase
+  useEffect(() => {
+    const fetchRealUserSearches = async () => {
+      try {
+        setLoadingRealSearches(true);
+        
+        // Query user activity logs for search events with profile data
+        const { data, error } = await supabase
+          .from('user_activity_logs')
+          .select(`
+            event_details,
+            created_at,
+            profiles!inner (
+              name,
+              username,
+              avatar_url
+            )
+          `)
+          .eq('event_type', 'search')
+          .not('event_details->search_query', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (error) {
+          console.error('Error fetching real user searches:', error);
+          // Fallback to empty array if fetch fails
+          setRealUserSearches([]);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Transform the data to match our expected format
+          const formattedSearches = data
+            .filter(log => 
+              log.event_details?.search_query && 
+              log.profiles?.name &&
+              log.event_details.search_query.trim().length > 0
+            )
+            .map(log => ({
+              avatar: log.profiles.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+              username: log.profiles.username || log.profiles.name.split(' ')[0], // Use first name if no username
+              query: log.event_details.search_query
+            }))
+            .slice(0, 15); // Limit to 15 most recent searches
+
+          setRealUserSearches(formattedSearches);
+          console.log('✅ Fetched', formattedSearches.length, 'real user searches');
+        } else {
+          console.log('⚠️ No real user searches found');
+          setRealUserSearches([]);
+        }
+      } catch (error) {
+        console.error('Error fetching real user searches:', error);
+        setRealUserSearches([]);
+      } finally {
+        setLoadingRealSearches(false);
+      }
+    };
+
+    fetchRealUserSearches();
+  }, []);
 
   // Cycle through user searches every 3 seconds
   useEffect(() => {
-    if (isAppModeActive) return; // Don't cycle when in app mode
+    if (isAppModeActive || realUserSearches.length === 0) return; // Don't cycle when in app mode or no data
     
     const interval = setInterval(() => {
       setIsSearchAnimating(true);
       
       setTimeout(() => {
-        setCurrentUserSearchIndex((prev) => (prev + 1) % userSearches.length);
+        setCurrentUserSearchIndex((prev) => (prev + 1) % realUserSearches.length);
         setIsSearchAnimating(false);
       }, 150); // Half of the transition duration
     }, 3000);
     
     return () => clearInterval(interval);
-  }, [isAppModeActive, userSearches.length]);
+  }, [isAppModeActive, realUserSearches.length]);
 
   // Handle browser back button when in app mode
   useEffect(() => {
@@ -787,18 +812,36 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 text-center">
           {/* Random User Search Display */}
           <div className="mb-8 h-24 flex flex-col items-center justify-center">
-            <div className={`transition-opacity duration-300 ${isSearchAnimating ? 'opacity-0' : 'opacity-100'}`}>
+            {loadingRealSearches ? (
               <div className="flex flex-col items-center">
-                <img 
-                  src={userSearches[currentUserSearchIndex].avatar}
-                  alt={userSearches[currentUserSearchIndex].username}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg mb-2"
-                />
-                <p className="font-lora text-white/80 text-sm">
-                  {userSearches[currentUserSearchIndex].username} searched: "{userSearches[currentUserSearchIndex].query}"
+                <div className="w-12 h-12 bg-white/20 rounded-full animate-pulse mb-2"></div>
+                <p className="font-lora text-white/60 text-sm animate-pulse">
+                  Loading recent searches...
                 </p>
               </div>
-            </div>
+            ) : realUserSearches.length > 0 ? (
+              <div className={`transition-opacity duration-300 ${isSearchAnimating ? 'opacity-0' : 'opacity-100'}`}>
+                <div className="flex flex-col items-center">
+                  <img 
+                    src={realUserSearches[currentUserSearchIndex].avatar}
+                    alt={realUserSearches[currentUserSearchIndex].username}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg mb-2"
+                  />
+                  <p className="font-lora text-white/80 text-sm">
+                    {realUserSearches[currentUserSearchIndex].username} searched: "{realUserSearches[currentUserSearchIndex].query}"
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-2">
+                  <Search className="h-6 w-6 text-white/40" />
+                </div>
+                <p className="font-lora text-white/60 text-sm">
+                  Be the first to search!
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Main Heading */}
