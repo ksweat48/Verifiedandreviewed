@@ -5,12 +5,28 @@ interface SignupPromptProps {
   onSignup: () => void;
   onLogin: () => void;
   onClose?: () => void;
+  title?: string;
+  message?: string;
+  signupButtonText?: string;
+  loginButtonText?: string;
+  benefits?: string[];
 }
 
 const SignupPrompt: React.FC<SignupPromptProps> = ({ 
   onSignup, 
   onLogin,
   onClose,
+  title = "Save Your Favorites",
+  message = "Create an account to save AI-generated businesses to your favorites.",
+  signupButtonText = "Sign Up Free For 200 Credits",
+  loginButtonText = "Already have an account? Log in",
+  benefits = [
+    "200 free credits instantly",
+    "100 free credits every month", 
+    "Earn credits for each review",
+    "Save favorite businesses",
+    "Access to all features"
+  ]
 }) => {
   // Prevent body scrolling when modal is open
   useEffect(() => {
