@@ -47,7 +47,8 @@ export const useAuth = () => {
           
           setUser({
             ...profile,
-            id: session.user.id
+            id: session.user.id,
+            username: profile.username
           });
           setIsAuthenticated(true);
         }
@@ -77,7 +78,8 @@ export const useAuth = () => {
             if (profile) {
               setUser({
                 ...profile,
-                id: session.user.id
+                id: data.user.id,
+                username: profile.username
               });
               setIsAuthenticated(true);
             }

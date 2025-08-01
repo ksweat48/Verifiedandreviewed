@@ -55,6 +55,7 @@ export class UserService {
         return {
           id: profile.id,
           name: profile.name,
+          username: profile.username,
           email: profile.email,
           avatar: profile.avatar_url,
           role: profile.role || 'user',
@@ -141,17 +142,28 @@ export class UserService {
     password: string;
   }): Promise<{ success: boolean; token?: string; user?: User; error?: string }> {
     try {
-      // Try to login with Supabase
-      // Check if username is an email or try both email and username
       let email = credentials.username;
       
-      // If username doesn't contain @, it might be a username, so we need to find the email
+      // If username doesn't contain @, it's a username - look up the email
       if (!credentials.username.includes('@')) {
-        // For now, we'll assume username is email. In a full implementation,
-        // you'd query the profiles table to find the email by username
-        throw new Error('Please use your email address to log in');
+        console.log('🔍 Looking up email for username:', credentials.username);
+        
+        // Query the profiles table to find the email by username
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', credentials.username)
+          .single();
+        
+        if (profileError || !profile) {
+          throw new Error('Username not found. Please check your username or use your email address.');
+        }
+        
+        email = profile.email;
+        console.log('✅ Found email for username:', email);
       }
       
+      // Now login with the email (either provided directly or looked up from username)
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: credentials.password

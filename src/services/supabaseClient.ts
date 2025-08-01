@@ -92,6 +92,7 @@ export const supabase = (() => {
 export type Profile = {
   id: string;
   email: string;
+  username: string;
   name: string;
   avatar_url?: string;
   credits: number;
