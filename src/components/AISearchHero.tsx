@@ -48,6 +48,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     query: string;
   }>>([]);
   const [loadingRealSearches, setLoadingRealSearches] = useState(true);
+  const [quickSearches, setQuickSearches] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Random user search display state
@@ -55,6 +56,36 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [isSearchAnimating, setIsSearchAnimating] = useState(false);
   
   const { latitude, longitude, error: locationError } = useGeolocation();
+
+  // All possible quick search options
+  const allQuickSearches = [
+    'cozy coffee shop',
+    'romantic dinner',
+    'energetic workout',
+    'peaceful brunch',
+    'trendy bar',
+    'artisan bakery',
+    'vintage bookstore',
+    'rooftop lounge',
+    'farm-to-table',
+    'craft brewery',
+    'yoga studio',
+    'jazz club',
+    'sushi bar',
+    'wine tasting',
+    'live music venue',
+    'healthy smoothies',
+    'late night eats',
+    'outdoor patio',
+    'intimate bistro',
+    'hipster cafe'
+  ];
+
+  // Randomly select 4 quick searches on component mount
+  useEffect(() => {
+    const shuffled = [...allQuickSearches].sort(() => 0.5 - Math.random());
+    setQuickSearches(shuffled.slice(0, 4));
+  }, []);
 
   // Fetch real user searches from Supabase
   useEffect(() => {
@@ -192,15 +223,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       window.removeEventListener('auth-state-changed', handleAuthStateChange);
     };
   }, []);
-
-  // Quick search suggestions
-  const quickSearches = [
-    'cozy coffee shop',
-    'romantic dinner',
-    'energetic workout',
-    'peaceful brunch',
-    'trendy bar'
-  ];
 
   const handleQuickSearch = (query: string) => {
     setSearchQuery(query);
