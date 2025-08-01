@@ -247,13 +247,24 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       setIsSearchAnimating(true);
       
       setTimeout(() => {
-        setCurrentUserSearchIndex((prev) => (prev + 1) % realUserSearches.length);
+        // Randomly select a different user search (not the current one)
+        const availableIndices = realUserSearches
+          .map((_, index) => index)
+          .filter(index => index !== currentUserSearchIndex);
+        
+        if (availableIndices.length > 0) {
+          const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+          setCurrentUserSearchIndex(randomIndex);
+        } else {
+          // Fallback if only one search available
+          setCurrentUserSearchIndex((prev) => (prev + 1) % realUserSearches.length);
+        }
         setIsSearchAnimating(false);
       }, 150); // Half of the transition duration
     }, 3000);
     
     return () => clearInterval(interval);
-  }, [isAppModeActive, realUserSearches.length]);
+  }, [isAppModeActive, realUserSearches.length, currentUserSearchIndex]);
 
   // Handle browser back button when in app mode
   useEffect(() => {
