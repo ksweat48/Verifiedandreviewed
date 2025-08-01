@@ -109,7 +109,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           loginButtonText: "Already have an account? Log in",
           benefits: [
             "100 free credits when you sign up",
-            "50 free credits every month",
+            "200 free credits instantly",
             "AI-powered vibe matching",
             "Save favorite businesses",
             "Access to all features"
@@ -124,33 +124,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // User is authenticated - proceed with search
       setIsAppModeActive(true); // Show loading screen for authenticated users
       
-      // All searches now cost the same, but we still track the type for analytics
+      // Determine search type based on user authentication and credits
       let effectiveSearchType: 'platform' | 'ai' | 'semantic' = 'platform';
       
       if (user) {
-        // User is authenticated - check if they have enough credits for any search
-        const hasCreditsForSearch = await CreditService.hasEnoughCreditsForSearch(user.id, 'platform');
+        // User is authenticated - check credits for advanced searches
+        const hasCreditsForSemantic = await CreditService.hasEnoughCreditsForSearch(user.id, 'semantic');
+        const hasCreditsForAI = await CreditService.hasEnoughCreditsForSearch(user.id, 'ai');
         
-        if (hasCreditsForSearch) {
+        if (hasCreditsForSemantic) {
           effectiveSearchType = 'semantic';
-        } else {
-          // Not enough credits - show signup prompt or credit purchase
-          setSignupPromptConfig({
-            title: "Not enough credits",
-            message: "You need <strong>2 credits</strong> to search. Get more credits!",
-            signupButtonText: "Buy Credits",
-            loginButtonText: "View Credit Options",
-            benefits: [
-              "2 credits per search",
-              "2 credits per review",
-              "20 credits per referral",
-              "50 free credits monthly"
-            ]
-          });
-          setShowSignupPrompt(true);
-          setIsSearching(false);
-          setIsAppModeActive(false);
-          return;
+        } else if (hasCreditsForAI) {
+          effectiveSearchType = 'ai';
         }
       }
       
@@ -238,10 +223,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         console.log('🧠 Performing semantic search...');
         try {
           // Deduct credits for semantic search
-          const creditDeducted = await CreditService.deductSearchCredits(user.id, effectiveSearchType);
+          const creditDeducted = await CreditService.deductSearchCredits(user.id, 'semantic');
           if (creditDeducted) {
             // Update local credits display
-            setUserCredits(prev => Math.max(0, prev - 2));
+            setUserCredits(prev => Math.max(0, prev - 5));
             
             const semanticResponse = await SemanticSearchService.searchByVibe(searchTerm, {
               latitude: latitude || undefined,
@@ -351,9 +336,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       if (combinedResults.length < 10 && user && effectiveSearchType !== 'platform' && aiResults.length === 0) {
         console.log('🤖 Using AI search to fill remaining slots...');
         try {
-          // Credits already deducted for the search, just proceed with AI
-          const creditDeducted = true; // We already deducted credits above
+          // Deduct credits for AI search
+          const creditDeducted = await CreditService.deductSearchCredits(user.id, 'ai');
           if (creditDeducted) {
+            // Update local credits display
+            setUserCredits(prev => Math.max(0, prev - 10));
+            
             const aiResponse = await fetch('/.netlify/functions/ai-business-search', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
