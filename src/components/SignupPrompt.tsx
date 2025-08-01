@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, Zap } from 'lucide-react';
+import FallingCredits from './FallingCredits';
 
 interface SignupPromptProps {
   onSignup: () => void;
@@ -83,11 +84,14 @@ const SignupPrompt: React.FC<SignupPromptProps> = ({
         
         {/* Full background image with overlay */}
         <div className="relative h-[500px] overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+          {/* Falling Credits Animation */}
+          <FallingCredits count={20} />
+          
           
           {/* Content overlay */}
           <div className="absolute inset-0 flex flex-col justify-between">
             {/* Text content - centered in the middle */}
-            <div className="flex-1 flex flex-col justify-center items-center text-center px-8">
+            <div className="flex-1 flex flex-col justify-center items-center text-center px-8 relative z-10">
               <h2 className="font-cinzel text-3xl md:text-4xl font-bold text-white mb-6">
                 {title}
               </h2>
@@ -98,7 +102,7 @@ const SignupPrompt: React.FC<SignupPromptProps> = ({
             </div>
             
             {/* Button section at the bottom */}
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 p-8 space-y-4">
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 p-8 space-y-4 relative z-10">
               <button 
                 onClick={onSignup}
                 type="button" 
