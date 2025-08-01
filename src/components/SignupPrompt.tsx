@@ -105,7 +105,7 @@ const SignupPrompt: React.FC<SignupPromptProps> = ({
                 type="button" 
                 className="w-full font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl hover:shadow-primary-500/30 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-300"
               >
-                Sign Up Free For 200 Credits
+                {signupButtonText}
               </button>
               
               <div className="text-center pt-2">
@@ -114,7 +114,7 @@ const SignupPrompt: React.FC<SignupPromptProps> = ({
                   className="font-poppins text-primary-600 hover:text-primary-700 transition-colors duration-200 cursor-pointer focus:outline-none focus:underline rounded-lg px-4 py-2"
                   type="button"
                 >
-                  Already have an account? Log in
+                  {loginButtonText}
                 </button>
               </div>
             </div>
