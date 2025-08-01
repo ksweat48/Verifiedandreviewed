@@ -308,18 +308,6 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
         </div>
         
         {/* Monthly Free Credits Info */}
-        <div className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
-          <div className="flex items-center mb-2">
-            <Calendar className="h-5 w-5 text-blue-600 mr-2" />
-            <h4 className="font-poppins font-semibold text-blue-900">
-              Monthly Free Credits
-            </h4>
-          </div>
-          <p className="font-lora text-sm text-blue-800">
-            Get <strong>50 free credits</strong> every month just for being a member! 
-            Your next refill is on {formatDate(freeCreditsInfo.nextRefillDate)}.
-          </p>
-        </div>
       </div>
       
       {/* Credit Packages */}
