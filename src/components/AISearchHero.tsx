@@ -545,19 +545,19 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   if (isAppModeActive) {
     return (
-      <div className="fixed inset-0 bg-white z-40 overflow-hidden">
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 z-40 overflow-hidden">
         {/* Fixed Search Bar */}
-        <div className="search-bar-fixed">
-          <div className="flex items-center px-4 py-3 bg-white border-b border-neutral-200">
+        <div className="search-bar-fixed bg-gradient-to-r from-slate-800 to-purple-800">
+          <div className="flex items-center px-4 py-3 border-b border-white/20">
             <button
               onClick={handleBackToSearch}
-              className="mr-3 p-2 rounded-full hover:bg-neutral-100 transition-colors duration-200"
+              className="mr-3 p-2 rounded-full hover:bg-white/10 transition-colors duration-200"
             >
-              <ArrowRight className="h-5 w-5 text-neutral-600 rotate-180" />
+              <ArrowRight className="h-5 w-5 text-white rotate-180" />
             </button>
             
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-500" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -565,12 +565,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder="Search for vibes..."
-                className="w-full pl-10 pr-4 py-2 border border-neutral-200 rounded-lg font-lora text-neutral-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 bg-white/90 backdrop-blur-sm border border-white/30 rounded-lg font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-white focus:border-white focus:bg-white"
               />
             </div>
             
             {currentUser && (
-              <div className="ml-3 flex items-center bg-primary-100 text-primary-700 px-3 py-1 rounded-lg">
+              <div className="ml-3 flex items-center bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-lg border border-white/30">
                 <Zap className="h-4 w-4 mr-1" />
                 <span className="font-poppins text-sm font-semibold">{userCredits}</span>
               </div>
@@ -593,18 +593,19 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               </div>
             </div>
           ) : searchResults.length === 0 ? (
-            <div className="flex items-center justify-center h-full px-4">
+            <div className="flex items-center justify-center h-full px-4 text-white">
               <div className="text-center">
-                <Search className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
+                <Search className="h-16 w-16 text-white/60 mx-auto mb-4" />
                 <h3 className="font-cinzel text-xl font-semibold text-neutral-900 mb-2">
+                <h3 className="font-cinzel text-xl font-semibold text-white mb-2">
                   No Vibes Found
                 </h3>
-                <p className="font-lora text-neutral-600 mb-4">
+                <p className="font-lora text-white/80 mb-4">
                   Try a different vibe search or check your spelling.
                 </p>
                 <button
                   onClick={handleBackToSearch}
-                  className="font-poppins bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
+                  className="font-poppins bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/30 transition-colors duration-200 border border-white/30"
                 >
                   Re-Vibe
                 </button>
