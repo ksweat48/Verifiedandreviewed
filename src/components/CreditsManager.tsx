@@ -217,7 +217,6 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
         </div>
 
         {/* Credit usage info */}
-        <CreditUsageInfo />
       </div>
 
       {/* Ways to Earn Credits */}
