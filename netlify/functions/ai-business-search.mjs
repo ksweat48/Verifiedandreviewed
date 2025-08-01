@@ -305,7 +305,10 @@ Requirements:
               }
             }
             
-            // Create business text for embedding generation
+            // Generate a short description based on the business type and rating
+            const shortDescription = `${result.name} is a highly-rated ${query} with ${result.rating} stars. Known for excellent service and great atmosphere.`;
+            
+            // Create business text for later batch embedding generation
             const businessText = [
               result.name,
               query, // The search query that found this business
@@ -314,34 +317,6 @@ Requirements:
               result.vicinity || '',
               businessHours
             ].filter(Boolean).join(' ');
-            
-            // Generate embedding for this business
-            console.log(`🧠 Generating embedding for business: ${result.name}`);
-            let businessSimilarity = 0.8; // Default fallback
-            
-            try {
-              const businessEmbeddingResponse = await openai.embeddings.create({
-                model: 'text-embedding-3-small',
-                input: businessText,
-                encoding_format: 'float'
-              });
-              const businessEmbedding = businessEmbeddingResponse.data[0].embedding;
-              
-              // Calculate cosine similarity
-              businessSimilarity = cosineSimilarity(promptEmbedding, businessEmbedding);
-              console.log(`📊 Calculated similarity for ${result.name}: ${Math.round(businessSimilarity * 100)}%`);
-              
-              // Ensure similarity is within reasonable bounds (0.3 to 1.0)
-              businessSimilarity = Math.max(0.3, Math.min(1.0, businessSimilarity));
-              
-            } catch (embeddingError) {
-              console.warn(`⚠️ Failed to calculate similarity for ${result.name}:`, embeddingError.message);
-              // Use a randomized fallback between 0.6-0.9 to show variation
-              businessSimilarity = 0.6 + (Math.random() * 0.3);
-            }
-            
-            // Generate a short description based on the business type and rating
-            const shortDescription = `${result.name} is a highly-rated ${query} with ${result.rating} stars. Known for excellent service and great atmosphere.`;
             
             return {
               id: `google-${result.place_id}`,
@@ -365,7 +340,8 @@ Requirements:
               isPlatformBusiness: false,
               tags: [],
               isGoogleVerified: true, // Flag to indicate Google verification
-              similarity: businessSimilarity // Calculated semantic similarity
+              businessText: businessText, // Store for batch embedding generation
+              similarity: 0.8 // Temporary value, will be calculated in batch
             };
           } else {
             console.warn(`⚠️ Businesses found for "${query}" but none have ratings, skipping.`);
@@ -411,15 +387,69 @@ Requirements:
     
     // Convert Map back to array and sort by similarity
     const uniqueBusinesses = Array.from(uniqueBusinessesMap.values())
-      .sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
     
     console.log('🎯 After deduplication:', uniqueBusinesses.length, 'unique businesses');
     
     // Take only the requested number of businesses
     const finalBusinesses = uniqueBusinesses.slice(0, numToGenerate);
-    foundBusinesses.push(...finalBusinesses);
     
-    console.log('🎯 AI search results after deduplication and limiting:', foundBusinesses.length, 'businesses');
+    console.log('🎯 AI search results after deduplication and limiting:', finalBusinesses.length, 'businesses');
+    
+    // OPTIMIZATION: Batch generate embeddings for all businesses at once
+    if (finalBusinesses.length > 0) {
+      console.log('🧠 Batch generating embeddings for', finalBusinesses.length, 'businesses...');
+      
+      try {
+        // Collect all business texts for batch embedding
+        const businessTexts = finalBusinesses.map(business => business.businessText);
+        
+        // Single API call to generate all embeddings
+        const batchEmbeddingResponse = await openai.embeddings.create({
+          model: 'text-embedding-3-small',
+          input: businessTexts,
+          encoding_format: 'float'
+        });
+        
+        console.log('✅ Generated', batchEmbeddingResponse.data.length, 'embeddings in single batch call');
+        
+        // Calculate similarities for all businesses
+        finalBusinesses.forEach((business, index) => {
+          try {
+            const businessEmbedding = batchEmbeddingResponse.data[index].embedding;
+            const similarity = cosineSimilarity(promptEmbedding, businessEmbedding);
+            
+            // Ensure similarity is within reasonable bounds (0.3 to 1.0)
+            business.similarity = Math.max(0.3, Math.min(1.0, similarity));
+            
+            console.log(`📊 Calculated similarity for ${business.name}: ${Math.round(business.similarity * 100)}%`);
+          } catch (similarityError) {
+            console.warn(`⚠️ Failed to calculate similarity for ${business.name}:`, similarityError.message);
+            // Use a randomized fallback between 0.6-0.9 to show variation
+            business.similarity = 0.6 + (Math.random() * 0.3);
+          }
+          
+          // Clean up the temporary businessText property
+          delete business.businessText;
+        });
+        
+        // Re-sort by similarity after batch calculation
+        finalBusinesses.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+        
+        console.log('✅ Batch similarity calculation completed');
+        
+      } catch (batchEmbeddingError) {
+        console.error('❌ Batch embedding generation failed:', batchEmbeddingError.message);
+        
+        // Fallback: assign random similarities and clean up businessText
+        finalBusinesses.forEach(business => {
+          business.similarity = 0.6 + (Math.random() * 0.3);
+          delete business.businessText;
+        });
+      }
+    }
+    
+    foundBusinesses.push(...finalBusinesses);
     
     // Filter businesses by 10-mile radius if user location is available
     let radiusFilteredBusinesses = foundBusinesses;
