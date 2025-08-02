@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
+import { MessageSquare, Shield, Settings } from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
 import { UserService } from '../services/userService';
