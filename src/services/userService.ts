@@ -271,8 +271,13 @@ export class UserService {
 
       // Sign out from Supabase
       supabase.auth.signOut();
+      
+      // Force a complete page reload to clear all application state
+      window.location.reload();
     } catch (error) {
       console.error('Error during logout:', error);
+      // Even if there's an error, still reload to ensure clean state
+      window.location.reload();
     }
   }
 
