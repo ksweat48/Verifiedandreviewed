@@ -619,7 +619,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 prompt: searchTerm,
                 searchQuery: searchTerm,
                 existingResultsCount: combinedResults.length,
-                numToGenerate: Math.max(1, 15 - combinedResults.length),
+                numToGenerate: Math.min(7, Math.max(1, 15 - combinedResults.length)),
                 latitude: latitude || undefined,
                 longitude: longitude || undefined
               })
