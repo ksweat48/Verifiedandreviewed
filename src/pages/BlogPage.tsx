@@ -17,6 +17,9 @@ const BlogPage: React.FC<BlogPageProps> = ({ verified = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [hoveredHealthScore, setHoveredHealthScore] = useState<number | null>(null);
+  
+  const postsPerPage = 10;
   
   // Add the missing destructuring of the hook return value
   const { posts, loading, error, totalPages, total } = useWordPressPosts({
@@ -26,10 +29,6 @@ const BlogPage: React.FC<BlogPageProps> = ({ verified = false }) => {
     categories: selectedCategory !== 'all' ? selectedCategory : undefined
   });
   
-  // Add state for health score tooltip
-  const [hoveredHealthScore, setHoveredHealthScore] = useState<number | null>(null);
-  
-  const postsPerPage = 10;
   
   // Update search term when URL search params change
   useEffect(() => {
