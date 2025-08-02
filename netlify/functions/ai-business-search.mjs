@@ -67,7 +67,7 @@ export default async function handler(req) {
       prompt, 
       searchQuery, 
       existingResultsCount = 0, 
-      numToGenerate = 15,
+     numToGenerate = 7,
       latitude,
       longitude 
     } = await req.json();
@@ -264,7 +264,7 @@ Requirements:
             fields: 'name,formatted_address,geometry,rating,opening_hours,types,place_id',
             key: GOOGLE_PLACES_API_KEY
           },
-          timeout: 10000 // Increased timeout for more thorough search
+         timeout: 5000 // Reduced timeout for faster response
         });
         
         if (placesResponse.data.status === 'OK' && 
