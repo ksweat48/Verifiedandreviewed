@@ -1,6 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, ChevronLeft, ChevronRight, MapPin, Calendar, ArrowRight, Star, Info, Shield } from 'lucide-react';
 import { useWordPressPosts } from '../hooks/useWordPress';
 import { WordPressPost } from '../types/wordpress';
 // Lazy load components
@@ -17,6 +17,17 @@ const BlogPage: React.FC<BlogPageProps> = ({ verified = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  
+  // Add the missing destructuring of the hook return value
+  const { posts, loading, error, totalPages, total } = useWordPressPosts({
+    per_page: postsPerPage,
+    page: currentPage,
+    search: searchTerm || undefined,
+    categories: selectedCategory !== 'all' ? selectedCategory : undefined
+  });
+  
+  // Add state for health score tooltip
+  const [hoveredHealthScore, setHoveredHealthScore] = useState<number | null>(null);
   
   const postsPerPage = 10;
   
