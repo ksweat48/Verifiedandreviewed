@@ -21,6 +21,8 @@ const AccountPage = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   useEffect(() => {
     loadUserData();
@@ -50,8 +52,10 @@ const AccountPage = () => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
     
-    setLoading(true);
+    setIsUploadingAvatar(true);
+    setAvatarError(null);
     setError('');
+    setSuccess('');
     
     // Create a preview immediately for better UX
     const reader = new FileReader();
@@ -106,10 +110,10 @@ const AccountPage = () => {
         setSuccess('Profile image updated successfully');
       } catch (error) {
         console.error('Error uploading avatar:', error);
-        setError('Failed to upload image. Please try again.');
+        setAvatarError('Failed to upload image. Please try again.');
         // Keep the preview but show error
       } finally {
-        setLoading(false);
+        setIsUploadingAvatar(false);
       }
     };
     
@@ -281,6 +285,58 @@ const AccountPage = () => {
                 )}
                 
                 <form onSubmit={handleSubmitProfile} className="space-y-6">
+                  {/* Avatar Upload Section */}
+                  <div>
+                    <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
+                      Profile Picture
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <img
+                          src={user.avatar || 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=150'}
+                          alt={user.name}
+                          className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+                        />
+                        {isUploadingAvatar && (
+                          <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                          </div>
+                        )}
+                        <label className="absolute bottom-0 right-0 bg-primary-500 text-white p-2 rounded-full cursor-pointer hover:bg-primary-600 transition-colors duration-200 shadow-lg">
+                          <Camera className="h-4 w-4" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarUpload}
+                            className="hidden"
+                            disabled={isUploadingAvatar}
+                          />
+                        </label>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-lora text-sm text-neutral-600 mb-2">
+                          Upload a profile picture to personalize your account and appear in community activity.
+                        </p>
+                        {avatarError && (
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div className="flex items-center">
+                              <X className="h-4 w-4 text-red-500 mr-2" />
+                              <p className="font-lora text-red-700 text-sm">{avatarError}</p>
+                            </div>
+                          </div>
+                        )}
+                        {isUploadingAvatar && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div className="flex items-center">
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent mr-2"></div>
+                              <p className="font-lora text-blue-700 text-sm">Uploading your profile picture...</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div>
                     <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
                       Full Name
