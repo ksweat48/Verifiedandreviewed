@@ -49,6 +49,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   }>>([]);
   const [loadingRealSearches, setLoadingRealSearches] = useState(true);
   const [quickSearches, setQuickSearches] = useState<string[]>([]);
+  const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Diverse default avatars for users without custom avatars
@@ -367,6 +368,30 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       }
       
       // User is authenticated - proceed with search
+      // Check if user has enough credits for search (2 credits required)
+      const hasEnoughCredits = await CreditService.hasEnoughCreditsForSearch(user.id, 'semantic');
+      if (!hasEnoughCredits) {
+        // User is out of credits - show out of credits modal
+        setSignupPromptConfig({
+          title: "Out of Credits!",
+          message: "You need <strong>2 credits</strong> to search. Get more credits to continue vibing!",
+          signupButtonText: "Get More Credits",
+          loginButtonText: "View Credit Options",
+          benefits: [
+            "50 free credits every month",
+            "2 credits per review you write",
+            "20 credits per friend referral",
+            "Purchase credit packages starting at $2.99",
+            "Auto-refill options available"
+          ]
+        });
+        setIsOutOfCreditsModal(true);
+        setShowSignupPrompt(true);
+        setIsSearching(false);
+        setIsAppModeActive(false); // Keep hero visible for modal
+        return; // Exit early - no search for users without credits
+      }
+      
       setIsAppModeActive(true); // Show loading screen for authenticated users
       
       // Determine search type based on user authentication and credits
@@ -1068,18 +1093,33 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           onSignup={() => {
             setShowSignupPrompt(false);
             setSignupPromptConfig(null);
-            setAuthMode('signup');
-            setShowAuthModal(true);
+            setIsOutOfCreditsModal(false);
+            if (isOutOfCreditsModal) {
+              // Navigate to credits tab in dashboard
+              navigate('/dashboard', { state: { activeTab: 'credits' } });
+            } else {
+              // Regular signup flow
+              setAuthMode('signup');
+              setShowAuthModal(true);
+            }
           }}
           onLogin={() => {
             setShowSignupPrompt(false);
             setSignupPromptConfig(null);
-            setAuthMode('login');
-            setShowAuthModal(true);
+            setIsOutOfCreditsModal(false);
+            if (isOutOfCreditsModal) {
+              // Navigate to credits tab in dashboard
+              navigate('/dashboard', { state: { activeTab: 'credits' } });
+            } else {
+              // Regular login flow
+              setAuthMode('login');
+              setShowAuthModal(true);
+            }
           }}
           onClose={() => {
             setShowSignupPrompt(false);
             setSignupPromptConfig(null);
+            setIsOutOfCreditsModal(false);
           }}
         />
       )}
