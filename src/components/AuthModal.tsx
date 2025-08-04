@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, LogIn, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, LogIn, User as UserIcon, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { UserService } from '../services/userService';
 import { useAnalytics } from '../hooks/useAnalytics';
 import type { User } from '../types/user';
@@ -220,7 +220,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 Full Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
                 <input
                   type="text"
                   value={formData.name}
@@ -241,7 +241,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               {mode === 'signup' ? 'Username' : 'Username or Email'}
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
               <input
                 type="text"
                 value={formData.username}
