@@ -99,50 +99,19 @@ const AIBusinessCard: React.FC<{
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                
-                // Debug: Log the complete business object to inspect data
-                console.log('🗺️ DEBUG: AIBusinessCard GO button clicked with business object:', business);
-                
-                // Robust navigation URL construction with data validation
                 let mapsUrl;
                 if (business.placeId && typeof business.placeId === 'string' && business.placeId.trim().length > 0) {
-                  // Priority 1: Use Google Place ID with query_place_id parameter (for direct business profile link)
                   const businessName = business.name && typeof business.name === 'string' ? business.name.trim() : 'business';
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessName)}&query_place_id=${business.placeId.trim()}`;
-                  console.log('🗺️ DEBUG: Using placeId with query_place_id for direct business profile:', business.placeId.trim());
                 } else if (business.latitude && business.longitude) {
-                  // Priority 2: Use coordinates (fallback for businesses without Place ID)
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
-                  console.log('🗺️ DEBUG: Using coordinates for maps URL');
                 } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
-                  // Priority 3: Use valid address string
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
-                  console.log('🗺️ DEBUG: Using address for maps URL:', business.address.trim());
                 } else if (business.name && typeof business.name === 'string' && business.name.trim().length > 0) {
-                  // Priority 4: Use business name as fallback
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
-                  console.log('🗺️ DEBUG: Using business name for maps URL:', business.name.trim());
                 } else {
-                  // Last resort: Generic search
                   mapsUrl = `https://www.google.com/maps/search/?api=1&query=business`;
-                  console.log('🗺️ DEBUG: Using generic fallback for maps URL');
                 }
-                
-                console.log('🗺️ DEBUG: Final maps URL generated:', mapsUrl);
-                console.log('🗺️ DEBUG: Business data summary:', { 
-                  hasCoords: !!(business.latitude && business.longitude),
-                  hasPlaceId: !!(business.placeId && business.placeId.trim()),
-                  hasAddress: !!(business.address && business.address.trim()),
-                  hasName: !!(business.name && business.name.trim()),
-                  selectedMethod: business.placeId ? 'query_place_id' :
-                                 business.latitude && business.longitude ? 'coordinates' :
-                                 business.address ? 'address' :
-                                 business.name ? 'name' : 'generic'
-                });
-                
-                console.log('🗺️ Opening Google Maps with URL:', mapsUrl);
-                
-                // HARDENED NAVIGATION: Only perform window.open with enhanced security
                 window.open(mapsUrl, '_blank', 'noopener,noreferrer');
               }}
               className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"

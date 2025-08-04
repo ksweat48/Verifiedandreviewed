@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as Icons from 'lucide-react';
+import { Navigation, ThumbsUp, ThumbsDown } from 'lucide-react';
 import LeaveReviewModal from './LeaveReviewModal';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
@@ -149,7 +149,7 @@ const RecentActivitySection: React.FC = () => {
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-poppins text-lg font-semibold text-neutral-900 flex items-center">
-          <Icons.Navigation className="h-5 w-5 mr-2 text-primary-500" />
+          <Navigation className="h-5 w-5 mr-2 text-primary-500" />
           Activity
         </h3>
         
@@ -162,7 +162,7 @@ const RecentActivitySection: React.FC = () => {
       
       {visitedBusinesses.length === 0 ? (
         <div className="bg-neutral-50 rounded-lg p-6 text-center">
-          <Icons.Navigation className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
+          <Navigation className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
           <h4 className="font-poppins font-semibold text-neutral-700 mb-1">
             No activity yet
           </h4>
@@ -199,12 +199,12 @@ const RecentActivitySection: React.FC = () => {
                     <div className="flex items-center mt-1">
                       {business.rating >= 4 ? (
                         <div className="flex items-center text-green-600">
-                          <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                          <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
                           <span className="font-poppins text-xs font-semibold">Recommend</span>
                         </div>
                       ) : (
                         <div className="flex items-center text-red-600">
-                          <Icons.ThumbsDown className="h-3 w-3 mr-1 fill-current" />
+                          <ThumbsDown className="h-3 w-3 mr-1 fill-current" />
                           <span className="font-poppins text-xs font-semibold">Not for me</span>
                         </div>
                       )}

@@ -352,8 +352,6 @@ export class BusinessService {
     userLongitude?: number;
   }): Promise<Business[]> {
     try {
-      console.log('🔍 BusinessService.getBusinesses called with filters:', filters);
-      
       let query = supabase
         .from('businesses')
         .select('*');
@@ -373,7 +371,6 @@ export class BusinessService {
       }
       
       if (filters?.search) {
-        console.log('🔍 Applying search filter for:', filters.search);
         // Build search conditions array to avoid malformed query strings
         const searchConditions = [
           `name.ilike.%${filters.search}%`,
@@ -392,15 +389,11 @@ export class BusinessService {
       if (error) throw error;
       
       let businesses = data || [];
-      console.log('✅ Query returned', businesses.length, 'businesses');
       
       // Filter by 10-mile radius if user location is provided and not admin view
       if (filters?.userLatitude && filters?.userLongitude && !filters?.adminView) {
-        console.log('🗺️ Filtering businesses within 10-mile radius');
-        
         businesses = businesses.filter(business => {
           if (!business.latitude || !business.longitude) {
-            console.log(`⚠️ Business ${business.name} has no coordinates, excluding from radius filter`);
             return false;
           }
           
@@ -416,14 +409,11 @@ export class BusinessService {
           const distance = R * c;
           
           if (distance > 10) {
-            console.log(`🚫 Filtering out business outside 10-mile radius: ${business.name} (${distance.toFixed(1)} miles)`);
             return false;
           }
           
           return true;
         });
-        
-        console.log('✅ After 10-mile radius filter:', businesses.length, 'businesses remain');
       }
       
       // Add placeholder distance/duration values for external calculation
@@ -433,13 +423,8 @@ export class BusinessService {
         duration: 999999
       }));
       
-      console.log('📊 Final businesses with distances:', businesses.map(b => ({
-        name: b.name,
-        distance: b.distance
-      })));
       return businesses;
     } catch (error) {
-      console.error('❌ Error in getBusinesses:', error);
       return [];
     }
   }
