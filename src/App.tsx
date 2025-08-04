@@ -32,6 +32,51 @@ function App() {
     }
   }, []);
   
+  // Auto-refresh when app is reopened (tab becomes visible again)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Only refresh if the document becomes visible (user returns to tab)
+      if (document.visibilityState === 'visible') {
+        // Check if the page has been hidden for more than 30 seconds
+        const lastHiddenTime = sessionStorage.getItem('app-last-hidden');
+        if (lastHiddenTime) {
+          const timeDiff = Date.now() - parseInt(lastHiddenTime);
+          // Refresh if hidden for more than 30 seconds (30000ms)
+          if (timeDiff > 30000) {
+            console.log('🔄 Auto-refreshing app after being hidden for', Math.round(timeDiff / 1000), 'seconds');
+            window.location.reload();
+            return;
+          }
+        }
+      } else {
+        // Document is hidden, record the time
+        sessionStorage.setItem('app-last-hidden', Date.now().toString());
+      }
+    };
+
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also listen for focus events as a backup
+    const handleWindowFocus = () => {
+      const lastHiddenTime = sessionStorage.getItem('app-last-hidden');
+      if (lastHiddenTime) {
+        const timeDiff = Date.now() - parseInt(lastHiddenTime);
+        if (timeDiff > 30000) {
+          console.log('🔄 Auto-refreshing app on window focus after', Math.round(timeDiff / 1000), 'seconds');
+          window.location.reload();
+        }
+      }
+    };
+    
+    window.addEventListener('focus', handleWindowFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, []);
+  
   // Apply no-scroll class to body when in app mode
   useEffect(() => {
     if (isAppModeActive) {
