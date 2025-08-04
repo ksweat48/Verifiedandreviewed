@@ -92,7 +92,7 @@ const Navigation: React.FC<NavigationProps> = ({ isAppModeActive }) => {
 
   return (
     <>
-      <nav className="bg-header-bg shadow-sm sticky top-0 z-50 border-b border-white/10">
+      <nav className="bg-gradient-to-r from-slate-800 to-purple-800 sticky top-0 z-50 border-b border-white/20 header-shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
