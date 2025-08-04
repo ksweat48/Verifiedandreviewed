@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, LogIn, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { UserService } from '../services/userService';
 import { useAnalytics } from '../hooks/useAnalytics';
 import type { User } from '../types/user';
@@ -201,9 +201,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
           <div className="flex items-center">
             <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
               {mode === 'signup' ? (
-                <UserPlus className="h-5 w-5 text-primary-500" />
+                <Icons.UserPlus className="h-5 w-5 text-primary-500" />
               ) : (
-                <LogIn className="h-5 w-5 text-primary-500" />
+                <Icons.LogIn className="h-5 w-5 text-primary-500" />
               )}
             </div>
             <h2 className="font-cinzel text-2xl font-bold text-neutral-900">
@@ -220,7 +220,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 Full Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                <Icons.User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
                 <input
                   type="text"
                   value={formData.name}
@@ -241,7 +241,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               {mode === 'signup' ? 'Username' : 'Username or Email'}
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <Icons.User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
               <input
                 type="text"
                 value={formData.username}
@@ -259,7 +259,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                <Icons.Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
                 <input
                   type="email"
                   value={formData.email}
@@ -277,7 +277,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <Icons.Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
@@ -291,7 +291,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
               >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                {showPassword ? <Icons.EyeOff className="h-5 w-5" /> : <Icons.Eye className="h-5 w-5" />}
               </button>
             </div>
           </div>
@@ -302,7 +302,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 Confirm Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                <Icons.Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={formData.confirmPassword}

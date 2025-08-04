@@ -147,6 +147,8 @@ export class UserService {
       
       // If username doesn't contain @, it's a username - look up the email
       if (!credentials.username.includes('@')) {
+        console.log('🔍 Looking up email for username:', credentials.username);
+        
         // Query the profiles table to find the email by username
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -154,7 +156,11 @@ export class UserService {
           .eq('username', credentials.username)
           .single();
         
+        console.log('🔍 Username lookup result:', { profile, error: profileError });
+        
         if (profileError || !profile) {
+          console.error('❌ Username lookup failed:', profileError);
+          
           // Check if the username exists but with different casing
           const { data: caseInsensitiveProfile, error: caseError } = await supabase
             .from('profiles')
@@ -172,24 +178,29 @@ export class UserService {
             
             if (!emailError && emailProfile) {
               email = emailProfile.email;
+              console.log('✅ Found user by email instead of username');
             } else {
               throw new Error(`Username "${credentials.username}" not found. Please check your username or use your email address.`);
             }
           } else {
             email = caseInsensitiveProfile.email;
+            console.log('✅ Found email with case-insensitive search:', email);
           }
         } else {
           email = profile.email;
+          console.log('✅ Found email for username:', email);
         }
       }
       
       // Now login with the email (either provided directly or looked up from username)
+      console.log('🔐 Attempting login with email:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: credentials.password
       });
       
       if (error) {
+        console.error('❌ Supabase auth error:', error);
         throw error;
       }
       
@@ -207,6 +218,7 @@ export class UserService {
         throw new Error('No session returned from login');
       }
     } catch (error) {
+      console.error('❌ Login error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Login failed'

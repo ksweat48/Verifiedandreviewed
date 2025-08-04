@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ThumbsUp, Clock, Heart } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import ReviewerProfile from './ReviewerProfile';
 import ImageGalleryPopup from './ImageGalleryPopup';
 import BusinessProfileModal from './BusinessProfileModal';
@@ -58,6 +58,19 @@ const PlatformBusinessCard: React.FC<{
   onRecommend: (business: BusinessCard) => void;
   onTakeMeThere: (business: BusinessCard) => void;
 }> = ({ business, onRecommend, onTakeMeThere }) => {
+ // Debug: Log the business object and its reviews
+ console.log("Card received reviews:", business.reviews);
+ console.log(`🎴 PlatformBusinessCard rendering: ${business.name}`);
+ console.log("Card received reviews:", business.reviews);
+ console.log(`🎴 Reviews array:`, business.reviews);
+ console.log(`🎴 Reviews length: ${business.reviews?.length || 0}`);
+ console.log(`🎴 Has reviews: ${business.reviews && business.reviews.length > 0}`);
+ 
+  // ✅ Check if the reviews are still there before rendering
+  useEffect(() => {
+    console.log("🎴 PlatformBusinessCard received reviews:", business.reviews);
+  }, [business]);
+  
   const getSentimentRating = (score: number) => {
     if (score >= 80) return { text: 'Great', color: 'bg-green-500' };
     if (score >= 70 && score < 80) return { text: 'Good', color: 'bg-blue-500' };
@@ -172,7 +185,7 @@ const PlatformBusinessCard: React.FC<{
               className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
               title="Add to favorites"
             >
-              <Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+              <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
             </button>
           </div>
 
@@ -184,7 +197,7 @@ const PlatformBusinessCard: React.FC<{
             
             <div className="flex items-center justify-between mb-0.5">
               <div className="flex items-center">
-                <Clock className="h-3 w-3 mr-1" />
+                <Icons.Clock className="h-3 w-3 mr-1" />
                 <span className="font-lora text-xs">{business.hours || 'Hours unavailable'}</span>
                 {business.distance && business.duration && (
                   <span className="font-lora text-xs ml-2">• {business.distance.toFixed(1)} mi • {business.duration} min</span>
@@ -202,7 +215,7 @@ const PlatformBusinessCard: React.FC<{
                 )}
                 
                 <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-xs font-poppins font-semibold flex items-center shadow-md`}>
-                  <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                  <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
                   <span className="mr-1">{business.rating?.thumbsUp || 0}</span>
                   <span className="mr-1">{business.rating?.thumbsDown ? `/${business.rating.thumbsDown}` : ''}</span>
                   <span>{sentimentRating.text}</span>
@@ -238,7 +251,7 @@ const PlatformBusinessCard: React.FC<{
                   <div className="flex-1 min-w-0 pr-2">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center cursor-pointer" onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}>
-                        <ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-red-500'}`} />
+                        <Icons.ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-red-500'}`} />
                         <span className="font-poppins text-xs font-semibold text-neutral-700">Review</span>
                       </div>
                       <span className="font-poppins text-xs text-neutral-500">

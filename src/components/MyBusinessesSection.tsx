@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Building, Plus, Shield, Eye, Edit, Trash2, AlertCircle } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import BusinessProfileModal from './BusinessProfileModal';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
 import type { Business } from '../services/supabaseClient';
+// Force rebuild to clear stale cache
 
 interface MyBusinessesSectionProps {
   user: User | null;
@@ -89,7 +90,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-2xl p-6 shadow-sm text-center">
-        <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
+        <Icons.AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
         <h3 className="font-poppins text-lg font-semibold text-red-700 mb-2">
           Error Loading Businesses
         </h3>
@@ -108,14 +109,14 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
           onClick={handleAddBusiness}
           className="font-poppins bg-primary-500 text-white px-3 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 flex items-center"
         >
-          <Plus className="h-3 w-3 mr-1.5 sm:h-4 sm:w-4 sm:mr-2" />
+          <Icons.Plus className="h-3 w-3 mr-1.5 sm:h-4 sm:w-4 sm:mr-2" />
           Add New Business
         </button>
       </div>
 
       {businesses.length === 0 ? (
         <div className="bg-neutral-50 rounded-2xl p-8 text-center">
-          <Building className="h-10 w-10 text-neutral-300 mx-auto mb-4" />
+          <Icons.Building className="h-10 w-10 text-neutral-300 mx-auto mb-4" />
           <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
             No Businesses Added Yet
           </h3>
@@ -126,7 +127,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
             onClick={handleAddBusiness}
             className="font-poppins bg-primary-500 text-white px-4 py-2 text-sm sm:px-6 sm:py-3 sm:text-base rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
           >
-            <Plus className="h-4 w-4 mr-1.5 sm:h-5 sm:w-5 sm:mr-2" />
+            <Icons.Plus className="h-4 w-4 mr-1.5 sm:h-5 sm:w-5 sm:mr-2" />
             Add Your First Business
           </button>
         </div>
@@ -148,7 +149,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     }`}>
                       {business.is_verified ? (
                         <>
-                          <Shield className="h-3 w-3 inline mr-1" /> Verified
+                          <Icons.Shield className="h-3 w-3 inline mr-1" /> Verified
                         </>
                       ) : (
                         'Pending Verification'
@@ -167,14 +168,14 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                     title="View Business"
                   >
-                    <Eye className="h-4 w-4" />
+                    <Icons.Eye className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleEditBusiness(business)}
                     className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
                     title="Edit Business"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Icons.Edit className="h-4 w-4" />
                   </button>
                 </div>
                 <button
@@ -186,7 +187,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                   {deletingBusinessId === business.id ? (
                     <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    <Trash2 className="h-4 w-4" />
+                    <Icons.Trash2 className="h-4 w-4" />
                   )}
                 </button>
               </div>

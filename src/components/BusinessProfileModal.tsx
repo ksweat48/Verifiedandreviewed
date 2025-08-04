@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ThumbsUp, ThumbsDown, MapPin, Clock, Phone, Mail, Globe, Share2, Info, Navigation, Image, MessageSquare, Loader2, Facebook, Instagram, Twitter, Linkedin, Video, Link } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import ImageGallery from './ImageGallery';
 import { ReviewService } from '../services/reviewService';
 import { ActivityService } from '../services/activityService';
@@ -174,7 +174,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
               
               {business.sentiment_score && (
                 <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-sm font-poppins font-semibold flex items-center`}>
-                  <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                  <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
                   <span>{business.thumbs_up || 0}</span>
                   <span className="mx-1">•</span>
                   <span>{sentimentRating.text}</span>
@@ -196,7 +196,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
             onClick={onClose}
             className="absolute top-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-colors duration-200"
           >
-            <X className="h-6 w-6" />
+            <Icons.X className="h-6 w-6" />
           </button>
         </div>
         
@@ -211,7 +211,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                   : 'text-neutral-600 hover:text-neutral-900'
               }`}
             >
-              <Info className="h-5 w-5 inline mr-2" />
+              <Icons.Info className="h-5 w-5 inline mr-2" />
               Info
             </button>
             
@@ -223,7 +223,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                   : 'text-neutral-600 hover:text-neutral-900'
               }`}
             >
-              <Image className="h-5 w-5 inline mr-2" />
+              <Icons.Image className="h-5 w-5 inline mr-2" />
               Gallery
               {business.gallery_urls && business.gallery_urls.length > 0 && (
                 <span className="ml-2 bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full text-xs">
@@ -240,7 +240,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                   : 'text-neutral-600 hover:text-neutral-900'
               }`}
             >
-              <MessageSquare className="h-5 w-5 inline mr-2" />
+              <Icons.MessageSquare className="h-5 w-5 inline mr-2" />
               Reviews
               {businessReviews.length > 0 && (
                 <span className="ml-2 bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full text-xs">
@@ -308,7 +308,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 {business.address && (
                   <div>
                     <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 flex items-center">
-                      <MapPin className="h-5 w-5 mr-2 text-primary-500" />
+                      <Icons.MapPin className="h-5 w-5 mr-2 text-primary-500" />
                       Location
                     </h3>
                     <p className="font-lora text-neutral-700">
@@ -330,7 +330,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 {business.hours && (
                   <div>
                     <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 flex items-center">
-                      <Clock className="h-5 w-5 mr-2 text-primary-500" />
+                      <Icons.Clock className="h-5 w-5 mr-2 text-primary-500" />
                       Hours
                     </h3>
                     <p className="font-lora text-neutral-700 whitespace-pre-line">
@@ -347,13 +347,13 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 {/* Contact */}
                 <div>
                   <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 flex items-center">
-                    <Phone className="h-5 w-5 mr-2 text-primary-500" />
+                    <Icons.Phone className="h-5 w-5 mr-2 text-primary-500" />
                     Contact
                   </h3>
                   <div className="space-y-2">
                     {business.phone_number && (
                       <div className="flex items-center">
-                        <Phone className="h-4 w-4 text-neutral-500 mr-2" />
+                        <Icons.Phone className="h-4 w-4 text-neutral-500 mr-2" />
                         <a 
                           href={`tel:${business.phone_number}`}
                           className="font-lora text-neutral-700 hover:text-primary-500 transition-colors duration-200"
@@ -365,7 +365,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                     
                     {business.email && (
                       <div className="flex items-center">
-                        <Mail className="h-4 w-4 text-neutral-500 mr-2" />
+                        <Icons.Mail className="h-4 w-4 text-neutral-500 mr-2" />
                         <a 
                           href={`mailto:${business.email}`}
                           className="font-lora text-neutral-700 hover:text-primary-500 transition-colors duration-200"
@@ -377,7 +377,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                     
                     {business.website_url && (
                       <div className="flex items-center">
-                        <Globe className="h-4 w-4 text-neutral-500 mr-2" />
+                        <Icons.Globe className="h-4 w-4 text-neutral-500 mr-2" />
                         <a 
                           href={business.website_url}
                           target="_blank"
@@ -395,28 +395,28 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 {business.social_media && business.social_media.length > 0 && (
                   <div>
                     <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 flex items-center">
-                      <Share2 className="h-5 w-5 mr-2 text-primary-500" />
+                      <Icons.Share2 className="h-5 w-5 mr-2 text-primary-500" />
                       Social Media
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {business.social_media.map((url, index) => {
-                        let icon = <Link className="h-4 w-4" />;
+                        let icon = <Icons.Link className="h-4 w-4" />;
                         let platform = "Link";
                         
                         if (url.includes('facebook.com')) {
-                          icon = <Facebook className="h-4 w-4" />;
+                          icon = <Icons.Facebook className="h-4 w-4" />;
                           platform = "Facebook";
                         } else if (url.includes('instagram.com')) {
-                          icon = <Instagram className="h-4 w-4" />;
+                          icon = <Icons.Instagram className="h-4 w-4" />;
                           platform = "Instagram";
                         } else if (url.includes('twitter.com') || url.includes('x.com')) {
-                          icon = <Twitter className="h-4 w-4" />;
+                          icon = <Icons.Twitter className="h-4 w-4" />;
                           platform = "Twitter";
                         } else if (url.includes('linkedin.com')) {
-                          icon = <Linkedin className="h-4 w-4" />;
+                          icon = <Icons.Linkedin className="h-4 w-4" />;
                           platform = "LinkedIn";
                         } else if (url.includes('tiktok.com')) {
-                          icon = <Video className="h-4 w-4" />;
+                          icon = <Icons.Video className="h-4 w-4" />;
                           platform = "TikTok";
                         }
                         
@@ -438,7 +438,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 {/* Additional Details */}
                 <div>
                   <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 flex items-center">
-                    <Info className="h-5 w-5 mr-2 text-primary-500" />
+                    <Icons.Info className="h-5 w-5 mr-2 text-primary-500" />
                     Details
                   </h3>
                   <div className="space-y-2">
@@ -475,7 +475,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 />
               ) : (
                 <div className="text-center py-12">
-                  <Image className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
+                  <Icons.Image className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
                   <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
                     No Gallery Images
                   </h3>
@@ -492,7 +492,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
             <div>
               {loadingReviews ? (
                 <div className="text-center py-12">
-                  <Loader2 className="h-16 w-16 text-primary-500 mx-auto mb-4 animate-spin" />
+                  <Icons.Loader2 className="h-16 w-16 text-primary-500 mx-auto mb-4 animate-spin" />
                   <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
                     Loading Reviews...
                   </h3>
@@ -502,7 +502,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 </div>
               ) : businessReviews.length === 0 ? (
                 <div className="text-center py-12">
-                  <MessageSquare className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
+                  <Icons.MessageSquare className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
                   <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
                     No Reviews Yet
                   </h3>
@@ -518,7 +518,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                     </h3>
                     {business.thumbs_up > 0 && (
                       <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-sm font-poppins font-semibold flex items-center`}>
-                        <ThumbsUp className="h-4 w-4 mr-1 fill-current" />
+                        <Icons.ThumbsUp className="h-4 w-4 mr-1 fill-current" />
                         <span>{business.thumbs_up}</span>
                         <span className="mx-1">•</span>
                         <span>{sentimentRating.text}</span>
@@ -542,9 +542,9 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                               </h5>
                               <div className="flex items-center">
                                 {review.rating >= 4 ? (
-                                  <ThumbsUp className="h-4 w-4 text-green-600 fill-current" />
+                                  <Icons.ThumbsUp className="h-4 w-4 text-green-600 fill-current" />
                                 ) : (
-                                  <ThumbsDown className="h-4 w-4 text-red-600 fill-current" />
+                                  <Icons.ThumbsDown className="h-4 w-4 text-red-600 fill-current" />
                                 )}
                               </div>
                               <span className="text-sm text-neutral-500">
@@ -596,7 +596,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
               onClick={handleTakeMeThere}
               className="font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center"
             >
-              <Navigation className="h-5 w-5 mr-2" />
+              <Icons.Navigation className="h-5 w-5 mr-2" />
               GO
             </button>
             
@@ -605,7 +605,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                 href={`tel:${business.phone_number}`}
                 className="font-poppins bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors duration-200 flex items-center"
               >
-                <Phone className="h-5 w-5 mr-2" />
+                <Icons.Phone className="h-5 w-5 mr-2" />
                 Call
               </a>
             )}
