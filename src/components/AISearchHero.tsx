@@ -44,12 +44,47 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [quickSearches, setQuickSearches] = useState<string[]>([]);
   const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [randomUserSearch, setRandomUserSearch] = useState('');
   
   const { latitude, longitude, error: locationError } = useGeolocation();
 
   // Initialize quick searches
   useEffect(() => {
     setQuickSearches(['cozy coffee shop', 'romantic dinner', 'trendy bar', 'peaceful brunch']);
+  }, []);
+
+  // Generate random user search messages
+  const generateRandomUserSearch = () => {
+    const cities = [
+      'San Francisco', 'New York', 'Los Angeles', 'Chicago', 'Miami', 'Seattle', 
+      'Austin', 'Denver', 'Portland', 'Boston', 'Atlanta', 'Nashville',
+      'Phoenix', 'San Diego', 'Las Vegas', 'Orlando', 'Tampa', 'Charlotte'
+    ];
+    
+    const vibes = [
+      'cozy coffee shop', 'romantic dinner spot', 'trendy cocktail bar', 
+      'peaceful brunch place', 'energetic workout studio', 'quiet study cafe',
+      'family-friendly restaurant', 'rooftop bar with views', 'artisan bakery',
+      'live music venue', 'healthy smoothie bar', 'vintage bookstore cafe'
+    ];
+    
+    const randomCity = cities[Math.floor(Math.random() * cities.length)];
+    const randomVibe = vibes[Math.floor(Math.random() * vibes.length)];
+    
+    return `Someone in ${randomCity} just searched for "${randomVibe}"`;
+  };
+
+  // Set up 3-second interval for random user searches
+  useEffect(() => {
+    // Set initial message
+    setRandomUserSearch(generateRandomUserSearch());
+    
+    // Update every 3 seconds
+    const interval = setInterval(() => {
+      setRandomUserSearch(generateRandomUserSearch());
+    }, 3000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Handle browser back button when in app mode
@@ -745,6 +780,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 text-center">
           {/* Random User Search Display */}
           <div className="mb-8">
+            <p className="font-lora text-sm md:text-base text-white/70 mb-4 animate-pulse">
+              {randomUserSearch}
+            </p>
             <p className="font-lora text-2xl md:text-4xl text-white/90 max-w-2xl mx-auto leading-relaxed">
               Experience something new
             </p>
