@@ -994,9 +994,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
           {/* Main Heading */}
           <div className="mb-8">
-            <h1 className="font-cinzel text-4xl md:text-6xl lg:text-7xl font-black text-white mb-4 tracking-tight">
-              Experience Something New
-            </h1>
             <p className="font-lora text-xl md:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed">
               Experience something new
             </p>
