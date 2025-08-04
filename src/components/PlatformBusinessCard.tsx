@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as Icons from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Clock, MapPin, Star, Heart, Navigation } from 'lucide-react';
 import ReviewerProfile from './ReviewerProfile';
 import ImageGalleryPopup from './ImageGalleryPopup';
 import BusinessProfileModal from './BusinessProfileModal';
@@ -185,7 +185,7 @@ const PlatformBusinessCard: React.FC<{
               className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
               title="Add to favorites"
             >
-              <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+              <Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
             </button>
           </div>
 
@@ -197,7 +197,7 @@ const PlatformBusinessCard: React.FC<{
             
             <div className="flex items-center justify-between mb-0.5">
               <div className="flex items-center">
-                <Icons.Clock className="h-3 w-3 mr-1" />
+                <Clock className="h-3 w-3 mr-1" />
                 <span className="font-lora text-xs">{business.hours || 'Hours unavailable'}</span>
                 {business.distance && business.duration && (
                   <span className="font-lora text-xs ml-2">• {business.distance.toFixed(1)} mi • {business.duration} min</span>
@@ -215,7 +215,7 @@ const PlatformBusinessCard: React.FC<{
                 )}
                 
                 <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-xs font-poppins font-semibold flex items-center shadow-md`}>
-                  <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                  <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
                   <span className="mr-1">{business.rating?.thumbsUp || 0}</span>
                   <span className="mr-1">{business.rating?.thumbsDown ? `/${business.rating.thumbsDown}` : ''}</span>
                   <span>{sentimentRating.text}</span>
@@ -251,7 +251,7 @@ const PlatformBusinessCard: React.FC<{
                   <div className="flex-1 min-w-0 pr-2">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center cursor-pointer" onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}>
-                        <Icons.ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-red-500'}`} />
+                        <ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-red-500'}`} />
                         <span className="font-poppins text-xs font-semibold text-neutral-700">Review</span>
                       </div>
                       <span className="font-poppins text-xs text-neutral-500">

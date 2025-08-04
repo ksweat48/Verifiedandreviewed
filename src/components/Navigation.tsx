@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as Icons from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AuthModal from './AuthModal';
 import UserMenu from './UserMenu';
@@ -144,7 +144,7 @@ const Navigation: React.FC<NavigationProps> = ({ isAppModeActive }) => {
                   aria-expanded={isMenuOpen}
                   aria-label="Toggle menu"
                 >
-                  {isMenuOpen ? <Icons.X className="h-5 w-5" /> : <Icons.Menu className="h-5 w-5" />}
+                  {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
               </div>
             </div>
