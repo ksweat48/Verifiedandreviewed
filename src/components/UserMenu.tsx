@@ -46,6 +46,14 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
 
   const menuItems = [
     {
+      icon: Icons.Home,
+      label: 'Home',
+      action: () => {
+        navigate('/');
+        setIsOpen(false);
+      }
+    },
+    {
       icon: Icons.User,
       label: user.role === 'administrator' ? 'User Dashboard' : 'Dashboard',
       action: () => {
