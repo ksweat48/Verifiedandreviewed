@@ -91,10 +91,10 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
           className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
         />
         <div className="hidden md:block text-left">
-          <div className="font-poppins text-sm font-semibold text-neutral-900">
+          <div className="font-poppins text-sm font-semibold text-white">
             {user.name}
           </div>
-          <div className="font-lora text-xs text-neutral-600 flex items-center">
+          <div className="font-lora text-xs text-white/80 flex items-center">
             <Icons.Award className="h-3 w-3 mr-1" />
             Level {user.level}
           </div>
