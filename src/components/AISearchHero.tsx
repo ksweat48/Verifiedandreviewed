@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Zap, ArrowRight, Mic, LayoutDashboard, Heart } from 'lucide-react';
+import { Search, MapPin, Zap, X, ArrowRight, Navigation, Sparkles, Mic, LayoutDashboard } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { BusinessService } from '../services/businessService';
@@ -41,51 +42,230 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [isListening, setIsListening] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [signupPromptConfig, setSignupPromptConfig] = useState<any>(null);
+  const [realUserSearches, setRealUserSearches] = useState<Array<{
+    avatar: string;
+    username: string;
+    query: string;
+  }>>([]);
+  const [loadingRealSearches, setLoadingRealSearches] = useState(true);
   const [quickSearches, setQuickSearches] = useState<string[]>([]);
   const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [randomUserSearch, setRandomUserSearch] = useState('');
+  
+  // Diverse default avatars for users without custom avatars
+  const defaultAvatars = [
+    'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1484794/pexels-photo-1484794.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1674752/pexels-photo-1674752.jpeg?auto=compress&cs=tinysrgb&w=100'
+  ];
+  
+  // Function to get a consistent avatar for a user ID
+  const getAvatarForUser = (userId: string, customAvatar?: string) => {
+    if (customAvatar && customAvatar.trim() !== '') {
+      return customAvatar;
+    }
+    
+    // Use user ID to consistently assign the same default avatar
+    const hash = userId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    const index = Math.abs(hash) % defaultAvatars.length;
+    return defaultAvatars[index];
+  };
+  
+  // Random user search display state
+  const [currentUserSearchIndex, setCurrentUserSearchIndex] = useState(0);
+  const [isSearchAnimating, setIsSearchAnimating] = useState(false);
   
   const { latitude, longitude, error: locationError } = useGeolocation();
 
-  // Initialize quick searches
+  // All possible quick search options
+  const allQuickSearches = [
+    'cozy coffee shop',
+    'romantic dinner',
+    'energetic workout',
+    'peaceful brunch',
+    'trendy bar',
+    'artisan bakery',
+    'vintage bookstore',
+    'rooftop lounge',
+    'farm-to-table',
+    'craft brewery',
+    'yoga studio',
+    'jazz club',
+    'sushi bar',
+    'wine tasting',
+    'live music venue',
+    'healthy smoothies',
+    'late night eats',
+    'outdoor patio',
+    'intimate bistro',
+    'hipster cafe'
+  ];
+
+  // Randomly select 4 quick searches on component mount
   useEffect(() => {
-    setQuickSearches(['cozy coffee shop', 'romantic dinner', 'trendy bar', 'peaceful brunch']);
+    const shuffled = [...allQuickSearches].sort(() => 0.5 - Math.random());
+    setQuickSearches(shuffled.slice(0, 4)); // Only show 4 instead of 5
   }, []);
 
-  // Generate random user search messages
-  const generateRandomUserSearch = () => {
-    const cities = [
-      'San Francisco', 'New York', 'Los Angeles', 'Chicago', 'Miami', 'Seattle', 
-      'Austin', 'Denver', 'Portland', 'Boston', 'Atlanta', 'Nashville',
-      'Phoenix', 'San Diego', 'Las Vegas', 'Orlando', 'Tampa', 'Charlotte'
-    ];
-    
-    const vibes = [
-      'cozy coffee shop', 'romantic dinner spot', 'trendy cocktail bar', 
-      'peaceful brunch place', 'energetic workout studio', 'quiet study cafe',
-      'family-friendly restaurant', 'rooftop bar with views', 'artisan bakery',
-      'live music venue', 'healthy smoothie bar', 'vintage bookstore cafe'
-    ];
-    
-    const randomCity = cities[Math.floor(Math.random() * cities.length)];
-    const randomVibe = vibes[Math.floor(Math.random() * vibes.length)];
-    
-    return `Someone in ${randomCity} just searched for "${randomVibe}"`;
-  };
-
-  // Set up 3-second interval for random user searches
+  // Fetch real user searches from Supabase
   useEffect(() => {
-    // Set initial message
-    setRandomUserSearch(generateRandomUserSearch());
+    const fetchRealUserSearches = async () => {
+      try {
+        setLoadingRealSearches(true);
+        
+        // Query user activity logs for search events from ALL users with profile data
+        const { data, error } = await supabase
+          .from('user_activity_logs')
+          .select(`
+            event_details,
+            created_at,
+            profiles!inner (
+              id,
+              name,
+              username,
+              avatar_url
+            )
+          `)
+          .eq('event_type', 'search')
+          .not('event_details->search_query', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(50); // Get more searches to ensure variety
+
+        if (error) {
+          console.error('Error fetching real user searches:', error);
+          // Fallback to mock data if fetch fails
+          setRealUserSearches([
+            {
+              avatar: defaultAvatars[0],
+              username: 'Sarah',
+              query: 'cozy coffee shop'
+            },
+            {
+              avatar: defaultAvatars[1],
+              username: 'Mike',
+              query: 'romantic dinner'
+            },
+            {
+              avatar: defaultAvatars[2],
+              username: 'Emma',
+              query: 'trendy bar'
+            }
+          ]);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Transform the data and ensure we're showing different users
+          const formattedSearches = data
+            .filter(log => 
+              log.event_details?.search_query && 
+              log.profiles?.name &&
+              log.profiles?.id &&
+              log.event_details.search_query.trim().length > 0 &&
+              log.event_details.search_query.trim().length < 50 // Exclude very long queries
+            )
+            .map(log => ({
+              avatar: getAvatarForUser(log.profiles.id, log.profiles.avatar_url),
+              username: log.profiles.username || log.profiles.name.split(' ')[0], // Use first name if no username
+              query: log.event_details.search_query,
+              userId: log.profiles.id // Add user ID for debugging
+            }))
+            // Remove duplicates by user + query combination
+            .filter((search, index, array) => 
+              array.findIndex(s => s.userId === search.userId && s.query === search.query) === index
+            )
+            .slice(0, 15); // Limit to 15 most recent searches
+
+          setRealUserSearches(formattedSearches);
+          console.log('✅ Fetched', formattedSearches.length, 'real user searches');
+          console.log('🔍 Sample searches:', formattedSearches.slice(0, 3).map(s => `${s.username}: "${s.query}"`));
+          console.log('🖼️ Sample avatars:', formattedSearches.slice(0, 3).map(s => `${s.username}: ${s.avatar}`));
+        } else {
+          console.log('⚠️ No real user searches found');
+          // Fallback to mock data if no real searches
+          setRealUserSearches([
+            {
+              avatar: defaultAvatars[0],
+              username: 'Sarah',
+              query: 'cozy coffee shop'
+            },
+            {
+              avatar: defaultAvatars[1],
+              username: 'Mike',
+              query: 'romantic dinner'
+            },
+            {
+              avatar: defaultAvatars[2],
+              username: 'Emma',
+              query: 'trendy bar'
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching real user searches:', error);
+        // Fallback to mock data on error
+        setRealUserSearches([
+          {
+            avatar: defaultAvatars[0],
+            username: 'Sarah',
+            query: 'cozy coffee shop'
+          },
+          {
+            avatar: defaultAvatars[1],
+            username: 'Mike',
+            query: 'romantic dinner'
+          },
+          {
+            avatar: defaultAvatars[2],
+            username: 'Emma',
+            query: 'trendy bar'
+          }
+        ]);
+      } finally {
+        setLoadingRealSearches(false);
+      }
+    };
+
+    fetchRealUserSearches();
+  }, []);
+
+  // Cycle through user searches every 3 seconds
+  useEffect(() => {
+    if (isAppModeActive || realUserSearches.length === 0) return; // Don't cycle when in app mode or no data
     
-    // Update every 3 seconds
     const interval = setInterval(() => {
-      setRandomUserSearch(generateRandomUserSearch());
+      setIsSearchAnimating(true);
+      
+      setTimeout(() => {
+        // Randomly select a different user search (not the current one)
+        const availableIndices = realUserSearches
+          .map((_, index) => index)
+          .filter(index => index !== currentUserSearchIndex);
+        
+        if (availableIndices.length > 0) {
+          const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+          setCurrentUserSearchIndex(randomIndex);
+        } else {
+          // Fallback if only one search available
+          setCurrentUserSearchIndex((prev) => (prev + 1) % realUserSearches.length);
+        }
+        setIsSearchAnimating(false);
+      }, 150); // Half of the transition duration
     }, 3000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [isAppModeActive, realUserSearches.length, currentUserSearchIndex]);
 
   // Handle browser back button when in app mode
   useEffect(() => {
@@ -748,7 +928,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
               title="Favorites"
             >
-              <Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
+              <Icons.Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
             </button>
             
             <button
@@ -779,10 +959,41 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         {/* Main Content */}
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 text-center">
           {/* Random User Search Display */}
+          <div className="mb-8 h-24 flex flex-col items-center justify-center">
+            {loadingRealSearches ? (
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-white/20 rounded-full animate-pulse mb-2"></div>
+                <p className="font-lora text-white/60 text-sm animate-pulse">
+                  Loading recent searches...
+                </p>
+              </div>
+            ) : realUserSearches.length > 0 ? (
+              <div className={`transition-opacity duration-300 ${isSearchAnimating ? 'opacity-0' : 'opacity-100'}`}>
+                <div className="flex flex-col items-center">
+                  <img 
+                    src={realUserSearches[currentUserSearchIndex].avatar}
+                    alt={realUserSearches[currentUserSearchIndex].username}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg mb-2"
+                  />
+                  <p className="font-lora text-white/80 text-sm">
+                    {realUserSearches[currentUserSearchIndex].username} searched: "{realUserSearches[currentUserSearchIndex].query}"
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-2">
+                  <Search className="h-6 w-6 text-white/40" />
+                </div>
+                <p className="font-lora text-white/60 text-sm">
+                  Be the first to search!
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Main Heading */}
           <div className="mb-8">
-            <p className="font-lora text-sm md:text-base text-white/70 mb-4 animate-pulse">
-              {randomUserSearch}
-            </p>
             <p className="font-lora text-2xl md:text-4xl text-white/90 max-w-2xl mx-auto leading-relaxed">
               Experience something new
             </p>

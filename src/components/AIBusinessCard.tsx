@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, MapPin, Clock, Navigation, Heart } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { getMatchPercentage } from '../utils/similarityUtils';
 
 interface BusinessCard {
@@ -41,7 +41,7 @@ const AIBusinessCard: React.FC<{
           
           <div className="flex items-center gap-1 mb-2">
             {[...Array(5)].map((_, i) => (
-              <Star
+              <Icons.Star
                 key={i}
                 className={`h-3 w-3 ${
                   i < Math.floor(business.rating)
@@ -74,7 +74,7 @@ const AIBusinessCard: React.FC<{
           
           <div className="mb-1">
             <p className="font-lora text-xs text-neutral-600 flex items-center gap-1">
-              <MapPin className="h-3 w-3 flex-shrink-0 text-neutral-500" />
+              <Icons.MapPin className="h-3 w-3 flex-shrink-0 text-neutral-500" />
               <span className="line-clamp-1">{business.address}</span>
             </p>
           </div>
@@ -147,7 +147,7 @@ const AIBusinessCard: React.FC<{
               }}
               className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"
             >
-              <Navigation className="h-4 w-4 mr-1" />
+              <Icons.Navigation className="h-4 w-4 mr-1" />
               GO
               {business.distance && business.duration && (
                 <span className="ml-1 text-xs opacity-90">
@@ -160,7 +160,7 @@ const AIBusinessCard: React.FC<{
               className="p-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 hover:text-red-500 rounded-lg transition-all duration-200 flex items-center justify-center flex-shrink-0"
               title="Recommend for Verification"
             >
-              <Heart className="h-4 w-4" />
+              <Icons.Heart className="h-4 w-4" />
             </button>
           </div>
         </div>

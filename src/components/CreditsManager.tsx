@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, RefreshCw, Share2, Check, CreditCard, AlertCircle } from 'lucide-react';
+import { Zap, RefreshCw, TrendingUp, Users, Edit, Share2, Check, Calendar, CreditCard, Star, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import CreditUsageInfo from './CreditUsageInfo';
 import { formatCredits, formatLargeNumber } from '../utils/formatters';
 
 interface CreditPackage {
@@ -230,7 +231,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border border-green-200">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                <Zap className="h-6 w-6 text-green-600" />
+                <Star className="h-6 w-6 text-green-600" />
               </div>
               <div>
                 <h4 className="font-poppins text-lg font-semibold text-green-900">
@@ -257,7 +258,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
               onClick={() => navigate('/dashboard')}
               className="w-full bg-green-500 text-white font-poppins font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center justify-center"
             >
-              <Zap className="h-4 w-4 mr-2" />
+              <Edit className="h-4 w-4 mr-2" />
               View My Activity
             </button>
           </div>
@@ -266,7 +267,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
           <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-5 border border-purple-200">
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
-                <Share2 className="h-6 w-6 text-purple-600" />
+                <Users className="h-6 w-6 text-purple-600" />
               </div>
               <div>
                 <h4 className="font-poppins text-lg font-semibold text-purple-900">
