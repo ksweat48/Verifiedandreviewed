@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Award, Zap, Home, User, LayoutDashboard, Settings, LogOut } from 'lucide-react';
+import { ChevronDown, Award, Zap, Home, User as UserIcon, LayoutDashboard, Settings, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
 import { UserService } from '../services/userService';
@@ -54,7 +54,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
       }
     },
     {
-      icon: User,
+      icon: UserIcon,
       label: user.role === 'administrator' ? 'User Dashboard' : 'Dashboard',
       action: () => {
         navigate('/dashboard');
