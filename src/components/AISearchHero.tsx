@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Zap, X, ArrowRight, Navigation, Sparkles, Mic, LayoutDashboard } from 'lucide-react';
-import * as Icons from 'lucide-react';
+import { Search, MapPin, Zap, ArrowRight, Mic, LayoutDashboard, Heart, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { BusinessService } from '../services/businessService';
@@ -928,7 +927,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
               title="Favorites"
             >
-              <Icons.Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
+              <Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
             </button>
             
             <button

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as Icons from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MapPin, Calendar, Eye, Edit, Trash2 } from 'lucide-react';
 import { ReviewService } from '../services/reviewService';
 import { BusinessService } from '../services/businessService';
 import BusinessProfileModal from './BusinessProfileModal';
@@ -148,7 +148,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
 
       {completedReviews.length === 0 ? (
         <div className="bg-neutral-50 rounded-2xl p-8 text-center">
-          <Icons.ThumbsUp className="h-10 w-10 text-neutral-300 mx-auto mb-4" />
+          <ThumbsUp className="h-10 w-10 text-neutral-300 mx-auto mb-4" />
           <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
             No Reviews Yet
           </h3>
@@ -185,12 +185,12 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                     <div className="flex items-center">
                       {review.rating >= 4 ? (
                         <div className="flex items-center text-green-600">
-                          <Icons.ThumbsUp className="h-4 w-4 mr-1 fill-current" />
+                          <ThumbsUp className="h-4 w-4 mr-1 fill-current" />
                           <span className="font-poppins text-xs font-semibold">Recommend</span>
                         </div>
                       ) : (
                         <div className="flex items-center text-red-600">
-                          <Icons.ThumbsDown className="h-4 w-4 mr-1 fill-current" />
+                          <ThumbsDown className="h-4 w-4 mr-1 fill-current" />
                           <span className="font-poppins text-xs font-semibold">Not for me</span>
                         </div>
                       )}
@@ -199,19 +199,19 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                   
                   <div className="flex items-center gap-4 mb-3">
                     <div className="flex items-center">
-                      <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
+                      <MapPin className="h-4 w-4 text-neutral-500 mr-1" />
                       <span className="font-lora text-sm text-neutral-600">{review.location}</span>
                     </div>
                     
                     <div className="flex items-center">
-                      <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
+                      <Calendar className="h-4 w-4 text-neutral-500 mr-1" />
                       <span className="font-lora text-sm text-neutral-600">
                         {new Date(review.publishDate).toLocaleDateString()}
                       </span>
                     </div>
                     
                     <div className="flex items-center">
-                      <Icons.Eye className="h-4 w-4 text-neutral-500 mr-1" />
+                      <Eye className="h-4 w-4 text-neutral-500 mr-1" />
                       <span className="font-lora text-sm text-neutral-600">
                         {review.views} views
                       </span>
@@ -225,14 +225,14 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                     className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                     title="View"
                   >
-                    <Icons.Eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </button>
                   <button 
                     onClick={() => handleEditReview(review)}
                     className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
                     title="Edit"
                   >
-                    <Icons.Edit className="h-4 w-4" />
+                    <Edit className="h-4 w-4" />
                   </button>
                   <button 
                     onClick={() => handleDeleteReview(review.id)}
@@ -243,7 +243,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                     {deletingReviewId === review.id ? (
                       <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <Icons.Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     )}
                   </button>
                 </div>

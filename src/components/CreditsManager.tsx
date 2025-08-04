@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, RefreshCw, TrendingUp, Users, Edit, Share2, Check, Calendar, CreditCard, Star, AlertCircle } from 'lucide-react';
+import { Zap, RefreshCw, TrendingUp, Users, Edit, Share2, Check, CreditCard, Star, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CreditUsageInfo from './CreditUsageInfo';
 import { formatCredits, formatLargeNumber } from '../utils/formatters';

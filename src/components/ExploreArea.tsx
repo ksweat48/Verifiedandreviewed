@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Clock, ThumbsUp, MapPin, Navigation } from 'lucide-react';
-import * as Icons from 'lucide-react';
+import { RefreshCw, Clock, ThumbsUp, MapPin, Navigation, Heart } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import BusinessProfileModal from './BusinessProfileModal';
@@ -335,7 +334,7 @@ const ExploreArea = () => {
                           className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
                           title="Add to favorites"
                         >
-                          <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+                          <Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
                         </button>
                       </div>
                     )}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import * as Icons from 'lucide-react';
+import { Home, User, LayoutDashboard, Settings, LogOut, Award, ChevronDown, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
 import { UserService } from '../services/userService';
@@ -46,7 +46,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
 
   const menuItems = [
     {
-      icon: Icons.Home,
+      icon: Home,
       label: 'Home',
       action: () => {
         navigate('/');
@@ -54,7 +54,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
       }
     },
     {
-      icon: Icons.User,
+      icon: User,
       label: user.role === 'administrator' ? 'User Dashboard' : 'Dashboard',
       action: () => {
         navigate('/dashboard');
@@ -63,7 +63,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
     },
     ...(user.role === 'administrator' ? [
       {
-        icon: Icons.LayoutDashboard,
+        icon: LayoutDashboard,
         label: 'Admin Dashboard',
         action: () => {
           navigate('/admin');
@@ -72,7 +72,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
       }
     ] : []),
     {
-      icon: Icons.Settings,
+      icon: Settings,
       label: 'Account',
       action: () => {
         navigate('/account');
@@ -80,7 +80,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
       }
     },
     {
-      icon: Icons.LogOut,
+      icon: LogOut,
       label: 'Sign Out',
       action: handleLogout,
       className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
@@ -103,11 +103,11 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
             {user.name}
           </div>
           <div className="font-lora text-xs text-white/80 flex items-center">
-            <Icons.Award className="h-3 w-3 mr-1" />
+            <Award className="h-3 w-3 mr-1" />
             Level {user.level}
           </div>
         </div>
-        <Icons.ChevronDown className={`h-4 w-4 text-white transition-transform duration-200 ${
+        <ChevronDown className={`h-4 w-4 text-white transition-transform duration-200 ${
           isOpen ? 'rotate-180' : ''
         }`} />
       </button>
@@ -130,10 +130,10 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
                   {user.email}
                 </div>
                 <div className="flex items-center mt-1">
-                  <Icons.Award className="h-3 w-3 text-primary-500 mr-1" />
+                  <Award className="h-3 w-3 text-primary-500 mr-1" />
                   <span className="font-poppins text-xs font-semibold text-primary-600">
                     Level {user.level} • {formatReviewCount(user.reviewCount)} reviews •
-                    <Icons.Zap className="h-3 w-3 inline mx-1 text-yellow-500" /> 
+                    <Zap className="h-3 w-3 inline mx-1 text-yellow-500" /> 
                     {formatCredits(user.credits, user.role)} credits
                   </span>
                 </div>

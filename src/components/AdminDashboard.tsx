@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as Icons from 'lucide-react';
-import { MessageSquare, Shield, Settings } from 'lucide-react';
+import { MessageSquare, Shield, Settings, BarChart3, Users, TrendingUp, Search, Building, Heart, Award, DollarSign, RefreshCw } from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
 import { UserService } from '../services/userService';
@@ -132,17 +131,17 @@ const AdminDashboard = () => {
   };
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: Icons.BarChart3 },
-    { id: 'total-users', label: 'Total Users', icon: Icons.Users },
-    { id: 'daily-active', label: 'Daily Active', icon: Icons.TrendingUp },
-    { id: 'user-searches', label: 'User Searches', icon: Icons.Search },
-    { id: 'total-businesses', label: 'Platform Businesses', icon: Icons.Building },
-    { id: 'ai-favorites', label: 'AI Favorites', icon: Icons.Heart },
-    { id: 'platform-reviews', label: 'Platform Reviews', icon: Icons.MessageSquare },
-    { id: 'verified-businesses', label: 'Verified Businesses', icon: Icons.Shield },
-    { id: 'tokens-purchased', label: 'Tokens Purchased', icon: Icons.DollarSign },
-    { id: 'tokens-earned', label: 'Tokens Earned', icon: Icons.Award },
-    { id: 'tools', label: 'Tools', icon: Icons.Settings }
+    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'total-users', label: 'Total Users', icon: Users },
+    { id: 'daily-active', label: 'Daily Active', icon: TrendingUp },
+    { id: 'user-searches', label: 'User Searches', icon: Search },
+    { id: 'total-businesses', label: 'Platform Businesses', icon: Building },
+    { id: 'ai-favorites', label: 'AI Favorites', icon: Heart },
+    { id: 'platform-reviews', label: 'Platform Reviews', icon: MessageSquare },
+    { id: 'verified-businesses', label: 'Verified Businesses', icon: Shield },
+    { id: 'tokens-purchased', label: 'Tokens Purchased', icon: DollarSign },
+    { id: 'tokens-earned', label: 'Tokens Earned', icon: Award },
+    { id: 'tools', label: 'Tools', icon: Settings }
   ];
 
   const formatNumber = (num: number) => {
@@ -261,7 +260,7 @@ const AdminDashboard = () => {
               disabled={loading}
               className="flex items-center font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 disabled:opacity-50"
             >
-              <Icons.RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh Data
             </button>
           </div>
