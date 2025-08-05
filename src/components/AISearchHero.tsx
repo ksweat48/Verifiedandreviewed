@@ -1042,21 +1042,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   </button>
                 </div>
                
-               {/* Character Counter */}
-               <div className="mt-2 text-right">
-                 <span className={`font-lora text-xs ${
-                   searchQuery.length >= 150 
-                     ? 'text-red-300' 
-                     : searchQuery.length >= 130 
-                     ? 'text-yellow-300' 
-                     : 'text-white/60'
-                 }`}>
-                   {searchQuery.length}/150
-                   {searchQuery.length >= 150 && (
-                     <span className="ml-2 font-semibold">Character limit reached</span>
-                   )}
-                 </span>
-               </div>
               </div>
             </div>
 
