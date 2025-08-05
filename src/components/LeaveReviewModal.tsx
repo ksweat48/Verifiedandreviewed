@@ -4,6 +4,7 @@ import { supabase } from '../services/supabaseClient';
 import { CreditService } from '../services/creditService';
 import { UserService } from '../services/userService';
 import { ActivityService } from '../services/activityService';
+import { BusinessService } from '../services/businessService';
 
 interface ReviewImage {
   file: File;
@@ -216,6 +217,10 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
 
           if (error) throw error;
           console.log('Review updated:', data);
+          
+          // Also update the business rating to reflect the new review score
+          const isThumbsUp = numericRating >= 4;
+          await BusinessService.rateBusiness(business.id, user.id, isThumbsUp);
         } else {
           // INSERT new review
           const { data, error } = await supabase
@@ -233,6 +238,10 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
 
           if (error) throw error;
           console.log('Review inserted:', data);
+          
+          // Also create a business rating entry to update thumbs up/down counts
+          const isThumbsUp = numericRating >= 4;
+          await BusinessService.rateBusiness(business.id, user.id, isThumbsUp);
           
           // Log review submission activity
           ActivityService.logReviewSubmit(user.id, business.id, business.name);
