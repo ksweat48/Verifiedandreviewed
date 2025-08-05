@@ -727,27 +727,46 @@ export default function AddBusinessPage() {
                 )}
               </div>
 
-              {/* Service Area - Only show for mobile businesses */}
-              {formData.businessType === 'mobile' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Service Area *
-                  </label>
-                  <input
-                    type="text"
-                    name="service_area"
-                    value={formData.service_area}
-                    onChange={handleInputChange}
-                    required={formData.businessType === 'mobile'}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Areas you serve (e.g., Within 20 miles, Citywide, Tri-state area)"
-                  />
-                  <p className="font-lora text-xs text-gray-500 mt-1">
-                    Specify the geographic area where you provide services. This helps customers understand if you serve their location.
-                  </p>
-                </div>
-              )}
+            {/* City and State Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {formData.businessType === 'physical' ? 'City *' :
+                   formData.businessType === 'mobile' ? 'Service City (Public) *' : 'Operating City/Region (Public) *'}
+                </label>
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={formData.businessType === 'physical' ? 'e.g., New York' :
+                               formData.businessType === 'mobile' ? 'e.g., Portland' : 'e.g., Global, Online'}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {formData.businessType === 'physical' ? 'State/Area *' :
+                   formData.businessType === 'mobile' ? 'Service State/Area (Public) *' : 'Operating State/Region (Public) *'}
+                </label>
+                <input
+                  type="text"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={formData.businessType === 'physical' ? 'e.g., NY' :
+                               formData.businessType === 'mobile' ? 'e.g., OR' : 'e.g., North America'}
+                />
+              </div>
             </div>
+            {(formData.businessType === 'mobile' || formData.businessType === 'virtual') && (
+              <p className="font-lora text-xs text-gray-500 mt-1">
+                This will be publicly displayed instead of your home address
+              </p>
+            )}
 
             {/* Contact Information */}
             <div className="space-y-6">
