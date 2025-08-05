@@ -30,6 +30,11 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
 
   const handleTakeMeThere = (business: any) => {
     // Handle mobile businesses differently
+    if (business.is_virtual && business.website_url) {
+      window.open(business.website_url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    
     if (business.is_mobile_business && business.phone_number) {
       window.open(`tel:${business.phone_number}`, '_self');
       return;
@@ -135,7 +140,12 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                       onClick={() => handleTakeMeThere(business)}
                       className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 py-2 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center"
                     >
-                      {business.is_mobile_business && business.phone_number ? (
+                      {business.is_virtual && business.website_url ? (
+                        <>
+                          <Icons.Globe className="h-4 w-4 mr-2" />
+                          VISIT
+                        </>
+                      ) : business.is_mobile_business && business.phone_number ? (
                         <>
                           <Icons.Phone className="h-4 w-4 mr-2" />
                           CALL

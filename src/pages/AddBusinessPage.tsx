@@ -230,6 +230,15 @@ export default function AddBusinessPage() {
     }));
   };
 
+  const handleBusinessTypeChange = (type: 'physical' | 'mobile' | 'virtual') => {
+    setFormData(prev => ({
+      ...prev,
+      businessType: type,
+      // Clear service area if not mobile
+      service_area: type === 'mobile' ? prev.service_area : ''
+    }));
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'gallery') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;

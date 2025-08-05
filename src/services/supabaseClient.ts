@@ -139,6 +139,7 @@ export type Business = {
   service_area?: string;
   owner_user_id?: string;
   is_mobile_business?: boolean;
+  is_virtual?: boolean;
   latitude?: number;
   longitude?: number;
   distance?: number;
