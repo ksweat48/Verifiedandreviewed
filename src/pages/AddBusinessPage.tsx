@@ -660,7 +660,7 @@ export default function AddBusinessPage() {
                   {formData.businessType === 'physical' && 'Physical locations have a storefront or office that customers visit'}
                   {formData.businessType === 'mobile' && 'Mobile services operate from a home base and travel to customers'}
                   {formData.businessType === 'virtual' && 'Virtual businesses operate entirely online without a physical storefront'}
-                  </p>
+                </p>
               </div>
               
               <div>
@@ -727,46 +727,47 @@ export default function AddBusinessPage() {
                 )}
               </div>
 
-            {/* City and State Inputs */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {formData.businessType === 'physical' ? 'City *' :
-                   formData.businessType === 'mobile' ? 'Service City (Public) *' : 'Operating City/Region (Public) *'}
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={formData.businessType === 'physical' ? 'e.g., New York' :
-                               formData.businessType === 'mobile' ? 'e.g., Portland' : 'e.g., Global, Online'}
-                />
+              {/* City and State Inputs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {formData.businessType === 'physical' ? 'City *' :
+                     formData.businessType === 'mobile' ? 'Service City (Public) *' : 'Operating City/Region (Public) *'}
+                  </label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder={formData.businessType === 'physical' ? 'e.g., New York' :
+                                 formData.businessType === 'mobile' ? 'e.g., Portland' : 'e.g., Global, Online'}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {formData.businessType === 'physical' ? 'State/Area *' :
+                     formData.businessType === 'mobile' ? 'Service State/Area (Public) *' : 'Operating State/Region (Public) *'}
+                  </label>
+                  <input
+                    type="text"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder={formData.businessType === 'physical' ? 'e.g., NY' :
+                                 formData.businessType === 'mobile' ? 'e.g., OR' : 'e.g., North America'}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {formData.businessType === 'physical' ? 'State/Area *' :
-                   formData.businessType === 'mobile' ? 'Service State/Area (Public) *' : 'Operating State/Region (Public) *'}
-                </label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={formData.businessType === 'physical' ? 'e.g., NY' :
-                               formData.businessType === 'mobile' ? 'e.g., OR' : 'e.g., North America'}
-                />
-              </div>
+              {(formData.businessType === 'mobile' || formData.businessType === 'virtual') && (
+                <p className="font-lora text-xs text-gray-500 mt-1">
+                  This will be publicly displayed instead of your home address
+                </p>
+              )}
             </div>
-            {(formData.businessType === 'mobile' || formData.businessType === 'virtual') && (
-              <p className="font-lora text-xs text-gray-500 mt-1">
-                This will be publicly displayed instead of your home address
-              </p>
-            )}
 
             {/* Contact Information */}
             <div className="space-y-6">
