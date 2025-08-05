@@ -163,7 +163,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-poppins text-lg font-semibold text-neutral-900">
+                    <h3 className="font-poppins text-lg font-semibold text-neutral-900 line-clamp-1 break-words">
                       {review.businessName}
                     </h3>
                     {/* Status Badge */}
@@ -197,10 +197,10 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-4 mb-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3">
                     <div className="flex items-center">
                       <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
-                      <span className="font-lora text-sm text-neutral-600">{review.location}</span>
+                      <span className="font-lora text-sm text-neutral-600 break-words">{review.location}</span>
                     </div>
                     
                     <div className="flex items-center">
@@ -219,7 +219,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-3 sm:mt-0">
                   <button 
                     onClick={() => handleViewReview(review)}
                     className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"

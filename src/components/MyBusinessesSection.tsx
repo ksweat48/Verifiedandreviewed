@@ -135,15 +135,15 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
         <div className="space-y-3">
           {businesses.map((business) => (
             <div key={business.id} className="bg-neutral-50 rounded-xl p-4 border border-neutral-200 hover:bg-white transition-all duration-200">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1">
-                  <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2">
+                  <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 line-clamp-1 break-words">
                     {business.name}
                   </h3>
-                  <p className="font-lora text-neutral-600 text-sm mb-2">
+                  <p className="font-lora text-neutral-600 text-sm mb-2 break-words">
                     {business.address} • {business.category}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
                       business.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                     }`}>
@@ -162,7 +162,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0 justify-end sm:justify-start">
                   <button
                     onClick={() => handleViewBusiness(business)}
                     className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
@@ -177,19 +177,19 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                   >
                     <Icons.Edit className="h-4 w-4" />
                   </button>
+                  <button
+                    onClick={() => handleDeleteBusiness(business.id)}
+                    className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                    title="Delete Business"
+                    disabled={deletingBusinessId === business.id}
+                  >
+                    {deletingBusinessId === business.id ? (
+                      <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Icons.Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDeleteBusiness(business.id)}
-                  className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                  title="Delete Business"
-                  disabled={deletingBusinessId === business.id}
-                >
-                  {deletingBusinessId === business.id ? (
-                    <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <Icons.Trash2 className="h-4 w-4" />
-                  )}
-                </button>
               </div>
             </div>
           ))}
