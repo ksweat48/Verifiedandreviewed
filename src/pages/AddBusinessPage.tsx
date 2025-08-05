@@ -27,7 +27,7 @@ interface FormData {
   social_media: string[];
   price_range: string;
   service_area: string;
-  is_mobile_business: boolean;
+  businessType: 'physical' | 'mobile' | 'virtual';
 }
 
 export default function AddBusinessPage() {
@@ -52,7 +52,7 @@ export default function AddBusinessPage() {
     social_media: [],
     price_range: '',
     service_area: '',
-    is_mobile_business: false
+    businessType: 'physical'
   });
 
   const [coverImage, setCoverImage] = useState<UploadedImage | null>(null);
@@ -122,7 +122,8 @@ export default function AddBusinessPage() {
               website_url: business.website_url || '',
               social_media: business.social_media || [],
               price_range: business.price_range || '',
-              service_area: business.service_area || ''
+              service_area: business.service_area || '',
+              businessType: business.is_virtual ? 'virtual' : (business.is_mobile_business ? 'mobile' : 'physical')
             });
 
             // Set cover image if exists
@@ -188,18 +189,30 @@ export default function AddBusinessPage() {
     }
     
     // Contact info (10 points) - phone is more important for mobile businesses
-    if (formData.is_mobile_business) {
+    if (formData.businessType === 'mobile') {
       if (formData.phone_number.trim().length > 0) {
-        score += 10;
+        score += 5;
+      }
+    } else if (formData.businessType === 'virtual') {
+      // For virtual businesses, both phone and website are required
+      if (formData.phone_number.trim().length > 0) {
+        score += 5;
+      }
+      if (formData.website_url.trim().length > 0) {
+        score += 10; // Website is crucial for virtual businesses
       }
     } else {
-      if (formData.phone_number.trim().length > 0 || formData.website_url.trim().length > 0) {
-        score += 10;
+      // For physical businesses, either phone or website contributes
+      if (formData.phone_number.trim().length > 0) {
+        score += 5;
+      }
+      if (formData.website_url.trim().length > 0) {
+        score += 5;
       }
     }
     
     // Service area for mobile businesses (additional 10 points)
-    if (formData.is_mobile_business && formData.service_area.trim().length > 0) {
+    if (formData.businessType === 'mobile' && formData.service_area.trim().length > 0) {
       score += 10;
     }
     
@@ -250,8 +263,7 @@ export default function AddBusinessPage() {
           const resizedFile = await resizeImage(files[0], 1200, 800, 0.8); // Max 1200px width, 800px height, 80% quality
           setCoverImage({
             file: resizedFile,
-            service_area: business.service_area || '',
-            is_mobile_business: business.is_mobile_business || false
+            preview: URL.createObjectURL(resizedFile)
           });
           console.log('✅ Cover image resized successfully');
         } else if (type === 'gallery') {
@@ -293,6 +305,9 @@ export default function AddBusinessPage() {
 
   // Geocode address when user finishes typing
   const handleAddressBlur = async () => {
+    // Skip geocoding for virtual businesses as their address is private
+    if (formData.businessType === 'virtual') return;
+    
     if (!formData.address.trim()) return;
     
     setIsGeocodingAddress(true);
@@ -387,6 +402,17 @@ export default function AddBusinessPage() {
     e.preventDefault();
     if (!user) return;
 
+    // Validation for required fields based on business type
+    if (formData.businessType === 'virtual' && !formData.website_url.trim()) {
+      alert('Virtual businesses require a Website URL.');
+      return;
+    }
+    
+    if (formData.businessType === 'mobile' && !formData.service_area.trim()) {
+      alert('Mobile services require a Service Area.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -431,6 +457,9 @@ export default function AddBusinessPage() {
         ...formData,
         image_url: coverImageUrl,
         gallery_urls: galleryUrls,
+        // Map businessType to boolean flags for database compatibility
+        is_mobile_business: formData.businessType === 'mobile',
+        is_virtual: formData.businessType === 'virtual',
       };
 
       if (isEditMode && editBusinessId) {
@@ -571,13 +600,14 @@ export default function AddBusinessPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Business Type
                 </label>
-                <div className="flex gap-6">
+                <div className="flex flex-wrap gap-6">
                   <label className="flex items-center">
                     <input
                       type="radio"
-                      name="businessType"
-                      checked={!formData.is_mobile_business}
-                      onChange={() => setFormData(prev => ({ ...prev, is_mobile_business: false }))}
+                      name="businessTypeRadio"
+                      value="physical"
+                      checked={formData.businessType === 'physical'}
+                      onChange={() => handleBusinessTypeChange('physical')}
                       className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300"
                     />
                     <span className="ml-2 font-poppins text-sm text-gray-700">Physical Location</span>
@@ -585,25 +615,36 @@ export default function AddBusinessPage() {
                   <label className="flex items-center">
                     <input
                       type="radio"
-                      name="businessType"
-                      checked={formData.is_mobile_business}
-                      onChange={() => setFormData(prev => ({ ...prev, is_mobile_business: true }))}
+                      name="businessTypeRadio"
+                      value="mobile"
+                      checked={formData.businessType === 'mobile'}
+                      onChange={() => handleBusinessTypeChange('mobile')}
                       className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300"
                     />
                     <span className="ml-2 font-poppins text-sm text-gray-700">Mobile Service</span>
                   </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="businessTypeRadio"
+                      value="virtual"
+                      checked={formData.businessType === 'virtual'}
+                      onChange={() => handleBusinessTypeChange('virtual')}
+                      className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300"
+                    />
+                    <span className="ml-2 font-poppins text-sm text-gray-700">Virtual Business</span>
+                  </label>
                 </div>
                 <p className="font-lora text-xs text-gray-500 mt-2">
-                  {formData.is_mobile_business 
-                    ? 'Mobile services operate from a home base and travel to customers'
-                    : 'Physical locations have a storefront or office that customers visit'
-                  }
-                </p>
+                  {formData.businessType === 'physical' && 'Physical locations have a storefront or office that customers visit'}
+                  {formData.businessType === 'mobile' && 'Mobile services operate from a home base and travel to customers'}
+                  {formData.businessType === 'virtual' && 'Virtual businesses operate entirely online without a physical storefront'}
+                  </p>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {formData.is_mobile_business ? 'Home Base Address (Private)' : 'Business Address'}
+                  {formData.businessType === 'physical' ? 'Business Address *' : 'Home Base Address (Private) *'}
                 </label>
                 <input
                   type="text"
@@ -611,11 +652,12 @@ export default function AddBusinessPage() {
                   value={formData.address}
                   onChange={handleInputChange}
                   onBlur={handleAddressBlur}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={formData.is_mobile_business ? 'Your private home base address' : 'Full street address'}
+                  placeholder={formData.businessType === 'physical' ? 'Full street address' : 'Your private home base address (not publicly displayed)'}
                 />
                 
-                {formData.is_mobile_business && (
+                {(formData.businessType === 'mobile' || formData.businessType === 'virtual') && (
                   <p className="font-lora text-xs text-gray-500 mt-1">
                     🔒 This address will not be publicly displayed. Only your city/area will be shown to customers.
                   </p>
@@ -644,17 +686,20 @@ export default function AddBusinessPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {formData.is_mobile_business ? 'Service City/Area (Public)' : 'Location/Area'}
+                  {formData.businessType === 'physical' ? 'Location/Area *' :
+                   formData.businessType === 'mobile' ? 'Service City/Area (Public) *' : 'Operating Region (Public) *'}
                 </label>
                 <input
                   type="text"
                   name="location"
                   value={formData.location}
                   onChange={handleInputChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={formData.is_mobile_business ? 'City or area you serve (publicly visible)' : 'City, neighborhood, or area'}
+                  placeholder={formData.businessType === 'physical' ? 'City, neighborhood, or area' :
+                               formData.businessType === 'mobile' ? 'City or area you serve (publicly visible)' : 'e.g., Global, Online, North America'}
                 />
-                {formData.is_mobile_business && (
+                {(formData.businessType === 'mobile' || formData.businessType === 'virtual') && (
                   <p className="font-lora text-xs text-gray-500 mt-1">
                     This will be publicly displayed instead of your home address
                   </p>
@@ -662,7 +707,7 @@ export default function AddBusinessPage() {
               </div>
 
               {/* Service Area - Only show for mobile businesses */}
-              {formData.is_mobile_business && (
+              {formData.businessType === 'mobile' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Service Area *
@@ -672,7 +717,7 @@ export default function AddBusinessPage() {
                     name="service_area"
                     value={formData.service_area}
                     onChange={handleInputChange}
-                    required={formData.is_mobile_business}
+                    required={formData.businessType === 'mobile'}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Areas you serve (e.g., Within 20 miles, Citywide, Tri-state area)"
                   />
@@ -692,36 +737,42 @@ export default function AddBusinessPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number {formData.is_mobile_business && '*'}
+                  Phone Number *
                 </label>
                 <input
                   type="tel"
                   name="phone_number"
                   value={formData.phone_number}
                   onChange={handleInputChange}
-                  required={formData.is_mobile_business}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="(555) 123-4567"
                 />
-                {formData.is_mobile_business && (
-                  <p className="font-lora text-xs text-gray-500 mt-1">
-                    Required for mobile services - this will be the primary way customers contact you
-                  </p>
-                )}
+                <p className="font-lora text-xs text-gray-500 mt-1">
+                  {formData.businessType === 'mobile' && 'Primary contact method for mobile services'}
+                  {formData.businessType === 'virtual' && 'Important for customer support and inquiries'}
+                  {formData.businessType === 'physical' && 'Helps customers contact you directly'}
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Website URL
+                  Website URL {formData.businessType === 'virtual' && '*'}
                 </label>
                 <input
                   type="url"
                   name="website_url"
                   value={formData.website_url}
                   onChange={handleInputChange}
+                  required={formData.businessType === 'virtual'}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="https://www.yourbusiness.com"
                 />
+                {formData.businessType === 'virtual' && (
+                  <p className="font-lora text-xs text-gray-500 mt-1">
+                    Required for virtual businesses - this is where customers will access your services
+                  </p>
+                )}
               </div>
 
               <div>
@@ -846,7 +897,7 @@ export default function AddBusinessPage() {
                   </p>
                   <div className="font-lora text-xs text-blue-700 space-y-1">
                     <p><strong>Atmosphere:</strong> cozy, modern, rustic, upscale, casual, intimate, lively</p>
-                    <p><strong>Services:</strong> organic, vegan-friendly, family-owned, locally-sourced, handcrafted</p>
+                    <p><strong>Services:</strong> organic, vegan-friendly, family-owned, locally-sourced, handcrafted{formData.businessType === 'virtual' && ', online, digital, remote'}</p>
                     <p><strong>Audience:</strong> family-friendly, pet-friendly, date-night, business-casual, kid-friendly</p>
                   </div>
                 </div>
@@ -1036,8 +1087,17 @@ export default function AddBusinessPage() {
                       {formData.tags.length < 5 && (
                         <li>• Add more tags (5+ recommended) like "cozy", "family-friendly", "organic", etc.</li>
                       )}
-                      {!formData.phone_number && !formData.website_url && (
-                        <li>• Add contact information (phone or website)</li>
+                      {!formData.phone_number && (
+                        <li>• Add a phone number for customer contact</li>
+                      )}
+                      {formData.businessType === 'virtual' && !formData.website_url && (
+                        <li>• Add a website URL (required for virtual businesses)</li>
+                      )}
+                      {formData.businessType !== 'virtual' && !formData.website_url && (
+                        <li>• Add a website URL for better online presence</li>
+                      )}
+                      {formData.businessType === 'mobile' && !formData.service_area && (
+                        <li>• Specify your service area for mobile services</li>
                       )}
                     </ul>
                   </div>

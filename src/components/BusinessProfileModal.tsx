@@ -32,6 +32,7 @@ interface BusinessProfileModalProps {
     service_area?: string;
     days_closed?: string;
     is_mobile_business?: boolean;
+    is_virtual?: boolean;
     isOpen?: boolean; // Current open/closed status
   } | null;
 }
@@ -312,7 +313,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                       <Icons.MapPin className="h-5 w-5 mr-2 text-primary-500" />
                       {business.is_mobile_business ? 'Service Area' : 'Location'}
                     </h3>
-                    {business.is_mobile_business ? (
+                    {business.is_mobile_business || business.is_virtual ? (
                       <div>
                         <p className="font-lora text-neutral-700 mb-2">
                           {business.location || 'Service area not specified'}
@@ -323,9 +324,16 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                             Service Area: {business.service_area}
                           </p>
                         )}
-                        <p className="font-lora text-xs text-neutral-500 mt-2">
-                          📱 Mobile service - we come to you! Contact us to schedule.
-                        </p>
+                        {business.is_mobile_business && (
+                          <p className="font-lora text-xs text-neutral-500 mt-2">
+                            📱 Mobile service - we come to you! Contact us to schedule.
+                          </p>
+                        )}
+                        {business.is_virtual && (
+                          <p className="font-lora text-xs text-neutral-500 mt-2">
+                            💻 Virtual business - services provided online.
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <div>
@@ -612,7 +620,17 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
         {/* Footer with Action Buttons */}
         <div className="border-t border-neutral-200 p-4 sm:p-6 bg-neutral-50 rounded-b-2xl">
           <div className="flex flex-wrap gap-4 justify-center">
-            {business.is_mobile_business && business.phone_number ? (
+            {business.is_virtual && business.website_url ? (
+              <a
+                href={business.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center"
+              >
+                <Icons.Globe className="h-5 w-5 mr-2" />
+                VISIT WEBSITE
+              </a>
+            ) : business.is_mobile_business && business.phone_number ? (
               <a
                 href={`tel:${business.phone_number}`}
                 className="font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center"

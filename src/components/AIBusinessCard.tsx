@@ -108,6 +108,11 @@ const AIBusinessCard: React.FC<{
                   return;
                 }
                 
+                if (business.is_virtual && business.website_url) {
+                  window.open(business.website_url, '_blank', 'noopener,noreferrer');
+                  return;
+                }
+                
                 if (business.is_mobile_business && business.phone_number) {
                   window.open(`tel:${business.phone_number}`, '_self');
                   return;
@@ -161,6 +166,11 @@ const AIBusinessCard: React.FC<{
               className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"
             >
               {business.is_virtual && business.website_url ? (
+                <>
+                  <Icons.Globe className="h-4 w-4 mr-1" />
+                  VISIT
+                </>
+              ) : business.is_mobile_business && business.phone_number ? (
                 <>
                   <Icons.Globe className="h-4 w-4 mr-1" />
                   VISIT

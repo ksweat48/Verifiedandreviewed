@@ -301,6 +301,8 @@ const PlatformBusinessCard: React.FC<{
                         if (business.is_virtual && business.website_url) {
                           window.open(business.website_url, '_blank', 'noopener,noreferrer');
                         } else if (business.is_mobile_business && business.phone_number) {
+                          window.open(business.website_url, '_blank', 'noopener,noreferrer');
+                        } else if (business.is_mobile_business && business.phone_number) {
                           window.open(`tel:${business.phone_number}`, '_self');
                         } else {
                           onTakeMeThere(business);
@@ -309,6 +311,8 @@ const PlatformBusinessCard: React.FC<{
                       className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
                     >
                       {business.is_virtual && business.website_url ? (
+                        <Icons.Globe className="h-4 w-4" />
+                      ) : business.is_mobile_business && business.phone_number ? (
                         <Icons.Globe className="h-4 w-4" />
                       ) : business.is_mobile_business && business.phone_number ? (
                         <Icons.Phone className="h-4 w-4" />
@@ -332,6 +336,8 @@ const PlatformBusinessCard: React.FC<{
                       if (business.is_virtual && business.website_url) {
                         window.open(business.website_url, '_blank', 'noopener,noreferrer');
                       } else if (business.is_mobile_business && business.phone_number) {
+                        window.open(business.website_url, '_blank', 'noopener,noreferrer');
+                      } else if (business.is_mobile_business && business.phone_number) {
                         window.open(`tel:${business.phone_number}`, '_self');
                       } else {
                         onTakeMeThere(business);
@@ -340,6 +346,8 @@ const PlatformBusinessCard: React.FC<{
                     className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
                   >
                     {business.is_virtual && business.website_url ? (
+                      <Icons.Globe className="h-4 w-4" />
+                    ) : business.is_mobile_business && business.phone_number ? (
                       <Icons.Globe className="h-4 w-4" />
                     ) : business.is_mobile_business && business.phone_number ? (
                       <Icons.Phone className="h-4 w-4" />
