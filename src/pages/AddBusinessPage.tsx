@@ -15,7 +15,8 @@ interface UploadedImage {
 interface FormData {
   name: string;
   address: string;
-  location: string;
+  city: string;
+  state: string;
   category: string;
   tags: string[];
   description: string;
@@ -40,7 +41,8 @@ export default function AddBusinessPage() {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     address: '',
-    location: '',
+    city: '',
+    state: '',
     category: '',
     tags: [],
     description: '',
@@ -108,10 +110,24 @@ export default function AddBusinessPage() {
         try {
           const business = await BusinessService.getBusinessById(editBusinessId);
           if (business) {
+            // Parse location into city and state
+            let initialCity = '';
+            let initialState = '';
+            if (business.location) {
+              const locationParts = business.location.split(',').map(part => part.trim());
+              if (locationParts.length > 0) {
+                initialCity = locationParts[0];
+                if (locationParts.length > 1) {
+                  initialState = locationParts[1];
+                }
+              }
+            }
+
             setFormData({
               name: business.name || '',
               address: business.address || '',
-              location: business.location || '',
+              city: initialCity,
+              state: initialState,
               category: business.category || '',
               tags: business.tags || [],
               description: business.description || '',
@@ -214,6 +230,11 @@ export default function AddBusinessPage() {
     // Service area for mobile businesses (additional 10 points)
     if (formData.businessType === 'mobile' && formData.service_area.trim().length > 0) {
       score += 10;
+    }
+    
+    // Location (City and State) - replaces the old location check
+    if (formData.city.trim().length > 0 && formData.state.trim().length > 0) {
+      score += 5;
     }
     
     return Math.min(score, maxScore);
