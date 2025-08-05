@@ -1020,6 +1020,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                       placeholder="Describe your perfect vibe..."
+                     maxLength={150}
                       className="w-full pl-4 pr-16 py-4 bg-white border border-white rounded-xl font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
@@ -1040,6 +1041,22 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     )}
                   </button>
                 </div>
+               
+               {/* Character Counter */}
+               <div className="mt-2 text-right">
+                 <span className={`font-lora text-xs ${
+                   searchQuery.length >= 150 
+                     ? 'text-red-300' 
+                     : searchQuery.length >= 130 
+                     ? 'text-yellow-300' 
+                     : 'text-white/60'
+                 }`}>
+                   {searchQuery.length}/150
+                   {searchQuery.length >= 150 && (
+                     <span className="ml-2 font-semibold">Character limit reached</span>
+                   )}
+                 </span>
+               </div>
               </div>
             </div>
 
