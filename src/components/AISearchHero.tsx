@@ -326,6 +326,23 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     };
   }, []);
 
+  // Listen for review updates to refresh search results
+  useEffect(() => {
+    const handleReviewUpdate = () => {
+      // Only refresh if we're in app mode and have search results
+      if (isAppModeActive && hasSearched && lastSearchQuery) {
+        console.log('🔄 Refreshing search results after review update');
+        handleSearch(lastSearchQuery);
+      }
+    };
+    
+    window.addEventListener('visited-businesses-updated', handleReviewUpdate);
+    
+    return () => {
+      window.removeEventListener('visited-businesses-updated', handleReviewUpdate);
+    };
+  }, [isAppModeActive, hasSearched, lastSearchQuery]);
+
   const handleQuickSearch = (query: string) => {
     setSearchQuery(query);
     handleSearch(query);
