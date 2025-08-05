@@ -76,7 +76,7 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                   {/* Business Image */}
                   <div className="flex-shrink-0">
                     <img
-                      src={business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                      src={business.image_url || '/verified and reviewed logo-coral copy copy.png'}
                       alt={business.name}
                       className="w-20 h-20 object-cover rounded-lg"
                     />
@@ -110,17 +110,6 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                         <div className="flex items-center gap-2 mb-2">
                           <span className="bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full text-xs font-poppins">
                             {business.category}
-                          </span>
-                          
-                          {similarityScore && (
-                            <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-poppins font-semibold">
-                              {similarityScore}% match
-                            </span>
-                          )}
-                          
-                          <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-poppins font-semibold flex items-center">
-                            <Icons.Star className="h-3 w-3 mr-1" />
-                            AI Generated
                           </span>
                         </div>
                         
