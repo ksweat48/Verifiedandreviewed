@@ -124,9 +124,6 @@ const ExploreArea = () => {
       
       setBusinesses(businessesWithReviews);
     } catch (error) {
-      console.error('Error loading businesses:', error);
-              // Add mobile business properties
-              is_mobile_business: business.is_mobile_business || false,
               phone_number: business.phone_number,
       setBusinesses([]);
     } finally {
