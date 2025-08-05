@@ -731,7 +731,25 @@ export class BusinessService {
       
       if (error) throw error;
       
-      return data || [];
+      // Replace old mock images with Verified & Reviewed logo for AI-generated businesses only
+      const updatedData = (data || []).map(business => {
+        // Check if this is an AI-generated business
+        const isAIGenerated = business.category === 'AI Generated' || 
+                             (business.description && business.description.includes('AI-generated business'));
+        
+        // Only replace image for AI-generated businesses with the old mock image
+        if (isAIGenerated && 
+            business.image_url === 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400') {
+          return {
+            ...business,
+            image_url: '/verified and reviewed logo-coral copy copy.png'
+          };
+        }
+        
+        return business;
+      });
+      
+      return updatedData;
     } catch (error) {
       console.error('Error fetching user favorites:', error);
       return [];
