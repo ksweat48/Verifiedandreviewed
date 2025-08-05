@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
+import BusinessProfileModal from './BusinessProfileModal';
+import type { Business } from '../services/supabaseClient';
 
 interface MyFavoritesSectionProps {
   businesses: any[];
@@ -11,6 +13,8 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
   onRemoveFavorite 
 }) => {
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [isBusinessProfileModalOpen, setIsBusinessProfileModalOpen] = useState(false);
+  const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
 
   const handleRemoveFavorite = async (recommendationId: string, businessName: string) => {
     if (!confirm(`Remove "${businessName}" from your favorites?`)) {
@@ -28,33 +32,29 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
     }
   };
 
-  const handleTakeMeThere = (business: any) => {
-    // Handle mobile businesses differently
-    if (business.is_virtual && business.website_url) {
-      window.open(business.website_url, '_blank', 'noopener,noreferrer');
-      return;
-    }
+  const handleViewBusinessProfile = (business: any) => {
+    // Transform the business recommendation data to match Business type
+    const businessForModal: Business = {
+      id: business.id,
+      name: business.name,
+      address: business.address || business.location,
+      location: business.location || business.address,
+      category: business.category || 'General',
+      tags: [],
+      description: business.description || '',
+      image_url: business.image_url || '/verified and reviewed logo-coral copy copy.png',
+      gallery_urls: [],
+      hours: 'Hours not available',
+      is_verified: false,
+      thumbs_up: 0,
+      thumbs_down: 0,
+      sentiment_score: 0,
+      created_at: business.created_at,
+      updated_at: business.created_at
+    };
     
-    if (business.is_virtual && business.website_url) {
-      window.open(business.website_url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    
-    if (business.is_mobile_business && business.phone_number) {
-      window.open(`tel:${business.phone_number}`, '_self');
-      return;
-    }
-    
-    let mapsUrl;
-    if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
-      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
-    } else if (business.name && typeof business.name === 'string' && business.name.trim().length > 0) {
-      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
-    } else {
-      mapsUrl = `https://www.google.com/maps/search/?api=1&query=business`;
-    }
-    
-    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+    setSelectedBusinessForProfile(businessForModal);
+    setIsBusinessProfileModalOpen(true);
   };
 
   const extractSimilarityScore = (description: string): number | null => {
@@ -127,25 +127,11 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                   
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleTakeMeThere(business)}
+                      onClick={() => handleViewBusinessProfile(business)}
                       className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-3 py-1.5 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center text-xs"
                     >
-                      {business.is_virtual && business.website_url ? (
-                        <>
-                          <Icons.Globe className="h-3 w-3 mr-1" />
-                          GO
-                        </>
-                      ) : business.is_mobile_business && business.phone_number ? (
-                        <>
-                          <Icons.Phone className="h-3 w-3 mr-1" />
-                          GO
-                        </>
-                      ) : (
-                        <>
-                          <Icons.Navigation className="h-3 w-3 mr-1" />
-                          GO
-                        </>
-                      )}
+                      <Icons.Eye className="h-3 w-3 mr-1" />
+                      View
                     </button>
                     
                     <button
@@ -167,6 +153,13 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
           })}
         </div>
       )}
+
+      {/* Business Profile Modal */}
+      <BusinessProfileModal
+        isOpen={isBusinessProfileModalOpen}
+        onClose={() => setIsBusinessProfileModalOpen(false)}
+        business={selectedBusinessForProfile}
+      />
     </div>
   );
 };
