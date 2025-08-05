@@ -83,6 +83,11 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
+          {businesses.map((business) => {
+            const similarityScore = extractSimilarityScore(business.description || '');
+            
+            return (
+              <div key={business.id} className="bg-white rounded-xl p-4 shadow-sm border border-neutral-200 hover:shadow-md transition-shadow duration-200">
                 {/* Business Name - Line 1 */}
                 <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 line-clamp-1 break-words">
                   {business.name}
