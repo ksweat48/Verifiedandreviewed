@@ -127,6 +127,7 @@ export class BusinessService {
         .from('businesses')
         .update({
           ...finalBusinessData,
+          is_mobile_business: businessData.is_mobile_business || false,
           updated_at: new Date().toISOString()
         })
         .eq('id', businessId);
@@ -482,6 +483,7 @@ export class BusinessService {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
+        is_mobile_business: businessData.is_mobile_business || false,
         origin,
         destinations
       })

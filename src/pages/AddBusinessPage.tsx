@@ -27,6 +27,7 @@ interface FormData {
   social_media: string[];
   price_range: string;
   service_area: string;
+  is_mobile_business: boolean;
 }
 
 export default function AddBusinessPage() {
@@ -50,7 +51,8 @@ export default function AddBusinessPage() {
     website_url: '',
     social_media: [],
     price_range: '',
-    service_area: ''
+    service_area: '',
+    is_mobile_business: false
   });
 
   const [coverImage, setCoverImage] = useState<UploadedImage | null>(null);
@@ -185,8 +187,19 @@ export default function AddBusinessPage() {
       score += 10;
     }
     
-    // Contact info (10 points)
-    if (formData.phone_number.trim().length > 0 || formData.website_url.trim().length > 0) {
+    // Contact info (10 points) - phone is more important for mobile businesses
+    if (formData.is_mobile_business) {
+      if (formData.phone_number.trim().length > 0) {
+        score += 10;
+      }
+    } else {
+      if (formData.phone_number.trim().length > 0 || formData.website_url.trim().length > 0) {
+        score += 10;
+      }
+    }
+    
+    // Service area for mobile businesses (additional 10 points)
+    if (formData.is_mobile_business && formData.service_area.trim().length > 0) {
       score += 10;
     }
     
@@ -228,7 +241,8 @@ export default function AddBusinessPage() {
           const resizedFile = await resizeImage(files[0], 1200, 800, 0.8); // Max 1200px width, 800px height, 80% quality
           setCoverImage({
             file: resizedFile,
-            preview: URL.createObjectURL(resizedFile)
+            service_area: business.service_area || '',
+            is_mobile_business: business.is_mobile_business || false
           });
           console.log('✅ Cover image resized successfully');
         } else if (type === 'gallery') {
@@ -599,9 +613,44 @@ export default function AddBusinessPage() {
                 Location Information
               </h2>
               
+              {/* Business Type Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Business Type
+                </label>
+                <div className="flex gap-6">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="businessType"
+                      checked={!formData.is_mobile_business}
+                      onChange={() => setFormData(prev => ({ ...prev, is_mobile_business: false }))}
+                      className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300"
+                    />
+                    <span className="ml-2 font-poppins text-sm text-gray-700">Physical Location</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="businessType"
+                      checked={formData.is_mobile_business}
+                      onChange={() => setFormData(prev => ({ ...prev, is_mobile_business: true }))}
+                      className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300"
+                    />
+                    <span className="ml-2 font-poppins text-sm text-gray-700">Mobile Service</span>
+                  </label>
+                </div>
+                <p className="font-lora text-xs text-gray-500 mt-2">
+                  {formData.is_mobile_business 
+                    ? 'Mobile services operate from a home base and travel to customers'
+                    : 'Physical locations have a storefront or office that customers visit'
+                  }
+                </p>
+              </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address
+                  {formData.is_mobile_business ? 'Home Base Address (Private)' : 'Business Address'}
                 </label>
                 <input
                   type="text"
@@ -610,8 +659,14 @@ export default function AddBusinessPage() {
                   onChange={handleInputChange}
                   onBlur={handleAddressBlur}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Full street address"
+                  placeholder={formData.is_mobile_business ? 'Your private home base address' : 'Full street address'}
                 />
+                
+                {formData.is_mobile_business && (
+                  <p className="font-lora text-xs text-gray-500 mt-1">
+                    🔒 This address will not be publicly displayed. Only your city/area will be shown to customers.
+                  </p>
+                )}
                 
                 {/* Geocoding Status */}
                 {isGeocodingAddress && (
@@ -636,7 +691,7 @@ export default function AddBusinessPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location/Area
+                  {formData.is_mobile_business ? 'Service City/Area (Public)' : 'Location/Area'}
                 </label>
                 <input
                   type="text"
@@ -644,23 +699,35 @@ export default function AddBusinessPage() {
                   value={formData.location}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="City, neighborhood, or area"
+                  placeholder={formData.is_mobile_business ? 'City or area you serve (publicly visible)' : 'City, neighborhood, or area'}
                 />
+                {formData.is_mobile_business && (
+                  <p className="font-lora text-xs text-gray-500 mt-1">
+                    This will be publicly displayed instead of your home address
+                  </p>
+                )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Service Area
-                </label>
-                <input
-                  type="text"
-                  name="service_area"
-                  value={formData.service_area}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Areas you serve (e.g., Local, Citywide, Statewide)"
-                />
-              </div>
+              {/* Service Area - Only show for mobile businesses */}
+              {formData.is_mobile_business && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Service Area *
+                  </label>
+                  <input
+                    type="text"
+                    name="service_area"
+                    value={formData.service_area}
+                    onChange={handleInputChange}
+                    required={formData.is_mobile_business}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Areas you serve (e.g., Within 20 miles, Citywide, Tri-state area)"
+                  />
+                  <p className="font-lora text-xs text-gray-500 mt-1">
+                    Specify the geographic area where you provide services. This helps customers understand if you serve their location.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Contact Information */}
@@ -672,16 +739,22 @@ export default function AddBusinessPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number
+                  Phone Number {formData.is_mobile_business && '*'}
                 </label>
                 <input
                   type="tel"
                   name="phone_number"
                   value={formData.phone_number}
                   onChange={handleInputChange}
+                  required={formData.is_mobile_business}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="(555) 123-4567"
                 />
+                {formData.is_mobile_business && (
+                  <p className="font-lora text-xs text-gray-500 mt-1">
+                    Required for mobile services - this will be the primary way customers contact you
+                  </p>
+                )}
               </div>
 
               <div>

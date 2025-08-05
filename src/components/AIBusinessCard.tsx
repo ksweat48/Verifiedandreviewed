@@ -23,6 +23,8 @@ interface BusinessCard {
   isGoogleVerified?: boolean;
   placeId?: string;
   similarity?: number; // Semantic search similarity score (0-1)
+  is_mobile_business?: boolean;
+  phone_number?: string;
   latitude?: number;
   longitude?: number;
 }
@@ -100,6 +102,12 @@ const AIBusinessCard: React.FC<{
                 e.preventDefault();
                 e.stopPropagation();
                 
+                // Handle mobile business calls vs navigation
+                if (business.is_mobile_business && business.phone_number) {
+                  window.open(`tel:${business.phone_number}`, '_self');
+                  return;
+                }
+                
                 // Debug: Log the complete business object to inspect data
                 console.log('🗺️ DEBUG: AIBusinessCard GO button clicked with business object:', business);
                 
@@ -147,8 +155,17 @@ const AIBusinessCard: React.FC<{
               }}
               className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"
             >
-              <Icons.Navigation className="h-4 w-4 mr-1" />
-              GO
+              {business.is_mobile_business && business.phone_number ? (
+                <>
+                  <Icons.Phone className="h-4 w-4 mr-1" />
+                  CALL
+                </>
+              ) : (
+                <>
+                  <Icons.Navigation className="h-4 w-4 mr-1" />
+                  GO
+                </>
+              )}
               {business.distance && business.duration && (
                 <span className="ml-1 text-xs opacity-90">
                   {business.distance}mi • {business.duration} min

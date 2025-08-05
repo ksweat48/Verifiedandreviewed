@@ -33,6 +33,8 @@ interface BusinessCard {
   longitude?: number;
   created_at?: string;
   updated_at?: string;
+  is_mobile_business?: boolean;
+  phone_number?: string;
   is_verified?: boolean;
   rating: {
     thumbsUp: number;
@@ -296,11 +298,19 @@ const PlatformBusinessCard: React.FC<{
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        onTakeMeThere(business);
+                        if (business.is_mobile_business && business.phone_number) {
+                          window.open(`tel:${business.phone_number}`, '_self');
+                        } else {
+                          onTakeMeThere(business);
+                        }
                       }}
                       className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
                     >
-                      GO
+                      {business.is_mobile_business && business.phone_number ? (
+                        <Icons.Phone className="h-4 w-4" />
+                      ) : (
+                        'GO'
+                      )}
                     </button>
                   </div>
                 </div>
@@ -315,11 +325,19 @@ const PlatformBusinessCard: React.FC<{
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      onTakeMeThere(business);
+                      if (business.is_mobile_business && business.phone_number) {
+                        window.open(`tel:${business.phone_number}`, '_self');
+                      } else {
+                        onTakeMeThere(business);
+                      }
                     }}
                     className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
                   >
-                    GO
+                    {business.is_mobile_business && business.phone_number ? (
+                      <Icons.Phone className="h-4 w-4" />
+                    ) : (
+                      'GO'
+                    )}
                   </button>
                 </div>
               </div>

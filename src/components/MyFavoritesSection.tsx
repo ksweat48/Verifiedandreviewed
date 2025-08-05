@@ -29,6 +29,12 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
   };
 
   const handleTakeMeThere = (business: any) => {
+    // Handle mobile businesses differently
+    if (business.is_mobile_business && business.phone_number) {
+      window.open(`tel:${business.phone_number}`, '_self');
+      return;
+    }
+    
     let mapsUrl;
     if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
@@ -129,8 +135,17 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                       onClick={() => handleTakeMeThere(business)}
                       className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 py-2 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center"
                     >
-                      <Icons.Navigation className="h-4 w-4 mr-2" />
-                      GO
+                      {business.is_mobile_business && business.phone_number ? (
+                        <>
+                          <Icons.Phone className="h-4 w-4 mr-2" />
+                          CALL
+                        </>
+                      ) : (
+                        <>
+                          <Icons.Navigation className="h-4 w-4 mr-2" />
+                          GO
+                        </>
+                      )}
                     </button>
                     
                     <button
