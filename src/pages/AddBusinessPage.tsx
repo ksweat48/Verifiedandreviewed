@@ -476,6 +476,7 @@ export default function AddBusinessPage() {
 
       const businessData = {
         ...formData,
+        location: `${formData.city.trim()}${formData.state.trim() ? ', ' + formData.state.trim() : ''}`,
         image_url: coverImageUrl,
         gallery_urls: galleryUrls,
         // Map businessType to boolean flags for database compatibility
@@ -514,6 +515,71 @@ export default function AddBusinessPage() {
           </div>
 
           {/* Content Quality Indicator */}
+          <div className={`${qualityLevel.bgColor} rounded-xl p-6 mb-8 border-2 ${qualityLevel.color.replace('text-', 'border-').replace('-600', '-200')}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <QualityIcon className={`h-6 w-6 ${qualityLevel.color} mr-3`} />
+                <div>
+                  <h3 className="font-poppins text-lg font-semibold text-neutral-900">
+                    Search Relevance Score: {contentQualityScore}%
+                  </h3>
+                  <p className={`font-lora text-sm ${qualityLevel.color}`}>
+                    Content Quality: {qualityLevel.level}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="w-32 bg-gray-200 rounded-full h-3 mb-2">
+                  <div 
+                    className={`h-3 rounded-full transition-all duration-300 ${
+                      contentQualityScore >= 80 ? 'bg-green-500' :
+                      contentQualityScore >= 60 ? 'bg-blue-500' :
+                      contentQualityScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${contentQualityScore}%` }}
+                  ></div>
+                </div>
+                <p className="font-lora text-xs text-gray-600">
+                  Higher scores = better search visibility
+                </p>
+              </div>
+            </div>
+            
+            {/* Dynamic recommendations */}
+            <div className="space-y-2">
+              {contentQualityScore < 80 && (
+                <div className="bg-white bg-opacity-50 rounded-lg p-3">
+                  <h4 className="font-poppins font-semibold text-neutral-900 mb-2 flex items-center">
+                    <Info className="h-4 w-4 mr-2" />
+                    Tips to improve your search ranking:
+                  </h4>
+                  <ul className="font-lora text-sm text-neutral-700 space-y-1">
+                    {formData.short_description.length < 50 && (
+                      <li>• Add a compelling short description (50+ characters)</li>
+                    )}
+                    {formData.description.length < 150 && (
+                      <li>• Write a detailed description (150+ words) including your unique vibe and atmosphere</li>
+                    )}
+                    {formData.tags.length < 5 && (
+                      <li>• Add more tags (5+ recommended) like "cozy", "family-friendly", "organic", etc.</li>
+                    )}
+                    {!formData.phone_number && (
+                      <li>• Add a phone number for customer contact</li>
+                    )}
+                    {formData.businessType === 'virtual' && !formData.website_url && (
+                      <li>• Add a website URL (required for virtual businesses)</li>
+                    )}
+                    {formData.businessType !== 'virtual' && !formData.website_url && (
+                      <li>• Add a website URL for better online presence</li>
+                    )}
+                    {formData.businessType === 'mobile' && !formData.service_area && (
+                      <li>• Specify your service area for mobile services</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information */}
@@ -583,12 +649,13 @@ export default function AddBusinessPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
+                  Category *
                 </label>
                 <select
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select a category</option>
@@ -705,28 +772,6 @@ export default function AddBusinessPage() {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {formData.businessType === 'physical' ? 'Location/Area *' :
-                   formData.businessType === 'mobile' ? 'Service City/Area (Public) *' : 'Operating Region (Public) *'}
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={formData.businessType === 'physical' ? 'City, neighborhood, or area' :
-                               formData.businessType === 'mobile' ? 'City or area you serve (publicly visible)' : 'e.g., Global, Online, North America'}
-                />
-                {(formData.businessType === 'mobile' || formData.businessType === 'virtual') && (
-                  <p className="font-lora text-xs text-gray-500 mt-1">
-                    This will be publicly displayed instead of your home address
-                  </p>
-                )}
-              </div>
-
               {/* City and State Inputs */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -766,6 +811,27 @@ export default function AddBusinessPage() {
                 <p className="font-lora text-xs text-gray-500 mt-1">
                   This will be publicly displayed instead of your home address
                 </p>
+              )}
+
+              {/* Service Area - Only show for mobile businesses */}
+              {formData.businessType === 'mobile' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Service Area *
+                  </label>
+                  <input
+                    type="text"
+                    name="service_area"
+                    value={formData.service_area}
+                    onChange={handleInputChange}
+                    required={formData.businessType === 'mobile'}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Areas you serve (e.g., Within 20 miles, Citywide, Tri-state area)"
+                  />
+                  <p className="font-lora text-xs text-gray-500 mt-1">
+                    Specify the geographic area where you provide services. This helps customers understand if you serve their location.
+                  </p>
+                </div>
               )}
             </div>
 
@@ -1079,73 +1145,6 @@ export default function AddBusinessPage() {
             </div>
 
             {/* Submit Button */}
-            {/* Content Quality Indicator */}
-            <div className={`${qualityLevel.bgColor} rounded-xl p-6 mb-8 border-2 ${qualityLevel.color.replace('text-', 'border-').replace('-600', '-200')}`}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <QualityIcon className={`h-6 w-6 ${qualityLevel.color} mr-3`} />
-                  <div>
-                    <h3 className="font-poppins text-lg font-semibold text-neutral-900">
-                      Search Relevance Score: {contentQualityScore}%
-                    </h3>
-                    <p className={`font-lora text-sm ${qualityLevel.color}`}>
-                      Content Quality: {qualityLevel.level}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="w-32 bg-gray-200 rounded-full h-3 mb-2">
-                    <div 
-                      className={`h-3 rounded-full transition-all duration-300 ${
-                        contentQualityScore >= 80 ? 'bg-green-500' :
-                        contentQualityScore >= 60 ? 'bg-blue-500' :
-                        contentQualityScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${contentQualityScore}%` }}
-                    ></div>
-                  </div>
-                  <p className="font-lora text-xs text-gray-600">
-                    Higher scores = better search visibility
-                  </p>
-                </div>
-              </div>
-              
-              {/* Dynamic recommendations */}
-              <div className="space-y-2">
-                {contentQualityScore < 80 && (
-                  <div className="bg-white bg-opacity-50 rounded-lg p-3">
-                    <h4 className="font-poppins font-semibold text-neutral-900 mb-2 flex items-center">
-                      <Info className="h-4 w-4 mr-2" />
-                      Tips to improve your search ranking:
-                    </h4>
-                    <ul className="font-lora text-sm text-neutral-700 space-y-1">
-                      {formData.short_description.length < 50 && (
-                        <li>• Add a compelling short description (50+ characters)</li>
-                      )}
-                      {formData.description.length < 150 && (
-                        <li>• Write a detailed description (150+ words) including your unique vibe and atmosphere</li>
-                      )}
-                      {formData.tags.length < 5 && (
-                        <li>• Add more tags (5+ recommended) like "cozy", "family-friendly", "organic", etc.</li>
-                      )}
-                      {!formData.phone_number && (
-                        <li>• Add a phone number for customer contact</li>
-                      )}
-                      {formData.businessType === 'virtual' && !formData.website_url && (
-                        <li>• Add a website URL (required for virtual businesses)</li>
-                      )}
-                      {formData.businessType !== 'virtual' && !formData.website_url && (
-                        <li>• Add a website URL for better online presence</li>
-                      )}
-                      {formData.businessType === 'mobile' && !formData.service_area && (
-                        <li>• Specify your service area for mobile services</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
