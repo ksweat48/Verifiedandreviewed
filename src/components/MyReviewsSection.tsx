@@ -139,7 +139,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
       <div className="flex items-center justify-between">
         <h2 className="font-cinzel text-2xl font-bold text-neutral-900">
           My Reviews ({completedReviews.length})
@@ -147,7 +147,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
       </div>
 
       {completedReviews.length === 0 ? (
-        <div className="bg-neutral-50 rounded-2xl p-8 text-center">
+        <div className="bg-neutral-50 rounded-xl p-6 text-center">
           <Icons.ThumbsUp className="h-10 w-10 text-neutral-300 mx-auto mb-4" />
           <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
             No Reviews Yet
@@ -157,9 +157,9 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {currentReviews.map((review) => (
-            <div key={review.id} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+            <div key={review.id} className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">

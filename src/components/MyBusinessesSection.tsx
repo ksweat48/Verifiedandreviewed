@@ -100,7 +100,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
       <div className="flex items-center justify-between">
         <h2 className="font-cinzel text-xl sm:text-2xl font-bold text-neutral-900"> 
           My Businesses ({businesses.length})
@@ -115,7 +115,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
       </div>
 
       {businesses.length === 0 ? (
-        <div className="bg-neutral-50 rounded-2xl p-8 text-center">
+        <div className="bg-neutral-50 rounded-xl p-6 text-center">
           <Icons.Building className="h-10 w-10 text-neutral-300 mx-auto mb-4" />
           <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
             No Businesses Added Yet
@@ -132,9 +132,9 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {businesses.map((business) => (
-            <div key={business.id} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+            <div key={business.id} className="bg-neutral-50 rounded-xl p-4 border border-neutral-200 hover:bg-white transition-all duration-200">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2">
