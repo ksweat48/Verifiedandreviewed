@@ -7,6 +7,7 @@ export default {
         'cinzel': ['Cinzel', 'serif'],
         'poppins': ['Poppins', 'sans-serif'],
         'lora': ['Lora', 'serif'],
+        'bubblegum-sans': ['Bubblegum Sans', 'cursive'],
       },
       colors: {
         primary: {
