@@ -731,15 +731,7 @@ export class BusinessService {
       
       if (error) throw error;
       
-      // Replace old mock images with Verified & Reviewed logo
-      const updatedData = (data || []).map(business => ({
-        ...business,
-        image_url: business.image_url === '/verified and reviewed logo-coral copy copy.png' 
-          ? business.image_url 
-          : '/verified and reviewed logo-coral copy copy.png'
-      }));
-      
-      return updatedData;
+      return data || [];
     } catch (error) {
       console.error('Error fetching user favorites:', error);
       return [];
