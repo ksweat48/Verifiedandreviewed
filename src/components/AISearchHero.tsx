@@ -17,6 +17,7 @@ import SignupPrompt from './SignupPrompt';
 import AuthModal from './AuthModal';
 import CreditInfoTooltip from './CreditInfoTooltip';
 import { supabase } from '../services/supabaseClient';
+import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -51,6 +52,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [quickSearches, setQuickSearches] = useState<string[]>([]);
   const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Get pending reviews count for notification dot
+  const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);
   
   // Diverse default avatars for users without custom avatars
   const defaultAvatars = [
@@ -948,13 +952,19 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               <Icons.Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
             </button>
             
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
-              title="Dashboard"
-            >
-              <LayoutDashboard className="h-5 w-5 text-white group-hover:text-primary-300 transition-colors duration-200" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+                title="Dashboard"
+              >
+                <LayoutDashboard className="h-5 w-5 text-white group-hover:text-primary-300 transition-colors duration-200" />
+              </button>
+              {/* Notification dot for pending reviews */}
+              {!loadingPendingReviews && pendingReviewsCount > 0 && (
+                <span className="notification-dot absolute -top-1 -right-1"></span>
+              )}
+            </div>
           </div>
         )}
 
