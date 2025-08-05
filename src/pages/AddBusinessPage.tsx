@@ -455,62 +455,6 @@ export default function AddBusinessPage() {
           </div>
 
           {/* Content Quality Indicator */}
-          <div className={`${qualityLevel.bgColor} rounded-xl p-6 mb-8 border-2 ${qualityLevel.color.replace('text-', 'border-').replace('-600', '-200')}`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <QualityIcon className={`h-6 w-6 ${qualityLevel.color} mr-3`} />
-                <div>
-                  <h3 className="font-poppins text-lg font-semibold text-neutral-900">
-                    Search Relevance Score: {contentQualityScore}%
-                  </h3>
-                  <p className={`font-lora text-sm ${qualityLevel.color}`}>
-                    Content Quality: {qualityLevel.level}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="w-32 bg-gray-200 rounded-full h-3 mb-2">
-                  <div 
-                    className={`h-3 rounded-full transition-all duration-300 ${
-                      contentQualityScore >= 80 ? 'bg-green-500' :
-                      contentQualityScore >= 60 ? 'bg-blue-500' :
-                      contentQualityScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${contentQualityScore}%` }}
-                  ></div>
-                </div>
-                <p className="font-lora text-xs text-gray-600">
-                  Higher scores = better search visibility
-                </p>
-              </div>
-            </div>
-            
-            {/* Dynamic recommendations */}
-            <div className="space-y-2">
-              {contentQualityScore < 80 && (
-                <div className="bg-white bg-opacity-50 rounded-lg p-3">
-                  <h4 className="font-poppins font-semibold text-neutral-900 mb-2 flex items-center">
-                    <Info className="h-4 w-4 mr-2" />
-                    Tips to improve your search ranking:
-                  </h4>
-                  <ul className="font-lora text-sm text-neutral-700 space-y-1">
-                    {formData.short_description.length < 50 && (
-                      <li>• Add a compelling short description (50+ characters)</li>
-                    )}
-                    {formData.description.length < 150 && (
-                      <li>• Write a detailed description (150+ words) including your unique vibe and atmosphere</li>
-                    )}
-                    {formData.tags.length < 5 && (
-                      <li>• Add more tags (5+ recommended) like "cozy", "family-friendly", "organic", etc.</li>
-                    )}
-                    {!formData.phone_number && !formData.website_url && (
-                      <li>• Add contact information (phone or website)</li>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information */}
@@ -1034,6 +978,64 @@ export default function AddBusinessPage() {
             </div>
 
             {/* Submit Button */}
+            {/* Content Quality Indicator */}
+            <div className={`${qualityLevel.bgColor} rounded-xl p-6 mb-8 border-2 ${qualityLevel.color.replace('text-', 'border-').replace('-600', '-200')}`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <QualityIcon className={`h-6 w-6 ${qualityLevel.color} mr-3`} />
+                  <div>
+                    <h3 className="font-poppins text-lg font-semibold text-neutral-900">
+                      Search Relevance Score: {contentQualityScore}%
+                    </h3>
+                    <p className={`font-lora text-sm ${qualityLevel.color}`}>
+                      Content Quality: {qualityLevel.level}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="w-32 bg-gray-200 rounded-full h-3 mb-2">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-300 ${
+                        contentQualityScore >= 80 ? 'bg-green-500' :
+                        contentQualityScore >= 60 ? 'bg-blue-500' :
+                        contentQualityScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${contentQualityScore}%` }}
+                    ></div>
+                  </div>
+                  <p className="font-lora text-xs text-gray-600">
+                    Higher scores = better search visibility
+                  </p>
+                </div>
+              </div>
+              
+              {/* Dynamic recommendations */}
+              <div className="space-y-2">
+                {contentQualityScore < 80 && (
+                  <div className="bg-white bg-opacity-50 rounded-lg p-3">
+                    <h4 className="font-poppins font-semibold text-neutral-900 mb-2 flex items-center">
+                      <Info className="h-4 w-4 mr-2" />
+                      Tips to improve your search ranking:
+                    </h4>
+                    <ul className="font-lora text-sm text-neutral-700 space-y-1">
+                      {formData.short_description.length < 50 && (
+                        <li>• Add a compelling short description (50+ characters)</li>
+                      )}
+                      {formData.description.length < 150 && (
+                        <li>• Write a detailed description (150+ words) including your unique vibe and atmosphere</li>
+                      )}
+                      {formData.tags.length < 5 && (
+                        <li>• Add more tags (5+ recommended) like "cozy", "family-friendly", "organic", etc.</li>
+                      )}
+                      {!formData.phone_number && !formData.website_url && (
+                        <li>• Add contact information (phone or website)</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
