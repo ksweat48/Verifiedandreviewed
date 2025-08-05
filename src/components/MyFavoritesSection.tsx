@@ -123,14 +123,7 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                 
                 {/* Actions - Line 4 */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {/* Description preview if available */}
-                    {business.description && (
-                      <p className="font-lora text-xs text-neutral-500 line-clamp-1 break-words max-w-xs">
-                        {business.description.replace(/AI-generated business with \d+% match\. /, '')}
-                      </p>
-                    )}
-                  </div>
+                  <div></div>
                   
                   <div className="flex items-center gap-2">
                     <button
