@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Notification dot for pending reviews */
+.notification-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444; /* Red color */
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 /* WordPress Content Typography & Spacing */
 @layer components {
   .prose {

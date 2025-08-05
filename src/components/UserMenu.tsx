@@ -6,6 +6,7 @@ import { UserService } from '../services/userService';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { formatCredits, formatReviewCount } from '../utils/formatters';
 import { ActivityService } from '../services/activityService';
+import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
 
 interface UserMenuProps {
   user: User;
@@ -17,6 +18,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { trackEvent } = useAnalytics();
+  const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(user.id);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -59,7 +61,8 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
       action: () => {
         navigate('/dashboard');
         setIsOpen(false);
-      }
+      },
+      isDashboard: true
     },
     ...(user.role === 'administrator' ? [
       {
@@ -149,12 +152,18 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
                 <button
                   key={index}
                   onClick={item.action}
-                  className={`w-full flex items-center px-4 py-2 text-left font-lora text-sm transition-colors duration-200 ${
+                  className={`w-full flex items-center justify-between px-4 py-2 text-left font-lora text-sm transition-colors duration-200 ${
                     item.className || 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
-                  <IconComponent className="h-4 w-4 mr-3" />
-                  {item.label}
+                  <div className="flex items-center">
+                    <IconComponent className="h-4 w-4 mr-3" />
+                    {item.label}
+                  </div>
+                  {/* Notification dot for Dashboard */}
+                  {item.isDashboard && !loadingPendingReviews && pendingReviewsCount > 0 && (
+                    <span className="notification-dot"></span>
+                  )}
                 </button>
               );
             })}
