@@ -478,7 +478,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             sentimentScore: business.sentiment_score || 0
           },
           // Ensure image property is available
-          image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+          image: business.image_url || '/verified and reviewed logo-coral copy copy.png',
           // Ensure isOpen property
           isOpen: true, // Default to open since we don't have real-time status
           // Add fetched reviews

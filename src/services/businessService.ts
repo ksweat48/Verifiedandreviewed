@@ -705,7 +705,7 @@ export class BusinessService {
           location: business.location || business.address || 'Location not available',
           category: business.category || 'AI Generated',
           description: `AI-generated business with ${Math.round((business.similarity || 0.8) * 100)}% match. ${business.shortDescription || business.description || ''}`,
-          image_url: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+          image_url: business.image || '/verified and reviewed logo-coral copy copy.png',
           recommended_by: userId,
           status: 'pending',
           created_at: new Date().toISOString()

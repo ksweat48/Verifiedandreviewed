@@ -89,7 +89,7 @@ const ExploreArea = () => {
           thumbsDown: business.thumbs_down || 0,
           sentimentScore: business.sentiment_score || 0
         },
-        image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+        image: business.image_url || '/verified and reviewed logo-coral copy copy.png',
         isOpen: true, // Default to open since we don't have real-time status
         hours: business.hours || 'Hours unavailable',
         address: business.address || '',
