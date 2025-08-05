@@ -553,6 +553,13 @@ export class BusinessService {
     isThumbsUp: boolean
   ): Promise<boolean> {
     try {
+      console.log('🎯 BusinessService.rateBusiness called with:', {
+        businessId,
+        userId,
+        isThumbsUp,
+        timestamp: new Date().toISOString()
+      });
+
       // First check if user has already rated this business
       const { data: existingRating } = await supabase
         .from('business_ratings')
@@ -561,17 +568,28 @@ export class BusinessService {
         .eq('user_id', userId)
         .single();
       
+      console.log('🔍 Existing rating check result:', {
+        existingRating: existingRating ? 'Found existing rating' : 'No existing rating',
+        existingRatingData: existingRating
+      });
+
       if (existingRating) {
         // Update existing rating
+        console.log('🔄 Updating existing rating...');
         const { error } = await supabase
           .from('business_ratings')
           .update({ is_thumbs_up: isThumbsUp })
           .eq('business_id', businessId)
           .eq('user_id', userId);
         
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error updating existing rating:', error);
+          throw error;
+        }
+        console.log('✅ Successfully updated existing rating');
       } else {
         // Insert new rating
+        console.log('➕ Inserting new rating...');
         const { error } = await supabase
           .from('business_ratings')
           .insert({
@@ -580,14 +598,21 @@ export class BusinessService {
             is_thumbs_up: isThumbsUp
           });
         
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error inserting new rating:', error);
+          throw error;
+        }
+        console.log('✅ Successfully inserted new rating');
       }
       
       // Update business thumbs up/down counts and sentiment score
+      console.log('🔄 Calling updateBusinessSentiment...');
       await this.updateBusinessSentiment(businessId);
       
+      console.log('✅ BusinessService.rateBusiness completed successfully');
       return true;
     } catch (error) {
+      console.error('❌ BusinessService.rateBusiness failed:', error);
       return false;
     }
   }
@@ -595,14 +620,25 @@ export class BusinessService {
   // Update business sentiment score based on thumbs up/down
   private static async updateBusinessSentiment(businessId: string): Promise<void> {
     try {
+      console.log('🎯 updateBusinessSentiment called for businessId:', businessId);
+
       // Get all ratings for this business
       const { data: ratings, error } = await supabase
         .from('business_ratings')
         .select('*')
         .eq('business_id', businessId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching ratings for business:', businessId, error);
+        throw error;
+      }
       
+      console.log('📊 Fetched ratings for business:', {
+        businessId,
+        ratingsCount: ratings?.length || 0,
+        ratings: ratings
+      });
+
       if (!ratings || ratings.length === 0) return;
       
       // Calculate thumbs up/down counts
@@ -615,7 +651,16 @@ export class BusinessService {
         ? Math.round((thumbsUp / totalRatings) * 100) 
         : 0;
       
+      console.log('📊 Calculated sentiment data:', {
+        businessId,
+        thumbsUp,
+        thumbsDown,
+        totalRatings,
+        sentimentScore
+      });
+
       // Update business record
+      console.log('🔄 Updating business record with new sentiment data...');
       const { error: updateError } = await supabase
         .from('businesses')
         .update({
@@ -626,9 +671,19 @@ export class BusinessService {
         })
         .eq('id', businessId);
       
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('❌ Error updating business sentiment:', businessId, updateError);
+        throw updateError;
+      }
+
+      console.log('✅ Successfully updated business sentiment:', {
+        businessId,
+        newThumbsUp: thumbsUp,
+        newThumbsDown: thumbsDown,
+        newSentimentScore: sentimentScore
+      });
     } catch (error) {
-      // Error handling
+      console.error('❌ updateBusinessSentiment failed for businessId:', businessId, error);
     }
   }
 
