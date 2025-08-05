@@ -83,86 +83,68 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {businesses.map((business) => {
-            const similarityScore = extractSimilarityScore(business.description || '');
-            
-            return (
-              <div key={business.id} className="bg-neutral-50 rounded-xl p-4 border border-neutral-200 hover:bg-white transition-all duration-200">
-                <div className="flex flex-col sm:flex-row items-start gap-4">
-                  {/* Business Image */}
-                  <div className="flex-shrink-0">
-                    <img
-                      src={business.image_url || '/verified and reviewed logo-coral copy copy.png'}
-                      alt={business.name}
-                      className="w-full sm:w-16 h-16 object-cover rounded-lg"
-                    />
+                {/* Business Name - Line 1 */}
+                <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 line-clamp-1 break-words">
+                  {business.name}
+                </h3>
+                
+                {/* Status and Category - Line 2 */}
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full text-xs font-poppins">
+                    {business.category}
+                  </span>
+                  {similarityScore && (
+                    <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-poppins">
+                      {similarityScore}% match
+                    </span>
+                  )}
+                </div>
+                
+                {/* Address and Date - Line 3 */}
+                <div className="flex items-center gap-4 mb-2 flex-wrap">
+                  <div className="flex items-center">
+                    <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
+                    <span className="font-lora text-sm text-neutral-600 break-words">
+                      {business.address || business.location}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
+                    <span className="font-lora text-sm text-neutral-600">
+                      {new Date(business.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Actions - Line 4 */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {/* Description preview if available */}
+                    {business.description && (
+                      <p className="font-lora text-xs text-neutral-500 line-clamp-1 break-words max-w-xs">
+                        {business.description.replace(/AI-generated business with \d+% match\. /, '')}
+                      </p>
+                    )}
                   </div>
                   
-                  {/* Business Details */}
-                  <div className="flex-1 min-w-0 w-full">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2">
-                      <div className="flex-1">
-                        <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-1 line-clamp-1 break-words">
-                          {business.name}
-                        </h3>
-                        
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-2">
-                          <div className="flex items-center">
-                            <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
-                            <span className="font-lora text-sm text-neutral-600 break-words">
-                              {business.address || business.location}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center">
-                            <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
-                            <span className="font-lora text-sm text-neutral-600">
-                              Added {new Date(business.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Category and Similarity Score */}
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full text-xs font-poppins">
-                            {business.category}
-                          </span>
-                        </div>
-                        
-                        {/* Description */}
-                        {business.description && (
-                          <p className="font-lora text-sm text-neutral-600 line-clamp-2 break-words">
-                            {business.description.replace(/AI-generated business with \d+% match\. /, '')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-2 flex-shrink-0 mt-3 sm:mt-0 justify-end sm:justify-start">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleTakeMeThere(business)}
-                      className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-3 py-2 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center text-sm"
+                      className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-3 py-1.5 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center text-xs"
                     >
                       {business.is_virtual && business.website_url ? (
                         <>
-                          <Icons.Globe className="h-4 w-4 mr-1" />
-                          VISIT
+                          <Icons.Globe className="h-3 w-3 mr-1" />
+                          GO
                         </>
                       ) : business.is_mobile_business && business.phone_number ? (
                         <>
-                          <Icons.Globe className="h-4 w-4 mr-1" />
-                          VISIT
-                        </>
-                      ) : business.is_mobile_business && business.phone_number ? (
-                        <>
-                          <Icons.Phone className="h-4 w-4 mr-1" />
-                          CALL
+                          <Icons.Phone className="h-3 w-3 mr-1" />
+                          GO
                         </>
                       ) : (
                         <>
-                          <Icons.Navigation className="h-4 w-4 mr-1" />
+                          <Icons.Navigation className="h-3 w-3 mr-1" />
                           GO
                         </>
                       )}

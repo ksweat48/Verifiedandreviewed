@@ -135,34 +135,48 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
         <div className="space-y-3">
           {businesses.map((business) => (
             <div key={business.id} className="bg-neutral-50 rounded-xl p-4 border border-neutral-200 hover:bg-white transition-all duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                <div className="flex-1">
-                  <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 line-clamp-1 break-words">
-                    {business.name}
-                  </h3>
-                  <p className="font-lora text-neutral-600 text-sm mb-2 break-words">
-                    {business.address} • {business.category}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
-                      business.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {business.is_verified ? (
-                        <>
-                          <Icons.Shield className="h-3 w-3 inline mr-1" /> Verified
-                        </>
-                      ) : (
-                        'Pending Verification'
-                      )}
-                    </span>
-                    {business.thumbs_up > 0 && (
-                      <span className="px-2 py-1 rounded-full text-xs font-poppins font-semibold bg-blue-100 text-blue-700">
-                        {business.thumbs_up} Thumbs Up
-                      </span>
-                    )}
+              {/* Business Name - Line 1 */}
+              <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 line-clamp-1 break-words">
+                {business.name}
+              </h3>
+              
+              {/* Status and Thumbs Up - Line 2 */}
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
+                  business.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                }`}>
+                  {business.is_verified ? 'Verified' : 'Pending Verification'}
+                </span>
+                {business.thumbs_up > 0 && (
+                  <div className="flex items-center bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                    <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                    <span className="font-poppins text-xs font-semibold">{business.thumbs_up} Thumbs Up</span>
                   </div>
+                )}
+              </div>
+              
+              {/* Address and Category - Line 3 */}
+              <div className="flex items-center gap-4 mb-2 flex-wrap">
+                <div className="flex items-center">
+                  <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
+                  <span className="font-lora text-sm text-neutral-600 break-words">{business.address}</span>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 justify-end sm:justify-start">
+                <div className="flex items-center">
+                  <Icons.Tag className="h-4 w-4 text-neutral-500 mr-1" />
+                  <span className="font-lora text-sm text-neutral-600">{business.category}</span>
+                </div>
+              </div>
+              
+              {/* Actions - Line 4 */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
+                  <span className="font-lora text-sm text-neutral-600">
+                    Added {new Date(business.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleViewBusiness(business)}
                     className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"

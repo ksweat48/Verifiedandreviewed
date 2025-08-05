@@ -160,66 +160,65 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
         <div className="space-y-3">
           {currentReviews.map((review) => (
             <div key={review.id} className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-poppins text-lg font-semibold text-neutral-900 line-clamp-1 break-words">
-                      {review.businessName}
-                    </h3>
-                    {/* Status Badge */}
-                    <div className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
-                      review.status === 'published' 
-                        ? 'bg-green-100 text-green-700' 
-                        : review.status === 'approved'
-                        ? 'bg-green-100 text-green-700'
-                        : review.status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {review.status === 'published' ? 'Published' :
-                       review.status === 'approved' ? 'Approved' :
-                       review.status === 'pending' ? 'Pending Approval' : 
-                       'Draft'}
-                    </div>
-                    {/* Thumbs Up/Down Rating */}
-                    <div className="flex items-center">
-                      {review.rating >= 4 ? (
-                        <div className="flex items-center text-green-600">
-                          <Icons.ThumbsUp className="h-4 w-4 mr-1 fill-current" />
-                          <span className="font-poppins text-xs font-semibold">Recommend</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-red-600">
-                          <Icons.ThumbsDown className="h-4 w-4 mr-1 fill-current" />
-                          <span className="font-poppins text-xs font-semibold">Not for me</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3">
-                    <div className="flex items-center">
-                      <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
-                      <span className="font-lora text-sm text-neutral-600 break-words">{review.location}</span>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
-                      <span className="font-lora text-sm text-neutral-600">
-                        {new Date(review.publishDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <Icons.Eye className="h-4 w-4 text-neutral-500 mr-1" />
-                      <span className="font-lora text-sm text-neutral-600">
-                        {review.views} views
-                      </span>
-                    </div>
-                  </div>
+              {/* Business Name - Line 1 */}
+              <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 line-clamp-1 break-words">
+                {review.businessName}
+              </h3>
+              
+              {/* Status and Rating - Line 2 */}
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <div className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
+                  review.status === 'published' 
+                    ? 'bg-green-100 text-green-700' 
+                    : review.status === 'approved'
+                    ? 'bg-green-100 text-green-700'
+                    : review.status === 'pending'
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {review.status === 'published' ? 'Approved' :
+                   review.status === 'approved' ? 'Approved' :
+                   review.status === 'pending' ? 'Pending' : 
+                   'Draft'}
                 </div>
                 
-                <div className="flex items-center gap-2 mt-3 sm:mt-0">
+                {review.rating >= 4 ? (
+                  <div className="flex items-center bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                    <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                    <span className="font-poppins text-xs font-semibold">Recommend</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                    <Icons.ThumbsDown className="h-3 w-3 mr-1 fill-current" />
+                    <span className="font-poppins text-xs font-semibold">Not for me</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Address and Date - Line 3 */}
+              <div className="flex items-center gap-4 mb-2 flex-wrap">
+                <div className="flex items-center">
+                  <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
+                  <span className="font-lora text-sm text-neutral-600 break-words">{review.location}</span>
+                </div>
+                <div className="flex items-center">
+                  <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
+                  <span className="font-lora text-sm text-neutral-600">
+                    {new Date(review.publishDate).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Views and Actions - Line 4 */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Icons.Eye className="h-4 w-4 text-neutral-500 mr-1" />
+                  <span className="font-lora text-sm text-neutral-600">
+                    {review.views} views
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2">
                   <button 
                     onClick={() => handleViewReview(review)}
                     className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
