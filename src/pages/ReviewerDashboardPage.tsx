@@ -254,7 +254,7 @@ const ReviewerDashboardPage = () => {
                   </div>
                   <div>
                     <h3 className="font-poppins text-xl font-bold text-neutral-900">
-                      {formatReviewCount(user.reviewCount)}
+                      {formatReviewCount(userReviews.length)}
                     </h3>
                     <p className="font-lora text-sm text-neutral-600">Total Reviews</p>
                   </div>
