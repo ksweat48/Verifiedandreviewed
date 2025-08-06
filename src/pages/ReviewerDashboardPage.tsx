@@ -275,16 +275,16 @@ const ReviewerDashboardPage = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200 sm:col-span-2 lg:col-span-1">
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200">
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                    <Icons.Zap className="h-5 w-5 text-green-600" />
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <Icons.Eye className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
                     <h3 className="font-poppins text-xl font-bold text-neutral-900">
-                      {formatCredits(user.credits, user.role)}
+                      {formatStat(userReviews.reduce((total, review) => total + (review.views || 0), 0))}
                     </h3>
-                    <p className="font-lora text-sm text-neutral-600">Credits</p>
+                    <p className="font-lora text-sm text-neutral-600">Total Views</p>
                   </div>
                 </div>
               </div>
