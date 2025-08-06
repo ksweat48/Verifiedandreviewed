@@ -161,16 +161,6 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                 }`}>
                   {business.is_verified ? 'Verified' : 'Pending Verification'}
                 </span>
-                <div className="flex items-center">
-                  <Icons.Tag className="h-4 w-4 text-neutral-500 mr-1" />
-                  <span className="font-lora text-sm text-neutral-600">{business.category}</span>
-                </div>
-                <div className="flex items-center">
-                  <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
-                  <span className="font-lora text-sm text-neutral-600">
-                    {new Date(business.created_at).toLocaleDateString()}
-                  </span>
-                </div>
                 {business.thumbs_up > 0 && (
                   <div className="flex items-center bg-green-100 text-green-700 px-2 py-1 rounded-full">
                     <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
@@ -185,11 +175,20 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                   <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
                   <span className="font-lora text-sm text-neutral-600 break-words">{business.address}</span>
                 </div>
+                <div className="flex items-center">
+                  <Icons.Tag className="h-4 w-4 text-neutral-500 mr-1" />
+                  <span className="font-lora text-sm text-neutral-600">{business.category}</span>
+                </div>
               </div>
               
               {/* Actions - Line 4 */}
               <div className="flex items-center justify-between">
-                <div></div>
+                <div className="flex items-center">
+                  <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
+                  <span className="font-lora text-sm text-neutral-600">
+                    {new Date(business.created_at).toLocaleDateString()}
+                  </span>
+                </div>
                 
                 <div className="flex items-center gap-2">
                   <button
