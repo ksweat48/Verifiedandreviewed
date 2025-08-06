@@ -3,123 +3,210 @@ import * as Icons from 'lucide-react';
 import LeaveReviewModal from './LeaveReviewModal';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
+import { ActivityService } from '../services/activityService';
 
-interface VisitedBusiness {
+interface RecentActivity {
   id: string;
   name: string;
   image: string;
   address: string;
-  visitDate: string;
-  hasReviewed: boolean;
-  rating?: number;
+  activityDate: string;
+  activityType: 'business_view' | 'search' | 'review_submit';
+  businessId?: string;
+  searchQuery?: string;
 }
 
 const RecentActivitySection: React.FC = () => {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [selectedBusiness, setSelectedBusiness] = useState<VisitedBusiness | null>(null); 
-  const [visitedBusinesses, setVisitedBusinesses] = useState<VisitedBusiness[]>([]);
+  const [selectedBusiness, setSelectedBusiness] = useState<any>(null); 
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      fetchVisitedBusinesses();
+      fetchRecentActivities();
     } else {
-      setVisitedBusinesses([]);
+      setRecentActivities([]);
       setLoading(false);
     }
   }, [user]);
   
-  // Listen for visited businesses updates
+  // Listen for activity updates
   useEffect(() => {
-    const handleVisitedBusinessesUpdate = () => {
+    const handleActivityUpdate = () => {
       if (user) {
-        fetchVisitedBusinesses();
+        fetchRecentActivities();
       }
     };
     
-    window.addEventListener('visited-businesses-updated', handleVisitedBusinessesUpdate);
+    window.addEventListener('visited-businesses-updated', handleActivityUpdate);
     
     return () => {
-      window.removeEventListener('visited-businesses-updated', handleVisitedBusinessesUpdate);
+      window.removeEventListener('visited-businesses-updated', handleActivityUpdate);
     };
   }, [user]);
   
-  const fetchVisitedBusinesses = async () => {
+  const fetchRecentActivities = async () => {
     if (!user) return;
     
     setLoading(true);
     try {
-      // Fetch user's visited businesses with business details
-      const { data: visitsData, error: visitsError } = await supabase
-        .from('business_visits')
+      // Fetch recent business view activities
+      const { data: activitiesData, error: activitiesError } = await supabase
+        .from('user_activity_logs')
         .select(`
           id,
-          visited_at,
-          business_id,
-          businesses!inner (
-            id,
-            name,
-            image_url,
-            address
-          )
+          event_type,
+          event_details,
+          created_at
         `)
         .eq('user_id', user.id)
-        .order('visited_at', { ascending: false })
-        .limit(5);
+        .in('event_type', ['business_view', 'search', 'review_submit'])
+        .order('created_at', { ascending: false })
+        .limit(10);
       
-      if (visitsError) throw visitsError;
+      if (activitiesError) throw activitiesError;
       
-      // Fetch user's reviews separately
-      const { data: userReviewsData, error: reviewsError } = await supabase
-        .from('user_reviews')
-        .select('business_id, rating')
-        .eq('user_id', user.id);
-      
-      if (reviewsError) throw reviewsError;
-      
-      if (visitsData) {
-        // Create a map of business_id to review data for quick lookup
-        const reviewsMap = new Map();
-        if (userReviewsData) {
-          userReviewsData.forEach(review => {
-            reviewsMap.set(review.business_id, review);
-          });
+      if (activitiesData) {
+        // Get unique business IDs from business_view activities
+        const businessIds = activitiesData
+          .filter(activity => activity.event_type === 'business_view' && activity.event_details?.business_id)
+          .map(activity => activity.event_details.business_id)
+          .filter((id, index, array) => array.indexOf(id) === index); // Remove duplicates
+        
+        // Fetch business details for these IDs
+        let businessDetailsMap = new Map();
+        if (businessIds.length > 0) {
+          const { data: businessesData, error: businessesError } = await supabase
+            .from('businesses')
+            .select('id, name, image_url, address')
+            .in('id', businessIds);
+          
+          if (!businessesError && businessesData) {
+            businessesData.forEach(business => {
+              businessDetailsMap.set(business.id, business);
+            });
+          }
         }
         
-        const formattedBusinesses: VisitedBusiness[] = visitsData.map(visit => {
-          const review = reviewsMap.get(visit.business_id);
-          return {
-          id: visit.businesses.id,
-          name: visit.businesses.name,
-          image: visit.businesses.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-          address: visit.businesses.address || 'No address available',
-          visitDate: new Date(visit.visited_at).toLocaleDateString(),
-          hasReviewed: !!review,
-          rating: review ? review.rating : undefined
-          };
-        });
+        // Transform activities to display format
+        const formattedActivities: RecentActivity[] = activitiesData
+          .map(activity => {
+            if (activity.event_type === 'business_view') {
+              const businessDetails = businessDetailsMap.get(activity.event_details?.business_id);
+              if (businessDetails) {
+                return {
+                  id: activity.id,
+                  name: businessDetails.name,
+                  image: businessDetails.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+                  address: businessDetails.address || 'No address available',
+                  activityDate: new Date(activity.created_at).toLocaleDateString(),
+                  activityType: 'business_view',
+                  businessId: activity.event_details?.business_id
+                };
+              }
+            } else if (activity.event_type === 'search') {
+              return {
+                id: activity.id,
+                name: `Search: "${activity.event_details?.search_query || 'Unknown query'}"`,
+                image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+                address: `${activity.event_details?.search_type || 'platform'} search`,
+                activityDate: new Date(activity.created_at).toLocaleDateString(),
+                activityType: 'search',
+                searchQuery: activity.event_details?.search_query
+              };
+            } else if (activity.event_type === 'review_submit') {
+              const businessDetails = businessDetailsMap.get(activity.event_details?.business_id);
+              if (businessDetails) {
+                return {
+                  id: activity.id,
+                  name: businessDetails.name,
+                  image: businessDetails.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+                  address: businessDetails.address || 'No address available',
+                  activityDate: new Date(activity.created_at).toLocaleDateString(),
+                  activityType: 'review_submit',
+                  businessId: activity.event_details?.business_id
+                };
+              }
+            }
+            return null;
+          })
+          .filter(Boolean) as RecentActivity[];
         
-        // Filter to only show businesses that haven't been reviewed yet
-        const unreviewedBusinesses = formattedBusinesses.filter(business => !business.hasReviewed);
-        setVisitedBusinesses(unreviewedBusinesses);
+        setRecentActivities(formattedActivities);
       } else {
-        setVisitedBusinesses([]);
+        setRecentActivities([]);
       }
     } catch (err) {
-      console.error('Error fetching visited businesses:', err);
-      setVisitedBusinesses([]);
+      console.error('Error fetching recent activities:', err);
+      setRecentActivities([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Since visitedBusinesses now only contains unreviewed businesses, the count is simply the array length
-  const pendingReviewsCount = visitedBusinesses.length;
+  // Get business view activities that haven't been reviewed yet
+  const getUnreviewedBusinessViews = () => {
+    return recentActivities.filter(activity => 
+      activity.activityType === 'business_view' && activity.businessId
+    );
+  };
 
-  const openReviewModal = (business: VisitedBusiness) => {
-    setSelectedBusiness(business);
+  const openReviewModal = async (activity: RecentActivity) => {
+    if (!activity.businessId) return;
+    
+    try {
+      // Fetch full business details for the review modal
+      const { data: businessData, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('id', activity.businessId)
+        .single();
+      
+      if (error || !businessData) {
+        console.error('Error fetching business details:', error);
+        return;
+      }
+      
+      setSelectedBusiness({
+        id: businessData.id,
+        name: businessData.name,
+        image: businessData.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+        address: businessData.address || 'No address available',
+        visitDate: activity.activityDate
+      });
+    } catch (error) {
+      console.error('Error preparing review modal:', error);
+    }
+    
     setReviewModalOpen(true);
+  };
+
+  const getActivityIcon = (activityType: string) => {
+    switch (activityType) {
+      case 'business_view':
+        return <Icons.Eye className="h-4 w-4 text-blue-500" />;
+      case 'search':
+        return <Icons.Search className="h-4 w-4 text-purple-500" />;
+      case 'review_submit':
+        return <Icons.Star className="h-4 w-4 text-green-500" />;
+      default:
+        return <Icons.Activity className="h-4 w-4 text-neutral-500" />;
+    }
+  };
+
+  const getActivityDescription = (activity: RecentActivity) => {
+    switch (activity.activityType) {
+      case 'business_view':
+        return 'Viewed business';
+      case 'search':
+        return 'Searched for';
+      case 'review_submit':
+        return 'Reviewed business';
+      default:
+        return 'Activity';
+    }
   };
 
   const handleSubmitReview = (review: {
@@ -127,77 +214,81 @@ const RecentActivitySection: React.FC = () => {
     rating: 'thumbsUp' | 'thumbsDown';
     text: string;
   }) => {
-    // Update local state to show the business as reviewed
-    setVisitedBusinesses(prev => 
-      prev.filter(business => business.id !== review.businessId)
-    );
+    // Refresh activities after review submission
+    if (user) {
+      fetchRecentActivities();
+    }
   };
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-cinzel text-xl font-bold text-neutral-900 flex items-center">
+          <Icons.Activity className="h-5 w-5 mr-2 text-primary-500" />
+          Recent Activity
+        </h2>
+      </div>
       
-      {visitedBusinesses.length === 0 ? (
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-neutral-50 rounded-lg p-4 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-neutral-200 rounded-lg"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-neutral-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-neutral-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : recentActivities.length === 0 ? (
         <div className="bg-neutral-50 rounded-lg p-6 text-center">
-          <Icons.Navigation className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
+          <Icons.Activity className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
           <h4 className="font-poppins font-semibold text-neutral-700 mb-1">
             No activity yet
           </h4>
           <p className="font-lora text-sm text-neutral-600">
-            Visited businesses will appear here
+            Your recent searches and business views will appear here
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {visitedBusinesses.map((business) => (
+          {recentActivities.slice(0, 5).map((activity) => (
             <div 
-              key={business.id} 
-              className={`bg-neutral-50 rounded-lg p-4 border ${
-                business.hasReviewed ? 'border-neutral-100' : 'border-neutral-100 hover:border-primary-200 transition-all duration-200'
-              }`}
+              key={activity.id} 
+              className="bg-neutral-50 rounded-lg p-4 border border-neutral-100 hover:border-primary-200 transition-all duration-200"
             >
               <div className="flex items-start gap-3">
-                <img 
-                  src={business.image} 
-                  alt={business.name} 
-                  className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                />
+                <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-neutral-200 flex-shrink-0">
+                  {getActivityIcon(activity.activityType)}
+                </div>
                 <div className="flex-1">
-                  <div>
-                    <h4 className="font-poppins font-semibold text-neutral-900">{business.name}</h4>
-                    <p className="font-lora text-xs text-neutral-600 mb-1">{business.address} • Visited {business.visitDate}</p>
-                    {business.hasReviewed && (
-                      <div className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-poppins font-semibold inline-block">
-                        Reviewed
-                      </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-poppins font-semibold text-neutral-900 text-sm">
+                        {getActivityDescription(activity)}
+                      </h4>
+                      <p className="font-lora text-xs text-neutral-600 line-clamp-1">
+                        {activity.name}
+                      </p>
+                      <p className="font-lora text-xs text-neutral-500">
+                        {activity.activityDate}
+                      </p>
+                    </div>
+                    
+                    {activity.activityType === 'business_view' && activity.businessId && (
+                      <button
+                        onClick={() => openReviewModal(activity)}
+                        className="bg-primary-500 text-white px-3 py-1 rounded-lg font-poppins font-semibold text-xs hover:bg-primary-600 transition-colors duration-200"
+                      >
+                        Review
+                      </button>
                     )}
                   </div>
-                  {business.hasReviewed && business.rating && (
-                    <div className="flex items-center mt-1">
-                      {business.rating >= 4 ? (
-                        <div className="flex items-center text-green-600">
-                          <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
-                          <span className="font-poppins text-xs font-semibold">Recommend</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-red-600">
-                          <Icons.ThumbsDown className="h-3 w-3 mr-1 fill-current" />
-                          <span className="font-poppins text-xs font-semibold">Not for me</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
-              
-              {/* Full-width review button */}
-              {!business.hasReviewed && (
-                <button 
-                  onClick={() => openReviewModal(business)}
-                  className="w-full bg-primary-500 text-white px-4 py-2 rounded-lg text-sm font-poppins font-semibold hover:bg-primary-600 transition-colors duration-200 mt-3"
-                >
-                  Leave a Review
-                </button>
-              )}
             </div>
           ))}
         </div>
