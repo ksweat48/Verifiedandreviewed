@@ -186,7 +186,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                 <div className="flex items-center">
                   <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
                   <span className="font-lora text-sm text-neutral-600">
-                    Added {new Date(business.created_at).toLocaleDateString()}
+                    {new Date(business.created_at).toLocaleDateString()}
                   </span>
                 </div>
                 
