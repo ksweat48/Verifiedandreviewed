@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Star, MapPin, Calendar, User, ArrowLeft, Share2, Heart, MessageCircle, Shield, CheckCircle, Image } from 'lucide-react';
 import { useWordPressPost } from '../hooks/useWordPress';
 import { ReviewService } from '../services/reviewService';
+import { ActivityService } from '../services/activityService';
+import { UserService } from '../services/userService';
 
 const InlineImageGallery = React.lazy(() => import('../components/InlineImageGallery'));
 
@@ -21,6 +23,35 @@ const SinglePostPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [slug]);
+
+  // Log view activity when post is viewed
+  useEffect(() => {
+    const logPostView = async () => {
+      if (!post || !slug) return;
+      
+      try {
+        const user = await UserService.getCurrentUser();
+        if (user && post.acf?.business_name) {
+          // Log the post view activity
+          await ActivityService.logActivity({
+            userId: user.id,
+            eventType: 'business_view',
+            eventDetails: {
+              business_name: post.acf.business_name,
+              post_slug: slug,
+              post_id: post.id.toString(),
+              view_type: 'single_post'
+            }
+          });
+        }
+      } catch (error) {
+        // Silently fail - don't disrupt user experience
+        console.debug('Post view tracking failed:', error);
+      }
+    };
+    
+    logPostView();
+  }, [post, slug]);
 
   // Fetch user reviews for this business
   useEffect(() => {

@@ -88,7 +88,16 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
       try {
         const user = await UserService.getCurrentUser();
         if (user && business) {
-          ActivityService.logBusinessView(user.id, business.id, business.name);
+          // Log business view with business_id for view tracking
+          await ActivityService.logActivity({
+            userId: user.id,
+            eventType: 'business_view',
+            eventDetails: {
+              business_id: business.id,
+              business_name: business.name,
+              view_type: 'business_profile_modal'
+            }
+          });
         }
       } catch (error) {
         // Silently fail - don't disrupt user experience

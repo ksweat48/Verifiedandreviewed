@@ -61,6 +61,39 @@ export const handler = async (event) => {
 
     console.log(`Logging activity for user ${userId}: ${eventType}`);
 
+    // Handle view tracking for reviews
+    if (eventType === 'business_view' && eventDetails?.post_id) {
+      try {
+        console.log('Incrementing view count for post:', eventDetails.post_id);
+        
+        // Find the review associated with this business view
+        const { data: reviews, error: reviewError } = await supabase
+          .from('user_reviews')
+          .select('id, views')
+          .eq('business_id', eventDetails.business_id || 'unknown')
+          .limit(1);
+        
+        if (!reviewError && reviews && reviews.length > 0) {
+          // Increment view count for the review
+          const { error: updateError } = await supabase
+            .from('user_reviews')
+            .update({ 
+              views: (reviews[0].views || 0) + 1 
+            })
+            .eq('id', reviews[0].id);
+          
+          if (updateError) {
+            console.error('Error updating review view count:', updateError);
+          } else {
+            console.log('Successfully incremented view count for review:', reviews[0].id);
+          }
+        }
+      } catch (viewError) {
+        console.error('Error handling view tracking:', viewError);
+        // Continue with normal activity logging even if view tracking fails
+      }
+    }
+
     // Insert the activity log into the database
     const { data, error } = await supabase
       .from('user_activity_logs')

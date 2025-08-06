@@ -49,7 +49,7 @@ const ReviewerDashboardPage = () => {
             status: review.status,
             isVerified: true,
             publishDate: review.created_at,
-            views: Math.floor(Math.random() * 100) + 10,
+            views: review.views || 0,
             image_urls: review.image_urls || [],
             review_text: review.review_text
           }));
