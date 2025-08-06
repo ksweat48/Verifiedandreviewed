@@ -741,23 +741,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleTakeMeThere = (business: any) => {
-    // Log business view activity if user is authenticated
-    const logBusinessView = async () => {
-      try {
-        if (currentUser) {
-          // Record business visit
-          await BusinessService.recordBusinessVisit(business.id, currentUser.id);
-          
-          // Log business view activity
-          await ActivityService.logBusinessView(currentUser.id, business.id, business.name);
-        }
-      } catch (error) {
-        console.debug('Business view tracking failed:', error);
-      }
-    };
-    
-    // Execute logging asynchronously
-    logBusinessView();
+    // Record business visit if user is authenticated
+    if (currentUser) {
+      BusinessService.recordBusinessVisit(business.id, currentUser.id);
+    }
     
     // Navigate to business
     let mapsUrl;
@@ -929,40 +916,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       <AIBusinessCard
                         business={business}
                         onRecommend={handleRecommendBusiness}
-                        onGoClick={async (business) => {
-                          // Log business view activity for AI businesses
-                          try {
-                            if (currentUser) {
-                              await ActivityService.logBusinessView(currentUser.id, business.id, business.name);
-                            }
-                          } catch (error) {
-                            console.debug('AI business view tracking failed:', error);
-                          }
-                          
-                          // Handle navigation based on business type
-                          if (business.is_virtual && business.website_url) {
-                            window.open(business.website_url, '_blank', 'noopener,noreferrer');
-                          } else if (business.is_mobile_business && business.phone_number) {
-                            window.open(`tel:${business.phone_number}`, '_self');
-                          } else {
-                            // Standard navigation logic
-                            let mapsUrl;
-                            if (business.placeId && typeof business.placeId === 'string' && business.placeId.trim().length > 0) {
-                              const businessName = business.name && typeof business.name === 'string' ? business.name.trim() : 'business';
-                              mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessName)}&query_place_id=${business.placeId.trim()}`;
-                            } else if (business.latitude && business.longitude) {
-                              mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
-                            } else if (business.address && typeof business.address === 'string' && business.address.trim().length > 0) {
-                              mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address.trim())}`;
-                            } else if (business.name && typeof business.name === 'string' && business.name.trim().length > 0) {
-                              mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
-                            } else {
-                              mapsUrl = `https://www.google.com/maps/search/?api=1&query=business`;
-                            }
-                            
-                            window.open(mapsUrl, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
                       />
                     )}
                   </div>

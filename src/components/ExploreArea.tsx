@@ -158,25 +158,6 @@ const ExploreArea = () => {
 
   // Function to handle "Take Me There" button click
   const handleTakeMeThere = (business: Business) => {
-    // Log business view activity if user is authenticated
-    const logBusinessView = async () => {
-      try {
-        const user = await UserService.getCurrentUser();
-        if (user) {
-          // Record business visit
-          await BusinessService.recordBusinessVisit(business.id, user.id);
-          
-          // Log business view activity
-          await ActivityService.logBusinessView(user.id, business.id, business.name);
-        }
-      } catch (error) {
-        console.debug('Business view tracking failed:', error);
-      }
-    };
-    
-    // Execute logging asynchronously
-    logBusinessView();
-    
     // Debug: Log the complete business object to inspect data
     console.log('🗺️ DEBUG: ExploreArea handleTakeMeThere called with business object:', business);
     console.log('🗺️ DEBUG: Business coordinates:', { 
