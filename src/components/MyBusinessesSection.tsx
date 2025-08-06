@@ -136,9 +136,23 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
           {businesses.map((business) => (
             <div key={business.id} className="bg-neutral-50 rounded-xl p-4 border border-neutral-200 hover:bg-white transition-all duration-200">
               {/* Business Name - Line 1 */}
-              <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 line-clamp-1 break-words">
-                {business.name}
-              </h3>
+              <div className="flex items-center gap-3 mb-2">
+                {/* Business Image - 25% */}
+                <div className="w-1/4 flex-shrink-0">
+                  <img
+                    src={business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                    alt={business.name}
+                    className="w-full h-16 object-cover rounded-lg"
+                  />
+                </div>
+                
+                {/* Business Name - 75% */}
+                <div className="w-3/4 flex-shrink-0">
+                  <h3 className="font-poppins text-lg font-semibold text-neutral-900 line-clamp-2 break-words leading-tight">
+                    {business.name}
+                  </h3>
+                </div>
+              </div>
               
               {/* Status and Thumbs Up - Line 2 */}
               <div className="flex items-center gap-2 mb-2 flex-wrap">
