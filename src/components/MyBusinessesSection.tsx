@@ -169,26 +169,25 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                 )}
               </div>
               
-              {/* Address and Category - Line 3 */}
+              {/* Address, Category and Date - Line 3 */}
               <div className="flex items-center gap-4 mb-2 flex-wrap">
                 <div className="flex items-center">
                   <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
                   <span className="font-lora text-sm text-neutral-600 break-words">{business.address}</span>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center gap-2">
                   <Icons.Tag className="h-4 w-4 text-neutral-500 mr-1" />
                   <span className="font-lora text-sm text-neutral-600">{business.category}</span>
+                  <span className="font-lora text-sm text-neutral-600">•</span>
+                  <span className="font-lora text-sm text-neutral-600">
+                    {new Date(business.created_at).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
               
               {/* Actions - Line 4 */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
-                  <span className="font-lora text-sm text-neutral-600">
-                    {new Date(business.created_at).toLocaleDateString()}
-                  </span>
-                </div>
+                <div></div>
                 
                 <div className="flex items-center gap-2">
                   <button
