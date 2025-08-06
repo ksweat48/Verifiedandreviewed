@@ -114,7 +114,7 @@ export class ReviewService {
           profiles!inner (
             id,
             name,
-            avatar_url
+            avatar_url,
             level
           )
         `)
