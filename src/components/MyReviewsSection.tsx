@@ -162,8 +162,8 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
             <div key={review.id} className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
               {/* Business Image and Name - Line 1 */}
               <div className="flex items-center gap-3 mb-2">
-                {/* Business Image - 50% */}
-                <div className="w-1/2 flex-shrink-0">
+                {/* Business Image - 25% */}
+                <div className="w-1/4 flex-shrink-0">
                   <img
                     src={review.image_urls?.[0] || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'}
                     alt={review.businessName}
@@ -171,8 +171,8 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
                   />
                 </div>
                 
-                {/* Business Name - 50% */}
-                <div className="w-1/2 flex-shrink-0">
+                {/* Business Name - 75% */}
+                <div className="w-3/4 flex-shrink-0">
                   <h3 className="font-poppins text-lg font-semibold text-neutral-900 line-clamp-2 break-words leading-tight">
                     {review.businessName}
                   </h3>
