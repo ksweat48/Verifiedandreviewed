@@ -88,10 +88,24 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
             
             return (
               <div key={business.id} className="bg-white rounded-xl p-4 shadow-sm border border-neutral-200 hover:shadow-md transition-shadow duration-200">
-                {/* Business Name - Line 1 */}
-                <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2 line-clamp-1 break-words">
-                  {business.name}
-                </h3>
+                {/* Business Image and Name - Line 1 */}
+                <div className="flex items-center gap-3 mb-2">
+                  {/* Business Image - 25% */}
+                  <div className="w-1/4 flex-shrink-0">
+                    <img
+                      src={business.image_url || '/verified and reviewed logo-coral copy copy.png'}
+                      alt={business.name}
+                      className="w-full h-16 object-cover rounded-lg"
+                    />
+                  </div>
+                  
+                  {/* Business Name - 75% */}
+                  <div className="w-3/4 flex-shrink-0">
+                    <h3 className="font-poppins text-lg font-semibold text-neutral-900 line-clamp-2 break-words leading-tight">
+                      {business.name}
+                    </h3>
+                  </div>
+                </div>
                 
                 {/* Status and Category - Line 2 */}
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
