@@ -127,20 +127,32 @@ export default async function handler(req) {
     });
 
     // Enhanced system prompt for generating Google Places search queries
-    const systemPrompt = `You are a search query generator for Google Places API. Your job is to interpret user queries about business vibes/moods and convert them into effective Google Places search terms that will find diverse, interesting businesses.
+    const systemPrompt = `You are an intelligent search query generator for Google Places API. Your job is to interpret user queries about business vibes/moods and convert them into effective Google Places search terms that match the user's specific INTENT.
 
 CRITICAL: Use the generateSearchQueries function. Do not return raw JSON or explanations.
+
+INTENT ANALYSIS:
+• Analyze the user's query to understand what TYPE of business they're looking for
+• Food/Beverage queries (smoothie, coffee, restaurant, etc.) should generate queries for PLACES THAT SELL those items
+• Service queries (coach, trainer, consultant, etc.) should generate queries for SERVICE PROVIDERS
+• Product queries should focus on RETAILERS or ESTABLISHMENTS that sell those products
+
+EXAMPLES:
+• "healthy smoothies" → "smoothie bar", "juice shop", "health food cafe" (NOT "health coach")
+• "personal trainer" → "fitness trainer", "personal training studio", "gym with trainers"
+• "organic coffee" → "organic coffee shop", "specialty coffee roaster", "fair trade cafe"
+• "life coach" → "life coaching services", "wellness coach", "personal development coach"
 
 Requirements:
 • Generate exactly ${numToGenerate} different search queries
 • Each query should be a unique string suitable for Google Places Text Search
-• Focus on business type + descriptive keywords that match the user's vibe
+• Focus on business type + descriptive keywords that match the user's SPECIFIC INTENT
 • Include MAXIMUM variety in business types (restaurants, cafes, bars, shops, services, entertainment, etc.)
-• Use diverse descriptive terms like "cozy", "trendy", "upscale", "casual", "romantic", "modern", "vintage", "artisan", "boutique", "local", "authentic", etc.
-• Examples: "trendy wine bar", "cozy coffee shop", "upscale cocktail lounge", "casual brewery", "artisan bakery", "boutique bookstore", "vintage clothing store", "local art gallery"
+• Use diverse descriptive terms like "cozy", "trendy", "upscale", "casual", "romantic", "modern", "vintage", "artisan", "boutique", "local", "authentic"
+• MATCH THE INTENT: If user wants smoothies, find smoothie shops, NOT health coaches
 • Keep queries concise (2-4 words typically)
 • Ensure each query is DIFFERENT and will find DIFFERENT types of businesses
-• Mix different business categories to provide variety`;
+• Mix different business categories to provide variety while staying true to the user's intent`;
 
     // Define function schema for generating search queries
     const tools = [{

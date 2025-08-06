@@ -29,6 +29,8 @@ interface FormData {
   price_range: string;
   service_area: string;
   businessType: 'physical' | 'mobile' | 'virtual';
+  business_type: 'product' | 'service' | 'hybrid';
+  primary_offering: string;
 }
 
 export default function AddBusinessPage() {
@@ -54,7 +56,9 @@ export default function AddBusinessPage() {
     social_media: [],
     price_range: '',
     service_area: '',
-    businessType: 'physical'
+    businessType: 'physical',
+    business_type: 'product',
+    primary_offering: 'general'
   });
 
   const [coverImage, setCoverImage] = useState<UploadedImage | null>(null);
@@ -284,7 +288,9 @@ export default function AddBusinessPage() {
           const resizedFile = await resizeImage(files[0], 1200, 800, 0.8); // Max 1200px width, 800px height, 80% quality
           setCoverImage({
             file: resizedFile,
-            preview: URL.createObjectURL(resizedFile)
+            businessType: business.is_virtual ? 'virtual' : (business.is_mobile_business ? 'mobile' : 'physical'),
+            business_type: business.business_type || 'product',
+            primary_offering: business.primary_offering || 'general'
           });
           console.log('✅ Cover image resized successfully');
         } else if (type === 'gallery') {
@@ -482,6 +488,8 @@ export default function AddBusinessPage() {
         // Map businessType to boolean flags for database compatibility
         is_mobile_business: formData.businessType === 'mobile',
         is_virtual: formData.businessType === 'virtual',
+        business_type: formData.business_type,
+        primary_offering: formData.primary_offering,
       };
 
       if (isEditMode && editBusinessId) {
@@ -672,6 +680,51 @@ export default function AddBusinessPage() {
                 </select>
                 <p className="font-lora text-xs text-gray-500 mt-1">
                   Choose the most specific category that describes your business
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Business Type *
+                </label>
+                <select
+                  name="business_type"
+                  value={formData.business_type}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="product">Product-based (sells physical items/food)</option>
+                  <option value="service">Service-based (provides services/consulting)</option>
+                  <option value="hybrid">Hybrid (both products and services)</option>
+                </select>
+                <p className="font-lora text-xs text-gray-500 mt-1">
+                  This helps match your business with the right customer intent
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Primary Offering
+                </label>
+                <select
+                  name="primary_offering"
+                  value={formData.primary_offering}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="general">General</option>
+                  <option value="food_beverage">Food & Beverages</option>
+                  <option value="health_coaching">Health Coaching</option>
+                  <option value="fitness_training">Fitness Training</option>
+                  <option value="beauty_services">Beauty Services</option>
+                  <option value="retail_products">Retail Products</option>
+                  <option value="professional_services">Professional Services</option>
+                  <option value="wellness_services">Wellness Services</option>
+                  <option value="entertainment">Entertainment</option>
+                </select>
+                <p className="font-lora text-xs text-gray-500 mt-1">
+                  Specify your main offering to improve search relevance
                 </p>
               </div>
             </div>

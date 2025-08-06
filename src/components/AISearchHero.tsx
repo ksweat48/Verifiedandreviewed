@@ -53,6 +53,55 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
+  // Intent detection function
+  const detectSearchIntent = (query: string): {
+    intent: 'food_beverage' | 'service' | 'retail' | 'general';
+    business_type?: 'product' | 'service' | 'hybrid';
+    primary_offering?: string;
+  } => {
+    const lowerQuery = query.toLowerCase();
+    
+    // Food & Beverage keywords
+    const foodBeverageKeywords = [
+      'smoothie', 'smoothies', 'juice', 'coffee', 'tea', 'restaurant', 'cafe', 'bar',
+      'food', 'eat', 'drink', 'meal', 'breakfast', 'lunch', 'dinner', 'brunch',
+      'pizza', 'burger', 'sandwich', 'salad', 'soup', 'pasta', 'sushi', 'tacos',
+      'bakery', 'brewery', 'winery', 'cocktail', 'wine', 'beer', 'organic food',
+      'healthy food', 'vegan food', 'vegetarian', 'gluten free', 'farm to table'
+    ];
+    
+    // Service keywords
+    const serviceKeywords = [
+      'coach', 'coaching', 'trainer', 'training', 'consultant', 'consulting',
+      'therapy', 'therapist', 'counseling', 'counselor', 'advisor', 'mentor',
+      'class', 'classes', 'lesson', 'lessons', 'workshop', 'seminar',
+      'massage', 'spa treatment', 'facial', 'manicure', 'pedicure',
+      'personal training', 'life coach', 'health coach', 'nutrition coach'
+    ];
+    
+    // Check for food/beverage intent
+    if (foodBeverageKeywords.some(keyword => lowerQuery.includes(keyword))) {
+      return {
+        intent: 'food_beverage',
+        business_type: 'product',
+        primary_offering: 'food_beverage'
+      };
+    }
+    
+    // Check for service intent
+    if (serviceKeywords.some(keyword => lowerQuery.includes(keyword))) {
+      return {
+        intent: 'service',
+        business_type: 'service'
+      };
+    }
+    
+    // Default to general
+    return {
+      intent: 'general'
+    };
+  };
+
   // Get pending reviews count for notification dot
   const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);
   
@@ -459,10 +508,18 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
       // Step 1: Always search platform businesses first
       console.log('🔍 Searching platform businesses...');
+      
+      // Detect search intent
+      const searchIntent = detectSearchIntent(searchTerm);
+      console.log('🎯 Detected search intent:', searchIntent);
+      
       const rawPlatformResults = await BusinessService.getBusinesses({
         search: searchTerm,
         userLatitude: latitude || undefined,
-        userLongitude: longitude || undefined
+        userLongitude: longitude || undefined,
+        business_type: searchIntent.business_type,
+        primary_offering: searchIntent.primary_offering,
+        intent: searchIntent.intent
       });
 
       // Transform platform businesses and fetch their reviews

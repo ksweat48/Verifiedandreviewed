@@ -129,6 +129,8 @@ export type Business = {
   thumbs_up: number;
   thumbs_down: number;
   sentiment_score: number;
+  business_type?: 'product' | 'service' | 'hybrid';
+  primary_offering?: string;
   created_at: string;
   updated_at: string;
   phone_number?: string;
