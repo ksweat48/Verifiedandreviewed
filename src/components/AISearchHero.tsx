@@ -274,12 +274,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   // Handle browser back button when in app mode
   useEffect(() => {
     if (isAppModeActive) {
-      // Push a new state when entering app mode
-      window.history.pushState({ appMode: true }, '', window.location.href);
+      // Push a new state when entering app mode for the first time
+      window.history.pushState({ appMode: true, searchActive: true }, '', window.location.href);
       
       const handlePopState = (event) => {
-        // If we're in app mode and user presses back, exit app mode instead of leaving the site
-        if (isAppModeActive) {
+        console.log('🔙 Browser back button pressed, event.state:', event.state);
+        
+        // Check if the user is navigating back to search results or out of app mode
+        if (event.state && event.state.appMode && event.state.searchActive) {
+          // User is navigating back to search results - keep app mode active
+          console.log('🔙 Staying in search results view');
+          // No action needed - search results should remain visible
+        } else {
+          // User is navigating out of app mode (back to home page)
+          console.log('🔙 Exiting app mode and returning to home page');
           setIsAppModeActive(false);
           setSearchResults([]);
           setHasSearched(false);
