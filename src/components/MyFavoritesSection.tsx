@@ -110,27 +110,22 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
                 {/* Status and Category - Line 2 */}
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span className="bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full text-xs font-poppins">
-                    {business.category}
+                    {business.category === 'AI Generated' ? 'Google' : business.category}
                   </span>
-                  {similarityScore && (
-                    <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-poppins">
-                      {similarityScore}% match
-                    </span>
-                  )}
-                </div>
-                
-                {/* Address and Date - Line 3 */}
-                <div className="flex items-center gap-4 mb-2 flex-wrap">
-                  <div className="flex items-center">
-                    <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
-                    <span className="font-lora text-sm text-neutral-600 break-words">
-                      {business.address || business.location}
-                    </span>
-                  </div>
                   <div className="flex items-center">
                     <Icons.Calendar className="h-4 w-4 text-neutral-500 mr-1" />
                     <span className="font-lora text-sm text-neutral-600">
                       {new Date(business.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Address and Date - Line 3 */}
+                <div className="flex items-center mb-2 flex-wrap">
+                  <div className="flex items-center">
+                    <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
+                    <span className="font-lora text-sm text-neutral-600 break-words">
+                      {business.address || business.location}
                     </span>
                   </div>
                 </div>
