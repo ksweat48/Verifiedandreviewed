@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import type { Profile, Business } from './supabaseClient';
 
 export interface UserReview {
   id: string;
@@ -10,6 +11,9 @@ export interface UserReview {
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   updated_at: string;
+  views?: number;
+  profiles?: Profile;
+  businesses?: Business;
 }
 
 export class ReviewService {
@@ -111,20 +115,85 @@ export class ReviewService {
             id,
             name,
             avatar_url
+            level
           )
         `)
         .in('business_id', businessIds)
         .eq('status', 'approved')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }); // Initial order, will be re-sorted below
 
       if (error) throw error;
-      return data || [];
+      
+      const reviews = data || [];
+      
+      // Apply priority scoring and sorting
+      const prioritizedReviews = this.prioritizeReviews(reviews);
+      
+      return prioritizedReviews;
     } catch (error) {
       console.error('Error fetching business reviews:', error);
       return [];
     }
   }
 
+  // Prioritize reviews based on completeness and reviewer level
+  private static prioritizeReviews(reviews: UserReview[]): UserReview[] {
+    console.log('🎯 Prioritizing', reviews.length, 'reviews');
+    
+    // Calculate priority score for each review
+    const reviewsWithScores = reviews.map(review => {
+      const score = this.calculateReviewPriorityScore(review);
+      console.log(`📊 Review by ${review.profiles?.name}: score ${score.toFixed(2)} (${score >= 200 ? 'full+level' : score >= 100 ? 'full' : 'partial'})`);
+      
+      return {
+        ...review,
+        priorityScore: score
+      };
+    });
+    
+    // Sort by priority score (highest first) and remove the temporary score property
+    const sortedReviews = reviewsWithScores
+      .sort((a, b) => b.priorityScore - a.priorityScore)
+      .map(({ priorityScore, ...review }) => review);
+    
+    console.log('✅ Reviews prioritized. Order:', sortedReviews.map(r => 
+      `${r.profiles?.name} (L${r.profiles?.level || 1})`
+    ));
+    
+    return sortedReviews;
+  }
+  
+  // Calculate priority score for a single review
+  private static calculateReviewPriorityScore(review: UserReview): number {
+    // Base scores for review types
+    const PARTIAL_REVIEW_BASE = 50;  // Lowest priority
+    const FULL_REVIEW_BASE = 100;    // Medium priority
+    const LEVEL_BOOST_MULTIPLIER = 20; // Additional points per reviewer level
+    
+    // Determine if this is a full review
+    const hasText = review.review_text && review.review_text.trim().length > 0;
+    const hasEnoughImages = review.image_urls && review.image_urls.length >= 3;
+    const isFullReview = hasText && hasEnoughImages;
+    
+    // Start with base score
+    let score = isFullReview ? FULL_REVIEW_BASE : PARTIAL_REVIEW_BASE;
+    
+    // Add level boost for full reviews
+    if (isFullReview) {
+      const reviewerLevel = review.profiles?.level || 1;
+      const levelBoost = (reviewerLevel - 1) * LEVEL_BOOST_MULTIPLIER; // Level 1 = no boost, Level 2 = +20, etc.
+      score += levelBoost;
+    }
+    
+    // Add 10% randomness to introduce variety
+    const randomFactor = 0.1; // 10% randomness
+    const maxRandomBoost = score * randomFactor;
+    const randomBoost = (Math.random() - 0.5) * 2 * maxRandomBoost; // Random value between -10% and +10%
+    score += randomBoost;
+    
+    // Ensure score is never negative
+    return Math.max(0, score);
+  }
   // Get user's reviews
   static async getUserReviews(userId: string): Promise<UserReview[]> {
     try {
