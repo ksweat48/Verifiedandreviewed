@@ -126,20 +126,15 @@ const RecentActivitySection: React.FC = () => {
     businessId: string;
     rating: 'thumbsUp' | 'thumbsDown';
     text: string;
+  }) => {
     // Update local state to show the business as reviewed
+    setVisitedBusinesses(prev => 
+      prev.filter(business => business.id !== review.businessId)
+    );
+  };
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
-            {/* Full-width review button - always show since all businesses in this list need reviews */}
-            <button 
-              onClick={() => openReviewModal(business)}
-              className="w-full bg-primary-500 text-white px-4 py-2 rounded-lg text-sm font-poppins font-semibold hover:bg-primary-600 transition-colors duration-200 mt-3"
-            >
-              Leave a Review
-            </button>
-          </div>
-        )}
-      </div>
       
       {visitedBusinesses.length === 0 ? (
         <div className="bg-neutral-50 rounded-lg p-6 text-center">
