@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { UserService } from '../services/userService';
 import { useAnalytics } from '../hooks/useAnalytics';
 import type { User } from '../types/user';
@@ -25,6 +26,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { trackEvent } = useAnalytics();
+  const navigate = useNavigate();
   
   // Set mode based on initialMode prop when it changes
   useEffect(() => {
@@ -342,12 +344,16 @@ const AuthModal: React.FC<AuthModalProps> = ({
         <div className="mt-4 pt-4 text-center">
           <p className="font-lora text-neutral-600">
             {mode === 'signup' ? 'Already have an account?' : "Don't have an account?"}
-            <a
-              href={mode === 'signup' ? '/login' : '/signup'}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                onClose(); // Close the modal first
+                navigate(mode === 'signup' ? '/login' : '/signup'); // Then navigate
+              }}
               className="ml-2 font-poppins font-semibold text-primary-500 hover:text-primary-600 transition-colors duration-200"
             >
               {mode === 'signup' ? 'Sign In' : 'Sign Up'}
-            </a>
+            </button>
           </p>
         </div>
 
