@@ -309,7 +309,7 @@ Requirements:
             }
             
             return true; // Include if no coordinates available
-          })
+          });
           
         console.log(`📊 After distance filtering: ${validResults.length} businesses within 10-mile radius`);
         
@@ -382,8 +382,7 @@ Requirements:
               tags: [],
               isGoogleVerified: true,
               businessText: businessText,
-              similarity: 0.8 // Temporary value, will be calculated in batch
-              image: imageUrl // Add the image URL
+              similarity: 0.8, // Temporary value, will be calculated in batch
               image: imageUrl // Add the image URL
             };
           });
@@ -630,6 +629,7 @@ Requirements:
           if (placesResponse.data.status !== 'OK') {
             console.warn(`Google Places API status for "${query}": ${placesResponse.data.status}`);
           }
+        }
         console.log(`✅ Processed ${slicedResults.length} valid businesses from single Google Places call`);
         
       } else {
@@ -637,6 +637,7 @@ Requirements:
         if (placesResponse.data.status !== 'OK') {
           console.warn(`Google Places API status: ${placesResponse.data.status}`);
         }
+      }
       } catch (placesError) {
         console.error(`❌ Google Places API error for query "${query}":`, placesError.message);
       }
