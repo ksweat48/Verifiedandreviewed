@@ -470,6 +470,21 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         return; // Exit early - no search for users without credits
       }
       
+      // SINGLE CREDIT DEDUCTION: Deduct 2 credits once at the beginning of search
+      console.log('💳 Deducting 2 credits for search...');
+      const creditDeducted = await CreditService.deductSearchCredits(user.id, 'semantic');
+      if (!creditDeducted) {
+        console.warn('⚠️ Failed to deduct credits for search');
+        setError('Failed to process search. Please try again.');
+        setIsSearching(false);
+        setIsAppModeActive(false);
+        return;
+      }
+      
+      // Update local credits display immediately
+      setUserCredits(prev => Math.max(0, prev - 2));
+      console.log('✅ Credits deducted successfully, proceeding with search');
+      
       setIsAppModeActive(true); // Show loading screen for authenticated users
       
       // Determine search type based on user authentication and credits
@@ -578,25 +593,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       if (user && effectiveSearchType === 'semantic') {
         console.log('🧠 Performing semantic search...');
         try {
-          // Deduct credits for semantic search
-          const creditDeducted = await CreditService.deductSearchCredits(user.id, 'semantic');
-          if (creditDeducted) {
-            // Update local credits display
-            setUserCredits(prev => Math.max(0, prev - 2));
-            
-            const semanticResponse = await SemanticSearchService.searchByVibe(searchTerm, {
-              latitude: latitude || undefined,
-              longitude: longitude || undefined,
-              matchThreshold: 0.3,
-              matchCount: 10
-            });
-            
-            if (semanticResponse.success) {
-              semanticResults = semanticResponse.results || [];
-              console.log(`✅ Semantic search found ${semanticResults.length} results`);
-            }
-          } else {
-            console.warn('⚠️ Failed to deduct credits for semantic search');
+          // Credits already deducted at the beginning of search
+          const semanticResponse = await SemanticSearchService.searchByVibe(searchTerm, {
+            latitude: latitude || undefined,
+            longitude: longitude || undefined,
+            matchThreshold: 0.3,
+            matchCount: 10
+          });
+          
+          if (semanticResponse.success) {
+            semanticResults = semanticResponse.results || [];
+            console.log(`✅ Semantic search found ${semanticResults.length} results`);
           }
         } catch (error) {
           console.error('❌ Semantic search failed:', error);
@@ -692,46 +699,40 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       if (combinedResults.length < 15 && user && effectiveSearchType !== 'platform' && aiResults.length === 0) {
         console.log('🤖 Using AI search to fill remaining slots...');
         try {
-          // Deduct credits for AI search
-          const creditDeducted = await CreditService.deductSearchCredits(user.id, 'ai');
-          if (creditDeducted) {
-            // Update local credits display
-            setUserCredits(prev => Math.max(0, prev - 2));
-            
-            const aiResponse = await fetch('/.netlify/functions/ai-business-search', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                prompt: searchTerm,
-                searchQuery: searchTerm,
-                existingResultsCount: combinedResults.length,
-                numToGenerate: Math.min(7, Math.max(1, 15 - combinedResults.length)),
-                latitude: latitude || undefined,
-                longitude: longitude || undefined
-              })
-            });
+          // Credits already deducted at the beginning of search
+          const aiResponse = await fetch('/.netlify/functions/ai-business-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: searchTerm,
+              searchQuery: searchTerm,
+              existingResultsCount: combinedResults.length,
+              numToGenerate: Math.min(7, Math.max(1, 15 - combinedResults.length)),
+              latitude: latitude || undefined,
+              longitude: longitude || undefined
+            })
+          });
 
-            if (aiResponse.ok) {
-              const aiData = await aiResponse.json();
-              if (aiData.success && aiData.results) {
-                aiResults = aiData.results;
-                console.log(`✅ AI search generated ${aiResults.length} results`);
-                
-                // Re-deduplicate with new AI results
-                aiResults.forEach(business => {
-                  if (business.id && !businessMap.has(business.id)) {
-                    businessMap.set(business.id, business);
-                  }
-                });
-                
-                // Update combined results
-                combinedResults = Array.from(businessMap.values());
-                
-                console.log('📊 After adding AI results:', {
-                  total: combinedResults.length,
-                  uniqueIds: new Set(combinedResults.map(b => b.id)).size
-                });
-              }
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            if (aiData.success && aiData.results) {
+              aiResults = aiData.results;
+              console.log(`✅ AI search generated ${aiResults.length} results`);
+              
+              // Re-deduplicate with new AI results
+              aiResults.forEach(business => {
+                if (business.id && !businessMap.has(business.id)) {
+                  businessMap.set(business.id, business);
+                }
+              });
+              
+              // Update combined results
+              combinedResults = Array.from(businessMap.values());
+              
+              console.log('📊 After adding AI results:', {
+                total: combinedResults.length,
+                uniqueIds: new Set(combinedResults.map(b => b.id)).size
+              });
             }
           }
         } catch (error) {
