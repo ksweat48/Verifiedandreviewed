@@ -458,30 +458,8 @@ Requirements:
     
     const foundBusinesses = finalBusinesses;
     
-    // Filter businesses by 10-mile radius if user location is available
-    let radiusFilteredBusinesses = foundBusinesses;
-    if (searchLatitude && searchLongitude) {
-      radiusFilteredBusinesses = foundBusinesses.filter(business => {
-        if (!business.latitude || !business.longitude) return false;
-        
-        const distance = calculateDistance(
-          searchLatitude, searchLongitude,
-          business.latitude, business.longitude
-        );
-        
-        if (distance > 10) {
-          console.log(`🚫 Filtering out business outside 10-mile radius: ${business.name} (${distance.toFixed(1)} miles)`);
-          return false;
-        }
-        
-        return true;
-      });
-      
-      console.log('🎯 AI search results after final 10-mile radius filter:', radiusFilteredBusinesses.length, 'businesses');
-    }
-
     // Calculate accurate distances if we have user location and businesses with coordinates
-    let updatedBusinesses = radiusFilteredBusinesses;
+    let updatedBusinesses = foundBusinesses;
     if (updatedBusinesses.length > 0 && searchLatitude && searchLongitude) {
       try {
         console.log('📏 Calculating accurate distances for', updatedBusinesses.length, 'businesses');
