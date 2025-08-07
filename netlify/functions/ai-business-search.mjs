@@ -286,9 +286,6 @@ Requirements:
         // Process all results that meet our criteria
         const validResults = placesResponse.data.results
           .filter(result => {
-            // Must have a rating
-            if (!result.rating) return false;
-            
             // Check distance if coordinates are available
             if (result.geometry?.location?.lat && result.geometry?.location?.lng) {
               const distance = calculateDistance(
@@ -321,14 +318,16 @@ Requirements:
             
             // Generate a short description based on the business type and rating
             const businessTypes = result.types ? result.types.join(', ') : 'establishment';
-            const shortDescription = `${result.name} is a highly-rated ${businessTypes} with ${result.rating} stars. Known for excellent service and great atmosphere.`;
+            const shortDescription = result.rating 
+              ? `${result.name} is a highly-rated ${businessTypes} with ${result.rating} stars. Known for excellent service and great atmosphere.`
+              : `${result.name} is a ${businessTypes}. Known for excellent service and great atmosphere.`;
             
             // Create business text for later batch embedding generation
             const businessText = [
               result.name,
               prompt, // The original user prompt
               businessTypes,
-              `${result.rating} star rating`,
+              result.rating ? `${result.rating} star rating` : 'no rating available',
               result.vicinity || '',
               businessHours
             ].filter(Boolean).join(' ');
@@ -337,7 +336,7 @@ Requirements:
               id: `google-${result.place_id}`,
               name: result.name,
               shortDescription: shortDescription,
-              rating: result.rating,
+              rating: result.rating || 0,
               image: null,
               isOpen: isOpen,
               hours: businessHours,
