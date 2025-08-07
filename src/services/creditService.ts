@@ -164,14 +164,14 @@ export class CreditService {
      
       // In a real app, this would call an API to update the user's credits
       const updatedUser = await UserService.updateUser(userId, {
-        credits: (user.credits || 0) + 100
+        credits: (user.credits || 0) + 50
       });
       
       // Log transaction
       this.logTransaction({
         id: Date.now().toString(),
         userId,
-        amount: 100,
+        amount: 50,
         type: 'signup-bonus',
         description: 'Signup bonus',
         timestamp: new Date().toISOString()

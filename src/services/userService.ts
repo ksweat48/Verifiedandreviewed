@@ -117,7 +117,7 @@ export class UserService {
         username: userData.username,
         name: userData.name,
         email: userData.email,
-        credits: 200,
+        credits: 100,
         role: 'author',
         reviewCount: 0,
         level: 1,
