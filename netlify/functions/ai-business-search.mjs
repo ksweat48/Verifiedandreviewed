@@ -67,7 +67,7 @@ export default async function handler(req) {
       prompt, 
       searchQuery, 
       existingResultsCount = 0, 
-     numToGenerate = 10,
+     numToGenerate = 20, // Increased default to get more results from Google
       latitude,
       longitude 
     } = await req.json();
@@ -82,7 +82,7 @@ export default async function handler(req) {
     // Use provided coordinates or default to San Francisco for testing
     const searchLatitude = latitude || 37.7749;
     const searchLongitude = longitude || -122.4194;
-    const searchRadius = 32186; // 20 miles in meters (20 * 1609.3)
+    const searchRadius = 16093; // 10 miles in meters (10 * 1609.3)
     
     console.log('🔍 AI Business Search Request:', { 
       prompt, 
@@ -90,7 +90,7 @@ export default async function handler(req) {
       existingResultsCount, 
       numToGenerate,
       location: `${searchLatitude}, ${searchLongitude}`,
-      radius: `${searchRadius}m (20 miles)`
+      radius: `${searchRadius}m (10 miles)`
     });
 
     // Check if required API keys are configured
@@ -270,6 +270,7 @@ Requirements:
           query: optimizedQuery,
           location: `${searchLatitude},${searchLongitude}`,
           radius: searchRadius,
+          rankby: 'distance', // Prioritize by proximity instead of prominence
           type: 'establishment',
           fields: 'name,formatted_address,geometry,rating,opening_hours,types,place_id',
           key: GOOGLE_PLACES_API_KEY
@@ -292,16 +293,16 @@ Requirements:
                 searchLatitude, searchLongitude,
                 result.geometry.location.lat, result.geometry.location.lng
               );
-              return distance <= 20; // Within 20 miles
+              return distance <= 10; // Within 10 miles
             }
             
             return true; // Include if no coordinates available
           })
           
-        console.log(`📊 After distance filtering: ${validResults.length} businesses within 20-mile radius`);
+        console.log(`📊 After distance filtering: ${validResults.length} businesses within 10-mile radius`);
         
         const slicedResults = validResults
-          .slice(0, numToGenerate) // Limit to requested number
+          .slice(0, Math.min(numToGenerate, 15)) // Limit to requested number but cap at 15 for performance
           .map(result => {
             // Store coordinates for distance calculation
             const businessLatitude = result.geometry?.location?.lat;
