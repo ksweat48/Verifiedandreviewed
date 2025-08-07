@@ -1061,7 +1061,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                     className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg mb-2"
                   />
                   <p className="font-lora text-white/80 text-sm">
-                    {realUserSearches[currentUserSearchIndex].username} searched: "{realUserSearches[currentUserSearchIndex].query}"
+                    searched: "{realUserSearches[currentUserSearchIndex].query}"
                   </p>
                 </div>
               </div>
