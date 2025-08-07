@@ -106,7 +106,7 @@ const SignupPage = () => {
               Account Created!
             </h1>
             <p className="font-lora text-neutral-600 mb-6">
-              Welcome to Verified & Reviewed! You've received 200 free credits to get started.
+              Welcome to Verified & Reviewed! You've received 100 free credits to get started.
             </p>
             <div className="bg-green-50 rounded-lg p-4">
               <p className="font-lora text-sm text-green-700">
@@ -132,7 +132,7 @@ const SignupPage = () => {
               Create Account
             </h1>
             <p className="font-lora text-neutral-600">
-              Join Verified & Reviewed and get 200 free credits
+              Join Verified & Reviewed and get 100 free credits
             </p>
           </div>
 
@@ -270,7 +270,7 @@ const SignupPage = () => {
               What you get:
             </h3>
             <ul className="font-lora text-sm text-primary-700 space-y-1">
-              <li>• 200 free credits instantly</li>
+              <li>• 100 free credits instantly</li>
               <li>• 50 free credits every month</li>
               <li>• AI-powered vibe matching</li>
               <li>• Save favorite businesses</li>
