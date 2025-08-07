@@ -40,6 +40,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
 }
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -67,7 +68,7 @@ export default async function handler(req) {
       prompt, 
       searchQuery, 
       existingResultsCount = 0, 
-     numToGenerate = 20, // Increased default to get more results from Google
+      numToGenerate = 20,
       latitude,
       longitude 
     } = await req.json();
@@ -255,197 +256,6 @@ Requirements:
     const allPotentialBusinesses = [];
 
     // STEP 2: Iterate through AI-generated search queries and make Google Places API calls
-    console.log('🔍 Making single optimized Google Places search...');
-    
-    try {
-      // Create a single, comprehensive search query from the user's prompt
-      const optimizedQuery = `${prompt} near ${searchLatitude},${searchLongitude}`;
-      console.log(`🎯 Optimized Google Places query: "${optimizedQuery}"`);
-      
-      // Use Google Places Text Search API with a single, broader query
-      const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json`;
-      
-      // Make a single, broad search first to capture a wide range of results
-      // Make a single, broad search first to capture a wide range of results
-      const placesResponse = await axios.get(placesUrl, {
-        params: {
-          query: optimizedQuery,
-          location: `${searchLatitude},${searchLongitude}`,
-          radius: searchRadius,
-          rankby: 'distance', // Prioritize by proximity instead of prominence
-          type: 'establishment',
-          fields: 'name,formatted_address,geometry,rating,opening_hours,types,place_id,photos',
-          key: GOOGLE_PLACES_API_KEY
-        },
-        timeout: 8000 // Increased timeout for single comprehensive call
-      });
-      
-      if (placesResponse.data.status === 'OK' && 
-          placesResponse.data.results && 
-          placesResponse.data.results.length > 0) {
-        
-        console.log(`✅ Single Google Places call found ${placesResponse.data.results.length} total results from API`);
-        
-        // Process all results that meet our criteria
-        const validResults = placesResponse.data.results
-          .filter(result => {
-            // Check distance if coordinates are available
-            if (result.geometry?.location?.lat && result.geometry?.location?.lng) {
-              const distance = calculateDistance(
-                searchLatitude, searchLongitude,
-                result.geometry.location.lat, result.geometry.location.lng
-              );
-              return distance <= 10; // Within 10 miles
-            } else if (result.photos && result.photos.length > 0) {
-              // If no coordinates, but has photos, assume it's a valid business
-              return true;
-            } else if (result.formatted_address) {
-              return true; // If has address, assume valid
-            } else if (result.photos && result.photos.length > 0) {
-              // If no coordinates, but has photos, assume it's a valid business
-              return true;
-            } else if (result.formatted_address) {
-              return true; // If has address, assume valid
-            }
-            
-            return true; // Include if no coordinates available
-          });
-          
-        console.log(`📊 After distance filtering: ${validResults.length} businesses within 10-mile radius`);
-        
-        const slicedResults = validResults
-          .slice(0, Math.min(numToGenerate, 15)) // Limit to requested number but cap at 15 for performance
-          .map(result => {
-            // Store coordinates for distance calculation
-            const businessLatitude = result.geometry?.location?.lat;
-            const businessLongitude = result.geometry?.location?.lng;
-            
-            // Parse opening hours
-            let businessHours = 'Hours not available';
-            let isOpen = true;
-            
-            if (result.opening_hours) {
-              isOpen = result.opening_hours.open_now !== undefined ? result.opening_hours.open_now : true;
-              if (result.opening_hours.weekday_text && result.opening_hours.weekday_text.length > 0) {
-                // Get today's hours
-                const today = new Date().getDay();
-                businessHours = result.opening_hours.weekday_text[today] || result.opening_hours.weekday_text[0];
-              }
-            }
-            
-            // Get a photo URL if available
-            const photoReference = result.photos && result.photos.length > 0 ? result.photos[0].photo_reference : null;
-            const imageUrl = photoReference ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}` : 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400';
-
-            
-            // Get a photo URL if available
-            const photoReference = result.photos && result.photos.length > 0 ? result.photos[0].photo_reference : null;
-            const imageUrl = photoReference ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}` : 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400';
-
-            
-            // Generate a short description based on the business type and rating
-            const businessTypes = result.types ? result.types.join(', ') : 'establishment';
-            const shortDescription = result.rating 
-              ? `${result.name} is a highly-rated ${businessTypes} with ${result.rating} stars. Known for excellent service and great atmosphere.`
-              : `${result.name} is a ${businessTypes}. Known for excellent service and great atmosphere.`;
-            
-            // Create business text for later batch embedding generation
-            const businessText = [
-              result.name,
-              prompt, // The original user prompt
-              businessTypes,
-              result.rating ? `${result.rating} star rating` : 'no rating available',
-              result.vicinity || '',
-              businessHours
-            ].filter(Boolean).join(' ');
-            
-            return {
-              id: `google-${result.place_id}`,
-              name: result.name,
-              shortDescription: shortDescription, // Use the generated short description
-              rating: result.rating || 0,
-              image: null,
-              isOpen: isOpen,
-              hours: businessHours,
-              address: result.formatted_address,
-              latitude: businessLatitude || null,
-              longitude: businessLongitude || null,
-              distance: 999999, // Will be calculated accurately below
-              duration: 999999, // Will be calculated accurately below
-              placeId: result.place_id,
-              reviews: [{
-                text: `Great place that matches your vibe! Really enjoyed the atmosphere and service here.`,
-                author: "Google User",
-                thumbsUp: true
-              }],
-              isPlatformBusiness: false,
-              tags: [],
-              isGoogleVerified: true,
-              businessText: businessText,
-              similarity: 0.8, // Temporary value, will be calculated in batch
-              image: imageUrl // Add the image URL
-            };
-          });
-        
-        console.log(`📊 After slicing to requested amount: ${slicedResults.length} businesses (requested: ${numToGenerate})`);
-        
-        // Add all valid results to our collection
-        allPotentialBusinesses.push(...slicedResults); // Add results from the broad search
-        
-        // Now, iterate through AI-generated search queries and make additional Google Places API calls
-        // Limit to 10 queries to avoid excessive API calls
-        for (let i = 0; i < Math.min(searchQueries.length, 10); i++) { // Changed from 5 to 10
-          const query = searchQueries[i];
-          console.log(`🔍 Making Google Places API call for query: "${query}" (${i + 1}/${Math.min(searchQueries.length, 10)})`);
-
-          try {
-            const specificPlacesResponse = await axios.get(placesUrl, {
-              params: {
-                query: query,
-                location: `${searchLatitude},${searchLongitude}`,
-                radius: searchRadius,
-                rankby: 'distance',
-                // Removed 'type: 'establishment'' to broaden search
-                fields: 'name,formatted_address,geometry,rating,opening_hours,types,place_id,photos',
-                key: GOOGLE_PLACES_API_KEY
-              },
-              timeout: 8000
-            });
-
-            if (specificPlacesResponse.data.status === 'OK' && specificPlacesResponse.data.results && specificPlacesResponse.data.results.length > 0) {
-              const specificResults = specificPlacesResponse.data.results
-                .filter(result => {
-                  if (result.geometry?.location?.lat && result.geometry?.location?.lng) {
-                    const distance = calculateDistance(searchLatitude, searchLongitude, result.geometry.location.lat, result.geometry.location.lng);
-                    return distance <= 10; // Within 10 miles
-                  }
-                  return true;
-                })
-                .slice(0, Math.min(numToGenerate, 15)) // Limit to requested number but cap at 15 for performance
-                .map(result => {
-                  const photoReference = result.photos && result.photos.length > 0 ? result.photos[0].photo_reference : null;
-                  const imageUrl = photoReference ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}` : 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400';
-                  return {
-                    id: `google-${result.place_id}`, name: result.name, shortDescription: result.types ? result.types.join(', ') : '', rating: result.rating || 0, image: imageUrl, isOpen: result.opening_hours?.open_now ?? true, hours: result.opening_hours?.weekday_text?.[new Date().getDay()] || 'Hours not available', address: result.formatted_address, latitude: result.geometry?.location?.lat || null, longitude: result.geometry?.location?.lng || null, distance: 999999, duration: 999999, placeId: result.place_id, reviews: [], isPlatformBusiness: false, tags: result.types || [], isGoogleVerified: true, businessText: query, similarity: 0.8 // Temporary value
-                  };
-                });
-              allPotentialBusinesses.push(...specificResults);
-            }
-          } catch (specificPlacesError) {
-            console.error(`❌ Specific Google Places API error for query "${query}":`, specificPlacesError.message);
-          }
-          // Add a small delay between calls to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        // Now, iterate through AI-generated search queries and make additional Google Places API calls
-        // Limit to 10 queries to avoid excessive API calls
-        for (let i = 0; i < Math.min(searchQueries.length, 10); i++) { // Changed from 5 to 10
-          const query = searchQueries[i];
-          console.log(`🔍 Making Google Places API call for query: "${query}" (${i + 1}/${Math.min(searchQueries.length, 10)})`);
-
-          try {
-    // STEP 2: Iterate through AI-generated search queries and make Google Places API calls
     const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json`;
     
     // Iterate through AI-generated search queries and make individual Google Places API calls
@@ -498,7 +308,7 @@ Requirements:
               // Create business text for later batch embedding generation
               const businessText = [
                 result.name,
-                prompt,
+                query, // Use the specific AI-generated query instead of original prompt
                 businessTypes,
                 result.rating ? `${result.rating} star rating` : 'no rating available',
                 result.vicinity || '',
@@ -532,97 +342,10 @@ Requirements:
               };
             });
           
-          allPotentialBusinesses.push(...results);
-          console.log(`✅ Added ${results.length} businesses from query: "${query}"`);
-        } else {
-          console.warn(`⚠️ No results for query: "${query}"`);
-        }
-      } catch (queryError) {
-        console.error(`❌ Google Places API error for query "${query}":`, queryError.message);
-      }
-      
-      // Add a small delay between calls to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-          const validResults = placesResponse.data.results
-            .filter(result => {
-              // Check distance if coordinates are available
-              if (result.geometry?.location?.lat && result.geometry?.location?.lng) {
-                const distance = calculateDistance(
-                  searchLatitude, searchLongitude,
-                  result.geometry.location.lat, result.geometry.location.lng
-                );
-                return distance <= 10; // Within 10 miles
-              }
-              
-              return true; // Include if no coordinates available
-            })
-            .slice(0, 5) // Limit to 5 results per query to manage total volume
-            .map(result => {
-              // Store coordinates for distance calculation
-              const businessLatitude = result.geometry?.location?.lat;
-              const businessLongitude = result.geometry?.location?.lng;
-              
-              // Parse opening hours
-              let businessHours = 'Hours not available';
-              let isOpen = true;
-              
-              if (result.opening_hours) {
-                isOpen = result.opening_hours.open_now !== undefined ? result.opening_hours.open_now : true;
-                if (result.opening_hours.weekday_text && result.opening_hours.weekday_text.length > 0) {
-                  // Get today's hours
-                  const today = new Date().getDay();
-                  businessHours = result.opening_hours.weekday_text[today] || result.opening_hours.weekday_text[0];
-                }
-              }
-              
-              // Generate a short description based on the business type and rating
-              const businessTypes = result.types ? result.types.join(', ') : 'establishment';
-              const shortDescription = result.rating 
-                ? `${result.name} is a highly-rated ${businessTypes} with ${result.rating} stars. Known for excellent service and great atmosphere.`
-                : `${result.name} is a ${businessTypes}. Known for excellent service and great atmosphere.`;
-              
-              // Create business text for later batch embedding generation
-              const businessText = [
-                result.name,
-                query, // Use the specific AI-generated query instead of original prompt
-                businessTypes,
-                result.rating ? `${result.rating} star rating` : 'no rating available',
-                result.vicinity || '',
-                businessHours
-              ].filter(Boolean).join(' ');
-              
-              return {
-                id: `google-${result.place_id}`,
-                name: result.name,
-                shortDescription: shortDescription,
-                rating: result.rating || 0,
-                image: null, // No images for AI search results
-                isOpen: isOpen,
-                hours: businessHours,
-                address: result.formatted_address,
-                latitude: businessLatitude || null,
-                longitude: businessLongitude || null,
-                distance: 999999, // Will be calculated accurately below
-                duration: 999999, // Will be calculated accurately below
-                placeId: result.place_id,
-                reviews: [{
-                  text: `Great place that matches your vibe! Really enjoyed the atmosphere and service here.`,
-                  author: "Google User",
-                  thumbsUp: true
-                }],
-                isPlatformBusiness: false,
-                tags: result.types || [],
-                isGoogleVerified: true,
-                businessText: businessText,
-                similarity: 0.8 // Temporary value, will be calculated in batch
-              };
-            });
-          
-          console.log(`📊 Processed ${validResults.length} valid businesses from query "${query}"`);
+          console.log(`📊 Processed ${results.length} valid businesses from query "${query}"`);
           
           // Add all valid results to our collection
-          allPotentialBusinesses.push(...validResults);
+          allPotentialBusinesses.push(...results);
           
         } else {
           console.warn(`⚠️ No Google Places results found for query: "${query}"`);
@@ -630,16 +353,8 @@ Requirements:
             console.warn(`Google Places API status for "${query}": ${placesResponse.data.status}`);
           }
         }
-        console.log(`✅ Processed ${slicedResults.length} valid businesses from single Google Places call`);
-        
-      } else {
-        console.warn(`⚠️ No Google Places results found for optimized query: "${optimizedQuery}"`);
-        if (placesResponse.data.status !== 'OK') {
-          console.warn(`Google Places API status: ${placesResponse.data.status}`);
-        }
-      }
-      } catch (placesError) {
-        console.error(`❌ Google Places API error for query "${query}":`, placesError.message);
+      } catch (queryError) {
+        console.error(`❌ Google Places API error for query "${query}":`, queryError.message);
       }
       
       // Add a small delay between calls to avoid rate limiting
