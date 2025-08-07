@@ -72,10 +72,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setError('');
   };
 
-  const handleModeSwitch = (newMode: 'login' | 'signup') => {
-    if (forceMode) return; // Don't allow switching if mode is forced
-    setMode(newMode);
-    resetForm();
+  const handleNavigateToLogin = () => {
+    onClose(); // Close the modal first
+    navigate('/login'); // Then navigate
+  };
+
+  const handleNavigateToSignup = () => {
+    onClose(); // Close the modal first
+    navigate('/signup'); // Then navigate
   };
 
   const validateForm = () => {
@@ -214,6 +218,29 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         </div>
 
+        {/* Mode Switch Buttons - Now close modal and navigate */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={handleNavigateToLogin}
+            className={`flex-1 py-2 px-4 rounded-lg font-poppins font-medium transition-colors duration-200 ${
+              mode === 'login'
+                ? 'bg-primary-500 text-white'
+                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            onClick={handleNavigateToSignup}
+            className={`flex-1 py-2 px-4 rounded-lg font-poppins font-medium transition-colors duration-200 ${
+              mode === 'signup'
+                ? 'bg-primary-500 text-white'
+                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+            }`}
+          >
+            Sign Up
+          </button>
+        </div>
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 overflow-y-visible">
           {mode === 'signup' && (
@@ -340,22 +367,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </form>
 
-        {/* Mode Switch */}
-        <div className="mt-4 pt-4 text-center">
-          <p className="font-lora text-neutral-600">
-            {mode === 'signup' ? 'Already have an account?' : "Don't have an account?"}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                onClose(); // Close the modal first
-                navigate(mode === 'signup' ? '/login' : '/signup'); // Then navigate
-              }}
-              className="ml-2 font-poppins font-semibold text-primary-500 hover:text-primary-600 transition-colors duration-200"
-            >
-              {mode === 'signup' ? 'Sign In' : 'Sign Up'}
-            </button>
-          </p>
-        </div>
 
         {/* Benefits for Sign Up */}
       </div>
