@@ -21,17 +21,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
   forceMode = false,
   onAuthSuccess 
 }) => {
-  const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { trackEvent } = useAnalytics();
   const navigate = useNavigate();
-  
-  // Set mode based on initialMode prop when it changes
-  useEffect(() => {
-    setMode(initialMode);
-  }, [initialMode]);
   
   // Handle browser back button for modal
   useEffect(() => {
@@ -128,7 +122,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
     // Admin login code removed for token efficiency
 
     try {
-      if (mode === 'signup') {
+      if (initialMode === 'signup') {
         const result = await UserService.registerUser({
           username: formData.username,
           email: formData.email,
@@ -206,14 +200,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
         <div className="flex items-center mb-6">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
-              {mode === 'signup' ? (
+              {initialMode === 'signup' ? (
                 <Icons.UserPlus className="h-5 w-5 text-primary-500" />
               ) : (
                 <Icons.LogIn className="h-5 w-5 text-primary-500" />
               )}
             </div>
             <h2 className="font-cinzel text-2xl font-bold text-neutral-900">
-              {mode === 'signup' ? 'Create Account' : 'Welcome Back'}
+              {initialMode === 'signup' ? 'Create Account' : 'Welcome Back'}
             </h2>
           </div>
         </div>
@@ -223,7 +217,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           <button
             onClick={handleNavigateToLogin}
             className={`flex-1 py-2 px-4 rounded-lg font-poppins font-medium transition-colors duration-200 ${
-              mode === 'login'
+              initialMode === 'login'
                 ? 'bg-primary-500 text-white'
                 : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
             }`}
@@ -233,7 +227,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           <button
             onClick={handleNavigateToSignup}
             className={`flex-1 py-2 px-4 rounded-lg font-poppins font-medium transition-colors duration-200 ${
-              mode === 'signup'
+              initialMode === 'signup'
                 ? 'bg-primary-500 text-white'
                 : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
             }`}
@@ -243,7 +237,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         </div>
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 overflow-y-visible">
-          {mode === 'signup' && (
+          {initialMode === 'signup' && (
             <div>
               <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
                 Full Name
@@ -267,7 +261,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
           <div>
             <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
-              {mode === 'signup' ? 'Username' : 'Username or Email'}
+              {initialMode === 'signup' ? 'Username' : 'Username or Email'}
             </label>
             <div className="relative">
               <Icons.User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
@@ -275,14 +269,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                placeholder={mode === 'signup' ? 'Choose a username' : 'Enter username or email'}
+                placeholder={initialMode === 'signup' ? 'Choose a username' : 'Enter username or email'}
                 className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               />
             </div>
           </div>
 
-          {mode === 'signup' && (
+          {initialMode === 'signup' && (
             <div>
               <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
                 Email Address
@@ -325,7 +319,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           </div>
 
-          {mode === 'signup' && (
+          {initialMode === 'signup' && (
             <div>
               <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
                 Confirm Password
@@ -360,9 +354,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
             }`}
           >
             {loading ? (
-              mode === 'signup' ? 'Creating Account...' : 'Signing In...'
+              initialMode === 'signup' ? 'Creating Account...' : 'Signing In...'
             ) : (
-              mode === 'signup' ? 'Create Account' : 'Sign In'
+              initialMode === 'signup' ? 'Create Account' : 'Sign In'
             )}
           </button>
         </form>
