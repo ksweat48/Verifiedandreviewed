@@ -143,7 +143,13 @@ export class ReviewService {
     // Calculate priority score for each review
     const reviewsWithScores = reviews.map(review => {
       const score = this.calculateReviewPriorityScore(review);
-      console.log(`📊 Review by ${review.profiles?.name}: score ${score.toFixed(2)} (${score >= 200 ? 'full+level' : score >= 100 ? 'full' : 'partial'})`);
+      const viewsCount = review.views || 0;
+      const reviewerLevel = review.profiles?.level || 1;
+      const hasText = review.review_text && review.review_text.trim().length > 0;
+      const hasEnoughImages = review.image_urls && review.image_urls.length >= 3;
+      const isFullReview = hasText && hasEnoughImages;
+      
+      console.log(`📊 Review by ${review.profiles?.name}: score ${score.toFixed(2)} (${isFullReview ? 'full' : 'partial'} review, L${reviewerLevel}, ${viewsCount} views)`);
       
       return {
         ...review,
@@ -169,6 +175,7 @@ export class ReviewService {
     const PARTIAL_REVIEW_BASE = 50;  // Lowest priority
     const FULL_REVIEW_BASE = 100;    // Medium priority
     const LEVEL_BOOST_MULTIPLIER = 20; // Additional points per reviewer level
+    const VIEWS_BOOST_MULTIPLIER = 0.5; // Additional points per view (0.5 points per view)
     
     // Determine if this is a full review
     const hasText = review.review_text && review.review_text.trim().length > 0;
@@ -184,6 +191,11 @@ export class ReviewService {
       const levelBoost = (reviewerLevel - 1) * LEVEL_BOOST_MULTIPLIER; // Level 1 = no boost, Level 2 = +20, etc.
       score += levelBoost;
     }
+    
+    // Add views boost (applies to both partial and full reviews)
+    const viewsCount = review.views || 0;
+    const viewsBoost = viewsCount * VIEWS_BOOST_MULTIPLIER;
+    score += viewsBoost;
     
     // Add 10% randomness to introduce variety
     const randomFactor = 0.1; // 10% randomness
