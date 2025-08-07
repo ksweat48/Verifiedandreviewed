@@ -389,12 +389,12 @@ export class BusinessService {
       if (filters?.search) {
         console.log('🔍 Applying search filter for:', filters.search);
         
+        // Declare searchConditions at the top of the search block
+        let searchConditions: string[] = [];
+        
         // Enhanced search with intent-based prioritization
         if (filters.intent) {
           console.log('🎯 Applying intent-based search for:', filters.intent);
-          
-          // Build search conditions with intent prioritization
-          let searchConditions = [];
           
           if (filters.intent === 'food_beverage') {
             // For food/beverage intent, prioritize product businesses and food-related categories
@@ -429,7 +429,7 @@ export class BusinessService {
           }
         } else {
           // Fallback to original search logic
-          const searchConditions = [
+          searchConditions = [
             `name.ilike.%${filters.search}%`,
             `description.ilike.%${filters.search}%`,
             `location.ilike.%${filters.search}%`,
