@@ -1,41 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Zap, RefreshCw, TrendingUp, Users, Edit, Share2, Check, Calendar, CreditCard, Star, AlertCircle } from 'lucide-react';
+import { Zap, RefreshCw, TrendingUp, Users, Edit, Share2, Check, Calendar, CreditCard, Star, AlertCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CreditUsageInfo from './CreditUsageInfo';
 import { formatCredits, formatLargeNumber } from '../utils/formatters';
-
-interface CreditPackage {
-  id: string;
-  name: string;
-  price: number;
-  credits: number;
-  description: string;
-  tag: string;
-  discount?: {
-    percentage: number;
-    label: string;
-  };
-  isPopular?: boolean;
-}
+import { StripeService } from '../services/stripeService';
+import { STRIPE_PRODUCTS, type StripeProduct } from '../stripe-config';
 
 interface CreditsManagerProps {
   currentCredits: number;
   userRole?: string;
-  onPurchase?: (packageId: string, withAutoRefill: boolean) => Promise<boolean>;
 }
 
 const CreditsManager: React.FC<CreditsManagerProps> = ({ 
   currentCredits = 200,
-  userRole,
-  onPurchase 
+  userRole
 }) => {
   const navigate = useNavigate();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
-  const [autoRefill, setAutoRefill] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedReferral, setCopiedReferral] = useState(false);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [freeCreditsInfo, setFreeCreditsInfo] = useState<{
     received: number;
     nextRefillDate: Date;
@@ -46,6 +33,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
 
   // Load user's credit history and next refill date
   useEffect(() => {
+    loadStripeData();
     // Simplified initialization
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -55,59 +43,27 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
     });
   }, []);
 
-  // Credit packages configuration
-  const creditPackages: CreditPackage[] = [
-    {
-      id: 'starter',
-      name: 'Starter Pack',
-      price: 2.99,
-      credits: 250,
-      description: 'Great for light users',
-      tag: 'Starter'
-    },
-    {
-      id: 'standard',
-      name: 'Standard Pack',
-      price: 5.99,
-      credits: 500,
-      description: 'Perfect for regular users',
-      tag: 'Standard'
-    },
-    {
-      id: 'best-value',
-      name: 'Best Value Pack',
-      price: 8.99,
-      credits: 1000,
-      description: 'Most popular! Extra value',
-      tag: 'Best Value',
-      discount: {
-        percentage: 25,
-        label: 'Save 25%'
-      },
-      isPopular: true
-    },
-    {
-      id: 'power-user',
-      name: 'Power User Pack',
-      price: 14.99,
-      credits: 2000,
-      description: 'For power users and businesses',
-      tag: 'Power User',
-      discount: {
-        percentage: 40,
-        label: 'Save 40%'
-      }
+  const loadStripeData = async () => {
+    setLoadingSubscription(true);
+    try {
+      const [subscriptionData, ordersData] = await Promise.all([
+        StripeService.getUserSubscription(),
+        StripeService.getUserOrders()
+      ]);
+      
+      setSubscription(subscriptionData);
+      setOrders(ordersData);
+    } catch (error) {
+      console.error('Error loading Stripe data:', error);
+    } finally {
+      setLoadingSubscription(false);
     }
-  ];
-
-  // Calculate bonus credits with auto-refill
-  const calculateBonusCredits = (baseCredits: number): number => {
-    return autoRefill ? Math.round(baseCredits * 0.1) : 0;
   };
 
-  // Get total credits (base + bonus)
-  const getTotalCredits = (baseCredits: number): number => {
-    return baseCredits + calculateBonusCredits(baseCredits);
+  // Get the current subscription product
+  const getCurrentSubscriptionProduct = (): StripeProduct | null => {
+    if (!subscription?.price_id) return null;
+    return StripeService.getProductByPriceId(subscription.price_id) || null;
   };
 
   // Handle package selection
@@ -127,20 +83,18 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
     setError(null);
 
     try {
-      // If onPurchase prop is provided, use it
-      if (onPurchase) {
-        const success = await onPurchase(selectedPackage, autoRefill);
-        if (success) {
-          setPurchaseSuccess(true);
-          setTimeout(() => setPurchaseSuccess(false), 3000);
-        } else {
-          throw new Error('Purchase failed');
-        }
+      const product = STRIPE_PRODUCTS.find(p => p.id === selectedPackage);
+      if (!product) {
+        throw new Error('Product not found');
+      }
+
+      const result = await StripeService.createCheckoutSession(product.priceId, product.mode);
+      
+      if (result.success && result.url) {
+        // Redirect to Stripe checkout
+        window.location.href = result.url;
       } else {
-        // Simulate purchase for demo
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setPurchaseSuccess(true);
-        setTimeout(() => setPurchaseSuccess(false), 3000);
+        throw new Error(result.error || 'Failed to create checkout session');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during purchase');
@@ -177,6 +131,58 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
 
   return (
     <div className="space-y-8">
+      {/* Current Subscription Status */}
+      {loadingSubscription ? (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          </div>
+        </div>
+      ) : subscription && subscription.subscription_status !== 'not_started' && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                <Check className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-poppins text-xl font-semibold text-neutral-900">
+                  Active Subscription
+                </h3>
+                <p className="font-lora text-neutral-600">
+                  {getCurrentSubscriptionProduct()?.name || 'Unknown Plan'}
+                </p>
+              </div>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-sm font-poppins font-semibold ${
+              subscription.subscription_status === 'active' 
+                ? 'bg-green-100 text-green-700'
+                : subscription.subscription_status === 'past_due'
+                ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-red-100 text-red-700'
+            }`}>
+              {subscription.subscription_status.replace('_', ' ').toUpperCase()}
+            </div>
+          </div>
+          
+          {subscription.current_period_end && (
+            <div className="bg-neutral-50 rounded-lg p-4">
+              <div className="flex justify-between items-center">
+                <span className="font-lora text-neutral-600">Next billing date:</span>
+                <span className="font-poppins font-semibold text-neutral-900">
+                  {StripeService.formatDate(subscription.current_period_end)}
+                </span>
+              </div>
+              {subscription.cancel_at_period_end && (
+                <div className="mt-2 text-sm text-yellow-700 bg-yellow-50 p-2 rounded">
+                  Your subscription will cancel at the end of this period.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Current Credits Status */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
         <div className="flex items-center justify-between mb-6">
@@ -317,10 +323,10 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {creditPackages.map((pkg) => (
+        {STRIPE_PRODUCTS.map((pkg) => (
           <div
             key={pkg.id}
-            className={`relative border rounded-xl p-5 transition-all duration-200 cursor-pointer ${
+            className={`relative border rounded-xl p-4 transition-all duration-200 cursor-pointer ${
               selectedPackage === pkg.id
                 ? 'border-primary-500 bg-primary-50 shadow-md'
                 : 'border-neutral-200 hover:border-primary-300 hover:shadow-sm'
@@ -362,32 +368,10 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
                     {formatLargeNumber(pkg.credits)}
                   </span>
                 </div>
-
-                {autoRefill && (
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-lora text-sm text-neutral-600">Bonus:</span>
-                    <span className="font-poppins font-semibold text-green-600">
-                      +{formatLargeNumber(calculateBonusCredits(pkg.credits))}
-                    </span>
-                  </div>
-                )}
-
-                {autoRefill && (
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-lora text-sm text-neutral-600">Total:</span>
-                    <span className="font-poppins font-semibold text-neutral-900">
-                      {formatLargeNumber(getTotalCredits(pkg.credits))}
-                    </span>
-                  </div>
-                )}
               </div>
 
-              <div className="font-lora text-xs text-neutral-600 mb-3">
+              <div className="font-lora text-xs text-neutral-600 mb-2 line-clamp-2">
                 {pkg.description}
-              </div>
-
-              <div className="bg-neutral-100 text-neutral-700 px-2 py-1 rounded-full text-xs font-poppins font-semibold inline-block">
-                {pkg.tag}
               </div>
 
               {/* Selection indicator */}
@@ -401,35 +385,6 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
         ))}
       </div>
 
-      {/* Auto-refill option */}
-      <div className="bg-neutral-50 rounded-xl p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <RefreshCw className="h-5 w-5 text-primary-500 mr-3" />
-            <div>
-              <p className="font-poppins font-semibold text-neutral-900">
-                🔁 Enable Monthly Auto-Refill
-              </p>
-              <p className="font-lora text-sm text-neutral-600">
-                Automatically refill your selected package every month and get 10% bonus credits
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setAutoRefill(!autoRefill)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              autoRefill ? 'bg-primary-500' : 'bg-neutral-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                autoRefill ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-      </div>
-
       {/* Selected package summary */}
       {selectedPackage && (
         <div className="bg-primary-50 rounded-xl p-4 mb-6">
@@ -438,7 +393,7 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
           </h4>
           
           {(() => {
-            const pkg = creditPackages.find(p => p.id === selectedPackage);
+            const pkg = STRIPE_PRODUCTS.find(p => p.id === selectedPackage);
             if (!pkg) return null;
             
             return (
@@ -452,25 +407,9 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
                   <span className="font-poppins font-semibold text-primary-900">${pkg.price}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="font-lora text-primary-700">Base Credits:</span>
+                  <span className="font-lora text-primary-700">Credits:</span>
                   <span className="font-poppins font-semibold text-primary-900">{formatLargeNumber(pkg.credits)}</span>
                 </div>
-                {autoRefill && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="font-lora text-primary-700">Bonus Credits (10%):</span>
-                      <span className="font-poppins font-semibold text-green-600">+{formatLargeNumber(calculateBonusCredits(pkg.credits))}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-lora text-primary-700">Total Credits:</span>
-                      <span className="font-poppins font-semibold text-primary-900">{formatLargeNumber(getTotalCredits(pkg.credits))}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-lora text-primary-700">Billing:</span>
-                      <span className="font-poppins font-semibold text-primary-900">Monthly</span>
-                    </div>
-                  </>
-                )}
               </div>
             );
           })()}
@@ -487,16 +426,6 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
         </div>
       )}
 
-      {/* Success message */}
-      {purchaseSuccess && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 animate-in slide-in-from-top-4 duration-300">
-          <div className="flex items-center">
-            <Check className="h-5 w-5 text-green-500 mr-2" />
-            <p className="font-lora text-green-700">✅ Credits added to your account!</p>
-          </div>
-        </div>
-      )}
-
       {/* Purchase button */}
       <button
         onClick={handlePurchase}
@@ -509,8 +438,8 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
       >
         {isProcessing ? (
           <span className="flex items-center justify-center">
-            <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-            Processing...
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            Redirecting to checkout...
           </span>
         ) : (
           <span className="flex items-center justify-center">
@@ -519,6 +448,42 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
           </span>
         )}
       </button>
+
+      {/* Order History */}
+      {orders.length > 0 && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+          <h3 className="font-poppins text-xl font-semibold text-neutral-900 mb-6">
+            Purchase History
+          </h3>
+          <div className="space-y-3">
+            {orders.slice(0, 5).map((order) => {
+              const product = StripeService.getProductByPriceId(order.price_id);
+              return (
+                <div key={order.order_id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                  <div>
+                    <div className="font-poppins font-semibold text-neutral-900">
+                      {product?.name || 'Credit Purchase'}
+                    </div>
+                    <div className="font-lora text-sm text-neutral-600">
+                      {new Date(order.order_date).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-poppins font-semibold text-neutral-900">
+                      {StripeService.formatPrice(order.amount_total / 100, order.currency)}
+                    </div>
+                    <div className={`text-xs font-poppins font-semibold ${
+                      order.payment_status === 'paid' ? 'text-green-600' : 'text-yellow-600'
+                    }`}>
+                      {order.payment_status.toUpperCase()}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

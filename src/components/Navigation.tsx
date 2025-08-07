@@ -6,6 +6,7 @@ import UserMenu from './UserMenu';
 import { UserService } from '../services/userService';
 import { useAnalytics } from '../hooks/useAnalytics';
 import type { User } from '../types/user';
+import { StripeService } from '../services/stripeService';
 
 interface NavigationProps {
   isAppModeActive: boolean;
@@ -18,6 +19,8 @@ const Navigation: React.FC<NavigationProps> = ({ isAppModeActive }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null); 
   const [loading, setLoading] = useState(true); 
   const { trackEvent, trackPageView } = useAnalytics();
+  const [subscription, setSubscription] = useState<any>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -67,6 +70,7 @@ const Navigation: React.FC<NavigationProps> = ({ isAppModeActive }) => {
     // Listen for auth state changes
     const handleAuthStateChange = () => {
       checkUserSession();
+      loadSubscriptionData();
     };
     
     window.addEventListener('auth-state-changed', handleAuthStateChange);
@@ -75,6 +79,36 @@ const Navigation: React.FC<NavigationProps> = ({ isAppModeActive }) => {
       window.removeEventListener('auth-state-changed', handleAuthStateChange);
     };
   }, []);
+
+  // Load subscription data when user changes
+  useEffect(() => {
+    if (currentUser) {
+      loadSubscriptionData();
+    } else {
+      setSubscription(null);
+      setLoadingSubscription(false);
+    }
+  }, [currentUser]);
+
+  const loadSubscriptionData = async () => {
+    if (!currentUser) return;
+    
+    setLoadingSubscription(true);
+    try {
+      const subscriptionData = await StripeService.getUserSubscription();
+      setSubscription(subscriptionData);
+    } catch (error) {
+      console.error('Error loading subscription:', error);
+    } finally {
+      setLoadingSubscription(false);
+    }
+  };
+
+  // Get current subscription product
+  const getCurrentSubscriptionProduct = () => {
+    if (!subscription?.price_id) return null;
+    return StripeService.getProductByPriceId(subscription.price_id);
+  };
 
   const handleAuthSuccess = (user: User) => {
     setCurrentUser(user);
@@ -102,9 +136,19 @@ const Navigation: React.FC<NavigationProps> = ({ isAppModeActive }) => {
                 alt="Verified & Reviewed" 
                 className="h-10 w-10 mr-3"
               />
-              <h1 className="font-cinzel text-lg font-semibold text-white">
-                VERIFIED & REVIEWED
-              </h1>
+              <div>
+                <h1 className="font-cinzel text-lg font-semibold text-white">
+                  VERIFIED & REVIEWED
+                </h1>
+                {!loadingSubscription && subscription && subscription.subscription_status === 'active' && (
+                  <div className="flex items-center">
+                    <Icons.Crown className="h-3 w-3 text-yellow-400 mr-1" />
+                    <span className="font-poppins text-xs text-yellow-400 font-semibold">
+                      {getCurrentSubscriptionProduct()?.name || 'Premium'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Desktop Navigation */}
@@ -122,13 +166,13 @@ const Navigation: React.FC<NavigationProps> = ({ isAppModeActive }) => {
               ) : (
                 <div className="hidden md:flex items-center space-x-2">
                   <button
-                    onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
+                    onClick={() => navigate('/login')}
                     className="font-poppins text-white hover:text-primary-300 px-3 py-2 font-medium transition-colors duration-200 text-sm"
                   >
                     Sign In
                   </button>
                   <button
-                    onClick={() => { setAuthMode('signup'); setIsAuthModalOpen(true); }}
+                    onClick={() => navigate('/signup')}
                     className="font-poppins bg-primary-500 text-white px-3 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 text-sm"
                   >
                     Sign Up
@@ -160,13 +204,13 @@ const Navigation: React.FC<NavigationProps> = ({ isAppModeActive }) => {
             {!currentUser && (
               <div className="pt-4 border-t border-neutral-100 space-y-2">
                 <button
-                  onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }}
+                  onClick={() => navigate('/login')}
                   className="w-full font-poppins border border-neutral-200 text-neutral-700 px-4 py-2 rounded-lg font-semibold hover:bg-neutral-50 transition-colors duration-200"
                 >
                   Sign In
                 </button>
                 <button
-                  onClick={() => { setAuthMode('signup'); setIsAuthModalOpen(true); }}
+                  onClick={() => navigate('/signup')}
                   className="w-full font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
                 >
                   Sign Up

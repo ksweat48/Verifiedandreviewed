@@ -342,12 +342,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
         <div className="mt-4 pt-4 text-center">
           <p className="font-lora text-neutral-600">
             {mode === 'signup' ? 'Already have an account?' : "Don't have an account?"}
-            <button
-              onClick={() => handleModeSwitch(mode === 'signup' ? 'login' : 'signup')}
+            <a
+              href={mode === 'signup' ? '/login' : '/signup'}
               className="ml-2 font-poppins font-semibold text-primary-500 hover:text-primary-600 transition-colors duration-200"
             >
               {mode === 'signup' ? 'Sign In' : 'Sign Up'}
-            </button>
+            </a>
           </p>
         </div>
 
