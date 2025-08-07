@@ -82,7 +82,7 @@ export default async function handler(req) {
     // Use provided coordinates or default to San Francisco for testing
     const searchLatitude = latitude || 37.7749;
     const searchLongitude = longitude || -122.4194;
-    const searchRadius = 16093; // 10 miles in meters (10 * 1609.3)
+    const searchRadius = 32186; // 20 miles in meters (20 * 1609.3)
     
     console.log('🔍 AI Business Search Request:', { 
       prompt, 
@@ -90,7 +90,7 @@ export default async function handler(req) {
       existingResultsCount, 
       numToGenerate,
       location: `${searchLatitude}, ${searchLongitude}`,
-      radius: `${searchRadius}m (10 miles)`
+      radius: `${searchRadius}m (20 miles)`
     });
 
     // Check if required API keys are configured
@@ -281,7 +281,7 @@ Requirements:
           placesResponse.data.results && 
           placesResponse.data.results.length > 0) {
         
-        console.log(`✅ Single Google Places call found ${placesResponse.data.results.length} results`);
+        console.log(`✅ Single Google Places call found ${placesResponse.data.results.length} total results from API`);
         
         // Process all results that meet our criteria
         const validResults = placesResponse.data.results
@@ -292,11 +292,15 @@ Requirements:
                 searchLatitude, searchLongitude,
                 result.geometry.location.lat, result.geometry.location.lng
               );
-              return distance <= 10; // Within 10 miles
+              return distance <= 20; // Within 20 miles
             }
             
             return true; // Include if no coordinates available
           })
+          
+        console.log(`📊 After distance filtering: ${validResults.length} businesses within 20-mile radius`);
+        
+        const slicedResults = validResults
           .slice(0, numToGenerate) // Limit to requested number
           .map(result => {
             // Store coordinates for distance calculation
@@ -359,9 +363,11 @@ Requirements:
             };
           });
         
+        console.log(`📊 After slicing to requested amount: ${slicedResults.length} businesses (requested: ${numToGenerate})`);
+        
         // Add all valid results to our collection
-        allPotentialBusinesses.push(...validResults);
-        console.log(`✅ Processed ${validResults.length} valid businesses from single Google Places call`);
+        allPotentialBusinesses.push(...slicedResults);
+        console.log(`✅ Processed ${slicedResults.length} valid businesses from single Google Places call`);
         
       } else {
         console.warn(`⚠️ No Google Places results found for optimized query: "${optimizedQuery}"`);
@@ -390,12 +396,12 @@ Requirements:
     const uniqueBusinesses = Array.from(uniqueBusinessesMap.values())
       .sort((a, b) => (b.rating || 0) - (a.rating || 0));
     
-    console.log('🎯 After deduplication:', uniqueBusinesses.length, 'unique businesses');
+    console.log('🎯 After deduplication and sorting:', uniqueBusinesses.length, 'unique businesses');
     
     // Take only the requested number of businesses
     const finalBusinesses = uniqueBusinesses.slice(0, Math.min(numToGenerate, 15));
     
-    console.log('🎯 AI search results after deduplication and limiting:', finalBusinesses.length, 'businesses');
+    console.log('🎯 Final businesses selected for processing:', finalBusinesses.length, 'businesses (max allowed: 15)');
     
     // OPTIMIZATION: Batch generate embeddings for all businesses at once
     if (finalBusinesses.length > 0) {
@@ -464,14 +470,14 @@ Requirements:
         );
         
         if (distance > 10) {
-          console.log(`🚫 Filtering out business outside radius: ${business.name} (${distance.toFixed(1)} miles)`);
+          console.log(`🚫 Filtering out business outside 10-mile radius: ${business.name} (${distance.toFixed(1)} miles)`);
           return false;
         }
         
         return true;
       });
       
-      console.log('🎯 AI search results after 10-mile radius filter:', radiusFilteredBusinesses.length, 'businesses');
+      console.log('🎯 AI search results after final 10-mile radius filter:', radiusFilteredBusinesses.length, 'businesses');
     }
 
     // Calculate accurate distances if we have user location and businesses with coordinates
@@ -555,6 +561,9 @@ Requirements:
       name: b.name,
       similarity: Math.round((b.similarity || 0) * 100) + '%'
     })));
+    
+    console.log(`🎯 FINAL RESULT COUNT: ${updatedBusinesses.length} businesses being returned to client`);
+    
     return new Response(JSON.stringify({
       success: true,
       results: updatedBusinesses,
