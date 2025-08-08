@@ -43,3 +43,8 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+  # Schedule the refresh-offerings function to run daily at 2 AM UTC
+[[functions]]
+  function = "refresh-offerings"
+  schedule = "0 2 * * *"
