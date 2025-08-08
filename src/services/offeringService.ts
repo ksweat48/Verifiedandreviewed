@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { UserService } from './userService';
+import { AppSettingsService } from './appSettingsService';
 
 export interface Offering {
   id: string;
@@ -246,29 +247,82 @@ export class OfferingService {
     try {
       console.log('🛡️ Running safety checks for:', imageUrl);
 
-      // Placeholder implementation - replace with actual content moderation
-      // This could integrate with services like:
-      // - Google Cloud Vision API for content detection
-      // - AWS Rekognition for image analysis
-      // - Microsoft Azure Content Moderator
-      // - Custom ML models for food/product detection
-
-      // For now, implement basic checks
       const checks = [
         this.checkFileSize(imageUrl),
-        this.checkImageFormat(imageUrl),
-        this.checkBasicContent(imageUrl, source)
+        this.checkImageFormat(imageUrl)
       ];
 
       const results = await Promise.all(checks);
       const allPassed = results.every(result => result.passed);
       const failedCheck = results.find(result => !result.passed);
 
-      return {
-        passed: allPassed,
-        reason: failedCheck?.reason,
-        confidence: 0.8 // Placeholder confidence score
-      };
+      // If basic checks fail, return immediately
+      if (!allPassed) {
+        return {
+          passed: false,
+          reason: failedCheck?.reason,
+          confidence: failedCheck?.confidence || 0.8
+        };
+      }
+
+      // Check if Google Vision moderation is enabled
+      const visionEnabled = await AppSettingsService.getSetting('enable_vision_moderation');
+      const isVisionModerationEnabled = visionEnabled?.enabled === true;
+
+      console.log('🔍 Google Vision moderation enabled:', isVisionModerationEnabled);
+
+      if (isVisionModerationEnabled) {
+        // Call Google Cloud Vision SafeSearch via Netlify Function
+        console.log('🤖 Calling Google Vision SafeSearch for:', imageUrl);
+        
+        try {
+          const response = await fetch('/.netlify/functions/moderate-image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ imageUrl }),
+            timeout: 15000 // 15 second timeout
+          });
+
+          if (!response.ok) {
+            let errorMessage = `HTTP ${response.status}`;
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.message || errorMessage;
+            } catch (jsonError) {
+              console.error('Failed to parse moderation error response:', jsonError);
+            }
+            throw new Error(`Google Vision moderation failed: ${errorMessage}`);
+          }
+
+          const moderationResult = await response.json();
+          console.log('✅ Google Vision moderation result:', moderationResult);
+
+          if (moderationResult.success) {
+            return {
+              passed: moderationResult.passed,
+              reason: moderationResult.reason,
+              confidence: moderationResult.confidence
+            };
+          } else {
+            throw new Error(moderationResult.message || 'Vision API returned error');
+          }
+        } catch (visionError) {
+          console.error('❌ Google Vision moderation error:', visionError);
+          
+          // Fallback to basic content check if Vision API fails
+          console.log('🔄 Falling back to basic content checks due to Vision API error');
+          const basicContentResult = await this.checkBasicContent(imageUrl, source);
+          return basicContentResult;
+        }
+      } else {
+        // Vision moderation is disabled, use basic content checks
+        console.log('⚠️ Google Vision moderation disabled, using basic checks only');
+        const basicContentResult = await this.checkBasicContent(imageUrl, source);
+        return basicContentResult;
+      }
+
     } catch (error) {
       console.error('❌ Safety checks failed:', error);
       return {

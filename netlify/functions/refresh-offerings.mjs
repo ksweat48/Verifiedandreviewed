@@ -2,6 +2,27 @@
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 
+// Helper function to check if Google Vision moderation is enabled
+async function isVisionModerationEnabled(supabase) {
+  try {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('setting_value')
+      .eq('setting_name', 'enable_vision_moderation')
+      .single();
+
+    if (error) {
+      console.log('Vision moderation setting not found, defaulting to disabled');
+      return false;
+    }
+
+    return data?.setting_value?.enabled === true;
+  } catch (error) {
+    console.error('Error checking vision moderation setting:', error);
+    return false;
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -152,8 +173,9 @@ export const handler = async (event, context) => {
           try {
             console.log(`🔍 Re-checking image: ${image.url}`);
             
-            // Re-run safety checks (placeholder implementation)
-            const safetyResult = await runSafetyChecks(image.url, image.source);
+            // Re-run safety checks with current moderation settings
+            const visionEnabled = await isVisionModerationEnabled(supabase);
+            const safetyResult = await runSafetyChecks(image.url, image.source, visionEnabled);
             
             if (!safetyResult.passed) {
               console.warn(`⚠️ Image failed re-check: ${image.url} - ${safetyResult.reason}`);
@@ -231,32 +253,66 @@ export const handler = async (event, context) => {
 };
 
 // Helper function to run safety checks on an image (placeholder implementation)
-async function runSafetyChecks(imageUrl, source) {
+async function runSafetyChecks(imageUrl, source, useVisionModeration = false) {
   try {
     console.log('🛡️ Running safety checks for:', imageUrl);
 
-    // Placeholder implementation - replace with actual content moderation
-    // This could integrate with services like:
-    // - Google Cloud Vision API for content detection
-    // - AWS Rekognition for image analysis
-    // - Microsoft Azure Content Moderator
-    // - Custom ML models for food/product detection
-
-    // For now, implement basic checks
     const checks = [
       await checkFileSize(imageUrl),
-      await checkImageFormat(imageUrl),
-      await checkBasicContent(imageUrl, source)
+      await checkImageFormat(imageUrl)
     ];
 
     const allPassed = checks.every(result => result.passed);
     const failedCheck = checks.find(result => !result.passed);
 
-    return {
-      passed: allPassed,
-      reason: failedCheck?.reason,
-      confidence: 0.8 // Placeholder confidence score
-    };
+    // If basic checks fail, return immediately
+    if (!allPassed) {
+      return {
+        passed: false,
+        reason: failedCheck?.reason,
+        confidence: failedCheck?.confidence || 0.8
+      };
+    }
+
+    // If Google Vision moderation is enabled, use it
+    if (useVisionModeration) {
+      console.log('🤖 Using Google Vision SafeSearch for:', imageUrl);
+      
+      try {
+        const response = await fetch(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/moderate-image`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ imageUrl }),
+          timeout: 15000
+        });
+
+        if (!response.ok) {
+          throw new Error(`Vision API call failed: ${response.status}`);
+        }
+
+        const moderationResult = await response.json();
+        
+        if (moderationResult.success) {
+          return {
+            passed: moderationResult.passed,
+            reason: moderationResult.reason,
+            confidence: moderationResult.confidence
+          };
+        } else {
+          throw new Error(moderationResult.message || 'Vision API returned error');
+        }
+      } catch (visionError) {
+        console.error('❌ Google Vision moderation failed, falling back to basic checks:', visionError);
+        // Fall back to basic content check if Vision API fails
+        return await checkBasicContent(imageUrl, source);
+      }
+    } else {
+      // Vision moderation disabled, use basic content checks
+      console.log('⚠️ Google Vision moderation disabled, using basic checks only');
+      return await checkBasicContent(imageUrl, source);
+    }
   } catch (error) {
     console.error('❌ Safety checks failed:', error);
     return {

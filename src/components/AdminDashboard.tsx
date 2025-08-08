@@ -7,6 +7,7 @@ import { UserService } from '../services/userService';
 import { supabase } from '../services/supabaseClient';
 import EmbeddingGenerationTest from './EmbeddingGenerationTest';
 import OpenAIConnectionTest from './OpenAIConnectionTest';
+import GoogleVisionModerationSettings from './GoogleVisionModerationSettings';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -656,6 +657,7 @@ const AdminDashboard = () => {
           <div className="space-y-8">
             <OpenAIConnectionTest />
             <EmbeddingGenerationTest />
+            <GoogleVisionModerationSettings />
           </div>
         )}
       </div>
