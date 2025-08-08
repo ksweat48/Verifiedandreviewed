@@ -156,6 +156,8 @@ export const handler = async (event, context) => {
         }
       } else {
         console.warn(`⚠️ DEBUG: Invalid offeringId string: "${cleanOfferingId}" – falling back to batch`);
+      }
+    }
     if (!openaiApiKey) {
       console.warn('⚠️ OpenAI API key not configured - no-op mode');
       return {
