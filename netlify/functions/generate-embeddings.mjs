@@ -28,6 +28,7 @@ export const handler = async (event, context) => {
   let entityType;
   let batchSize;
   let forceRegenerate;
+  let openaiApiKey;
 
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -99,6 +100,9 @@ export const handler = async (event, context) => {
     
     console.log('✅ Rate limit check passed, remaining:', rateLimitResult.remaining);
 
+    // Check required environment variables
+    openaiApiKey = process.env.OPENAI_API_KEY;
+
     console.log(`🔍 DEBUG: Incoming parameters:`, {
       businessId,
       offeringId,
@@ -152,10 +156,7 @@ export const handler = async (event, context) => {
         }
       } else {
         console.warn(`⚠️ DEBUG: Invalid offeringId string: "${cleanOfferingId}" – falling back to batch`);
-      }
-    }
-
-    if (!OPENAI_API_KEY) {
+    if (!openaiApiKey) {
       console.warn('⚠️ OpenAI API key not configured - no-op mode');
       return {
         statusCode: 200,
@@ -171,7 +172,7 @@ export const handler = async (event, context) => {
       };
     }
 
-    const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+    const openai = new OpenAI({ apiKey: openaiApiKey });
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     let queryBuilder;
