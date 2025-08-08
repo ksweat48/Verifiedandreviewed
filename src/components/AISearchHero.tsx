@@ -27,6 +27,7 @@ interface AISearchHeroProps {
 const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppModeActive }) => {
   const navigate = useNavigate();
   const { trackEvent } = useAnalytics();
+  const { latitude, longitude, error: locationError } = useGeolocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -52,6 +53,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [quickSearches, setQuickSearches] = useState<string[]>([]);
   const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Toggle between business and offering search modes
+  const SEARCH_DISH_MODE = true;
   
   // Intent detection function
   const detectSearchIntent = (query: string): {
@@ -138,8 +142,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   // Random user search display state
   const [currentUserSearchIndex, setCurrentUserSearchIndex] = useState(0);
   const [isSearchAnimating, setIsSearchAnimating] = useState(false);
-  
-  const { latitude, longitude, error: locationError } = useGeolocation();
 
   // All possible quick search options
   const allQuickSearches = [
@@ -409,6 +411,42 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     handleSearch(query);
   };
 
+  // Map offering search results to BusinessCard format
+  const mapOfferingToBusinessCard = (offering: any): any => {
+    return {
+      id: offering.businessId,
+      name: offering.businessName,
+      address: offering.businessAddress || 'Address not available',
+      image: offering.imageUrl,
+      shortDescription: offering.offeringDescription,
+      rating: Math.min(5, Math.max(0, offering.compositeScore * 5)), // Convert 0-1 to 0-5
+      hours: offering.businessHours,
+      isOpen: offering.isOpen,
+      reviews: [], // Offerings don't have reviews in the same format
+      isPlatformBusiness: true,
+      distance: offering.distanceKm,
+      duration: Math.round((offering.distanceKm || 0) * 3), // Rough estimate: 3 min per km
+      isGoogleVerified: false,
+      placeId: undefined,
+      similarity: offering.semanticScore,
+      is_mobile_business: false,
+      phone_number: offering.businessPhone,
+      latitude: offering.businessLatitude,
+      longitude: offering.businessLongitude,
+      // Offering-specific properties
+      isOfferingSearch: true,
+      offeringId: offering.offeringId,
+      businessId: offering.businessId,
+      ctaLabel: offering.ctaLabel,
+      offeringDescription: offering.offeringDescription,
+      businessAddress: offering.businessAddress,
+      businessCategory: offering.businessCategory,
+      businessHours: offering.businessHours,
+      businessPhone: offering.businessPhone,
+      businessWebsite: offering.businessWebsite
+    };
+  };
+
   const handleSearch = async (query?: string) => {
     const searchTerm = query || searchQuery;
     if (!searchTerm.trim()) return;
@@ -424,6 +462,44 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     setCurrentCardIndex(0);
     
     try {
+      if (SEARCH_DISH_MODE) {
+        // Search for offerings/dishes
+        console.log('🍽️ Searching offerings for:', searchQuery);
+        
+        const searchParams = new URLSearchParams({
+          q: searchTerm.trim(),
+          limit: '7'
+        });
+        
+        // Add location if available
+        if (latitude && longitude) {
+          searchParams.append('lat', latitude.toString());
+          searchParams.append('lng', longitude.toString());
+        }
+        
+        const response = await fetch(`/.netlify/functions/search-offerings?${searchParams}`);
+        
+        if (!response.ok) {
+          throw new Error(`Search failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          const mappedResults = data.results.map(mapOfferingToBusinessCard);
+          setSearchResults(mappedResults);
+          setCurrentCardIndex(0);
+          setIsAppModeActive(true);
+          
+          // Log search activity
+          if (currentUser) {
+            ActivityService.logSearch(currentUser.id, searchTerm, 'semantic');
+          }
+        } else {
+          throw new Error(data.message || 'Search failed');
+        }
+      } else {
+        // Original business search logic
       // Check if user is authenticated for credit-based searches
       const user = await UserService.getCurrentUser();
       
@@ -773,6 +849,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       console.log(`🎯 Final ranked results: ${rankedResults.length} businesses`);
       setSearchResults(rankedResults);
       setIsAppModeActive(true);
+      }
       
       console.timeEnd('Total Search Time');
       console.log('✅ Search completed successfully');
