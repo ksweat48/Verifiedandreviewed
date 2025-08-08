@@ -54,7 +54,7 @@ function processGooglePlacesResult(result, googlePlacesApiKey, prompt) {
     isOpen = result.opening_hours.open_now !== undefined ? result.opening_hours.open_now : true;
     if (result.opening_hours.weekday_text && result.opening_hours.weekday_text.length > 0) {
       const today = new Date().getDay();
-      businessHours = result.opening_hours.weekday_text[today] || result.opening_hours.weekday_text[0];
+      businessHours = result.opening_hours.weekday_text[today] || result.opening_hours.weekday_text;
     }
   }
   
@@ -260,11 +260,11 @@ Requirements:
       input: prompt.trim(),
       encoding_format: 'float'
     });
-    const promptEmbedding = promptEmbeddingResponse.data[0].embedding;
+    const promptEmbedding = promptEmbeddingResponse.data.embedding;
     console.log('✅ Generated prompt embedding with dimensions:', promptEmbedding.length);
 
     // Extract the function call result
-    const toolCall = completion.choices[0].message.tool_calls?.[0];
+    const toolCall = completion.choices.message.tool_calls?.;
     if (!toolCall || toolCall.function.name !== 'generateSearchQueries') {
       throw new Error('No valid function call returned from OpenAI');
     }

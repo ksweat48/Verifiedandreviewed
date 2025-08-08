@@ -346,7 +346,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const openImageGallery = (business: Business, reviewIndex: number, imageIndex: number = 0) => {
-    if (!business.reviews || !business.reviews[reviewIndex]?.images) return;
+    if (!business.reviews || business.reviews[reviewIndex]?.images) return;
     
     setGalleryImages(business.reviews[reviewIndex].images || []);
     setGalleryInitialIndex(imageIndex);
@@ -675,7 +675,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             name: selectedBusinessForReview.name,
             image: selectedBusinessForReview.image,
             address: selectedBusinessForReview.address,
-            visitDate: new Date().toISOString().split('T')[0]
+            visitDate: new Date().toISOString().split('T')
           }}
           onSubmitReview={handleReviewSubmit}
         />
