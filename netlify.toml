@@ -48,7 +48,6 @@
 [functions]
   # Functions directory is already defined under [build]
   
-  # Schedule the refresh-offerings function to run daily at 2 AM UTC
-  [[functions.scheduled]]
+  [functions.scheduled]
     name = "refresh-offerings"
     cron = "0 2 * * *"
