@@ -1,10 +1,18 @@
 // Secure Credit Deduction Function
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, extractUserIdFromAuth, getClientIP, createRateLimitResponse } from '../utils/rateLimiter.mjs';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// Rate limiting configuration for credit deduction
+const RATE_LIMIT_CONFIG = {
+  maxRequests: 30,
+  windowSeconds: 60, // 30 requests per minute
+  functionName: 'deduct-credits'
 };
 
 export const handler = async (event, context) => {
@@ -26,20 +34,7 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { userId, amount, type, description } = JSON.parse(event.body);
-
-    if (!userId || !amount || !type) {
-      return {
-        statusCode: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          error: 'Missing required fields',
-          message: 'userId, amount, and type are required'
-        })
-      };
-    }
-
-    // Check required environment variables
+    // Check required environment variables first
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -53,6 +48,44 @@ export const handler = async (event, context) => {
         })
       };
     }
+
+    const { userId, amount, type, description } = JSON.parse(event.body);
+
+    if (!userId || !amount || !type) {
+      return {
+        statusCode: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          error: 'Missing required fields',
+          message: 'userId, amount, and type are required'
+        })
+      };
+    }
+
+    // Rate limiting check
+    console.log('🚦 Checking rate limits for credit deduction...');
+    
+    // Use the provided userId for rate limiting
+    const identifier = { value: userId, type: 'user_id' };
+    
+    console.log('🔍 Rate limit identifier:', identifier);
+    
+    const rateLimitResult = await checkRateLimit(
+      identifier,
+      RATE_LIMIT_CONFIG,
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      event.headers['user-agent'],
+      { type, amount }
+    );
+    
+    if (!rateLimitResult.allowed) {
+      console.log('🚫 Rate limit exceeded for credit deduction');
+      return createRateLimitResponse(rateLimitResult, corsHeaders);
+    }
+    
+    console.log('✅ Rate limit check passed, remaining:', rateLimitResult.remaining);
+
 
     // Initialize Supabase client with service role key for elevated privileges
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

@@ -1,11 +1,19 @@
 // netlify/functions/generate-embeddings.mjs
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, extractUserIdFromAuth, getClientIP, createRateLimitResponse } from '../utils/rateLimiter.mjs';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// Rate limiting configuration for embedding generation
+const RATE_LIMIT_CONFIG = {
+  maxRequests: 5,
+  windowSeconds: 300, // 5 requests per 5 minutes (embedding generation is expensive)
+  functionName: 'generate-embeddings'
 };
 
 export const handler = async (event, context) => {
@@ -31,6 +39,21 @@ export const handler = async (event, context) => {
   }
 
   try {
+    // Check required environment variables first
+    const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return {
+        statusCode: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Supabase credentials not configured',
+          message: 'Please set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment variables'
+        })
+      };
+    }
+
     const { 
       businessId, 
       offeringId, 
@@ -38,6 +61,36 @@ export const handler = async (event, context) => {
       batchSize = 10, 
       forceRegenerate = false 
     } = JSON.parse(event.body || '{}');
+
+    // Rate limiting check (more lenient for admin operations)
+    console.log('🚦 Checking rate limits for embedding generation...');
+    
+    // Try to get user ID from auth header, fallback to IP
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    const userId = await extractUserIdFromAuth(authHeader, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const clientIP = getClientIP(event);
+    
+    const identifier = userId 
+      ? { value: userId, type: 'user_id' }
+      : { value: clientIP, type: 'ip_address' };
+    
+    console.log('🔍 Rate limit identifier:', identifier);
+    
+    const rateLimitResult = await checkRateLimit(
+      identifier,
+      RATE_LIMIT_CONFIG,
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      event.headers['user-agent'],
+      { entityType, businessId: businessId?.substring(0, 36), offeringId: offeringId?.substring(0, 36) }
+    );
+    
+    if (!rateLimitResult.allowed) {
+      console.log('🚫 Rate limit exceeded for embedding generation');
+      return createRateLimitResponse(rateLimitResult, corsHeaders);
+    }
+    
+    console.log('✅ Rate limit check passed, remaining:', rateLimitResult.remaining);
 
     console.log(`🔍 DEBUG: Incoming parameters:`, {
       businessId,

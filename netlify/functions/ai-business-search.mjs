@@ -1,6 +1,14 @@
 // AI Business Search Function with Google Places API Integration
 import OpenAI from 'openai';
 import axios from 'axios';
+import { checkRateLimit, extractUserIdFromAuth, getClientIP, createRateLimitResponse } from '../utils/rateLimiter.mjs';
+
+// Rate limiting configuration for AI business search
+const RATE_LIMIT_CONFIG = {
+  maxRequests: 3,
+  windowSeconds: 60, // 3 requests per minute
+  functionName: 'ai-business-search'
+};
 
 // Helper function to calculate cosine similarity between two vectors
 function cosineSimilarity(vecA, vecB) {
@@ -124,6 +132,68 @@ export default async function handler(req) {
   }
 
   try {
+    // Check required environment variables first
+    const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return new Response(JSON.stringify({
+        error: 'Supabase credentials not configured',
+        message: 'Please set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment variables'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Rate limiting check
+    console.log('🚦 Checking rate limits for AI business search...');
+    
+    // Try to get user ID from auth header, fallback to IP
+    const authHeader = req.headers.get('authorization');
+    const userId = await extractUserIdFromAuth(authHeader, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const clientIP = req.headers.get('x-nf-client-ip') || 
+                     req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+    
+    const identifier = userId 
+      ? { value: userId, type: 'user_id' }
+      : { value: clientIP, type: 'ip_address' };
+    
+    console.log('🔍 Rate limit identifier:', identifier);
+    
+    const rateLimitResult = await checkRateLimit(
+      identifier,
+      RATE_LIMIT_CONFIG,
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      req.headers.get('user-agent'),
+      { prompt: prompt?.substring(0, 100) }
+    );
+    
+    if (!rateLimitResult.allowed) {
+      console.log('🚫 Rate limit exceeded for AI business search');
+      return new Response(JSON.stringify({
+        error: 'Too Many Requests',
+        message: `Rate limit exceeded. Try again in ${rateLimitResult.retryAfter} seconds.`,
+        retryAfter: rateLimitResult.retryAfter,
+        resetTime: rateLimitResult.resetTime.toISOString()
+      }), {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'X-RateLimit-Limit': RATE_LIMIT_CONFIG.maxRequests.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': Math.floor(rateLimitResult.resetTime.getTime() / 1000).toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() || '60'
+        }
+      });
+    }
+    
+    console.log('✅ Rate limit check passed, remaining:', rateLimitResult.remaining);
+
     const { 
       prompt, 
       searchQuery, 

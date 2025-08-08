@@ -88,6 +88,17 @@ export class SemanticSearchService {
     } catch (error) {
       console.error('❌ Semantic search error:', error);
       
+      // Handle rate limiting specifically
+      if (error instanceof Error && error.message.includes('Rate limit exceeded')) {
+        return {
+          success: false,
+          results: [],
+          query,
+          usedSemanticSearch: false,
+          error: 'Too many searches. Please wait a moment and try again.'
+        };
+      }
+      
       return {
         success: false,
         results: [],

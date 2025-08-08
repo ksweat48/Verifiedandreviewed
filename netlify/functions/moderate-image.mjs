@@ -1,10 +1,18 @@
 // Google Cloud Vision SafeSearch Image Moderation
 import { ImageAnnotatorClient } from '@google-cloud/vision';
+import { checkRateLimit, extractUserIdFromAuth, getClientIP, createRateLimitResponse } from '../utils/rateLimiter.mjs';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// Rate limiting configuration for image moderation
+const RATE_LIMIT_CONFIG = {
+  maxRequests: 20,
+  windowSeconds: 60, // 20 requests per minute
+  functionName: 'moderate-image'
 };
 
 export const handler = async (event) => {
@@ -26,6 +34,21 @@ export const handler = async (event) => {
   }
 
   try {
+    // Check required environment variables first
+    const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return {
+        statusCode: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Supabase credentials not configured',
+          message: 'Please set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment variables'
+        })
+      };
+    }
+
     const { imageUrl } = JSON.parse(event.body);
 
     if (!imageUrl) {
@@ -38,6 +61,36 @@ export const handler = async (event) => {
         })
       };
     }
+
+    // Rate limiting check
+    console.log('🚦 Checking rate limits for image moderation...');
+    
+    // Try to get user ID from auth header, fallback to IP
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    const userId = await extractUserIdFromAuth(authHeader, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const clientIP = getClientIP(event);
+    
+    const identifier = userId 
+      ? { value: userId, type: 'user_id' }
+      : { value: clientIP, type: 'ip_address' };
+    
+    console.log('🔍 Rate limit identifier:', identifier);
+    
+    const rateLimitResult = await checkRateLimit(
+      identifier,
+      RATE_LIMIT_CONFIG,
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      event.headers['user-agent'],
+      { imageUrl: imageUrl.substring(0, 100) }
+    );
+    
+    if (!rateLimitResult.allowed) {
+      console.log('🚫 Rate limit exceeded for image moderation');
+      return createRateLimitResponse(rateLimitResult, corsHeaders);
+    }
+    
+    console.log('✅ Rate limit check passed, remaining:', rateLimitResult.remaining);
 
     // Check if required Google Cloud Vision environment variables are present
     const requiredEnvVars = [

@@ -45,3 +45,24 @@ For AI-powered image moderation using Google Cloud Vision SafeSearch:
 5. **Enable in Admin:** Go to Admin Dashboard → Tools → Google Cloud Vision SafeSearch → Toggle ON
 
 When disabled, images are moderated using basic checks only (file size, format, source validation).
+
+### Rate Limiting
+
+The application includes comprehensive rate limiting to prevent abuse and control API costs:
+
+**Function Limits:**
+- Semantic Search: 5 requests/minute per user
+- AI Business Search: 3 requests/minute per user  
+- Image Moderation: 20 requests/minute per user
+- Embedding Generation: 5 requests/5 minutes per user
+- Credit Deduction: 30 requests/minute per user
+
+**How it works:**
+- Authenticated users are tracked by user ID
+- Anonymous users are tracked by IP address
+- Rate limit data is stored in Supabase `rate_limits` table
+- Old records are automatically cleaned up after 1 hour
+- Functions return HTTP 429 when limits are exceeded
+- Frontend handles rate limit responses gracefully
+
+Rate limiting is automatically active and requires no additional configuration.
