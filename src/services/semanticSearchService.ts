@@ -266,6 +266,8 @@ Requirements:
       const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json`;
       
       // Make a single, broad search first to capture a wide range of results
+      // Make a single, broad search first to capture a wide range of results
+      // Make a single, broad search first to capture a wide range of results
       const placesResponse = await axios.get(placesUrl, {
         params: {
           query: optimizedQuery,
@@ -300,6 +302,16 @@ Requirements:
               return true;
             } else if (result.formatted_address) {
               return true; // If has address, assume valid
+            } else if (result.photos && result.photos.length > 0) {
+              // If no coordinates, but has photos, assume it's a valid business
+              return true;
+            } else if (result.formatted_address) {
+              return true; // If has address, assume valid
+            } else if (result.photos && result.photos.length > 0) {
+              // If no coordinates, but has photos, assume it's a valid business
+              return true;
+            } else if (result.formatted_address) {
+              return true; // If has address, assume valid
             }
             
             return true; // Include if no coordinates available
@@ -326,6 +338,16 @@ Requirements:
                 businessHours = result.opening_hours.weekday_text[today] || result.opening_hours.weekday_text[0];
               }
             }
+            
+            // Get a photo URL if available
+            const photoReference = result.photos && result.photos.length > 0 ? result.photos[0].photo_reference : null;
+            const imageUrl = photoReference ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}` : 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400';
+
+            
+            // Get a photo URL if available
+            const photoReference = result.photos && result.photos.length > 0 ? result.photos[0].photo_reference : null;
+            const imageUrl = photoReference ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}` : 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400';
+
             
             // Get a photo URL if available
             const photoReference = result.photos && result.photos.length > 0 ? result.photos[0].photo_reference : null;
@@ -380,7 +402,53 @@ Requirements:
         // Add all valid results to our collection
         allPotentialBusinesses.push(...slicedResults); // Add results from the broad search
         
-        console.log(`✅ Processed ${slicedResults.length} valid businesses from single Google Places call`);
+        // Now, iterate through AI-generated search queries and make additional Google Places API calls
+        // Limit to 10 queries to avoid excessive API calls
+        for (let i = 0; i < Math.min(searchQueries.length, 10); i++) { // Changed from 5 to 10
+          const query = searchQueries[i];
+          console.log(`🔍 Making Google Places API call for query: "${query}" (${i + 1}/${Math.min(searchQueries.length, 10)})`);
+
+          try {
+            const specificPlacesResponse = await axios.get(placesUrl, {
+              params: {
+                query: query,
+                location: `${searchLatitude},${searchLongitude}`,
+                radius: searchRadius,
+                rankby: 'distance',
+                // Removed 'type: 'establishment'' to broaden search
+                fields: 'name,formatted_address,geometry,rating,opening_hours,types,place_id,photos',
+                key: GOOGLE_PLACES_API_KEY
+              },
+              timeout: 8000
+            });
+
+            if (specificPlacesResponse.data.status === 'OK' && specificPlacesResponse.data.results && specificPlacesResponse.data.results.length > 0) {
+              const specificResults = specificPlacesResponse.data.results
+                .filter(result => {
+                  if (result.geometry?.location?.lat && result.geometry?.location?.lng) {
+                    const distance = calculateDistance(searchLatitude, searchLongitude, result.geometry.location.lat, result.geometry.location.lng);
+                    return distance <= 10; // Within 10 miles
+                  }
+                  return true;
+                })
+                .slice(0, Math.min(numToGenerate, 15)) // Limit to requested number but cap at 15 for performance
+                .map(result => {
+                  const photoReference = result.photos && result.photos.length > 0 ? result.photos[0].photo_reference : null;
+                  const imageUrl = photoReference ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}` : 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400';
+                  return {
+                    id: `google-${result.place_id}`, name: result.name, shortDescription: result.types ? result.types.join(', ') : '', rating: result.rating || 0, image: imageUrl, isOpen: result.opening_hours?.open_now ?? true, hours: result.opening_hours?.weekday_text?.[new Date().getDay()] || 'Hours not available', address: result.formatted_address, latitude: result.geometry?.location?.lat || null, longitude: result.geometry?.location?.lng || null, distance: 999999, duration: 999999, placeId: result.place_id, reviews: [], isPlatformBusiness: false, tags: result.types || [], isGoogleVerified: true, businessText: query, similarity: 0.8 // Temporary value
+                  };
+                });
+              allPotentialBusinesses.push(...specificResults);
+            }
+          } catch (specificPlacesError) {
+            console.error(`❌ Specific Google Places API error for query "${query}":`, specificPlacesError.message);
+          }
+          // Add a small delay between calls to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        console.log('✅ Processed ${slicedResults.length} valid businesses from single Google Places call');
         
       } else {
         console.warn(`⚠️ No Google Places results found for optimized query: "${optimizedQuery}"`);
