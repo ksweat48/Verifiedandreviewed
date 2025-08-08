@@ -1,28 +1,31 @@
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { supabase } from './supabaseClient';
 
 export interface OfferingSearchResult {
   offeringId: string;
   businessId: string;
   offeringTitle: string;
-  offeringDescription?: string;
   offeringImageUrl: string;
   offeringType: string;
   businessName: string;
   businessAddress?: string;
-  businessLatitude?: number;
-  businessLongitude?: number;
-  businessHours?: string;
-  businessPhone?: string;
-  businessWebsite?: string;
-  isOpen?: boolean;
   distance?: number;
   duration?: number;
-  similarity: number;
-  businessRating?: {
-    thumbsUp: number;
-    thumbsDown: number;
-    sentimentScore: number;
-  };
+  businessRating?: number;
+  isOpen?: boolean;
+  similarity?: number;
+}
+
+export interface BusinessSearchResult {
+  id: string;
+  name: string;
+  image?: string;
+  shortDescription?: string;
+  rating?: number;
+  distance?: number;
+  duration?: number;
+  isOpen?: boolean;
+  similarity?: number;
 }
 
 export class SemanticSearchService {
@@ -32,135 +35,91 @@ export class SemanticSearchService {
       const response = await fetchWithTimeout('/.netlify/functions/search-offerings', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           query: 'test',
-          latitude: 0,
-          longitude: 0,
-          matchCount: 1
+          checkAvailability: true
         }),
-        timeout: 5000
-      });
+      }, 5000);
       
-      return response.ok;
+      const data = await response.json();
+      return data.available === true;
     } catch (error) {
-      console.warn('Offering search not available:', error);
+      console.error('Error checking offering search availability:', error);
       return false;
     }
   }
 
-  // Search for offerings by vibe/semantic similarity
+  // New method for searching offerings
   static async searchOfferingsByVibe(
     query: string,
     latitude?: number,
-    longitude?: number,
-    matchThreshold: number = 0.3,
-    matchCount: number = 7
+    longitude?: number
   ): Promise<OfferingSearchResult[]> {
     try {
       const response = await fetchWithTimeout('/.netlify/functions/search-offerings', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query,
+          query: query.trim(),
           latitude,
-          longitude,
-          matchThreshold,
-          matchCount
+          longitude
         }),
-        timeout: 30000
-      });
-
+      }, 30000);
+      
       if (!response.ok) {
-        throw new Error(`Offering search failed: ${response.status}`);
+        throw new Error(`Search failed: ${response.status}`);
       }
-
+      
       const data = await response.json();
       
-      if (data.success) {
-        return data.results || [];
-      } else {
-        throw new Error(data.message || 'Offering search failed');
+      if (!data.success) {
+        throw new Error(data.error || 'Search failed');
       }
+      
+      return data.results || [];
     } catch (error) {
-      console.error('Error in offering search:', error);
-      return [];
+      console.error('Offering search failed:', error);
+      throw error;
     }
   }
 
-  // Search for businesses by vibe/semantic similarity
+  // Renamed existing method for clarity
   static async searchBusinessesByVibe(
     query: string,
     latitude?: number,
-    longitude?: number,
-    matchThreshold: number = 0.5,
-    matchCount: number = 10
-  ): Promise<any[]> {
+    longitude?: number
+  ): Promise<BusinessSearchResult[]> {
     try {
       const response = await fetchWithTimeout('/.netlify/functions/semantic-search', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query,
+          query: query.trim(),
           latitude,
-          longitude,
-          matchThreshold,
-          matchCount
+          longitude
         }),
-        timeout: 30000
-      });
-
+      }, 30000);
+      
       if (!response.ok) {
-        throw new Error(`Semantic search failed: ${response.status}`);
+        throw new Error(`Search failed: ${response.status}`);
       }
-
+      
       const data = await response.json();
       
-      if (data.success) {
-        return data.results || [];
-      } else {
-        throw new Error(data.message || 'Semantic search failed');
+      if (!data.success) {
+        throw new Error(data.error || 'Search failed');
       }
+      
+      return data.results || [];
     } catch (error) {
-      console.error('Error in semantic search:', error);
-      return [];
-    }
-  }
-
-  // Generate embeddings for businesses
-  static async generateEmbeddings(params: {
-    businessId?: string;
-    batchSize?: number;
-    forceRegenerate?: boolean;
-  } = {}): Promise<{ success: boolean; message?: string }> {
-    try {
-      const response = await fetchWithTimeout('/.netlify/functions/generate-embeddings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(params),
-        timeout: 60000
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Embedding generation failed');
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error generating embeddings:', error);
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Embedding generation failed'
-      };
+      console.error('Business search failed:', error);
+      throw error;
     }
   }
 }
