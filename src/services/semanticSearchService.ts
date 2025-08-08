@@ -1,99 +1,26 @@
-import { supabase } from './supabaseClient';
+// Semantic Search Service for Vibe-Based Business Discovery
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
-export interface OfferingSearchResult {
-  offeringId: string;
-  businessId: string;
-  offeringTitle: string;
-  offeringImageUrl: string;
-  offeringType: string;
-  businessName: string;
-  businessAddress?: string;
-  distance?: number;
-  duration?: number;
-  businessRating?: number;
-  isOpen?: boolean;
-  similarity?: number;
-}
-
-export interface BusinessSearchResult {
-  id: string;
-  name: string;
-  image?: string;
-  shortDescription?: string;
-  rating?: number;
-  distance?: number;
-  duration?: number;
-  isOpen?: boolean;
-  similarity?: number;
-}
-
 export class SemanticSearchService {
-  // Check if offering search is available
-  static async isOfferingSearchAvailable(): Promise<boolean> {
-    try {
-      const response = await fetchWithTimeout('/.netlify/functions/search-offerings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: 'test',
-          checkAvailability: true
-        }),
-      }, 5000);
-      
-      const data = await response.json();
-      return data.available === true;
-    } catch (error) {
-      console.error('Error checking offering search availability:', error);
-      return false;
-    }
-  }
-
-  // New method for searching offerings
-  static async searchOfferingsByVibe(
+  // Perform semantic search using vector embeddings
+  static async searchByVibe(
     query: string,
-    latitude?: number,
-    longitude?: number
-  ): Promise<OfferingSearchResult[]> {
+    options: {
+      latitude?: number;
+      longitude?: number;
+      matchThreshold?: number;
+      matchCount?: number;
+    } = {}
+  ): Promise<{
+    success: boolean;
+    results: any[];
+    query: string;
+    usedSemanticSearch: boolean;
+    error?: string;
+  }> {
     try {
-      const response = await fetchWithTimeout('/.netlify/functions/search-offerings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: query.trim(),
-          latitude,
-          longitude
-        }),
-      }, 30000);
-      
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Search failed');
-      }
-      
-      return data.results || [];
-    } catch (error) {
-      console.error('Offering search failed:', error);
-      throw error;
-    }
-  }
+      console.log('🔍 Performing semantic search for:', query);
 
-  // Renamed existing method for clarity
-  static async searchBusinessesByVibe(
-    query: string,
-    latitude?: number,
-    longitude?: number
-  ): Promise<BusinessSearchResult[]> {
-    try {
       const response = await fetchWithTimeout('/.netlify/functions/semantic-search', {
         method: 'POST',
         headers: {
@@ -101,25 +28,164 @@ export class SemanticSearchService {
         },
         body: JSON.stringify({
           query: query.trim(),
-          latitude,
-          longitude
+          latitude: options.latitude,
+          longitude: options.longitude,
+          matchThreshold: options.matchThreshold || 0.5,
+          matchCount: options.matchCount || 10
         }),
-      }, 30000);
-      
+        timeout: 20000 // 20 second timeout for semantic search
+      });
+
       if (!response.ok) {
-        throw new Error(`Search failed: ${response.status}`);
+        if (response.status === 404) {
+          return {
+            success: false,
+            processed: 0,
+            successCount: 0,
+            errorCount: 0,
+            message: 'Embedding generation service not available. The generate-embeddings Netlify Function may not be deployed or running. If developing locally, make sure to run "netlify dev" instead of "npm run dev".'
+          };
+        }
+        
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          console.error('Failed to parse error response:', jsonError);
+        }
+        
+        return {
+          success: false,
+          processed: 0,
+          successCount: 0,
+          errorCount: 0,
+          message: errorMessage
+        };
       }
-      
-      const data = await response.json();
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse semantic search response:', jsonError);
+        throw new Error('Invalid response from semantic search service');
+      }
       
       if (!data.success) {
-        throw new Error(data.error || 'Search failed');
+        throw new Error(data.message || 'Semantic search failed');
+      }
+
+      console.log('✅ Semantic search completed:', data.matchCount, 'results');
+
+      return {
+        success: true,
+        results: data.results || [],
+        query: data.query,
+        usedSemanticSearch: true
+      };
+
+    } catch (error) {
+      console.error('❌ Semantic search error:', error);
+      
+      return {
+        success: false,
+        results: [],
+        query,
+        usedSemanticSearch: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  // Generate embeddings for existing businesses (admin function)
+  static async generateEmbeddings(options: {
+    businessId?: string;
+    batchSize?: number;
+    forceRegenerate?: boolean;
+  } = {}): Promise<{
+    success: boolean;
+    processed: number;
+    successCount: number;
+    errorCount: number;
+    message: string;
+  }> {
+    try {
+      console.log('🔄 Starting embedding generation...', options.businessId ? `for business ${options.businessId}` : 'batch mode');
+
+      const response = await fetchWithTimeout('/.netlify/functions/generate-embeddings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessId: options.businessId,
+          batchSize: options.batchSize || 10,
+          forceRegenerate: options.forceRegenerate || false
+        }),
+        timeout: 30000 // 30 second timeout for embedding generation (longer process)
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          console.error('Failed to parse error response:', jsonError);
+        }
+        throw new Error(errorMessage);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse embedding generation response:', jsonError);
+        throw new Error('Invalid response from embedding generation service');
       }
       
-      return data.results || [];
+      console.log('✅ Embedding generation completed:', data.message);
+
+      return {
+        success: data.success,
+        processed: data.processed || 0,
+        successCount: data.successCount || 0,
+        errorCount: data.errorCount || 0,
+        message: data.message
+      };
+
     } catch (error) {
-      console.error('Business search failed:', error);
-      throw error;
+      console.error('❌ Embedding generation error:', error);
+      
+      return {
+        success: false,
+        processed: 0,
+        successCount: 0,
+        errorCount: 0,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  // Check if semantic search is available
+  static async isSemanticSearchAvailable(): Promise<boolean> {
+    try {
+      const response = await fetchWithTimeout('/.netlify/functions/semantic-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: 'test'
+        }),
+        timeout: 10000 // 10 second timeout for availability check
+      });
+
+      // Even if the search fails, if we get a response, the function is available
+      return response.status !== 404;
+    } catch (error) {
+      return false;
     }
   }
 }

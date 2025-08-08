@@ -1,73 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Sparkles, Loader2, X, ChevronLeft, ChevronRight, ThumbsUp, Navigation, Heart, Clock } from 'lucide-react';
+import { Search, MapPin, Zap, X, ArrowRight, Navigation, Sparkles, Mic, LayoutDashboard } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import { useSwipeable } from 'react-swipeable';
 import { useNavigate } from 'react-router-dom';
 import { useGeolocation } from '../hooks/useGeolocation';
+import { BusinessService } from '../services/businessService';
+import { ReviewService } from '../services/reviewService';
+import { SemanticSearchService } from '../services/semanticSearchService';
 import { CreditService } from '../services/creditService';
 import { UserService } from '../services/userService';
-import { BusinessService } from '../services/businessService';
 import { ActivityService } from '../services/activityService';
-import { useAuth } from '../hooks/useAuth';
-import SignupPrompt from './SignupPrompt';
-import BusinessProfileModal from './BusinessProfileModal';
-import LeaveReviewModal from './LeaveReviewModal';
-import ReviewerProfile from './ReviewerProfile';
-import ImageGalleryPopup from './ImageGalleryPopup';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { calculateCompositeScore } from '../utils/similarityUtils';
 import PlatformBusinessCard from './PlatformBusinessCard';
+import AIBusinessCard from './AIBusinessCard';
+import SignupPrompt from './SignupPrompt';
+import AuthModal from './AuthModal';
 import CreditInfoTooltip from './CreditInfoTooltip';
-import { SemanticSearchService } from '../services/semanticSearchService';
-import { getMatchPercentage } from '../utils/similarityUtils';
-
-interface ReviewImage {
-  url: string;
-  alt?: string;
-}
-
-interface Business {
-  id: string;
-  name: string;
-  category?: string;
-  description?: string;
-  short_description?: string;
-  address: string;
-  location?: string;
-  image: string;
-  gallery_urls?: string[];
-  hours?: string;
-  days_closed?: string;
-  phone_number?: string;
-  website_url?: string;
-  social_media?: string[];
-  price_range?: string;
-  service_area?: string;
-  owner_user_id?: string;
-  latitude?: number;
-  longitude?: number;
-  created_at?: string;
-  updated_at?: string;
-  is_mobile_business?: boolean;
-  is_virtual?: boolean;
-  rating: {
-    thumbsUp: number;
-    thumbsDown?: number;
-    sentimentScore: number;
-  };
-  isOpen: boolean;
-  reviews: Array<{
-    text: string;
-    author: string;
-    authorImage?: string;
-    images?: ReviewImage[];
-    thumbsUp: boolean;
-  }>;
-  isPlatformBusiness: boolean;
-  tags: string[];
-  distance?: number;
-  duration?: number;
-  similarity?: number;
-  isExactMatch?: boolean;
-}
+import { supabase } from '../services/supabaseClient';
+import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -76,205 +26,798 @@ interface AISearchHeroProps {
 
 const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppModeActive }) => {
   const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
+  const { trackEvent } = useAnalytics();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<Business[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
-  const [businessProfileOpen, setBusinessProfileOpen] = useState(false);
-  const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
-  const [leaveReviewModalOpen, setLeaveReviewModalOpen] = useState(false);
-  const [selectedBusinessForReview, setSelectedBusinessForReview] = useState<Business | null>(null);
-  const [reviewerProfileOpen, setReviewerProfileOpen] = useState(false);
-  const [selectedReviewer, setSelectedReviewer] = useState<any>(null);
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  const [galleryImages, setGalleryImages] = useState<ReviewImage[]>([]);
-  const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [backToastVisible, setBackToastVisible] = useState(false);
-  const [offeringSearchAvailable, setOfferingSearchAvailable] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showBackToast, setShowBackToast] = useState(false);
+  const [searchType, setSearchType] = useState<'platform' | 'ai' | 'semantic'>('platform');
+  const [hasSearched, setHasSearched] = useState(false);
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
+  const [userCredits, setUserCredits] = useState<number>(0);
+  const [isLoadingCredits, setIsLoadingCredits] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [signupPromptConfig, setSignupPromptConfig] = useState<any>(null);
+  const [realUserSearches, setRealUserSearches] = useState<Array<{
+    avatar: string;
+    username: string;
+    query: string;
+  }>>([]);
+  const [loadingRealSearches, setLoadingRealSearches] = useState(true);
+  const [quickSearches, setQuickSearches] = useState<string[]>([]);
+  const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Intent detection function
+  const detectSearchIntent = (query: string): {
+    intent: 'food_beverage' | 'service' | 'retail' | 'general';
+    business_type?: 'product' | 'service' | 'hybrid';
+    primary_offering?: string;
+  } => {
+    const lowerQuery = query.toLowerCase();
+    
+    // Food & Beverage keywords
+    const foodBeverageKeywords = [
+      'smoothie', 'smoothies', 'juice', 'coffee', 'tea', 'restaurant', 'cafe', 'bar',
+      'food', 'eat', 'drink', 'meal', 'breakfast', 'lunch', 'dinner', 'brunch',
+      'pizza', 'burger', 'sandwich', 'salad', 'soup', 'pasta', 'sushi', 'tacos',
+      'bakery', 'brewery', 'winery', 'cocktail', 'wine', 'beer', 'organic food',
+      'healthy food', 'vegan food', 'vegetarian', 'gluten free', 'farm to table'
+    ];
+    
+    // Service keywords
+    const serviceKeywords = [
+      'coach', 'coaching', 'trainer', 'training', 'consultant', 'consulting',
+      'therapy', 'therapist', 'counseling', 'counselor', 'advisor', 'mentor',
+      'class', 'classes', 'lesson', 'lessons', 'workshop', 'seminar',
+      'massage', 'spa treatment', 'facial', 'manicure', 'pedicure',
+      'personal training', 'life coach', 'health coach', 'nutrition coach'
+    ];
+    
+    // Check for food/beverage intent
+    if (foodBeverageKeywords.some(keyword => lowerQuery.includes(keyword))) {
+      return {
+        intent: 'food_beverage',
+        business_type: 'product',
+        primary_offering: 'food_beverage'
+      };
+    }
+    
+    // Check for service intent
+    if (serviceKeywords.some(keyword => lowerQuery.includes(keyword))) {
+      return {
+        intent: 'service',
+        business_type: 'service'
+      };
+    }
+    
+    // Default to general
+    return {
+      intent: 'general'
+    };
+  };
+
+  // Get pending reviews count for notification dot
+  const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);
+  
+  // Diverse default avatars for users without custom avatars
+  const defaultAvatars = [
+    'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1484794/pexels-photo-1484794.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1674752/pexels-photo-1674752.jpeg?auto=compress&cs=tinysrgb&w=100'
+  ];
+  
+  // Function to get a consistent avatar for a user ID
+  const getAvatarForUser = (userId: string, customAvatar?: string) => {
+    if (customAvatar && customAvatar.trim() !== '') {
+      return customAvatar;
+    }
+    
+    // Use user ID to consistently assign the same default avatar
+    const hash = userId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    const index = Math.abs(hash) % defaultAvatars.length;
+    return defaultAvatars[index];
+  };
+  
+  // Random user search display state
+  const [currentUserSearchIndex, setCurrentUserSearchIndex] = useState(0);
+  const [isSearchAnimating, setIsSearchAnimating] = useState(false);
   
   const { latitude, longitude, error: locationError } = useGeolocation();
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Check if offering search is available
+  // All possible quick search options
+  const allQuickSearches = [
+    'cozy coffee shop',
+    'romantic dinner',
+    'energetic workout',
+    'peaceful brunch',
+    'trendy bar',
+    'artisan bakery',
+    'vintage bookstore',
+    'rooftop lounge',
+    'farm-to-table',
+    'craft brewery',
+    'yoga studio',
+    'jazz club',
+    'sushi bar',
+    'wine tasting',
+    'live music venue',
+    'healthy smoothies',
+    'late night eats',
+    'outdoor patio',
+    'intimate bistro',
+    'hipster cafe'
+  ];
+
+  // Randomly select 4 quick searches on component mount
   useEffect(() => {
-    const checkOfferingSearch = async () => {
-      try {
-        const available = await SemanticSearchService.isOfferingSearchAvailable();
-        setOfferingSearchAvailable(available);
-      } catch (error) {
-        console.error('Error checking offering search availability:', error);
-        setOfferingSearchAvailable(false);
-      }
-    };
-    
-    checkOfferingSearch();
+    const shuffled = [...allQuickSearches].sort(() => 0.5 - Math.random());
+    setQuickSearches(shuffled.slice(0, 4)); // Only show 4 instead of 5
   }, []);
 
-  // Swipe handlers for mobile navigation
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => nextCard(),
-    onSwipedRight: () => prevCard(),
-    trackMouse: false,
-    preventScrollOnSwipe: true,
-    delta: 50
-  });
+  // Fetch real user searches from Supabase
+  useEffect(() => {
+    const fetchRealUserSearches = async () => {
+      try {
+        setLoadingRealSearches(true);
+        
+        // Query user activity logs for search events from ALL users with profile data
+        const { data, error } = await supabase
+          .from('user_activity_logs')
+          .select(`
+            event_details,
+            created_at,
+            profiles!inner (
+              id,
+              name,
+              username,
+              avatar_url
+            )
+          `)
+          .eq('event_type', 'search')
+          .not('event_details->search_query', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(50); // Get more searches to ensure variety
 
-  // Handle back gesture in app mode
+        if (error) {
+          console.error('Error fetching real user searches:', error);
+          // Fallback to mock data if fetch fails
+          setRealUserSearches([
+            {
+              avatar: defaultAvatars[0],
+              username: 'Sarah',
+              query: 'cozy coffee shop'
+            },
+            {
+              avatar: defaultAvatars[1],
+              username: 'Mike',
+              query: 'romantic dinner'
+            },
+            {
+              avatar: defaultAvatars[2],
+              username: 'Emma',
+              query: 'trendy bar'
+            }
+          ]);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Transform the data and ensure we're showing different users
+          const formattedSearches = data
+            .filter(log => 
+              log.event_details?.search_query && 
+              log.profiles?.name &&
+              log.profiles?.id &&
+              log.event_details.search_query.trim().length > 0 &&
+              log.event_details.search_query.trim().length < 50 // Exclude very long queries
+            )
+            .map(log => ({
+              avatar: getAvatarForUser(log.profiles.id, log.profiles.avatar_url),
+              username: log.profiles.username || log.profiles.name.split(' ')[0], // Use first name if no username
+              query: log.event_details.search_query,
+              userId: log.profiles.id // Add user ID for debugging
+            }))
+            // Remove duplicates by user + query combination
+            .filter((search, index, array) => 
+              array.findIndex(s => s.userId === search.userId && s.query === search.query) === index
+            )
+            .slice(0, 15); // Limit to 15 most recent searches
+
+          setRealUserSearches(formattedSearches);
+          console.log('✅ Fetched', formattedSearches.length, 'real user searches');
+          console.log('🔍 Sample searches:', formattedSearches.slice(0, 3).map(s => `${s.username}: "${s.query}"`));
+          console.log('🖼️ Sample avatars:', formattedSearches.slice(0, 3).map(s => `${s.username}: ${s.avatar}`));
+        } else {
+          console.log('⚠️ No real user searches found');
+          // Fallback to mock data if no real searches
+          setRealUserSearches([
+            {
+              avatar: defaultAvatars[0],
+              username: 'Sarah',
+              query: 'cozy coffee shop'
+            },
+            {
+              avatar: defaultAvatars[1],
+              username: 'Mike',
+              query: 'romantic dinner'
+            },
+            {
+              avatar: defaultAvatars[2],
+              username: 'Emma',
+              query: 'trendy bar'
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching real user searches:', error);
+        // Fallback to mock data on error
+        setRealUserSearches([
+          {
+            avatar: defaultAvatars[0],
+            username: 'Sarah',
+            query: 'cozy coffee shop'
+          },
+          {
+            avatar: defaultAvatars[1],
+            username: 'Mike',
+            query: 'romantic dinner'
+          },
+          {
+            avatar: defaultAvatars[2],
+            username: 'Emma',
+            query: 'trendy bar'
+          }
+        ]);
+      } finally {
+        setLoadingRealSearches(false);
+      }
+    };
+
+    fetchRealUserSearches();
+  }, []);
+
+  // Cycle through user searches every 3 seconds
+  useEffect(() => {
+    if (isAppModeActive || realUserSearches.length === 0) return; // Don't cycle when in app mode or no data
+    
+    const interval = setInterval(() => {
+      setIsSearchAnimating(true);
+      
+      setTimeout(() => {
+        // Randomly select a different user search (not the current one)
+        const availableIndices = realUserSearches
+          .map((_, index) => index)
+          .filter(index => index !== currentUserSearchIndex);
+        
+        if (availableIndices.length > 0) {
+          const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+          setCurrentUserSearchIndex(randomIndex);
+        } else {
+          // Fallback if only one search available
+          setCurrentUserSearchIndex((prev) => (prev + 1) % realUserSearches.length);
+        }
+        setIsSearchAnimating(false);
+      }, 150); // Half of the transition duration
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [isAppModeActive, realUserSearches.length, currentUserSearchIndex]);
+
+  // Handle browser back button when in app mode
   useEffect(() => {
     if (isAppModeActive) {
-      const handlePopState = (event: PopStateEvent) => {
-        event.preventDefault();
-        setIsAppModeActive(false);
-        setHasSearched(false);
-        setSearchResults([]);
-        setCurrentCardIndex(0);
-        setSearchQuery('');
+      // Push a new state when entering app mode for the first time
+      window.history.pushState({ appMode: true, searchActive: true }, '', window.location.href);
+      
+      const handlePopState = (event) => {
+        console.log('🔙 Browser back button pressed, event.state:', event.state);
         
-        // Show back toast
-        setBackToastVisible(true);
-        setTimeout(() => setBackToastVisible(false), 2000);
+        // Check if the user is navigating back to search results or out of app mode
+        if (event.state && event.state.appMode && event.state.searchActive) {
+          // User is navigating back to search results - keep app mode active
+          console.log('🔙 Staying in search results view');
+          // No action needed - search results should remain visible
+        } else {
+          // User is navigating out of app mode (back to home page)
+          console.log('🔙 Exiting app mode and returning to home page');
+          setIsAppModeActive(false);
+          setSearchResults([]);
+          setHasSearched(false);
+          
+          // Show back toast
+          setShowBackToast(true);
+          setTimeout(() => setShowBackToast(false), 2000);
+          
+          // Focus search input after a brief delay
+          setTimeout(() => {
+            searchInputRef.current?.focus();
+          }, 100);
+        }
       };
-
+      
       window.addEventListener('popstate', handlePopState);
       
       return () => {
         window.removeEventListener('popstate', handlePopState);
       };
     }
-  }, [isAppModeActive, setIsAppModeActive]);
-
-  const nextCard = () => {
-    if (searchResults.length > 0) {
-      setCurrentCardIndex((prev) => (prev + 1) % searchResults.length);
-    }
-  };
-
-  const prevCard = () => {
-    if (searchResults.length > 0) {
-      setCurrentCardIndex((prev) => (prev - 1 + searchResults.length) % searchResults.length);
-    }
-  };
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!searchQuery.trim()) return;
-    
-    // Check if user has enough credits
-    if (currentUser) {
-      const hasEnoughCredits = await CreditService.hasEnoughCreditsForSearch(currentUser.id, 'semantic');
-      if (!hasEnoughCredits) {
-        alert('You need 2 credits to search. Please purchase more credits or earn them by leaving reviews.');
-        return;
+  }, [isAppModeActive]);
+  // Check for current user and load credits
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const user = await UserService.getCurrentUser();
+        setCurrentUser(user);
+        if (user) {
+          setUserCredits(user.credits || 0);
+        }
+      } catch (error) {
+        console.debug('No user logged in');
       }
-    }
+    };
     
+    checkUser();
+    
+    // Listen for auth state changes
+    const handleAuthStateChange = () => {
+      checkUser();
+    };
+    
+    window.addEventListener('auth-state-changed', handleAuthStateChange);
+    
+    return () => {
+      window.removeEventListener('auth-state-changed', handleAuthStateChange);
+    };
+  }, []);
+
+  // Listen for review updates to refresh search results
+  useEffect(() => {
+    const handleReviewUpdate = () => {
+      // Only refresh if we're in app mode and have search results
+      if (isAppModeActive && hasSearched && lastSearchQuery) {
+        console.log('🔄 Refreshing search results after review update');
+        handleSearch(lastSearchQuery);
+      }
+    };
+    
+    window.addEventListener('visited-businesses-updated', handleReviewUpdate);
+    
+    return () => {
+      window.removeEventListener('visited-businesses-updated', handleReviewUpdate);
+    };
+  }, [isAppModeActive, hasSearched, lastSearchQuery]);
+
+  const handleQuickSearch = (query: string) => {
+    setSearchQuery(query);
+    handleSearch(query);
+  };
+
+  const handleSearch = async (query?: string) => {
+    const searchTerm = query || searchQuery;
+    if (!searchTerm.trim()) return;
+    
+    console.time('Total Search Time');
+    console.log('🔍 Search started for:', searchTerm);
+
+    // Clear previous search results immediately for clean UX
+    setSearchResults([]);
     setIsSearching(true);
-    setSearchError(null);
     setHasSearched(true);
-    setIsAppModeActive(true);
+    setLastSearchQuery(searchTerm);
+    setCurrentCardIndex(0);
     
     try {
-      // Log search activity
-      if (currentUser) {
-        await ActivityService.logSearch(currentUser.id, searchQuery.trim(), 'semantic');
-      }
-
-      let results: Business[] = [];
-
-      // Try offering search first if available
-      if (offeringSearchAvailable) {
-        try {
-          console.log('🔍 Searching offerings for:', searchQuery);
-          const offeringResults = await SemanticSearchService.searchOfferingsByVibe(
-            searchQuery.trim(),
-            latitude,
-            longitude
-          );
-          
-          if (offeringResults && offeringResults.length > 0) {
-            // Transform offering results to Business format
-            results = offeringResults.map(offering => ({
-              id: offering.businessId,
-              name: offering.businessName,
-              category: offering.offeringType,
-              description: offering.offeringDescription,
-              short_description: offering.offeringTitle,
-              address: offering.businessAddress || '',
-              location: offering.businessAddress || '',
-              image: offering.offeringImageUrl,
-              gallery_urls: [],
-              hours: 'Hours not available',
-              rating: {
-                thumbsUp: 0,
-                thumbsDown: 0,
-                sentimentScore: 0
-              },
-              isOpen: offering.isOpen !== false,
-              reviews: [],
-              isPlatformBusiness: true,
-              tags: [],
-              distance: offering.distance,
-              duration: offering.duration,
-              similarity: offering.similarity
-            }));
-            console.log('✅ Found', results.length, 'offering results');
-          }
-        } catch (offeringError) {
-          console.error('Offering search failed:', offeringError);
-        }
-      }
-
-      // Fallback to business search if no offering results
-      if (results.length === 0) {
-        try {
-          console.log('🔍 Falling back to business search for:', searchQuery);
-          const businessResults = await SemanticSearchService.searchBusinessesByVibe(
-            searchQuery.trim(),
-            latitude,
-            longitude
-          );
-          
-          if (businessResults && businessResults.length > 0) {
-            results = businessResults;
-            console.log('✅ Found', results.length, 'business results');
-          }
-        } catch (businessError) {
-          console.error('Business search failed:', businessError);
-          throw businessError;
-        }
-      }
-
-      // Deduct credits after successful search
-      if (currentUser && results.length > 0) {
-        await CreditService.deductSearchCredits(currentUser.id, 'semantic');
-      }
-
-      setSearchResults(results);
-      setCurrentCardIndex(0);
+      // Check if user is authenticated for credit-based searches
+      const user = await UserService.getCurrentUser();
       
+      // If user is not logged in, show signup prompt instead of searching
+      if (!user) {
+        setSignupPromptConfig({
+          title: "You need credits to Vibe",
+          message: "Get <strong>100 free credits</strong> when you sign up!",
+          signupButtonText: "Let's Vibe",
+          loginButtonText: "Already have an account? Log in",
+          benefits: [
+            "100 free credits when you sign up",
+            "200 free credits instantly",
+            "AI-powered vibe matching",
+            "Save favorite businesses",
+            "Access to all features"
+          ]
+        });
+        setShowSignupPrompt(true);
+        setIsSearching(false);
+        setIsAppModeActive(false); // Keep hero visible for modal
+        return; // Exit early - no search for unauthenticated users
+      }
+      
+      // User is authenticated - proceed with search
+      // Check if user has enough credits for search (2 credits required)
+      const hasEnoughCredits = await CreditService.hasEnoughCreditsForSearch(user.id, 'semantic');
+      if (!hasEnoughCredits) {
+        // User is out of credits - show out of credits modal
+        setSignupPromptConfig({
+          title: "Out of Credits!",
+          message: "You need <strong>2 credits</strong> to search. Get more credits to continue vibing!",
+          signupButtonText: "Get More Credits",
+          loginButtonText: "View Credit Options",
+          benefits: [
+            "50 free credits every month",
+            "2 credits per review you write",
+            "20 credits per friend referral",
+            "Purchase credit packages starting at $2.99",
+            "Auto-refill options available"
+          ]
+        });
+        setIsOutOfCreditsModal(true);
+        setShowSignupPrompt(true);
+        setIsSearching(false);
+        setIsAppModeActive(false); // Keep hero visible for modal
+        return; // Exit early - no search for users without credits
+      }
+      
+      // SINGLE CREDIT DEDUCTION: Deduct 2 credits once at the beginning of search
+      console.log('💳 Deducting 2 credits for search...');
+      const creditDeducted = await CreditService.deductSearchCredits(user.id, 'semantic');
+      if (!creditDeducted) {
+        console.warn('⚠️ Failed to deduct credits for search');
+        setError('Failed to process search. Please try again.');
+        setIsSearching(false);
+        setIsAppModeActive(false);
+        return;
+      }
+      
+      // Update local credits display immediately
+      setUserCredits(prev => Math.max(0, prev - 2));
+      console.log('✅ Credits deducted successfully, proceeding with search');
+      
+      setIsAppModeActive(true); // Show loading screen for authenticated users
+      
+      // Determine search type based on user authentication and credits
+      let effectiveSearchType: 'platform' | 'ai' | 'semantic' = 'platform';
+      
+      if (user) {
+        // User is authenticated - check credits for advanced searches
+        const hasCreditsForSemantic = await CreditService.hasEnoughCreditsForSearch(user.id, 'semantic');
+        const hasCreditsForAI = await CreditService.hasEnoughCreditsForSearch(user.id, 'ai');
+        
+        if (hasCreditsForSemantic) {
+          effectiveSearchType = 'semantic';
+        } else if (hasCreditsForAI) {
+          effectiveSearchType = 'ai';
+        }
+      }
+      
+      setSearchType(effectiveSearchType);
+      
+      // Log search activity if user is authenticated
+      if (user) {
+        ActivityService.logSearch(user.id, searchTerm, effectiveSearchType);
+      }
+      
+      // Track search event
+      trackEvent('search_performed', {
+        query: searchTerm,
+        search_type: effectiveSearchType,
+        user_authenticated: !!user,
+        has_location: !!(latitude && longitude)
+      });
+
+      let platformResults: any[] = [];
+      let semanticResults: any[] = [];
+      let aiResults: any[] = [];
+
+      // Step 1: Always search platform businesses first
+      console.log('🔍 Searching platform businesses...');
+      
+      // Detect search intent
+      const searchIntent = detectSearchIntent(searchTerm);
+      console.log('🎯 Detected search intent:', searchIntent);
+      
+      // STEP 1: PARALLEL SEARCH EXECUTION
+      console.time('Parallel Search Execution');
+      
+      // Create array of search promises to execute in parallel
+      const searchPromises: Promise<any>[] = [];
+      
+      // Always include platform search
+      console.log('🚀 Starting platform search in parallel...');
+      const platformSearchPromise = BusinessService.getBusinesses({
+        search: searchTerm,
+        userLatitude: latitude || undefined,
+        userLongitude: longitude || undefined,
+        business_type: searchIntent.business_type,
+        primary_offering: searchIntent.primary_offering,
+        intent: searchIntent.intent
+      }).then(async (rawPlatformResults) => {
+        console.log(`✅ Platform search completed: ${rawPlatformResults.length} results`);
+        
+        // Batch fetch reviews for platform businesses
+        let allBusinessReviews: any[] = [];
+        if (rawPlatformResults.length > 0) {
+          const businessIds = rawPlatformResults.map(business => business.id);
+          console.log('📦 Batch fetching reviews for', businessIds.length, 'platform businesses');
+          allBusinessReviews = await ReviewService.getBusinessReviews(businessIds);
+        }
+        
+        // Create a map of business ID to reviews for quick lookup
+        const reviewsMap = new Map();
+        allBusinessReviews.forEach(review => {
+          if (!reviewsMap.has(review.business_id)) {
+            reviewsMap.set(review.business_id, []);
+          }
+          reviewsMap.get(review.business_id).push(review);
+        });
+        
+        // Transform platform businesses with their reviews
+        return rawPlatformResults.map(business => {
+          const businessReviews = reviewsMap.get(business.id) || [];
+          
+          // Transform reviews to match expected format
+          const formattedReviews = businessReviews.map((review: any) => ({
+            text: review.review_text || 'No review text available',
+            author: review.profiles?.name || 'Anonymous',
+            authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+            images: (review.image_urls || []).map((url: string) => ({ url })),
+            thumbsUp: review.rating >= 4
+          }));
+          
+          return {
+            ...business,
+            isPlatformBusiness: true,
+            rating: {
+              thumbsUp: business.thumbs_up || 0,
+              thumbsDown: business.thumbs_down || 0,
+              sentimentScore: business.sentiment_score || 0
+            },
+            image: business.image_url || '/verified and reviewed logo-coral copy copy.png',
+            isOpen: true,
+            reviews: formattedReviews
+          };
+        });
+      }).catch(error => {
+        console.error('❌ Platform search failed:', error);
+        return [];
+      });
+      
+      searchPromises.push(platformSearchPromise);
+      
+      // Add semantic search if user is authenticated
+      if (user && effectiveSearchType === 'semantic') {
+        console.log('🚀 Starting semantic search in parallel...');
+        const semanticSearchPromise = SemanticSearchService.searchByVibe(searchTerm, {
+          latitude: latitude || undefined,
+          longitude: longitude || undefined,
+          matchThreshold: 0.3,
+          matchCount: 10
+        }).then(response => {
+          if (response.success) {
+            console.log(`✅ Semantic search completed: ${response.results?.length || 0} results`);
+            return response.results || [];
+          }
+          return [];
+        }).catch(error => {
+          console.error('❌ Semantic search failed:', error);
+          return [];
+        });
+        
+        searchPromises.push(semanticSearchPromise);
+      }
+      
+      // Add AI search if user is authenticated and we expect to need it
+      if (user && effectiveSearchType !== 'platform') {
+        console.log('🚀 Starting AI search in parallel...');
+        const aiSearchPromise = fetch('/.netlify/functions/ai-business-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: searchTerm,
+            searchQuery: searchTerm,
+            existingResultsCount: 0, // We don't know yet since searches are parallel
+            numToGenerate: 5, // Reduced from 7 for faster response
+            latitude: latitude || undefined,
+            longitude: longitude || undefined
+          })
+        }).then(async response => {
+          if (response.ok) {
+            const aiData = await response.json();
+            if (aiData.success && aiData.results) {
+              console.log(`✅ AI search completed: ${aiData.results.length} results`);
+              return aiData.results;
+            }
+          }
+          return [];
+        }).catch(error => {
+          console.error('❌ AI search failed:', error);
+          return [];
+        });
+        
+        searchPromises.push(aiSearchPromise);
+      }
+      
+      // Execute all searches in parallel and wait for completion
+      console.log(`🚀 Executing ${searchPromises.length} searches in parallel...`);
+      const searchResultsArray = await Promise.all(searchPromises);
+      console.timeEnd('Parallel Search Execution');
+      
+      // Extract results from the parallel execution
+      platformResults = searchResultsArray[0] || [];
+      
+      if (user && effectiveSearchType === 'semantic') {
+        semanticResults = searchResultsArray[1] || [];
+        if (effectiveSearchType !== 'platform' && searchResultsArray.length > 2) {
+          aiResults = searchResultsArray[2] || [];
+        }
+      } else if (user && effectiveSearchType !== 'platform') {
+        aiResults = searchResultsArray[1] || [];
+      }
+      
+      console.log('📊 Parallel search results:', {
+        platform: platformResults.length,
+        semantic: semanticResults.length,
+        ai: aiResults.length
+      });
+      
+      // Combine and deduplicate all results using Map for guaranteed uniqueness
+      console.log('🔄 Deduplicating results...');
+      
+      // Use Map for deduplication with priority: Platform > Semantic > AI
+      const businessMap = new Map();
+      
+      // Add AI results first (lowest priority)
+      aiResults.forEach(business => {
+        if (business.id) {
+          businessMap.set(business.id, business);
+        }
+      });
+      
+      // Add semantic results (medium priority - will overwrite AI if same ID)
+      semanticResults.forEach(business => {
+        if (business.id) {
+          businessMap.set(business.id, business);
+        }
+      });
+      
+      // Add platform results last (highest priority - will overwrite semantic/AI if same ID)
+      platformResults.forEach(business => {
+        if (business.id) {
+          businessMap.set(business.id, business);
+        }
+      });
+      
+      // Convert Map back to array
+      let combinedResults = Array.from(businessMap.values());
+      
+      console.log('📊 After deduplication:', {
+        total: combinedResults.length,
+        uniqueIds: new Set(combinedResults.map(b => b.id)).size
+      });
+
+      // Calculate distances for all businesses that need it (batch operation)
+      if (latitude && longitude && combinedResults.length > 0) {
+        console.log('📏 Batch calculating distances for', combinedResults.length, 'businesses');
+        console.time('Distance Calculation');
+        try {
+          const businessesNeedingDistance = combinedResults.filter(business => 
+            business.latitude && business.longitude && (business.distance === 999999 || !business.distance)
+          );
+          
+          if (businessesNeedingDistance.length > 0) {
+            const updatedBusinesses = await BusinessService.calculateBusinessDistances(
+              businessesNeedingDistance,
+              latitude,
+              longitude
+            );
+            
+            // Create a map of business ID to distance data
+            const distanceMap = new Map();
+            updatedBusinesses.forEach(business => {
+              distanceMap.set(business.id, {
+                distance: business.distance,
+                duration: business.duration
+              });
+            });
+            
+            // Update combinedResults with calculated distances
+            combinedResults = combinedResults.map(business => {
+              const distanceData = distanceMap.get(business.id);
+              if (distanceData) {
+                return {
+                  ...business,
+                  distance: distanceData.distance,
+                  duration: distanceData.duration
+                };
+              }
+              return business;
+            });
+            
+            console.log('✅ Batch distance calculation completed');
+          }
+        } catch (distanceError) {
+          console.warn('⚠️ Batch distance calculation failed:', distanceError);
+        }
+        console.timeEnd('Distance Calculation');
+      }
+
+      // Step 5: Sort and rank results using composite scoring
+      const rankedResults = combinedResults.map(business => ({
+        ...business,
+        compositeScore: calculateCompositeScore({
+          similarity: business.similarity,
+          distance: business.distance,
+          isOpen: business.isOpen,
+          isPlatformBusiness: business.isPlatformBusiness || platformResults.some(p => p.id === business.id)
+        })
+      })).sort((a, b) => {
+        // Sort by composite score only - allows intent matching to influence ranking
+        return b.compositeScore - a.compositeScore;
+      });
+
+      console.log(`🎯 Final ranked results: ${rankedResults.length} businesses`);
+      setSearchResults(rankedResults);
+      setIsAppModeActive(true);
+      
+      console.timeEnd('Total Search Time');
+      console.log('✅ Search completed successfully');
+
     } catch (error) {
-      console.error('Search failed:', error);
-      setSearchError('Search failed. Please try again.');
+      console.error('Search error:', error);
       setSearchResults([]);
-      setIsAppModeActive(false);
+      console.timeEnd('Total Search Time');
     } finally {
       setIsSearching(false);
     }
   };
 
-  const handleTakeMeThere = (business: Business) => {
-    console.log('🗺️ Taking user to business:', business.name);
-    
-    // Record business visit if user is logged in
+
+  const handleBackToSearch = () => {
+    // Use browser's back functionality to trigger the popstate handler
+    window.history.back();
+  };
+
+  const handleRecommendBusiness = async (business: any) => {
+    if (!currentUser) {
+      setShowSignupPrompt(true);
+      return;
+    }
+
+    try {
+      const success = await BusinessService.saveAIRecommendation(business, currentUser.id);
+      if (success) {
+        alert(`${business.name} has been saved to your favorites!`);
+      } else {
+        alert('Failed to save business. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving business:', error);
+      alert('Failed to save business. Please try again.');
+    }
+  };
+
+  const handleTakeMeThere = (business: any) => {
+    // Record business visit if user is authenticated
     if (currentUser) {
       BusinessService.recordBusinessVisit(business.id, currentUser.id);
     }
     
+    // Navigate to business
     let mapsUrl;
     if (business.latitude && business.longitude) {
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
@@ -287,237 +830,176 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     window.open(mapsUrl, '_blank');
   };
 
-  const handleRecommend = async (business: Business) => {
-    if (!currentUser) {
-      setShowSignupPrompt(true);
+  const handleVoiceSearch = async () => {
+    // Check if Speech Recognition is available
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in your browser. Please try Chrome, Safari, or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      // Stop listening if already active
+      setIsListening(false);
       return;
     }
 
     try {
-      const success = await BusinessService.saveAIRecommendation(business, currentUser.id);
-      if (success) {
-        alert(`${business.name} has been added to your favorites!`);
-      } else {
-        alert('Failed to add to favorites. Please try again.');
-      }
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        console.log('🎤 Voice recognition started');
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        
+        // Update search query with the transcript
+        setSearchQuery(transcript);
+        console.log('🎤 Voice transcript:', transcript);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        console.log('🎤 Voice recognition ended');
+        
+        // Auto-search if we have a query
+        if (searchQuery.trim()) {
+          setTimeout(() => handleSearch(), 500);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        setIsListening(false);
+        console.error('🎤 Voice recognition error:', event.error);
+        
+        if (event.error === 'not-allowed') {
+          alert('Microphone access denied. Please allow microphone access and try again.');
+        } else if (event.error === 'no-speech') {
+          alert('No speech detected. Please try again.');
+        } else {
+          alert('Voice recognition error. Please try again.');
+        }
+      };
+
+      recognition.start();
     } catch (error) {
-      console.error('Error adding to favorites:', error);
-      alert('Failed to add to favorites. Please try again.');
+      console.error('🎤 Error starting voice recognition:', error);
+      alert('Failed to start voice recognition. Please try again.');
+      setIsListening(false);
     }
   };
-
-  const openBusinessProfile = (business: Business) => {
-    setSelectedBusinessForProfile(business);
-    setBusinessProfileOpen(true);
-  };
-
-  const openReviewModal = (business: Business) => {
-    setSelectedBusinessForReview(business);
-    setLeaveReviewModalOpen(true);
-  };
-
-  const handleReviewSubmit = async (reviewData: any) => {
-    setLeaveReviewModalOpen(false);
-    setSelectedBusinessForReview(null);
-  };
-
-  const openReviewerProfile = (business: Business, reviewIndex: number) => {
-    if (!business.reviews || business.reviews.length === 0) return;
-    
-    const review = business.reviews[reviewIndex];
-    const reviewer = {
-      name: review.author,
-      image: review.authorImage || "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100",
-      level: Math.floor(Math.random() * 5) + 1,
-      reviewCount: Math.floor(Math.random() * 50) + 1,
-      joinDate: '2023-' + (Math.floor(Math.random() * 12) + 1) + '-' + (Math.floor(Math.random() * 28) + 1),
-      bio: `Food enthusiast and travel blogger. I love discovering hidden gems and sharing honest reviews about my experiences.`,
-      reviews: [{
-        businessName: business.name,
-        location: business.address,
-        date: new Date().toLocaleDateString(),
-        rating: review.thumbsUp ? 'thumbsUp' as const : 'thumbsDown' as const,
-        text: review.text
-      }]
-    };
-    
-    setSelectedReviewer(reviewer);
-    setReviewerProfileOpen(true);
-  };
-
-  const openImageGallery = (business: Business, reviewIndex: number, imageIndex: number = 0) => {
-    if (!business.reviews || business.reviews[reviewIndex]?.images) return;
-    
-    setGalleryImages(business.reviews[reviewIndex].images || []);
-    setGalleryInitialIndex(imageIndex);
-    setGalleryOpen(true);
-  };
-
+  
   const handleAuthSuccess = (user: any) => {
+    setCurrentUser(user);
+    setUserCredits(user.credits || 0);
     setShowSignupPrompt(false);
+    setShowAuthModal(false);
   };
 
-  const handleCloseSignupPrompt = () => {
-    setShowSignupPrompt(false);
-  };
-
-  const handleOpenAuthModal = (mode: 'login' | 'signup') => {
-    const event = new CustomEvent('open-auth-modal', {
-      detail: { mode }
-    });
-    document.dispatchEvent(event);
-  };
-
-  if (isAppModeActive && hasSearched) {
+  if (isAppModeActive) {
     return (
-      <div className="fixed inset-0 bg-white z-40 overflow-hidden">
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 z-40 overflow-hidden">
         {/* Fixed Search Bar */}
-        <div className="search-bar-fixed bg-white p-4 border-b border-neutral-200">
-          <div className="flex items-center gap-3">
+        <div className="search-bar-fixed bg-gradient-to-r from-slate-800 to-purple-800">
+          <div className="flex items-center px-4 py-3 border-b border-white/20">
             <button
-              onClick={() => {
-                setIsAppModeActive(false);
-                setHasSearched(false);
-                setSearchResults([]);
-                setCurrentCardIndex(0);
-                setSearchQuery('');
-              }}
-              className="p-2 hover:bg-neutral-100 rounded-lg transition-colors duration-200"
+              onClick={handleBackToSearch}
+              className="mr-3 p-2 rounded-full hover:bg-white/10 transition-colors duration-200"
             >
-              <X className="h-5 w-5 text-neutral-600" />
+              <ArrowRight className="h-5 w-5 text-white rotate-180" />
             </button>
             
-            <form onSubmit={handleSearch} className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={offeringSearchAvailable 
-                    ? "Try 'brown stew fish', 'custom birthday cake', or 'shoe repair'..."
-                    : "Describe the vibe you're looking for..."
-                  }
-                  className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  disabled={isSearching}
-                />
-              </div>
-            </form>
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-500" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                placeholder="Search for vibes..."
+                className="w-full pl-10 pr-4 py-2 bg-white/90 backdrop-blur-sm border border-white/30 rounded-lg font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-white focus:border-white focus:bg-white"
+              />
+            </div>
             
             {currentUser && (
-              <CreditInfoTooltip placement="bottom" />
+              <div className="ml-3 flex items-center bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-lg border border-white/30">
+                <Zap className="h-4 w-4 mr-1" />
+                <span className="font-poppins text-sm font-semibold">{userCredits}</span>
+              </div>
             )}
           </div>
         </div>
 
         {/* Search Results */}
-        <div className="pt-20 pb-4 h-full overflow-hidden">
+        <div className="pt-16 h-full overflow-hidden">
           {isSearching ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
               <div className="text-center">
-                <Loader2 className="h-12 w-12 text-primary-500 mx-auto mb-4 animate-spin" />
-                <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
-                  Finding perfect matches...
-                </h3>
-                <p className="font-lora text-neutral-600">
-                  {offeringSearchAvailable 
-                    ? "Searching for dishes, products, and services"
-                    : "Using AI to find businesses that match your vibe"
-                  }
+                <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/20 border-t-white mx-auto mb-6"></div>
+                <p className="font-cinzel text-2xl font-bold text-white animate-pulse">
+                  ONE MOMENT...
                 </p>
-              </div>
-            </div>
-          ) : searchError ? (
-            <div className="flex items-center justify-center h-full p-4">
-              <div className="text-center max-w-md">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <X className="h-8 w-8 text-red-500" />
-                </div>
-                <h3 className="font-poppins text-lg font-semibold text-red-700 mb-2">
-                  Search Error
-                </h3>
-                <p className="font-lora text-red-600 mb-4">
-                  {searchError}
+                <p className="font-lora text-lg text-white/80 animate-pulse mt-2">
+                  Vibe search in progress
                 </p>
-                <button
-                  onClick={() => {
-                    setSearchError(null);
-                    setHasSearched(false);
-                  }}
-                  className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
-                >
-                  Try Again
-                </button>
               </div>
             </div>
           ) : searchResults.length === 0 ? (
-            <div className="flex items-center justify-center h-full p-4">
-              <div className="text-center max-w-md">
-                <Search className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
-                <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
-                  No Results Found
+            <div className="flex items-center justify-center h-full px-4 text-white">
+              <div className="text-center">
+                <Search className="h-16 w-16 text-white/60 mx-auto mb-4" />
+                <h3 className="font-cinzel text-xl font-semibold text-white mb-2">
+                  No Vibes Found
                 </h3>
-                <p className="font-lora text-neutral-600">
-                  {offeringSearchAvailable 
-                    ? "We couldn't find any dishes, products, or services matching your search. Try different keywords."
-                    : "We couldn't find any businesses matching your search. Try different keywords."
-                  }
+                <p className="font-lora text-white/80 mb-4">
+                  Try a different vibe search or check your spelling.
                 </p>
+                <button
+                  onClick={handleBackToSearch}
+                  className="font-poppins bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/30 transition-colors duration-200 border border-white/30"
+                >
+                  Re-Vibe
+                </button>
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col">
-              {/* Card Navigation */}
-              <div className="flex-1 relative" {...swipeHandlers}>
-                <div className="absolute inset-0 flex items-center justify-center p-4">
-                  <div className="w-full max-w-sm">
-                    <PlatformBusinessCard
-                      business={searchResults[currentCardIndex]}
-                      onRecommend={handleRecommend}
-                      onTakeMeThere={handleTakeMeThere}
-                    />
+            <div className="h-full overflow-y-auto">
+              <div className="px-4 py-4 space-y-4">
+                {searchResults.map((business, index) => (
+                  <div key={business.id || index} className="w-full max-w-sm mx-auto">
+                    {business.isPlatformBusiness || business.id?.startsWith('platform-') ? (
+                      <PlatformBusinessCard
+                        business={business}
+                        onRecommend={handleRecommendBusiness}
+                        onTakeMeThere={handleTakeMeThere}
+                      />
+                    ) : (
+                      <AIBusinessCard
+                        business={business}
+                        onRecommend={handleRecommendBusiness}
+                      />
+                    )}
                   </div>
-                </div>
-
-                {/* Navigation Arrows */}
-                {searchResults.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevCard}
-                      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white shadow-lg rounded-full p-3 hover:bg-neutral-50 transition-colors duration-200 z-10"
-                    >
-                      <ChevronLeft className="h-6 w-6 text-neutral-600" />
-                    </button>
-                    
-                    <button
-                      onClick={nextCard}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white shadow-lg rounded-full p-3 hover:bg-neutral-50 transition-colors duration-200 z-10"
-                    >
-                      <ChevronRight className="h-6 w-6 text-neutral-600" />
-                    </button>
-                  </>
-                )}
+                ))}
               </div>
-
-              {/* Card Counter */}
-              {searchResults.length > 1 && (
-                <div className="flex justify-center pb-4">
-                  <div className="bg-black bg-opacity-50 text-white px-4 py-2 rounded-full">
-                    <span className="font-poppins text-sm">
-                      {currentCardIndex + 1} of {searchResults.length}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
 
         {/* Back Toast */}
-        {backToastVisible && (
+        {showBackToast && (
           <div className="back-toast">
-            Returned to search
+            Tap back to search again
           </div>
         )}
       </div>
@@ -526,88 +1008,180 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   return (
     <>
-      <section className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-          <div className="absolute top-40 right-10 w-72 h-72 bg-accent-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-primary-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-4000"></div>
+      {/* Hero Section */}
+      <section className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
+        {/* Credits Display - Top Left */}
+        {currentUser && !isAppModeActive && (
+          <div className="absolute top-4 left-4 z-20 flex items-center">
+            <Zap className="h-5 w-5 mr-2 text-white" />
+            <span className="font-poppins text-lg font-bold text-white">
+              {currentUser.role === 'administrator' && userCredits >= 999999 ? '∞' : userCredits}
+            </span>
+          </div>
+        )}
+
+        {/* Favorites and Dashboard Icons - Top Right */}
+        {currentUser && !isAppModeActive && (
+          <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
+            <button
+             onClick={() => navigate('/dashboard', { state: { activeTab: 'favorites' } })}
+              className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+              title="Favorites"
+            >
+              <Icons.Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
+            </button>
+            
+            <div className="relative">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+                title="Dashboard"
+              >
+                <LayoutDashboard className="h-5 w-5 text-white group-hover:text-primary-300 transition-colors duration-200" />
+              </button>
+              {/* Notification dot for pending reviews */}
+              {!loadingPendingReviews && pendingReviewsCount > 0 && (
+                <span className="notification-dot absolute -top-1 -right-1"></span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,107,94,0.2),transparent_50%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(123,68,155,0.2),transparent_50%)]"></div>
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Hero Content */}
-          <div className="mb-12">
-            <h1 className="font-cinzel text-4xl md:text-6xl font-bold text-white mb-6">
-              Find Your Perfect
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-400 block">
-                {offeringSearchAvailable ? "Dish & Experience" : "Vibe Match"}
-              </span>
-            </h1>
-            
-            <p className="font-lora text-xl text-white/80 max-w-3xl mx-auto mb-8">
-              {offeringSearchAvailable 
-                ? "Search for specific dishes, services, and products using natural language. Find exactly what you're craving."
-                : "Discover amazing businesses that match your vibe using AI-powered search."
-              }
-            </p>
+        {/* Floating Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-2 h-2 bg-white rounded-full opacity-60 animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-1 h-1 bg-primary-400 rounded-full opacity-80 animate-pulse delay-1000"></div>
+          <div className="absolute bottom-40 left-20 w-1.5 h-1.5 bg-accent-400 rounded-full opacity-70 animate-pulse delay-2000"></div>
+          <div className="absolute bottom-20 right-10 w-2 h-2 bg-white rounded-full opacity-50 animate-pulse delay-500"></div>
+        </div>
 
-            {/* Location Status */}
-            {latitude && longitude && (
-              <div className="flex items-center justify-center text-white/60 mb-8">
-                <MapPin className="h-4 w-4 mr-2" />
-                <span className="font-lora text-sm">
-                  Searching near your location
-                </span>
+        {/* Main Content */}
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 text-center">
+          {/* Random User Search Display */}
+          <div className="mb-8 h-24 flex flex-col items-center justify-center">
+            {loadingRealSearches ? (
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-white/20 rounded-full animate-pulse mb-2"></div>
+                <p className="font-lora text-white/60 text-sm animate-pulse">
+                  Loading recent searches...
+                </p>
+              </div>
+            ) : realUserSearches.length > 0 ? (
+              <div className={`transition-opacity duration-300 ${isSearchAnimating ? 'opacity-0' : 'opacity-100'}`}>
+                <div className="flex flex-col items-center">
+                  <img 
+                    src={realUserSearches[currentUserSearchIndex].avatar}
+                    alt={realUserSearches[currentUserSearchIndex].username}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg mb-2"
+                  />
+                  <p className="font-lora text-white/80 text-sm">
+                    searched: "{realUserSearches[currentUserSearchIndex].query}"
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-2">
+                  <Search className="h-6 w-6 text-white/40" />
+                </div>
+                <p className="font-lora text-white/60 text-sm">
+                  Be the first to search!
+                </p>
               </div>
             )}
           </div>
 
-          {/* Search Form */}
-          <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                <Search className="h-6 w-6 text-neutral-400" />
-              </div>
-              
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={offeringSearchAvailable 
-                  ? "Try 'brown stew fish', 'custom birthday cake', or 'shoe repair'..."
-                  : "Describe the vibe you're looking for..."
-                }
-                className="w-full pl-16 pr-32 py-6 text-lg font-lora border-2 border-white/20 rounded-2xl focus:border-primary-400 focus:ring-0 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 shadow-2xl"
-                disabled={isSearching}
-              />
-              
-              <button
-                type="submit"
-                disabled={isSearching || !searchQuery.trim()}
-                className="absolute inset-y-0 right-0 mr-2 px-8 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {isSearching ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-5 w-5 mr-2" />
-                    Search
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+          {/* Main Heading */}
+          <div className="mb-8">
+            <p className="font-lora text-2xl md:text-4xl text-white/90 max-w-2xl mx-auto leading-relaxed">
+              Experience something new
+            </p>
+          </div>
 
-          {/* Credit Info */}
-          {currentUser && (
-            <div className="mt-6 flex items-center justify-center text-white/70">
-              <Sparkles className="h-4 w-4 mr-2" />
-              <span className="font-lora text-sm">
-                2 credits per search • You have {currentUser.credits || 0} credits
-              </span>
+          {/* Search Section */}
+          <div className="w-full max-w-2xl mx-auto mb-12">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-white/10 backdrop-blur-sm rounded-2xl"></div>
+              <div className="relative bg-white/40 backdrop-blur-md rounded-2xl p-6 border border-white/50">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 relative">
+                    <button
+                      onClick={handleVoiceSearch}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-neutral-100 transition-colors duration-200"
+                      title={isListening ? 'Stop listening' : 'Voice search'}
+                    >
+                      <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : 'text-neutral-400'}`} />
+                    </button>
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      placeholder="Describe your perfect vibe..."
+                     maxLength={150}
+                      className="w-full pl-4 pr-16 py-4 bg-white border border-white rounded-xl font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleSearch()}
+                    disabled={isSearching || !searchQuery.trim()}
+                    className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 py-4 md:px-8 rounded-xl font-poppins font-semibold hover:shadow-lg hover:shadow-primary-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    {isSearching ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      <>
+                        {/* Mobile: Search icon only */}
+                        <Search className="h-5 w-5 md:hidden" />
+                        {/* Desktop: Sparkles icon + Vibe text */}
+                        <span className="hidden md:inline">Vibe</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+               
+              </div>
+            </div>
+
+            {/* Quick Search Tags */}
+            <div className="text-center">
+              <div className="flex flex-wrap justify-center gap-2">
+                {quickSearches.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickSearch(suggestion)}
+                    className="bg-white/10 backdrop-blur-sm text-white/90 px-4 py-2 rounded-full font-lora text-sm hover:bg-white/20 transition-all duration-200 border border-white/20 hover:border-white/30"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Location Status */}
+          {latitude && longitude ? (
+            <div className="flex items-center text-white/60 text-sm font-lora">
+              <MapPin className="h-4 w-4 mr-2" />
+              <span>Location detected • Finding nearby matches</span>
+            </div>
+          ) : locationError ? (
+            <div className="flex items-center text-white/60 text-sm font-lora">
+              <MapPin className="h-4 w-4 mr-2" />
+              <span>Enable location for better results</span>
+            </div>
+          ) : (
+            <div className="flex items-center text-white/60 text-sm font-lora">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white/60 mr-2"></div>
+              <span>Getting your location...</span>
             </div>
           )}
         </div>
@@ -616,87 +1190,54 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       {/* Signup Prompt Modal */}
       {showSignupPrompt && (
         <SignupPrompt
-          onSignup={() => handleOpenAuthModal('signup')}
-          onLogin={() => handleOpenAuthModal('login')}
-          onClose={handleCloseSignupPrompt}
-          title="Save Your Favorites"
-          message="Create an account to save AI-generated businesses to your favorites."
-          signupButtonText="Sign Up Free For 200 Credits"
-          loginButtonText="Already have an account? Log in"
-        />
-      )}
-
-      {/* Business Profile Modal */}
-      {selectedBusinessForProfile && (
-        <BusinessProfileModal
-          isOpen={businessProfileOpen}
-          onClose={() => setBusinessProfileOpen(false)}
-          business={{
-            id: selectedBusinessForProfile.id,
-            name: selectedBusinessForProfile.name,
-            category: selectedBusinessForProfile.category,
-            description: selectedBusinessForProfile.description,
-            short_description: selectedBusinessForProfile.short_description,
-            address: selectedBusinessForProfile.address,
-            location: selectedBusinessForProfile.location || selectedBusinessForProfile.address,
-            image_url: selectedBusinessForProfile.image,
-            gallery_urls: selectedBusinessForProfile.gallery_urls || [],
-            hours: selectedBusinessForProfile.hours,
-            days_closed: selectedBusinessForProfile.days_closed,
-            phone_number: selectedBusinessForProfile.phone_number,
-            website_url: selectedBusinessForProfile.website_url,
-            social_media: selectedBusinessForProfile.social_media,
-            price_range: selectedBusinessForProfile.price_range,
-            service_area: selectedBusinessForProfile.service_area,
-            tags: selectedBusinessForProfile.tags,
-            is_verified: selectedBusinessForProfile.isPlatformBusiness,
-            thumbs_up: selectedBusinessForProfile.rating?.thumbsUp,
-            thumbs_down: selectedBusinessForProfile.rating?.thumbsDown,
-            sentiment_score: selectedBusinessForProfile.rating?.sentimentScore,
-            isOpen: selectedBusinessForProfile.isOpen,
-            owner_user_id: selectedBusinessForProfile.owner_user_id,
-            latitude: selectedBusinessForProfile.latitude,
-            longitude: selectedBusinessForProfile.longitude,
-            created_at: selectedBusinessForProfile.created_at,
-            updated_at: selectedBusinessForProfile.updated_at,
-            is_mobile_business: selectedBusinessForProfile.is_mobile_business,
-            is_virtual: selectedBusinessForProfile.is_virtual
+          title={signupPromptConfig?.title}
+          message={signupPromptConfig?.message}
+          signupButtonText={signupPromptConfig?.signupButtonText}
+          loginButtonText={signupPromptConfig?.loginButtonText}
+          benefits={signupPromptConfig?.benefits}
+          onSignup={() => {
+            setShowSignupPrompt(false);
+            setSignupPromptConfig(null);
+            setIsOutOfCreditsModal(false);
+            if (isOutOfCreditsModal) {
+              // Navigate to credits tab in dashboard
+              navigate('/dashboard', { state: { activeTab: 'credits' } });
+            } else {
+              // Regular signup flow
+              setAuthMode('signup');
+              setShowAuthModal(true);
+            }
+          }}
+          onLogin={() => {
+            setShowSignupPrompt(false);
+            setSignupPromptConfig(null);
+            setIsOutOfCreditsModal(false);
+            if (isOutOfCreditsModal) {
+              // Navigate to credits tab in dashboard
+              navigate('/dashboard', { state: { activeTab: 'credits' } });
+            } else {
+              // Regular login flow
+              setAuthMode('login');
+              setShowAuthModal(true);
+            }
+          }}
+          onClose={() => {
+            setShowSignupPrompt(false);
+            setSignupPromptConfig(null);
+            setIsOutOfCreditsModal(false);
           }}
         />
       )}
 
-      {/* Leave Review Modal */}
-      {selectedBusinessForReview && (
-        <LeaveReviewModal
-          isOpen={leaveReviewModalOpen}
-          onClose={() => setLeaveReviewModalOpen(false)}
-          business={{
-            id: selectedBusinessForReview.id,
-            name: selectedBusinessForReview.name,
-            image: selectedBusinessForReview.image,
-            address: selectedBusinessForReview.address,
-            visitDate: new Date().toISOString().split('T')
-          }}
-          onSubmitReview={handleReviewSubmit}
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          initialMode={authMode}
+          onAuthSuccess={handleAuthSuccess}
         />
       )}
-
-      {/* Reviewer Profile Modal */}
-      {reviewerProfileOpen && selectedReviewer && (
-        <ReviewerProfile
-          isOpen={reviewerProfileOpen}
-          onClose={() => setReviewerProfileOpen(false)}
-          reviewer={selectedReviewer}
-        />
-      )}
-
-      {/* Image Gallery Popup */}
-      <ImageGalleryPopup
-        isOpen={galleryOpen}
-        onClose={() => setGalleryOpen(false)}
-        images={galleryImages}
-        initialIndex={galleryInitialIndex}
-      />
     </>
   );
 };
