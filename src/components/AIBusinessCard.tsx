@@ -38,6 +38,8 @@ interface BusinessCard {
   businessHours?: string;
   businessPhone?: string;
   businessWebsite?: string;
+  is_virtual?: boolean;
+  website_url?: string;
 }
 
 const AIBusinessCard: React.FC<{
@@ -185,13 +187,8 @@ const AIBusinessCard: React.FC<{
             >
               {business.isOfferingSearch && business.ctaLabel ? (
                 business.ctaLabel
-              ) : 
-              {business.is_virtual && business.website_url ? (
-                <>
-                  <Icons.Globe className="h-4 w-4 mr-1" />
-                  VISIT
-                </>
-              ) : business.is_mobile_business && business.phone_number ? (
+              ) : (
+              business.is_virtual && business.website_url ? (
                 <>
                   <Icons.Globe className="h-4 w-4 mr-1" />
                   VISIT
@@ -206,8 +203,7 @@ const AIBusinessCard: React.FC<{
                   <Icons.Navigation className="h-4 w-4 mr-1" />
                   GO
                 </>
-              )}
-              )}
+              ))}
               {business.distance && business.duration && (
                 <span className="ml-1 text-xs opacity-90">
                   {business.distance}mi • {business.duration} min
