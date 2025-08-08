@@ -146,7 +146,7 @@ export default function AISearchHero() {
   };
 
   return (
-    <section className="relative min-h-screen bg-gradient-to-br from-purple-800 via-purple-900 to-purple-950 flex items-center justify-center px-4 py-20">
+    <section className="relative min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center px-4 py-20">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-30"></div>
       
@@ -170,15 +170,15 @@ export default function AISearchHero() {
         {/* Search Form */}
         <form onSubmit={handleSearch} className="mb-12">
           <div className="relative max-w-2xl mx-auto">
-            <div className="bg-white shadow-lg rounded-2xl p-6 transition-all duration-300 hover:shadow-xl">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 transition-all duration-300 hover:shadow-xl">
               <div className="flex items-center space-x-4">
-                <Search className="w-6 h-6 text-neutral-400 flex-shrink-0" />
+                <Search className="w-6 h-6 text-white/70 flex-shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="I'm looking for a cozy coffee shop with good vibes..."
-                  className="flex-1 text-lg text-neutral-900 placeholder-neutral-500 bg-transparent border-none outline-none"
+                  className="flex-1 text-lg text-white placeholder-white/70 bg-transparent border-none outline-none"
                   disabled={isSearching}
                 />
                 <button
