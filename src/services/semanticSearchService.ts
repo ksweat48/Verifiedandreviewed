@@ -1,5 +1,5 @@
-import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { supabase } from './supabaseClient';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 export interface OfferingSearchResult {
   offeringId: string;
