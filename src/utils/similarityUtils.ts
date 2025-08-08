@@ -72,3 +72,7 @@ export function calculateOfferingCompositeScore(
   
   return Math.max(0, Math.min(1, compositeScore));
 }
+
+export function getMatchPercentage(similarity: number): number {
+  return Math.round(similarity * 100);
+}
