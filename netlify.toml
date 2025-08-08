@@ -44,7 +44,11 @@
   to = "/index.html"
   status = 200
 
+# Scheduled Functions Configuration
+[functions]
+  # Functions directory is already defined under [build]
+  
   # Schedule the refresh-offerings function to run daily at 2 AM UTC
-[[functions]]
-  function = "refresh-offerings"
-  schedule = "0 2 * * *"
+  [[functions.scheduled]]
+    name = "refresh-offerings"
+    cron = "0 2 * * *"
