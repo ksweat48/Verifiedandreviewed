@@ -122,7 +122,6 @@ exports.handler = async (event, context) => {
     const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    let entities;
     let queryBuilder;
 
     if (entityType === 'business') {
