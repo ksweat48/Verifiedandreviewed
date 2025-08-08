@@ -326,7 +326,7 @@ Requirements:
           params: {
             query: query,
             location: `${searchLatitude},${searchLongitude}`,
-            rankby: 'distance',
+            radius: 16093, // 10 miles in meters
             type: 'establishment',
             fields: 'name,formatted_address,geometry,rating,opening_hours,types,place_id,photos',
             key: GOOGLE_PLACES_API_KEY
