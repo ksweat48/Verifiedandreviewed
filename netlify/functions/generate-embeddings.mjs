@@ -22,6 +22,13 @@ export const handler = async (event, context) => {
   let currentProcessingOfferingId = null;
   let effectiveOfferingId = undefined;
 
+  // Declare the variables at the top of the handler function
+  let businessId;
+  let offeringId;
+  let entityType;
+  let batchSize;
+  let forceRegenerate;
+
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -55,11 +62,12 @@ export const handler = async (event, context) => {
     }
 
     const body = JSON.parse(event.body || '{}');
-    const businessId = body.businessId;
-    const offeringId = body.offeringId;
-    const entityType = body.entityType || 'business'; // Explicitly assign default
-    const batchSize = body.batchSize || 10;
-    const forceRegenerate = body.forceRegenerate || false;
+    // Assign values to the already declared variables
+    businessId = body.businessId;
+    offeringId = body.offeringId;
+    entityType = body.entityType || 'business'; // Assign here
+    batchSize = body.batchSize || 10;
+    forceRegenerate = body.forceRegenerate || false;
 
     // Rate limiting check (more lenient for admin operations)
     console.log('🚦 Checking rate limits for embedding generation...');
