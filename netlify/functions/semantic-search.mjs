@@ -58,8 +58,8 @@ export const handler = async (event, context) => {
     const clientIP = getClientIP(event);
     
     const identifier = userId 
-      ? { value: userId, type: 'user_id' as const }
-      : { value: clientIP, type: 'ip_address' as const };
+      ? { value: userId, type: 'user_id' }
+      : { value: clientIP, type: 'ip_address' };
     
     console.log('🔍 Rate limit identifier:', identifier);
     
