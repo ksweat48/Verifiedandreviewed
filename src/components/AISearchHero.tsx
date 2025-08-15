@@ -12,7 +12,6 @@ import AIBusinessCard from './AIBusinessCard';
 import PlatformBusinessCard from './PlatformBusinessCard';
 import CreditInfoTooltip from './CreditInfoTooltip';
 import CreditUsageInfo from './CreditUsageInfo';
-import SignupPrompt from './SignupPrompt';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -28,7 +27,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchType, setSearchType] = useState<'platform' | 'ai' | 'semantic'>('platform');
-  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   
   const { latitude, longitude, error: locationError } = useGeolocation();
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -36,12 +34,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   // Handle search submission
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Check if user is authenticated before allowing search
-    if (!isAuthenticated) {
-      setShowSignupPrompt(true);
-      return; // Stop execution here
-    }
     
     if (!searchQuery.trim()) return;
 
@@ -55,7 +47,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       const hasEnoughCredits = await CreditService.hasEnoughCreditsForSearch(user?.id || '', 'platform');
       
       if (!hasEnoughCredits) {
-        setShowSignupPrompt(true);
+        alert('You need more credits to search. Please purchase credits or wait for your monthly refill.');
         setLoading(false);
         return;
       }
@@ -289,25 +281,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     }
   };
 
-  // Handle signup/login from prompt
-  const handleSignupFromPrompt = () => {
-    const event = new CustomEvent('open-auth-modal', {
-      detail: { mode: 'signup' }
-    });
-    document.dispatchEvent(event);
-    setShowSignupPrompt(false);
-  };
-
-  const handleLoginFromPrompt = () => {
-    const event = new CustomEvent('open-auth-modal', {
-      detail: { mode: 'login' }
-    });
-    document.dispatchEvent(event);
-    setShowSignupPrompt(false);
-  };
-
   return (
-    <>
+    <section className={`relative transition-all duration-500 ${
       <section className={`relative transition-all duration-500 ${
         isAppModeActive 
           ? 'h-screen overflow-hidden' 
@@ -593,27 +568,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           )}
         </div>
       </section>
-
-      {/* Signup Prompt Modal */}
-      {showSignupPrompt && (
-        <SignupPrompt
-          onSignup={handleSignupFromPrompt}
-          onLogin={handleLoginFromPrompt}
-          onClose={() => setShowSignupPrompt(false)}
-          title="Sign Up to Search"
-          message="Create an account to discover businesses that match your vibe and mood."
-          signupButtonText="Sign Up Free For 200 Credits"
-          loginButtonText="Already have an account? Log in"
-          benefits={[
-            "200 free credits instantly",
-            "50 free credits every month",
-            "AI-powered vibe matching",
-            "Save favorite businesses",
-            "Earn credits for reviews"
-          ]}
-        />
-      )}
-    </>
   );
 };
 
