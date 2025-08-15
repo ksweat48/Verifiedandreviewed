@@ -27,6 +27,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasSearched, setHasSearched] = useState(false);
   const [searchType, setSearchType] = useState<'platform' | 'ai' | 'semantic'>('platform');
+  const [setShowSignupPrompt] = useState(false);
   
   const { latitude, longitude, error: locationError } = useGeolocation();
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -283,172 +284,216 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   return (
     <section className={`relative transition-all duration-500 ${
-      <section className={`relative transition-all duration-500 ${
-        isAppModeActive 
-          ? 'h-screen overflow-hidden' 
-          : 'min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'
-      }`}>
-        {/* Background Image with Overlay */}
-        <div className="absolute inset-0">
-          <img
-            src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1920"
-            alt="Restaurant background"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-purple-900/70 to-slate-900/80"></div>
+      isAppModeActive 
+        ? 'h-screen overflow-hidden' 
+        : 'min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'
+    }`}>
+      {/* Background Image with Overlay */}
+      <div className="absolute inset-0">
+        <img
+          src="https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1920"
+          alt="Restaurant background"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-purple-900/70 to-slate-900/80"></div>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Search Bar - Fixed at top in app mode */}
+        <div className={`${isAppModeActive ? 'search-bar-fixed bg-gradient-to-r from-slate-900/95 via-purple-900/95 to-slate-900/95 backdrop-blur-sm' : 'flex-shrink-0'}`}>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {!isAppModeActive && (
+              <div className="text-center mb-8">
+                <h1 className="font-cinzel text-4xl md:text-6xl font-bold text-white mb-4">
+                  Find Your Vibe
+                </h1>
+                <p className="font-lora text-xl md:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed">
+                  Discover businesses that match your mood and energy
+                </p>
+              </div>
+            )}
+
+            {/* Search Form */}
+            <form onSubmit={handleSearch} className="relative">
+              <div className="relative">
+                <Icons.Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-6 w-6 text-neutral-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="What vibe are you looking for? (e.g., cozy coffee shop, energetic workout)"
+                  className="w-full pl-12 pr-32 py-4 bg-white/95 backdrop-blur-sm border border-white/20 rounded-2xl font-lora text-lg text-neutral-800 placeholder-neutral-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-lg"
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !searchQuery.trim()}
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 rounded-xl font-poppins font-semibold transition-all duration-200 ${
+                    loading || !searchQuery.trim()
+                      ? 'bg-neutral-300 text-neutral-600 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-primary-500 to-accent-500 text-white hover:shadow-lg hover:scale-105'
+                  }`}
+                >
+                  {loading ? (
+                    <Icons.Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    'Search'
+                  )}
+                </button>
+              </div>
+            </form>
+
+            {/* Credit Info */}
+            {user && (
+              <div className="flex items-center justify-center mt-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 flex items-center">
+                  <Icons.Zap className="h-4 w-4 text-yellow-400 mr-2" />
+                  <span className="font-poppins text-sm text-white mr-2">
+                    {user.credits} credits
+                  </span>
+                  <CreditInfoTooltip placement="bottom" />
+                </div>
+              </div>
+            )}
+
+            {/* Location Status */}
+            {locationError && (
+              <div className="mt-4 text-center">
+                <p className="font-lora text-sm text-white/70">
+                  📍 Location access denied - showing general results
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col h-full">
-          {/* Search Bar - Fixed at top in app mode */}
-          <div className={`${isAppModeActive ? 'search-bar-fixed bg-gradient-to-r from-slate-900/95 via-purple-900/95 to-slate-900/95 backdrop-blur-sm' : 'flex-shrink-0'}`}>
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              {!isAppModeActive && (
-                <div className="text-center mb-8">
-                  <h1 className="font-cinzel text-4xl md:text-6xl font-bold text-white mb-4">
-                    Find Your Vibe
-                  </h1>
-                  <p className="font-lora text-xl md:text-2xl text-white/90 max-w-2xl mx-auto leading-relaxed">
-                    Discover businesses that match your mood and energy
-                  </p>
+        {/* Results Section */}
+        {hasSearched && (
+          <div className={`flex-1 ${isAppModeActive ? 'overflow-hidden' : ''}`}>
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center">
+                  <Icons.Loader2 className="h-12 w-12 text-white animate-spin mx-auto mb-4" />
+                  <p className="font-lora text-white text-lg">Finding your perfect vibe...</p>
                 </div>
-              )}
-
-              {/* Search Form */}
-              <form onSubmit={handleSearch} className="relative">
-                <div className="relative">
-                  <Icons.Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-6 w-6 text-neutral-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="What vibe are you looking for? (e.g., cozy coffee shop, energetic workout)"
-                    className="w-full pl-12 pr-32 py-4 bg-white/95 backdrop-blur-sm border border-white/20 rounded-2xl font-lora text-lg text-neutral-800 placeholder-neutral-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-lg"
-                  />
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center max-w-md mx-auto px-4">
+                  <Icons.AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                  <p className="font-lora text-white text-lg mb-4">{error}</p>
                   <button
-                    type="submit"
-                    disabled={loading || !searchQuery.trim()}
-                    className={`absolute right-2 top-1/2 transform -translate-y-1/2 px-6 py-2 rounded-xl font-poppins font-semibold transition-all duration-200 ${
-                      loading || !searchQuery.trim()
-                        ? 'bg-neutral-300 text-neutral-600 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-primary-500 to-accent-500 text-white hover:shadow-lg hover:scale-105'
-                    }`}
+                    onClick={() => {
+                      setError(null);
+                      setHasSearched(false);
+                    }}
+                    className="font-poppins bg-white/20 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/30 transition-colors duration-200"
                   >
-                    {loading ? (
-                      <Icons.Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      'Search'
-                    )}
+                    Try Again
                   </button>
                 </div>
-              </form>
-
-              {/* Credit Info */}
-              {user && (
-                <div className="flex items-center justify-center mt-4">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 flex items-center">
-                    <Icons.Zap className="h-4 w-4 text-yellow-400 mr-2" />
-                    <span className="font-poppins text-sm text-white mr-2">
-                      {user.credits} credits
-                    </span>
-                    <CreditInfoTooltip placement="bottom" />
-                  </div>
-                </div>
-              )}
-
-              {/* Location Status */}
-              {locationError && (
-                <div className="mt-4 text-center">
-                  <p className="font-lora text-sm text-white/70">
-                    📍 Location access denied - showing general results
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center max-w-md mx-auto px-4">
+                  <Icons.Search className="h-12 w-12 text-white/60 mx-auto mb-4" />
+                  <p className="font-lora text-white text-lg mb-4">
+                    No businesses found matching "{searchQuery}"
                   </p>
+                  <p className="font-lora text-white/70 text-sm mb-6">
+                    Try a different search term or check your spelling
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setHasSearched(false);
+                    }}
+                    className="font-poppins bg-white/20 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/30 transition-colors duration-200"
+                  >
+                    New Search
+                  </button>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Results Section */}
-          {hasSearched && (
-            <div className={`flex-1 ${isAppModeActive ? 'overflow-hidden' : ''}`}>
-              {loading ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="text-center">
-                    <Icons.Loader2 className="h-12 w-12 text-white animate-spin mx-auto mb-4" />
-                    <p className="font-lora text-white text-lg">Finding your perfect vibe...</p>
-                  </div>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="text-center max-w-md mx-auto px-4">
-                    <Icons.AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-                    <p className="font-lora text-white text-lg mb-4">{error}</p>
-                    <button
-                      onClick={() => {
-                        setError(null);
-                        setHasSearched(false);
-                      }}
-                      className="font-poppins bg-white/20 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/30 transition-colors duration-200"
-                    >
-                      Try Again
-                    </button>
-                  </div>
-                </div>
-              ) : searchResults.length === 0 ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="text-center max-w-md mx-auto px-4">
-                    <Icons.Search className="h-12 w-12 text-white/60 mx-auto mb-4" />
-                    <p className="font-lora text-white text-lg mb-4">
-                      No businesses found matching "{searchQuery}"
-                    </p>
-                    <p className="font-lora text-white/70 text-sm mb-6">
-                      Try a different search term or check your spelling
-                    </p>
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setHasSearched(false);
-                      }}
-                      className="font-poppins bg-white/20 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/30 transition-colors duration-200"
-                    >
-                      New Search
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="relative h-full">
-                  {/* Desktop: Grid View */}
-                  <div className={`hidden md:block ${isAppModeActive ? 'h-full overflow-y-auto' : ''}`}>
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <div className="flex items-center justify-between mb-6">
-                        <div>
-                          <h2 className="font-cinzel text-2xl font-bold text-white mb-2">
-                            Found {searchResults.length} matches for "{searchQuery}"
-                          </h2>
-                          <div className="flex items-center gap-4">
+              </div>
+            ) : (
+              <div className="relative h-full">
+                {/* Desktop: Grid View */}
+                <div className={`hidden md:block ${isAppModeActive ? 'h-full overflow-y-auto' : ''}`}>
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h2 className="font-cinzel text-2xl font-bold text-white mb-2">
+                          Found {searchResults.length} matches for "{searchQuery}"
+                        </h2>
+                        <div className="flex items-center gap-4">
+                          <span className="font-lora text-white/80">
+                            Search type: {searchType === 'platform' ? 'Platform businesses' : searchType === 'semantic' ? 'Semantic + Platform' : 'AI + Platform'}
+                          </span>
+                          {latitude && longitude && (
                             <span className="font-lora text-white/80">
-                              Search type: {searchType === 'platform' ? 'Platform businesses' : searchType === 'semantic' ? 'Semantic + Platform' : 'AI + Platform'}
+                              📍 Near your location
                             </span>
-                            {latitude && longitude && (
-                              <span className="font-lora text-white/80">
-                                📍 Near your location
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
-                        
-                        {isAppModeActive && (
-                          <button
-                            onClick={() => setIsAppModeActive(false)}
-                            className="bg-white/20 text-white p-2 rounded-lg hover:bg-white/30 transition-colors duration-200"
-                          >
-                            <Icons.X className="h-5 w-5" />
-                          </button>
-                        )}
                       </div>
+                      
+                      {isAppModeActive && (
+                        <button
+                          onClick={() => setIsAppModeActive(false)}
+                          className="bg-white/20 text-white p-2 rounded-lg hover:bg-white/30 transition-colors duration-200"
+                        >
+                          <Icons.X className="h-5 w-5" />
+                        </button>
+                      )}
+                    </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {searchResults.map((business, index) => (
+                        <div key={business.id || index}>
+                          {business.isPlatformBusiness ? (
+                            <PlatformBusinessCard
+                              business={business}
+                              onRecommend={handleRecommend}
+                              onTakeMeThere={handleTakeMeThere}
+                            />
+                          ) : (
+                            <AIBusinessCard
+                              business={business}
+                              onRecommend={handleRecommend}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile: Swipeable Cards */}
+                <div className={`md:hidden ${isAppModeActive ? 'h-full' : ''}`}>
+                  <div className="relative h-full" {...swipeHandlers} ref={searchContainerRef}>
+                    {/* Header */}
+                    <div className="px-4 py-4 text-center">
+                      <h2 className="font-cinzel text-xl font-bold text-white mb-1">
+                        {searchResults.length} matches for "{searchQuery}"
+                      </h2>
+                      <p className="font-lora text-white/80 text-sm">
+                        Swipe to explore • {currentIndex + 1} of {searchResults.length}
+                      </p>
+                    </div>
+
+                    {/* Card Container */}
+                    <div className="relative flex-1 px-4 pb-20">
+                      <div className="relative h-full">
                         {searchResults.map((business, index) => (
-                          <div key={business.id || index}>
+                          <div
+                            key={business.id || index}
+                            className={`absolute inset-0 transition-transform duration-300 ${
+                              index === currentIndex 
+                                ? 'translate-x-0 z-10' 
+                                : index < currentIndex 
+                                  ? '-translate-x-full z-0' 
+                                  : 'translate-x-full z-0'
+                            }`}
+                          >
                             {business.isPlatformBusiness ? (
                               <PlatformBusinessCard
                                 business={business}
@@ -465,109 +510,64 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                         ))}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Mobile: Swipeable Cards */}
-                  <div className={`md:hidden ${isAppModeActive ? 'h-full' : ''}`}>
-                    <div className="relative h-full" {...swipeHandlers} ref={searchContainerRef}>
-                      {/* Header */}
-                      <div className="px-4 py-4 text-center">
-                        <h2 className="font-cinzel text-xl font-bold text-white mb-1">
-                          {searchResults.length} matches for "{searchQuery}"
-                        </h2>
-                        <p className="font-lora text-white/80 text-sm">
-                          Swipe to explore • {currentIndex + 1} of {searchResults.length}
-                        </p>
+                    {/* Navigation Buttons */}
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
+                      <button
+                        onClick={goToPrev}
+                        disabled={currentIndex === 0}
+                        className={`p-3 rounded-full transition-all duration-200 ${
+                          currentIndex === 0
+                            ? 'bg-white/20 text-white/50 cursor-not-allowed'
+                            : 'bg-white/30 text-white hover:bg-white/40 active:scale-95'
+                        }`}
+                      >
+                        <Icons.ChevronLeft className="h-6 w-6" />
+                      </button>
+
+                      <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                        <span className="font-poppins text-white font-semibold">
+                          {currentIndex + 1} / {searchResults.length}
+                        </span>
                       </div>
 
-                      {/* Card Container */}
-                      <div className="relative flex-1 px-4 pb-20">
-                        <div className="relative h-full">
-                          {searchResults.map((business, index) => (
-                            <div
-                              key={business.id || index}
-                              className={`absolute inset-0 transition-transform duration-300 ${
-                                index === currentIndex 
-                                  ? 'translate-x-0 z-10' 
-                                  : index < currentIndex 
-                                    ? '-translate-x-full z-0' 
-                                    : 'translate-x-full z-0'
-                              }`}
-                            >
-                              {business.isPlatformBusiness ? (
-                                <PlatformBusinessCard
-                                  business={business}
-                                  onRecommend={handleRecommend}
-                                  onTakeMeThere={handleTakeMeThere}
-                                />
-                              ) : (
-                                <AIBusinessCard
-                                  business={business}
-                                  onRecommend={handleRecommend}
-                                />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Navigation Buttons */}
-                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
-                        <button
-                          onClick={goToPrev}
-                          disabled={currentIndex === 0}
-                          className={`p-3 rounded-full transition-all duration-200 ${
-                            currentIndex === 0
-                              ? 'bg-white/20 text-white/50 cursor-not-allowed'
-                              : 'bg-white/30 text-white hover:bg-white/40 active:scale-95'
-                          }`}
-                        >
-                          <Icons.ChevronLeft className="h-6 w-6" />
-                        </button>
-
-                        <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                          <span className="font-poppins text-white font-semibold">
-                            {currentIndex + 1} / {searchResults.length}
-                          </span>
-                        </div>
-
-                        <button
-                          onClick={goToNext}
-                          disabled={currentIndex === searchResults.length - 1}
-                          className={`p-3 rounded-full transition-all duration-200 ${
-                            currentIndex === searchResults.length - 1
-                              ? 'bg-white/20 text-white/50 cursor-not-allowed'
-                              : 'bg-white/30 text-white hover:bg-white/40 active:scale-95'
-                          }`}
-                        >
-                          <Icons.ChevronRight className="h-6 w-6" />
-                        </button>
-                      </div>
-
-                      {/* App Mode Toggle */}
-                      {hasSearched && !isAppModeActive && (
-                        <button
-                          onClick={handleAppModeToggle}
-                          className="absolute top-4 right-4 bg-white/20 text-white p-2 rounded-lg hover:bg-white/30 transition-colors duration-200"
-                        >
-                          <Icons.Maximize className="h-5 w-5" />
-                        </button>
-                      )}
+                      <button
+                        onClick={goToNext}
+                        disabled={currentIndex === searchResults.length - 1}
+                        className={`p-3 rounded-full transition-all duration-200 ${
+                          currentIndex === searchResults.length - 1
+                            ? 'bg-white/20 text-white/50 cursor-not-allowed'
+                            : 'bg-white/30 text-white hover:bg-white/40 active:scale-95'
+                        }`}
+                      >
+                        <Icons.ChevronRight className="h-6 w-6" />
+                      </button>
                     </div>
+
+                    {/* App Mode Toggle */}
+                    {hasSearched && !isAppModeActive && (
+                      <button
+                        onClick={handleAppModeToggle}
+                        className="absolute top-4 right-4 bg-white/20 text-white p-2 rounded-lg hover:bg-white/30 transition-colors duration-200"
+                      >
+                        <Icons.Maximize className="h-5 w-5" />
+                      </button>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
+        )}
 
-          {/* Credit Usage Info - Only show when not in app mode and user is logged in */}
-          {!isAppModeActive && !hasSearched && user && (
-            <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-              <CreditUsageInfo />
-            </div>
-          )}
-        </div>
-      </section>
+        {/* Credit Usage Info - Only show when not in app mode and user is logged in */}
+        {!isAppModeActive && !hasSearched && user && (
+          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+            <CreditUsageInfo />
+          </div>
+        )}
+      </div>
+    </section>
   );
 };
 
