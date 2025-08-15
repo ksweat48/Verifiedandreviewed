@@ -1,58 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSwipeable } from 'react-swipeable';
+import { Search, MapPin, Zap, X, ArrowRight, Navigation, Sparkles, Mic, LayoutDashboard } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useGeolocation } from '../hooks/useGeolocation';
-import { useAuth } from '../hooks/useAuth';
-import { CreditService } from '../services/creditService';
 import { BusinessService } from '../services/businessService';
+import { ReviewService } from '../services/reviewService';
 import { SemanticSearchService } from '../services/semanticSearchService';
+import { CreditService } from '../services/creditService';
+import { UserService } from '../services/userService';
 import { ActivityService } from '../services/activityService';
-import AIBusinessCard from './AIBusinessCard';
+import { useAnalytics } from '../hooks/useAnalytics';
+import { calculateCompositeScore } from '../utils/similarityUtils';
 import PlatformBusinessCard from './PlatformBusinessCard';
-import CreditInfoTooltip from './CreditInfoTooltip';
+import AIBusinessCard from './AIBusinessCard';
 import SignupPrompt from './SignupPrompt';
-import { fetchWithTimeout } from '../utils/fetchWithTimeout';
-
-interface SearchResult {
-  id: string;
-  name: string;
-  address: string;
-  image: string;
-  shortDescription?: string;
-  rating: number;
-  hours?: string;
-  isOpen?: boolean;
-  reviews: Array<{
-    text: string;
-    author: string;
-    images?: Array<{url: string; alt?: string}>;
-    thumbsUp: boolean;
-  }>;
-  isPlatformBusiness: boolean;
-  distance?: number;
-  duration?: number;
-  isGoogleVerified?: boolean;
-  placeId?: string;
-  similarity?: number;
-  is_mobile_business?: boolean;
-  phone_number?: string;
-  latitude?: number;
-  longitude?: number;
-  // Offering-specific properties
-  isOfferingSearch?: boolean;
-  offeringId?: string;
-  businessId?: string;
-  ctaLabel?: string;
-  offeringDescription?: string;
-  businessAddress?: string;
-  businessCategory?: string;
-  businessHours?: string;
-  businessPhone?: string;
-  businessWebsite?: string;
-  is_virtual?: boolean;
-  website_url?: string;
-}
+import AuthModal from './AuthModal';
+import CreditInfoTooltip from './CreditInfoTooltip';
+import { supabase } from '../services/supabaseClient';
+import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -61,406 +26,877 @@ interface AISearchHeroProps {
 
 const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppModeActive }) => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { trackEvent } = useAnalytics();
+  const { latitude, longitude, error: locationError } = useGeolocation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showBackToast, setShowBackToast] = useState(false);
   const [searchType, setSearchType] = useState<'platform' | 'ai' | 'semantic'>('platform');
   const [hasSearched, setHasSearched] = useState(false);
-  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
-  const [backToastVisible, setBackToastVisible] = useState(false);
-  const [searchMode, setSearchMode] = useState<'business' | 'offering'>('business');
-  
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
+  const [userCredits, setUserCredits] = useState<number>(0);
+  const [isLoadingCredits, setIsLoadingCredits] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [signupPromptConfig, setSignupPromptConfig] = useState<any>(null);
+  const [realUserSearches, setRealUserSearches] = useState<Array<{
+    avatar: string;
+    username: string;
+    query: string;
+  }>>([]);
+  const [loadingRealSearches, setLoadingRealSearches] = useState(true);
+  const [quickSearches, setQuickSearches] = useState<string[]>([]);
+  const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const resultsContainerRef = useRef<HTMLDivElement>(null);
   
-  const { latitude, longitude, error: locationError } = useGeolocation({
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 300000
-  });
+  // Toggle between business and offering search modes
+  const SEARCH_DISH_MODE = true;
+  
+  // Intent detection function
+  const detectSearchIntent = (query: string): {
+    intent: 'food_beverage' | 'service' | 'retail' | 'general';
+    business_type?: 'product' | 'service' | 'hybrid';
+    primary_offering?: string;
+  } => {
+    const lowerQuery = query.toLowerCase();
+    
+    // Food & Beverage keywords
+    const foodBeverageKeywords = [
+      'smoothie', 'smoothies', 'juice', 'coffee', 'tea', 'restaurant', 'cafe', 'bar',
+      'food', 'eat', 'drink', 'meal', 'breakfast', 'lunch', 'dinner', 'brunch',
+      'pizza', 'burger', 'sandwich', 'salad', 'soup', 'pasta', 'sushi', 'tacos',
+      'bakery', 'brewery', 'winery', 'cocktail', 'wine', 'beer', 'organic food',
+      'healthy food', 'vegan food', 'vegetarian', 'gluten free', 'farm to table'
+    ];
+    
+    // Service keywords
+    const serviceKeywords = [
+      'coach', 'coaching', 'trainer', 'training', 'consultant', 'consulting',
+      'therapy', 'therapist', 'counseling', 'counselor', 'advisor', 'mentor',
+      'class', 'classes', 'lesson', 'lessons', 'workshop', 'seminar',
+      'massage', 'spa treatment', 'facial', 'manicure', 'pedicure',
+      'personal training', 'life coach', 'health coach', 'nutrition coach'
+    ];
+    
+    // Check for food/beverage intent
+    if (foodBeverageKeywords.some(keyword => lowerQuery.includes(keyword))) {
+      return {
+        intent: 'food_beverage',
+        business_type: 'product',
+        primary_offering: 'food_beverage'
+      };
+    }
+    
+    // Check for service intent
+    if (serviceKeywords.some(keyword => lowerQuery.includes(keyword))) {
+      return {
+        intent: 'service',
+        business_type: 'service'
+      };
+    }
+    
+    // Default to general
+    return {
+      intent: 'general'
+    };
+  };
 
-  // Auto-focus search input when app mode becomes active
+  // Get pending reviews count for notification dot
+  const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);
+  
+  // Diverse default avatars for users without custom avatars
+  const defaultAvatars = [
+    'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1484794/pexels-photo-1484794.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg?auto=compress&cs=tinysrgb&w=100',
+    'https://images.pexels.com/photos/1674752/pexels-photo-1674752.jpeg?auto=compress&cs=tinysrgb&w=100'
+  ];
+  
+  // Function to get a consistent avatar for a user ID
+  const getAvatarForUser = (userId: string, customAvatar?: string) => {
+    if (customAvatar && customAvatar.trim() !== '') {
+      return customAvatar;
+    }
+    
+    // Use user ID to consistently assign the same default avatar
+    const hash = userId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    const index = Math.abs(hash) % defaultAvatars.length;
+    return defaultAvatars[index];
+  };
+  
+  // Random user search display state
+  const [currentUserSearchIndex, setCurrentUserSearchIndex] = useState(0);
+  const [isSearchAnimating, setIsSearchAnimating] = useState(false);
+
+  // All possible quick search options
+  const allQuickSearches = [
+    'cozy coffee shop',
+    'romantic dinner',
+    'energetic workout',
+    'peaceful brunch',
+    'trendy bar',
+    'artisan bakery',
+    'vintage bookstore',
+    'rooftop lounge',
+    'farm-to-table',
+    'craft brewery',
+    'yoga studio',
+    'jazz club',
+    'sushi bar',
+    'wine tasting',
+    'live music venue',
+    'healthy smoothies',
+    'late night eats',
+    'outdoor patio',
+    'intimate bistro',
+    'hipster cafe'
+  ];
+
+  // Randomly select 4 quick searches on component mount
   useEffect(() => {
-    if (isAppModeActive && searchInputRef.current) {
-      searchInputRef.current.focus();
+    const shuffled = [...allQuickSearches].sort(() => 0.5 - Math.random());
+    setQuickSearches(shuffled.slice(0, 4)); // Only show 4 instead of 5
+  }, []);
+
+  // Fetch real user searches from Supabase
+  useEffect(() => {
+    const fetchRealUserSearches = async () => {
+      try {
+        setLoadingRealSearches(true);
+        
+        // Query user activity logs for search events from ALL users with profile data
+        const { data, error } = await supabase
+          .from('user_activity_logs')
+          .select(`
+            event_details,
+            created_at,
+            profiles!inner (
+              id,
+              name,
+              username,
+              avatar_url
+            )
+          `)
+          .eq('event_type', 'search')
+          .not('event_details->search_query', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(50); // Get more searches to ensure variety
+
+        if (error) {
+          console.error('Error fetching real user searches:', error);
+          // Fallback to mock data if fetch fails
+          setRealUserSearches([
+            {
+              avatar: defaultAvatars[0],
+              username: 'Sarah',
+              query: 'cozy coffee shop'
+            },
+            {
+              avatar: defaultAvatars[1],
+              username: 'Mike',
+              query: 'romantic dinner'
+            },
+            {
+              avatar: defaultAvatars[2],
+              username: 'Emma',
+              query: 'trendy bar'
+            }
+          ]);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Transform the data and ensure we're showing different users
+          const formattedSearches = data
+            .filter(log => 
+              log.event_details?.search_query && 
+              log.profiles?.name &&
+              log.profiles?.id &&
+              log.event_details.search_query.trim().length > 0 &&
+              log.event_details.search_query.trim().length < 50 // Exclude very long queries
+            )
+            .map(log => ({
+              avatar: getAvatarForUser(log.profiles.id, log.profiles.avatar_url),
+              username: log.profiles.username || log.profiles.name.split(' ')[0], // Use first name if no username
+              query: log.event_details.search_query,
+              userId: log.profiles.id // Add user ID for debugging
+            }))
+            // Remove duplicates by user + query combination
+            .filter((search, index, array) => 
+              array.findIndex(s => s.userId === search.userId && s.query === search.query) === index
+            )
+            .slice(0, 15); // Limit to 15 most recent searches
+
+          setRealUserSearches(formattedSearches);
+          console.log('✅ Fetched', formattedSearches.length, 'real user searches');
+          console.log('🔍 Sample searches:', formattedSearches.slice(0, 3).map(s => `${s.username}: "${s.query}"`));
+          console.log('🖼️ Sample avatars:', formattedSearches.slice(0, 3).map(s => `${s.username}: ${s.avatar}`));
+        } else {
+          console.log('⚠️ No real user searches found');
+          // Fallback to mock data if no real searches
+          setRealUserSearches([
+            {
+              avatar: defaultAvatars[0],
+              username: 'Sarah',
+              query: 'cozy coffee shop'
+            },
+            {
+              avatar: defaultAvatars[1],
+              username: 'Mike',
+              query: 'romantic dinner'
+            },
+            {
+              avatar: defaultAvatars[2],
+              username: 'Emma',
+              query: 'trendy bar'
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching real user searches:', error);
+        // Fallback to mock data on error
+        setRealUserSearches([
+          {
+            avatar: defaultAvatars[0],
+            username: 'Sarah',
+            query: 'cozy coffee shop'
+          },
+          {
+            avatar: defaultAvatars[1],
+            username: 'Mike',
+            query: 'romantic dinner'
+          },
+          {
+            avatar: defaultAvatars[2],
+            username: 'Emma',
+            query: 'trendy bar'
+          }
+        ]);
+      } finally {
+        setLoadingRealSearches(false);
+      }
+    };
+
+    fetchRealUserSearches();
+  }, []);
+
+  // Cycle through user searches every 3 seconds
+  useEffect(() => {
+    if (isAppModeActive || realUserSearches.length === 0) return; // Don't cycle when in app mode or no data
+    
+    const interval = setInterval(() => {
+      setIsSearchAnimating(true);
+      
+      setTimeout(() => {
+        // Randomly select a different user search (not the current one)
+        const availableIndices = realUserSearches
+          .map((_, index) => index)
+          .filter(index => index !== currentUserSearchIndex);
+        
+        if (availableIndices.length > 0) {
+          const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+          setCurrentUserSearchIndex(randomIndex);
+        } else {
+          // Fallback if only one search available
+          setCurrentUserSearchIndex((prev) => (prev + 1) % realUserSearches.length);
+        }
+        setIsSearchAnimating(false);
+      }, 150); // Half of the transition duration
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [isAppModeActive, realUserSearches.length, currentUserSearchIndex]);
+
+  // Handle browser back button when in app mode
+  useEffect(() => {
+    if (isAppModeActive) {
+      // Push a new state when entering app mode for the first time
+      window.history.pushState({ appMode: true, searchActive: true }, '', window.location.href);
+      
+      const handlePopState = (event) => {
+        console.log('🔙 Browser back button pressed, event.state:', event.state);
+        
+        // Check if the user is navigating back to search results or out of app mode
+        if (event.state && event.state.appMode && event.state.searchActive) {
+          // User is navigating back to search results - keep app mode active
+          console.log('🔙 Staying in search results view');
+          // No action needed - search results should remain visible
+        } else {
+          // User is navigating out of app mode (back to home page)
+          console.log('🔙 Exiting app mode and returning to home page');
+          setIsAppModeActive(false);
+          setSearchResults([]);
+          setHasSearched(false);
+          
+          // Show back toast
+          setShowBackToast(true);
+          setTimeout(() => setShowBackToast(false), 2000);
+          
+          // Focus search input after a brief delay
+          setTimeout(() => {
+            searchInputRef.current?.focus();
+          }, 100);
+        }
+      };
+      
+      window.addEventListener('popstate', handlePopState);
+      
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
     }
   }, [isAppModeActive]);
-
-  // Handle browser back button in app mode
+  // Check for current user and load credits
   useEffect(() => {
-    if (!isAppModeActive) return;
-
-    const handlePopState = (event: PopStateEvent) => {
-      if (hasSearched) {
-        // Show back toast and clear search
-        setBackToastVisible(true);
-        setTimeout(() => setBackToastVisible(false), 2000);
-        
-        setHasSearched(false);
-        setSearchResults([]);
-        setCurrentIndex(0);
-        setError(null);
-        
-        // Push new state to prevent actual navigation
-        window.history.pushState(null, '', window.location.href);
-      } else {
-        // Exit app mode
-        setIsAppModeActive(false);
+    const checkUser = async () => {
+      try {
+        const user = await UserService.getCurrentUser();
+        setCurrentUser(user);
+        if (user) {
+          setUserCredits(user.credits || 0);
+        }
+      } catch (error) {
+        console.debug('No user logged in');
       }
     };
-
-    // Push initial state when entering app mode
-    window.history.pushState(null, '', window.location.href);
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [isAppModeActive, hasSearched, setIsAppModeActive]);
-
-  // Swipe handlers for mobile navigation
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => {
-      if (searchResults.length > 0 && currentIndex < searchResults.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-      }
-    },
-    onSwipedRight: () => {
-      if (searchResults.length > 0 && currentIndex > 0) {
-        setCurrentIndex(prev => prev - 1);
-      }
-    },
-    trackMouse: false,
-    trackTouch: true,
-    preventScrollOnSwipe: true
-  });
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
     
-    if (!searchQuery.trim()) return;
+    checkUser();
+    
+    // Listen for auth state changes
+    const handleAuthStateChange = () => {
+      checkUser();
+    };
+    
+    window.addEventListener('auth-state-changed', handleAuthStateChange);
+    
+    return () => {
+      window.removeEventListener('auth-state-changed', handleAuthStateChange);
+    };
+  }, []);
 
-    // Check if user is authenticated
-    if (!isAuthenticated) {
-      setShowSignupPrompt(true);
-      return;
-    }
+  // Listen for review updates to refresh search results
+  useEffect(() => {
+    const handleReviewUpdate = () => {
+      // Only refresh if we're in app mode and have search results
+      if (isAppModeActive && hasSearched && lastSearchQuery) {
+        console.log('🔄 Refreshing search results after review update');
+        handleSearch(lastSearchQuery);
+      }
+    };
+    
+    window.addEventListener('visited-businesses-updated', handleReviewUpdate);
+    
+    return () => {
+      window.removeEventListener('visited-businesses-updated', handleReviewUpdate);
+    };
+  }, [isAppModeActive, hasSearched, lastSearchQuery]);
 
-    // Check if user has enough credits
-    const hasEnoughCredits = await CreditService.hasEnoughCreditsForSearch(user?.id || '', 'platform');
-    if (!hasEnoughCredits) {
-      setShowSignupPrompt(true);
-      return;
-    }
+  const handleQuickSearch = (query: string) => {
+    setSearchQuery(query);
+    handleSearch(query);
+  };
 
-    setLoading(true);
-    setError(null);
+  // Map offering search results to BusinessCard format
+  const mapOfferingToBusinessCard = (offering: any): any => {
+    return {
+      id: offering.businessId,
+      name: offering.businessName,
+      address: offering.businessAddress || 'Address not available',
+      image: offering.imageUrl,
+      shortDescription: offering.offeringDescription,
+      rating: Math.min(5, Math.max(0, offering.compositeScore * 5)), // Convert 0-1 to 0-5
+      hours: offering.businessHours,
+      isOpen: offering.isOpen,
+      reviews: [], // Offerings don't have reviews in the same format
+      isPlatformBusiness: true,
+      distance: offering.distanceKm,
+      duration: Math.round((offering.distanceKm || 0) * 3), // Rough estimate: 3 min per km
+      isGoogleVerified: false,
+      placeId: undefined,
+      similarity: offering.semanticScore,
+      is_mobile_business: false,
+      phone_number: offering.businessPhone,
+      latitude: offering.businessLatitude,
+      longitude: offering.businessLongitude,
+      // Offering-specific properties
+      isOfferingSearch: true,
+      offeringId: offering.offeringId,
+      businessId: offering.businessId,
+      ctaLabel: offering.ctaLabel,
+      offeringDescription: offering.offeringDescription,
+      businessAddress: offering.businessAddress,
+      businessCategory: offering.businessCategory,
+      businessHours: offering.businessHours,
+      businessPhone: offering.businessPhone,
+      businessWebsite: offering.businessWebsite
+    };
+  };
+
+  const handleSearch = async (query?: string) => {
+    const searchTerm = query || searchQuery;
+    if (!searchTerm.trim()) return;
+    
+    console.time('Total Search Time');
+    console.log('🔍 Search started for:', searchTerm);
+
+    // Clear previous search results immediately for clean UX
     setSearchResults([]);
-    setCurrentIndex(0);
+    setIsSearching(true);
     setHasSearched(true);
-
+    setLastSearchQuery(searchTerm);
+    setCurrentCardIndex(0);
+    
     try {
-      // Activate app mode when search starts
-      if (!isAppModeActive) {
-        setIsAppModeActive(true);
-      }
-
-      // Log search activity
-      if (user) {
-        ActivityService.logSearch(user.id, searchQuery, searchType);
-      }
-
-      let results: SearchResult[] = [];
-      let usedSearchType = searchType;
-
-      // Step 1: Always try platform search first
-      console.log('🔍 Step 1: Searching platform businesses...');
-      
-      if (searchMode === 'offering') {
-        // Search offerings/dishes/items
-        const offeringResponse = await fetchWithTimeout('/.netlify/functions/search-offerings', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await getAuthToken()}`
-          },
-          timeout: 15000
-        }, `?q=${encodeURIComponent(searchQuery)}&lat=${latitude || ''}&lng=${longitude || ''}&limit=10`);
-
-        if (offeringResponse.ok) {
-          const offeringData = await offeringResponse.json();
-          if (offeringData.success && offeringData.results) {
-            results = offeringData.results.map((offering: any) => ({
-              id: offering.offeringId,
-              name: offering.businessName,
-              address: offering.businessAddress || 'Address not available',
-              image: offering.imageUrl || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-              shortDescription: offering.offeringDescription || `${offering.offeringTitle} at ${offering.businessName}`,
-              rating: 4.5, // Default rating for offerings
-              hours: offering.businessHours || 'Hours not available',
-              isOpen: offering.isOpen !== false,
-              reviews: [{
-                text: `Great ${offering.offeringTitle.toLowerCase()}! Really enjoyed this offering.`,
-                author: "Platform User",
-                thumbsUp: true
-              }],
-              isPlatformBusiness: true,
-              distance: offering.distanceKm ? offering.distanceKm * 0.621371 : undefined, // Convert km to miles
-              duration: 15, // Default duration
-              similarity: offering.semanticScore || 0.8,
-              isOfferingSearch: true,
-              offeringId: offering.offeringId,
-              businessId: offering.businessId,
-              ctaLabel: offering.ctaLabel || 'View Item',
-              offeringDescription: offering.offeringDescription,
-              businessAddress: offering.businessAddress,
-              businessCategory: offering.businessCategory,
-              businessHours: offering.businessHours,
-              businessPhone: offering.businessPhone,
-              businessWebsite: offering.businessWebsite
-            }));
-            
-            console.log('✅ Found', results.length, 'offering results');
-            usedSearchType = 'platform';
+      if (SEARCH_DISH_MODE) {
+        // Search for offerings/dishes
+        console.log('🍽️ Searching offerings for:', searchQuery);
+        
+        const searchParams = new URLSearchParams({
+          q: searchTerm.trim(),
+          limit: '7'
+        });
+        
+        // Add location if available
+        if (latitude && longitude) {
+          searchParams.append('lat', latitude.toString());
+          searchParams.append('lng', longitude.toString());
+        }
+        
+        const response = await fetch(`/.netlify/functions/search-offerings?${searchParams}`);
+        
+        if (!response.ok) {
+          throw new Error(`Search failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          const mappedResults = data.results.map(mapOfferingToBusinessCard);
+          setSearchResults(mappedResults);
+          setCurrentCardIndex(0);
+          setIsAppModeActive(true);
+          
+          // Log search activity
+          if (currentUser) {
+            ActivityService.logSearch(currentUser.id, searchTerm, 'semantic');
           }
+        } else {
+          throw new Error(data.message || 'Search failed');
         }
       } else {
-        // Search businesses
-        const platformBusinesses = await BusinessService.getBusinesses({
-          search: searchQuery,
-          userLatitude: latitude || undefined,
-          userLongitude: longitude || undefined
+        // Original business search logic
+      // Check if user is authenticated for credit-based searches
+      const user = await UserService.getCurrentUser();
+      
+      // If user is not logged in, show signup prompt instead of searching
+      if (!user) {
+        setSignupPromptConfig({
+          title: "You need credits to Vibe",
+          message: "Get <strong>100 free credits</strong> when you sign up!",
+          signupButtonText: "Let's Vibe",
+          loginButtonText: "Already have an account? Log in",
+          benefits: [
+            "100 free credits when you sign up",
+            "200 free credits instantly",
+            "AI-powered vibe matching",
+            "Save favorite businesses",
+            "Access to all features"
+          ]
         });
+        setShowSignupPrompt(true);
+        setIsSearching(false);
+        setIsAppModeActive(false); // Keep hero visible for modal
+        return; // Exit early - no search for unauthenticated users
+      }
+      
+      // User is authenticated - proceed with search
+      // Check if user has enough credits for search (2 credits required)
+      const hasEnoughCredits = await CreditService.hasEnoughCreditsForSearch(user.id, 'semantic');
+      if (!hasEnoughCredits) {
+        // User is out of credits - show out of credits modal
+        setSignupPromptConfig({
+          title: "Out of Credits!",
+          message: "You need <strong>2 credits</strong> to search. Get more credits to continue vibing!",
+          signupButtonText: "Get More Credits",
+          loginButtonText: "View Credit Options",
+          benefits: [
+            "50 free credits every month",
+            "2 credits per review you write",
+            "20 credits per friend referral",
+            "Purchase credit packages starting at $2.99",
+            "Auto-refill options available"
+          ]
+        });
+        setIsOutOfCreditsModal(true);
+        setShowSignupPrompt(true);
+        setIsSearching(false);
+        setIsAppModeActive(false); // Keep hero visible for modal
+        return; // Exit early - no search for users without credits
+      }
+      
+      // SINGLE CREDIT DEDUCTION: Deduct 2 credits once at the beginning of search
+      console.log('💳 Deducting 2 credits for search...');
+      const creditDeducted = await CreditService.deductSearchCredits(user.id, 'semantic');
+      if (!creditDeducted) {
+        console.warn('⚠️ Failed to deduct credits for search');
+        setError('Failed to process search. Please try again.');
+        setIsSearching(false);
+        setIsAppModeActive(false);
+        return;
+      }
+      
+      // Update local credits display immediately
+      setUserCredits(prev => Math.max(0, prev - 2));
+      console.log('✅ Credits deducted successfully, proceeding with search');
+      
+      setIsAppModeActive(true); // Show loading screen for authenticated users
+      
+      // Determine search type based on user authentication and credits
+      let effectiveSearchType: 'platform' | 'ai' | 'semantic' = 'platform';
+      
+      if (user) {
+        // User is authenticated - check credits for advanced searches
+        const hasCreditsForSemantic = await CreditService.hasEnoughCreditsForSearch(user.id, 'semantic');
+        const hasCreditsForAI = await CreditService.hasEnoughCreditsForSearch(user.id, 'ai');
+        
+        if (hasCreditsForSemantic) {
+          effectiveSearchType = 'semantic';
+        } else if (hasCreditsForAI) {
+          effectiveSearchType = 'ai';
+        }
+      }
+      
+      setSearchType(effectiveSearchType);
+      
+      // Log search activity if user is authenticated
+      if (user) {
+        ActivityService.logSearch(user.id, searchTerm, effectiveSearchType);
+      }
+      
+      // Track search event
+      trackEvent('search_performed', {
+        query: searchTerm,
+        search_type: effectiveSearchType,
+        user_authenticated: !!user,
+        has_location: !!(latitude && longitude)
+      });
 
-        console.log('✅ Platform search found', platformBusinesses.length, 'businesses');
+      let platformResults: any[] = [];
+      let semanticResults: any[] = [];
+      let aiResults: any[] = [];
 
-        if (platformBusinesses.length > 0) {
-          // Calculate accurate distances if we have user location
-          let businessesWithDistances = platformBusinesses;
-          if (latitude && longitude) {
-            try {
-              businessesWithDistances = await BusinessService.calculateBusinessDistances(
-                platformBusinesses,
-                latitude,
-                longitude
-              );
-              console.log('✅ Updated platform businesses with accurate distances');
-            } catch (distanceError) {
-              console.warn('⚠️ Distance calculation failed, using placeholder values:', distanceError);
-            }
+      // Step 1: Always search platform businesses first
+      console.log('🔍 Searching platform businesses...');
+      
+      // Detect search intent
+      const searchIntent = detectSearchIntent(searchTerm);
+      console.log('🎯 Detected search intent:', searchIntent);
+      
+      // STEP 1: PARALLEL SEARCH EXECUTION
+      console.time('Parallel Search Execution');
+      
+      // Create array of search promises to execute in parallel
+      const searchPromises: Promise<any>[] = [];
+      
+      // Always include platform search
+      console.log('🚀 Starting platform search in parallel...');
+      const platformSearchPromise = BusinessService.getBusinesses({
+        search: searchTerm,
+        userLatitude: latitude || undefined,
+        userLongitude: longitude || undefined,
+        business_type: searchIntent.business_type,
+        primary_offering: searchIntent.primary_offering,
+        intent: searchIntent.intent
+      }).then(async (rawPlatformResults) => {
+        console.log(`✅ Platform search completed: ${rawPlatformResults.length} results`);
+        
+        // Batch fetch reviews for platform businesses
+        let allBusinessReviews: any[] = [];
+        if (rawPlatformResults.length > 0) {
+          const businessIds = rawPlatformResults.map(business => business.id);
+          console.log('📦 Batch fetching reviews for', businessIds.length, 'platform businesses');
+          allBusinessReviews = await ReviewService.getBusinessReviews(businessIds);
+        }
+        
+        // Create a map of business ID to reviews for quick lookup
+        const reviewsMap = new Map();
+        allBusinessReviews.forEach(review => {
+          if (!reviewsMap.has(review.business_id)) {
+            reviewsMap.set(review.business_id, []);
           }
-
-          results = businessesWithDistances.map(business => ({
-            id: business.id,
-            name: business.name,
-            address: business.address || business.location || 'Address not available',
-            image: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-            shortDescription: business.short_description || business.description,
-            rating: business.sentiment_score ? business.sentiment_score / 20 : 4.0,
-            hours: business.hours || 'Hours not available',
-            isOpen: true,
-            reviews: business.reviews || [],
-            isPlatformBusiness: true,
-            distance: business.distance,
-            duration: business.duration,
-            similarity: 0.9,
-            is_mobile_business: business.is_mobile_business,
-            phone_number: business.phone_number,
-            latitude: business.latitude,
-            longitude: business.longitude,
-            is_virtual: business.is_virtual,
-            website_url: business.website_url
+          reviewsMap.get(review.business_id).push(review);
+        });
+        
+        // Transform platform businesses with their reviews
+        return rawPlatformResults.map(business => {
+          const businessReviews = reviewsMap.get(business.id) || [];
+          
+          // Transform reviews to match expected format
+          const formattedReviews = businessReviews.map((review: any) => ({
+            text: review.review_text || 'No review text available',
+            author: review.profiles?.name || 'Anonymous',
+            authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+            images: (review.image_urls || []).map((url: string) => ({ url })),
+            thumbsUp: review.rating >= 4
           }));
           
-          usedSearchType = 'platform';
-        }
-      }
-
-      // Step 2: If fewer than 10 platform results, try semantic search
-      if (results.length < 10 && searchMode === 'business') {
-        console.log('🧠 Step 2: Trying semantic search (fewer than 10 platform results)...');
-        
-        try {
-          const semanticResults = await SemanticSearchService.searchByVibe(searchQuery, {
-            latitude: latitude || undefined,
-            longitude: longitude || undefined,
-            matchThreshold: 0.3,
-            matchCount: 15 - results.length
-          });
-
-          if (semanticResults.success && semanticResults.results.length > 0) {
-            console.log('✅ Semantic search found', semanticResults.results.length, 'additional results');
-            
-            const semanticBusinesses = semanticResults.results.map(business => ({
-              id: business.id,
-              name: business.name,
-              address: business.address || business.location || 'Address not available',
-              image: business.image_url || business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-              shortDescription: business.short_description || business.description,
-              rating: business.sentiment_score ? business.sentiment_score / 20 : 4.0,
-              hours: business.hours || 'Hours not available',
-              isOpen: true,
-              reviews: business.reviews || [],
-              isPlatformBusiness: true,
-              distance: business.distance,
-              duration: business.duration,
-              similarity: business.similarity,
-              is_mobile_business: business.is_mobile_business,
-              phone_number: business.phone_number,
-              latitude: business.latitude,
-              longitude: business.longitude,
-              is_virtual: business.is_virtual,
-              website_url: business.website_url
-            }));
-
-            results = [...results, ...semanticBusinesses];
-            usedSearchType = 'semantic';
-          }
-        } catch (semanticError) {
-          console.warn('⚠️ Semantic search failed:', semanticError);
-        }
-      }
-
-      // Step 3: If still fewer than 10 results, try AI search
-      if (results.length < 10 && searchMode === 'business') {
-        console.log('🤖 Step 3: Trying AI search (still fewer than 10 results)...');
-        
-        try {
-          const aiResponse = await fetchWithTimeout('/.netlify/functions/ai-business-search', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${await getAuthToken()}`
+          return {
+            ...business,
+            isPlatformBusiness: true,
+            rating: {
+              thumbsUp: business.thumbs_up || 0,
+              thumbsDown: business.thumbs_down || 0,
+              sentimentScore: business.sentiment_score || 0
             },
-            body: JSON.stringify({
-              prompt: searchQuery,
-              searchQuery: searchQuery,
-              existingResultsCount: results.length,
-              numToGenerate: Math.min(15 - results.length, 10),
-              latitude: latitude || undefined,
-              longitude: longitude || undefined
-            }),
-            timeout: 30000
-          });
-
-          if (aiResponse.ok) {
-            const aiData = await aiResponse.json();
+            image: business.image_url || '/verified and reviewed logo-coral copy copy.png',
+            isOpen: true,
+            reviews: formattedReviews
+          };
+        });
+      }).catch(error => {
+        console.error('❌ Platform search failed:', error);
+        return [];
+      });
+      
+      searchPromises.push(platformSearchPromise);
+      
+      // Add semantic search if user is authenticated
+      if (user && effectiveSearchType === 'semantic') {
+        console.log('🚀 Starting semantic search in parallel...');
+        const semanticSearchPromise = SemanticSearchService.searchByVibe(searchTerm, {
+          latitude: latitude || undefined,
+          longitude: longitude || undefined,
+          matchThreshold: 0.3,
+          matchCount: 10
+        }).then(response => {
+          if (response.success) {
+            console.log(`✅ Semantic search completed: ${response.results?.length || 0} results`);
+            return response.results || [];
+          }
+          return [];
+        }).catch(error => {
+          console.error('❌ Semantic search failed:', error);
+          return [];
+        });
+        
+        searchPromises.push(semanticSearchPromise);
+      }
+      
+      // Add AI search if user is authenticated and we expect to need it
+      if (user && effectiveSearchType !== 'platform') {
+        console.log('🚀 Starting AI search in parallel...');
+        const aiSearchPromise = fetch('/.netlify/functions/ai-business-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: searchTerm,
+            searchQuery: searchTerm,
+            existingResultsCount: 0, // We don't know yet since searches are parallel
+            numToGenerate: 5, // Reduced from 7 for faster response
+            latitude: latitude || undefined,
+            longitude: longitude || undefined
+          })
+        }).then(async response => {
+          if (response.ok) {
+            const aiData = await response.json();
             if (aiData.success && aiData.results) {
-              console.log('✅ AI search found', aiData.results.length, 'additional results');
-              
-              const aiBusinesses = aiData.results.map((business: any) => ({
-                id: business.id,
-                name: business.name,
-                address: business.address || 'Address not available',
-                image: business.image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-                shortDescription: business.shortDescription,
-                rating: business.rating || 4.0,
-                hours: business.hours || 'Hours not available',
-                isOpen: business.isOpen !== false,
-                reviews: business.reviews || [],
-                isPlatformBusiness: false,
-                distance: business.distance,
-                duration: business.duration,
-                isGoogleVerified: business.isGoogleVerified,
-                placeId: business.placeId,
-                similarity: business.similarity,
-                is_mobile_business: business.is_mobile_business,
-                phone_number: business.phone_number,
-                latitude: business.latitude,
-                longitude: business.longitude,
-                is_virtual: business.is_virtual,
-                website_url: business.website_url
-              }));
-
-              results = [...results, ...aiBusinesses];
-              usedSearchType = 'ai';
+              console.log(`✅ AI search completed: ${aiData.results.length} results`);
+              return aiData.results;
             }
           }
-        } catch (aiError) {
-          console.warn('⚠️ AI search failed:', aiError);
+          return [];
+        }).catch(error => {
+          console.error('❌ AI search failed:', error);
+          return [];
+        });
+        
+        searchPromises.push(aiSearchPromise);
+      }
+      
+      // Execute all searches in parallel and wait for completion
+      console.log(`🚀 Executing ${searchPromises.length} searches in parallel...`);
+      const searchResultsArray = await Promise.all(searchPromises);
+      console.timeEnd('Parallel Search Execution');
+      
+      // Extract results from the parallel execution
+      platformResults = searchResultsArray[0] || [];
+      
+      if (user && effectiveSearchType === 'semantic') {
+        semanticResults = searchResultsArray[1] || [];
+        if (effectiveSearchType !== 'platform' && searchResultsArray.length > 2) {
+          aiResults = searchResultsArray[2] || [];
         }
+      } else if (user && effectiveSearchType !== 'platform') {
+        aiResults = searchResultsArray[1] || [];
       }
-
-      // Deduct credits after successful search
-      if (user && results.length > 0) {
-        const deductionSuccess = await CreditService.deductSearchCredits(user.id, usedSearchType);
-        if (!deductionSuccess) {
-          console.warn('⚠️ Failed to deduct credits, but allowing search to continue');
+      
+      console.log('📊 Parallel search results:', {
+        platform: platformResults.length,
+        semantic: semanticResults.length,
+        ai: aiResults.length
+      });
+      
+      // Combine and deduplicate all results using Map for guaranteed uniqueness
+      console.log('🔄 Deduplicating results...');
+      
+      // Use Map for deduplication with priority: Platform > Semantic > AI
+      const businessMap = new Map();
+      
+      // Add AI results first (lowest priority)
+      aiResults.forEach(business => {
+        if (business.id) {
+          businessMap.set(business.id, business);
         }
+      });
+      
+      // Add semantic results (medium priority - will overwrite AI if same ID)
+      semanticResults.forEach(business => {
+        if (business.id) {
+          businessMap.set(business.id, business);
+        }
+      });
+      
+      // Add platform results last (highest priority - will overwrite semantic/AI if same ID)
+      platformResults.forEach(business => {
+        if (business.id) {
+          businessMap.set(business.id, business);
+        }
+      });
+      
+      // Convert Map back to array
+      let combinedResults = Array.from(businessMap.values());
+      
+      console.log('📊 After deduplication:', {
+        total: combinedResults.length,
+        uniqueIds: new Set(combinedResults.map(b => b.id)).size
+      });
+
+      // Calculate distances for all businesses that need it (batch operation)
+      if (latitude && longitude && combinedResults.length > 0) {
+        console.log('📏 Batch calculating distances for', combinedResults.length, 'businesses');
+        console.time('Distance Calculation');
+        try {
+          const businessesNeedingDistance = combinedResults.filter(business => 
+            business.latitude && business.longitude && (business.distance === 999999 || !business.distance)
+          );
+          
+          if (businessesNeedingDistance.length > 0) {
+            const updatedBusinesses = await BusinessService.calculateBusinessDistances(
+              businessesNeedingDistance,
+              latitude,
+              longitude
+            );
+            
+            // Create a map of business ID to distance data
+            const distanceMap = new Map();
+            updatedBusinesses.forEach(business => {
+              distanceMap.set(business.id, {
+                distance: business.distance,
+                duration: business.duration
+              });
+            });
+            
+            // Update combinedResults with calculated distances
+            combinedResults = combinedResults.map(business => {
+              const distanceData = distanceMap.get(business.id);
+              if (distanceData) {
+                return {
+                  ...business,
+                  distance: distanceData.distance,
+                  duration: distanceData.duration
+                };
+              }
+              return business;
+            });
+            
+            console.log('✅ Batch distance calculation completed');
+          }
+        } catch (distanceError) {
+          console.warn('⚠️ Batch distance calculation failed:', distanceError);
+        }
+        console.timeEnd('Distance Calculation');
       }
 
-      setSearchResults(results);
-      setSearchType(usedSearchType);
+      // Step 5: Sort and rank results using composite scoring
+      const rankedResults = combinedResults.map(business => ({
+        ...business,
+        compositeScore: calculateCompositeScore({
+          similarity: business.similarity,
+          distance: business.distance,
+          isOpen: business.isOpen,
+          isPlatformBusiness: business.isPlatformBusiness || platformResults.some(p => p.id === business.id)
+        })
+      })).sort((a, b) => {
+        // Sort by composite score only - allows intent matching to influence ranking
+        return b.compositeScore - a.compositeScore;
+      });
 
-      if (results.length === 0) {
-        setError('No results found. Try a different search term or check your spelling.');
+      console.log(`🎯 Final ranked results: ${rankedResults.length} businesses`);
+      setSearchResults(rankedResults);
+      setIsAppModeActive(true);
       }
+      
+      console.timeEnd('Total Search Time');
+      console.log('✅ Search completed successfully');
 
-    } catch (err) {
-      console.error('❌ Search error:', err);
-      setError(err instanceof Error ? err.message : 'Search failed. Please try again.');
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+      console.timeEnd('Total Search Time');
     } finally {
-      setLoading(false);
+      setIsSearching(false);
     }
   };
 
-  const getAuthToken = async (): Promise<string> => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session?.access_token || '';
-    } catch (error) {
-      return '';
-    }
+
+  const handleBackToSearch = () => {
+    // Use browser's back functionality to trigger the popstate handler
+    window.history.back();
   };
 
-  const handleRecommend = async (business: SearchResult) => {
-    if (!user) {
+  const handleRecommendBusiness = async (business: any) => {
+    if (!currentUser) {
       setShowSignupPrompt(true);
       return;
     }
 
     try {
-      const success = await BusinessService.saveAIRecommendation(business, user.id);
+      const success = await BusinessService.saveAIRecommendation(business, currentUser.id);
       if (success) {
-        alert(`${business.name} has been added to your favorites!`);
+        alert(`${business.name} has been saved to your favorites!`);
       } else {
-        alert('Failed to add to favorites. Please try again.');
+        alert('Failed to save business. Please try again.');
       }
     } catch (error) {
-      console.error('Error adding to favorites:', error);
-      alert('Failed to add to favorites. Please try again.');
+      console.error('Error saving business:', error);
+      alert('Failed to save business. Please try again.');
     }
   };
 
-  const handleTakeMeThere = (business: SearchResult) => {
-    if (!user) {
-      setShowSignupPrompt(true);
-      return;
-    }
-
-    // Record business visit
-    BusinessService.recordBusinessVisit(business.id, user.id);
-    
-    // Handle different business types
-    if (business.is_virtual && business.website_url) {
-      window.open(business.website_url, '_blank', 'noopener,noreferrer');
-      return;
+  const handleTakeMeThere = (business: any) => {
+    // Record business visit if user is authenticated
+    if (currentUser) {
+      BusinessService.recordBusinessVisit(business.id, currentUser.id);
     }
     
-    if (business.is_mobile_business && business.phone_number) {
-      window.open(`tel:${business.phone_number}`, '_self');
-      return;
-    }
-    
-    // Default: Open Google Maps
+    // Navigate to business
     let mapsUrl;
-    if (business.placeId) {
-      const businessName = business.name || 'business';
-      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessName)}&query_place_id=${business.placeId}`;
-    } else if (business.latitude && business.longitude) {
+    if (business.latitude && business.longitude) {
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
     } else if (business.address) {
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
@@ -468,326 +904,169 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name)}`;
     }
     
-    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+    window.open(mapsUrl, '_blank');
   };
 
-  const nextResult = () => {
-    if (currentIndex < searchResults.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+  const handleVoiceSearch = async () => {
+    // Check if Speech Recognition is available
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in your browser. Please try Chrome, Safari, or Edge.');
+      return;
     }
-  };
 
-  const prevResult = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
+    if (isListening) {
+      // Stop listening if already active
+      setIsListening(false);
+      return;
     }
-  };
 
-  const clearSearch = () => {
-    setSearchQuery('');
-    setSearchResults([]);
-    setCurrentIndex(0);
-    setError(null);
-    setHasSearched(false);
-    if (isAppModeActive) {
-      setIsAppModeActive(false);
-    }
-  };
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
 
-  const handleSignupPromptSignup = () => {
-    setShowSignupPrompt(false);
-    // Dispatch custom event to open auth modal in signup mode
-    const event = new CustomEvent('open-auth-modal', {
-      detail: { mode: 'signup' }
-    });
-    document.dispatchEvent(event);
-  };
+      recognition.onstart = () => {
+        setIsListening(true);
+        console.log('🎤 Voice recognition started');
+      };
 
-  const handleSignupPromptLogin = () => {
-    setShowSignupPrompt(false);
-    // Dispatch custom event to open auth modal in login mode
-    const event = new CustomEvent('open-auth-modal', {
-      detail: { mode: 'login' }
-    });
-    document.dispatchEvent(event);
-  };
-
-  const searchModeOptions = [
-    { value: 'business', label: 'Businesses', icon: Icons.Building },
-    { value: 'offering', label: 'Dishes & Items', icon: Icons.UtensilsCrossed }
-  ];
-
-  return (
-    <>
-      <section className={`relative transition-all duration-500 ${
-        isAppModeActive 
-          ? 'fixed inset-0 z-50 bg-white overflow-hidden' 
-          : 'py-20 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900'
-      }`}>
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
         
-        {/* Background for non-app mode */}
-        {!isAppModeActive && (
-          <div className="absolute inset-0 bg-black opacity-20"></div>
-        )}
+        // Update search query with the transcript
+        setSearchQuery(transcript);
+        console.log('🎤 Voice transcript:', transcript);
+      };
 
-        <div className={`relative z-10 ${
-          isAppModeActive 
-            ? 'h-full flex flex-col' 
-            : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center'
-        }`}>
-          
-          {/* Header - Only show in non-app mode */}
-          {!isAppModeActive && (
-            <div className="mb-12">
-              <h1 className="font-cinzel text-4xl md:text-6xl font-bold text-white mb-6">
-                Find Your Vibe
-              </h1>
-              <p className="font-lora text-xl md:text-2xl text-white text-opacity-90 max-w-3xl mx-auto leading-relaxed">
-                Discover businesses that match your mood with AI-powered recommendations
-              </p>
-            </div>
-          )}
+      recognition.onend = () => {
+        setIsListening(false);
+        console.log('🎤 Voice recognition ended');
+        
+        // Auto-search if we have a query
+        if (searchQuery.trim()) {
+          setTimeout(() => handleSearch(), 500);
+        }
+      };
 
-          {/* Search Bar */}
-          <div className={`${
-            isAppModeActive 
-              ? 'search-bar-fixed bg-white p-4 border-b border-neutral-200' 
-              : 'max-w-2xl mx-auto'
-          }`}>
+      recognition.onerror = (event) => {
+        setIsListening(false);
+        console.error('🎤 Voice recognition error:', event.error);
+        
+        if (event.error === 'not-allowed') {
+          alert('Microphone access denied. Please allow microphone access and try again.');
+        } else if (event.error === 'no-speech') {
+          alert('No speech detected. Please try again.');
+        } else {
+          alert('Voice recognition error. Please try again.');
+        }
+      };
+
+      recognition.start();
+    } catch (error) {
+      console.error('🎤 Error starting voice recognition:', error);
+      alert('Failed to start voice recognition. Please try again.');
+      setIsListening(false);
+    }
+  };
+  
+  const handleAuthSuccess = (user: any) => {
+    setCurrentUser(user);
+    setUserCredits(user.credits || 0);
+    setShowSignupPrompt(false);
+    setShowAuthModal(false);
+  };
+
+  if (isAppModeActive) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 z-40 overflow-hidden">
+        {/* Fixed Search Bar */}
+        <div className="search-bar-fixed bg-gradient-to-r from-slate-800 to-purple-800">
+          <div className="flex items-center px-4 py-3 border-b border-white/20">
+            <button
+              onClick={handleBackToSearch}
+              className="mr-3 p-2 rounded-full hover:bg-white/10 transition-colors duration-200"
+            >
+              <ArrowRight className="h-5 w-5 text-white rotate-180" />
+            </button>
             
-            {/* Search Mode Toggle - Only in app mode */}
-            {isAppModeActive && (
-              <div className="flex justify-center mb-4">
-                <div className="bg-neutral-100 rounded-lg p-1 flex">
-                  {searchModeOptions.map((option) => {
-                    const IconComponent = option.icon;
-                    return (
-                      <button
-                        key={option.value}
-                        onClick={() => setSearchMode(option.value as any)}
-                        className={`flex items-center px-3 py-2 rounded-md font-poppins text-sm font-medium transition-all duration-200 ${
-                          searchMode === option.value
-                            ? 'bg-white text-primary-600 shadow-sm'
-                            : 'text-neutral-600 hover:text-neutral-900'
-                        }`}
-                      >
-                        <IconComponent className="h-4 w-4 mr-2" />
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleSearch} className="relative">
-              <div className="relative">
-                <Icons.Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-6 w-6 text-neutral-400" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={
-                    searchMode === 'offering' 
-                      ? "Search for dishes, drinks, services..." 
-                      : "Describe the vibe you're looking for..."
-                  }
-                  className={`w-full pl-12 pr-20 py-4 text-lg font-lora rounded-2xl border-2 transition-all duration-300 ${
-                    isAppModeActive
-                      ? 'border-neutral-200 focus:border-primary-500 bg-white'
-                      : 'border-white border-opacity-20 bg-white bg-opacity-10 text-white placeholder-white placeholder-opacity-70 focus:bg-opacity-20 focus:border-opacity-40 hero-background-blur'
-                  } focus:outline-none focus:ring-0`}
-                />
-                
-                {/* Clear button - only show in app mode when there's text */}
-                {isAppModeActive && searchQuery && (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    className="absolute right-16 top-1/2 transform -translate-y-1/2 p-2 text-neutral-400 hover:text-neutral-600 transition-colors duration-200"
-                  >
-                    <Icons.X className="h-5 w-5" />
-                  </button>
-                )}
-                
-                <button
-                  type="submit"
-                  disabled={loading || !searchQuery.trim()}
-                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-3 rounded-xl transition-all duration-300 ${
-                    loading || !searchQuery.trim()
-                      ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
-                      : isAppModeActive
-                        ? 'bg-primary-500 text-white hover:bg-primary-600 shadow-lg'
-                        : 'bg-primary-500 text-white hover:bg-primary-600 shadow-lg'
-                  }`}
-                >
-                  {loading ? (
-                    <Icons.Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    <Icons.ArrowRight className="h-6 w-6" />
-                  )}
-                </button>
-              </div>
-            </form>
-
-            {/* Credit info - only show when not in app mode */}
-            {!isAppModeActive && user && (
-              <div className="flex items-center justify-center mt-4 text-white text-opacity-80">
-                <Icons.Zap className="h-4 w-4 mr-2 text-yellow-400" />
-                <span className="font-lora text-sm mr-2">
-                  You have {user.credits} credits
-                </span>
-                <CreditInfoTooltip placement="top" />
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-500" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                placeholder="Search for vibes..."
+                className="w-full pl-10 pr-4 py-2 bg-white/90 backdrop-blur-sm border border-white/30 rounded-lg font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-white focus:border-white focus:bg-white"
+              />
+            </div>
+            
+            {currentUser && (
+              <div className="ml-3 flex items-center bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-lg border border-white/30">
+                <Zap className="h-4 w-4 mr-1" />
+                <span className="font-poppins text-sm font-semibold">{userCredits}</span>
               </div>
             )}
           </div>
+        </div>
 
-          {/* Results Section - Only in app mode */}
-          {isAppModeActive && (
-            <div className="flex-1 overflow-hidden" {...swipeHandlers}>
-              {loading && (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <Icons.Loader2 className="h-12 w-12 text-primary-500 mx-auto mb-4 animate-spin" />
-                    <p className="font-lora text-neutral-600">
-                      {searchMode === 'offering' ? 'Finding dishes and items...' : 'Finding your vibe...'}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {error && (
-                <div className="flex items-center justify-center h-full p-4">
-                  <div className="text-center max-w-md">
-                    <Icons.AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                    <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-2">
-                      No Results Found
-                    </h3>
-                    <p className="font-lora text-neutral-600 mb-4">{error}</p>
-                    <button
-                      onClick={clearSearch}
-                      className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
-                    >
-                      Try Another Search
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {searchResults.length > 0 && (
-                <div className="h-full flex flex-col">
-                  {/* Results Counter */}
-                  <div className="flex-shrink-0 px-4 py-2 bg-neutral-50 border-b border-neutral-200">
-                    <div className="flex items-center justify-between">
-                      <span className="font-lora text-sm text-neutral-600">
-                        {currentIndex + 1} of {searchResults.length} results
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
-                          searchType === 'platform' ? 'bg-blue-100 text-blue-700' :
-                          searchType === 'semantic' ? 'bg-purple-100 text-purple-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
-                          {searchType === 'platform' ? 'Platform' :
-                           searchType === 'semantic' ? 'Semantic' : 'AI'}
-                        </span>
-                        {searchResults[currentIndex]?.isGoogleVerified && (
-                          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-poppins font-semibold">
-                            Google
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Current Result */}
-                  <div 
-                    ref={resultsContainerRef}
-                    className="flex-1 overflow-y-auto p-4"
-                  >
-                    {searchResults[currentIndex] && (
-                      searchResults[currentIndex].isPlatformBusiness ? (
-                        <PlatformBusinessCard
-                          business={searchResults[currentIndex]}
-                          onRecommend={handleRecommend}
-                          onTakeMeThere={handleTakeMeThere}
-                        />
-                      ) : (
-                        <AIBusinessCard
-                          business={searchResults[currentIndex]}
-                          onRecommend={handleRecommend}
-                        />
-                      )
+        {/* Search Results */}
+        <div className="pt-16 h-full overflow-hidden">
+          {isSearching ? (
+            <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/20 border-t-white mx-auto mb-6"></div>
+                <p className="font-cinzel text-2xl font-bold text-white animate-pulse">
+                  ONE MOMENT...
+                </p>
+                <p className="font-lora text-lg text-white/80 animate-pulse mt-2">
+                  Vibe search in progress
+                </p>
+              </div>
+            </div>
+          ) : searchResults.length === 0 ? (
+            <div className="flex items-center justify-center h-full px-4 text-white">
+              <div className="text-center">
+                <Search className="h-16 w-16 text-white/60 mx-auto mb-4" />
+                <h3 className="font-cinzel text-xl font-semibold text-white mb-2">
+                  No Vibes Found
+                </h3>
+                <p className="font-lora text-white/80 mb-4">
+                  Try a different vibe search or check your spelling.
+                </p>
+                <button
+                  onClick={handleBackToSearch}
+                  className="font-poppins bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/30 transition-colors duration-200 border border-white/30"
+                >
+                  Re-Vibe
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full overflow-y-auto">
+              <div className="px-4 py-4 space-y-4">
+                {searchResults.map((business, index) => (
+                  <div key={business.id || index} className="w-full max-w-sm mx-auto">
+                    {business.isPlatformBusiness || business.id?.startsWith('platform-') ? (
+                      <PlatformBusinessCard
+                        business={business}
+                        onRecommend={handleRecommendBusiness}
+                        onTakeMeThere={handleTakeMeThere}
+                      />
+                    ) : (
+                      <AIBusinessCard
+                        business={business}
+                        onRecommend={handleRecommendBusiness}
+                      />
                     )}
                   </div>
-
-                  {/* Navigation Controls */}
-                  {searchResults.length > 1 && (
-                    <div className="flex-shrink-0 flex items-center justify-between p-4 bg-neutral-50 border-t border-neutral-200">
-                      <button
-                        onClick={prevResult}
-                        disabled={currentIndex === 0}
-                        className={`p-3 rounded-full transition-all duration-200 ${
-                          currentIndex === 0
-                            ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-                            : 'bg-white text-neutral-600 hover:bg-neutral-100 shadow-md'
-                        }`}
-                      >
-                        <Icons.ChevronLeft className="h-6 w-6" />
-                      </button>
-
-                      <div className="flex space-x-2">
-                        {searchResults.map((_, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setCurrentIndex(index)}
-                            className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                              index === currentIndex
-                                ? 'bg-primary-500'
-                                : 'bg-neutral-300 hover:bg-neutral-400'
-                            }`}
-                          />
-                        ))}
-                      </div>
-
-                      <button
-                        onClick={nextResult}
-                        disabled={currentIndex === searchResults.length - 1}
-                        className={`p-3 rounded-full transition-all duration-200 ${
-                          currentIndex === searchResults.length - 1
-                            ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-                            : 'bg-white text-neutral-600 hover:bg-neutral-100 shadow-md'
-                        }`}
-                      >
-                        <Icons.ChevronRight className="h-6 w-6" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Sample searches - Only show in non-app mode */}
-          {!isAppModeActive && (
-            <div className="mt-12">
-              <p className="font-lora text-white text-opacity-80 mb-6">Try searching for:</p>
-              <div className="flex flex-wrap justify-center gap-3">
-                {[
-                  'cozy coffee shop',
-                  'romantic dinner',
-                  'healthy smoothie',
-                  'energetic workout',
-                  'peaceful brunch'
-                ].map((sample) => (
-                  <button
-                    key={sample}
-                    onClick={() => setSearchQuery(sample)}
-                    className="font-lora bg-white bg-opacity-10 text-white px-4 py-2 rounded-full hover:bg-opacity-20 transition-all duration-300 border border-white border-opacity-20"
-                  >
-                    {sample}
-                  </button>
                 ))}
               </div>
             </div>
@@ -795,30 +1074,245 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         </div>
 
         {/* Back Toast */}
-        {backToastVisible && (
+        {showBackToast && (
           <div className="back-toast">
-            <span className="font-poppins text-sm">Tap back again to exit</span>
+            Tap back to search again
           </div>
         )}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Hero Section */}
+      <section className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
+        {/* Credits Display - Top Left */}
+        {currentUser && !isAppModeActive && (
+          <div className="absolute top-4 left-4 z-20 flex items-center">
+            <Zap className="h-5 w-5 mr-2 text-white" />
+            <span className="font-poppins text-lg font-bold text-white">
+              {currentUser.role === 'administrator' && userCredits >= 999999 ? '∞' : userCredits}
+            </span>
+          </div>
+        )}
+
+        {/* Favorites and Dashboard Icons - Top Right */}
+        {currentUser && !isAppModeActive && (
+          <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
+            <button
+             onClick={() => navigate('/dashboard', { state: { activeTab: 'favorites' } })}
+              className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+              title="Favorites"
+            >
+              <Icons.Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
+            </button>
+            
+            <div className="relative">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+                title="Dashboard"
+              >
+                <LayoutDashboard className="h-5 w-5 text-white group-hover:text-primary-300 transition-colors duration-200" />
+              </button>
+              {/* Notification dot for pending reviews */}
+              {!loadingPendingReviews && pendingReviewsCount > 0 && (
+                <span className="notification-dot absolute -top-1 -right-1"></span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,107,94,0.2),transparent_50%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(123,68,155,0.2),transparent_50%)]"></div>
+        </div>
+
+        {/* Floating Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-2 h-2 bg-white rounded-full opacity-60 animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-1 h-1 bg-primary-400 rounded-full opacity-80 animate-pulse delay-1000"></div>
+          <div className="absolute bottom-40 left-20 w-1.5 h-1.5 bg-accent-400 rounded-full opacity-70 animate-pulse delay-2000"></div>
+          <div className="absolute bottom-20 right-10 w-2 h-2 bg-white rounded-full opacity-50 animate-pulse delay-500"></div>
+        </div>
+
+        {/* Main Content */}
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 text-center">
+          {/* Random User Search Display */}
+          <div className="mb-8 h-24 flex flex-col items-center justify-center">
+            {loadingRealSearches ? (
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-white/20 rounded-full animate-pulse mb-2"></div>
+                <p className="font-lora text-white/60 text-sm animate-pulse">
+                  Loading recent searches...
+                </p>
+              </div>
+            ) : realUserSearches.length > 0 ? (
+              <div className={`transition-opacity duration-300 ${isSearchAnimating ? 'opacity-0' : 'opacity-100'}`}>
+                <div className="flex flex-col items-center">
+                  <img 
+                    src={realUserSearches[currentUserSearchIndex].avatar}
+                    alt={realUserSearches[currentUserSearchIndex].username}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg mb-2"
+                  />
+                  <p className="font-lora text-white/80 text-sm">
+                    searched: "{realUserSearches[currentUserSearchIndex].query}"
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-2">
+                  <Search className="h-6 w-6 text-white/40" />
+                </div>
+                <p className="font-lora text-white/60 text-sm">
+                  Be the first to search!
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Main Heading */}
+          <div className="mb-8">
+            <p className="font-lora text-2xl md:text-4xl text-white/90 max-w-2xl mx-auto leading-relaxed">
+              Experience something new
+            </p>
+          </div>
+
+          {/* Search Section */}
+          <div className="w-full max-w-2xl mx-auto mb-12">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-white/10 backdrop-blur-sm rounded-2xl"></div>
+              <div className="relative bg-white/40 backdrop-blur-md rounded-2xl p-6 border border-white/50">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 relative">
+                    <button
+                      onClick={handleVoiceSearch}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-neutral-100 transition-colors duration-200"
+                      title={isListening ? 'Stop listening' : 'Voice search'}
+                    >
+                      <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : 'text-neutral-400'}`} />
+                    </button>
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      placeholder="Describe your perfect vibe..."
+                     maxLength={150}
+                      className="w-full pl-4 pr-16 py-4 bg-white border border-white rounded-xl font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleSearch()}
+                    disabled={isSearching || !searchQuery.trim()}
+                    className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 py-4 md:px-8 rounded-xl font-poppins font-semibold hover:shadow-lg hover:shadow-primary-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    {isSearching ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      <>
+                        {/* Mobile: Search icon only */}
+                        <Search className="h-5 w-5 md:hidden" />
+                        {/* Desktop: Sparkles icon + Vibe text */}
+                        <span className="hidden md:inline">Vibe</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+               
+              </div>
+            </div>
+
+            {/* Quick Search Tags */}
+            <div className="text-center">
+              <div className="flex flex-wrap justify-center gap-2">
+                {quickSearches.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickSearch(suggestion)}
+                    className="bg-white/10 backdrop-blur-sm text-white/90 px-4 py-2 rounded-full font-lora text-sm hover:bg-white/20 transition-all duration-200 border border-white/20 hover:border-white/30"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Location Status */}
+          {latitude && longitude ? (
+            <div className="flex items-center text-white/60 text-sm font-lora">
+              <MapPin className="h-4 w-4 mr-2" />
+              <span>Location detected • Finding nearby matches</span>
+            </div>
+          ) : locationError ? (
+            <div className="flex items-center text-white/60 text-sm font-lora">
+              <MapPin className="h-4 w-4 mr-2" />
+              <span>Enable location for better results</span>
+            </div>
+          ) : (
+            <div className="flex items-center text-white/60 text-sm font-lora">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white/60 mr-2"></div>
+              <span>Getting your location...</span>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Signup Prompt Modal */}
       {showSignupPrompt && (
         <SignupPrompt
-          onSignup={handleSignupPromptSignup}
-          onLogin={handleSignupPromptLogin}
-          onClose={() => setShowSignupPrompt(false)}
-          title="Sign Up to Search"
-          message="Create an account to discover amazing businesses with AI-powered vibe matching."
-          signupButtonText="Sign Up Free For 200 Credits"
-          loginButtonText="Already have an account? Log in"
-          benefits={[
-            "200 free credits instantly",
-            "50 free credits every month", 
-            "AI-powered vibe matching",
-            "Save favorite businesses",
-            "Earn credits for reviews"
-          ]}
+          title={signupPromptConfig?.title}
+          message={signupPromptConfig?.message}
+          signupButtonText={signupPromptConfig?.signupButtonText}
+          loginButtonText={signupPromptConfig?.loginButtonText}
+          benefits={signupPromptConfig?.benefits}
+          onSignup={() => {
+            setShowSignupPrompt(false);
+            setSignupPromptConfig(null);
+            setIsOutOfCreditsModal(false);
+            if (isOutOfCreditsModal) {
+              // Navigate to credits tab in dashboard
+              navigate('/dashboard', { state: { activeTab: 'credits' } });
+            } else {
+              // Regular signup flow
+              setAuthMode('signup');
+              setShowAuthModal(true);
+            }
+          }}
+          onLogin={() => {
+            setShowSignupPrompt(false);
+            setSignupPromptConfig(null);
+            setIsOutOfCreditsModal(false);
+            if (isOutOfCreditsModal) {
+              // Navigate to credits tab in dashboard
+              navigate('/dashboard', { state: { activeTab: 'credits' } });
+            } else {
+              // Regular login flow
+              setAuthMode('login');
+              setShowAuthModal(true);
+            }
+          }}
+          onClose={() => {
+            setShowSignupPrompt(false);
+            setSignupPromptConfig(null);
+            setIsOutOfCreditsModal(false);
+          }}
+        />
+      )}
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          initialMode={authMode}
+          onAuthSuccess={handleAuthSuccess}
         />
       )}
     </>
