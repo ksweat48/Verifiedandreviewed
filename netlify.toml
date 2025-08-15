@@ -43,11 +43,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Scheduled Functions Configuration
-[functions]
-  # Functions directory is already defined under [build]
-  
-  [functions.scheduled]
-    name = "refresh-offerings"
-    cron = "0 2 * * *"

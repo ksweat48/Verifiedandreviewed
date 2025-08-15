@@ -1,7 +1,6 @@
 // Semantic Vector Search Function for Vibe-Based Business Discovery
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
-import { checkRateLimit, extractUserIdFromAuth, getClientIP, createRateLimitResponse } from '../utils/rateLimiter.mjs';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,12 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-// Rate limiting configuration for semantic search
-const RATE_LIMIT_CONFIG = {
-  maxRequests: 5,
-  windowSeconds: 60, // 5 requests per minute
-  functionName: 'semantic-search'
-};
 export const handler = async (event, context) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
@@ -34,51 +27,6 @@ export const handler = async (event, context) => {
   }
 
   try {
-    // Check required environment variables first
-    const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return {
-        statusCode: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error: 'Supabase credentials not configured',
-          message: 'Please set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment variables'
-        })
-      };
-    }
-
-    // Rate limiting check
-    console.log('🚦 Checking rate limits for semantic search...');
-    
-    // Try to get user ID from auth header, fallback to IP
-    const authHeader = event.headers.authorization || event.headers.Authorization;
-    const userId = await extractUserIdFromAuth(authHeader, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const clientIP = getClientIP(event);
-    
-    const identifier = userId 
-      ? { value: userId, type: 'user_id' }
-      : { value: clientIP, type: 'ip_address' };
-    
-    console.log('🔍 Rate limit identifier:', identifier);
-    
-    const rateLimitResult = await checkRateLimit(
-      identifier,
-      RATE_LIMIT_CONFIG,
-      SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE_KEY,
-      event.headers['user-agent'],
-      { query: JSON.parse(event.body || '{}').query?.substring(0, 100) }
-    );
-    
-    if (!rateLimitResult.allowed) {
-      console.log('🚫 Rate limit exceeded for semantic search');
-      return createRateLimitResponse(rateLimitResult, corsHeaders);
-    }
-    
-    console.log('✅ Rate limit check passed, remaining:', rateLimitResult.remaining);
-
     const { query, latitude, longitude, matchThreshold = 0.5, matchCount = 10 } = JSON.parse(event.body);
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
@@ -96,6 +44,8 @@ export const handler = async (event, context) => {
 
     // Check required environment variables
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+    const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!OPENAI_API_KEY) {
       return {
@@ -108,6 +58,16 @@ export const handler = async (event, context) => {
       };
     }
 
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return {
+        statusCode: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: 'Supabase credentials not configured',
+          message: 'Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables'
+        })
+      };
+    }
 
     // Initialize OpenAI client
     console.log('🤖 Initializing OpenAI client...');

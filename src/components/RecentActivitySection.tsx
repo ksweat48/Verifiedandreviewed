@@ -100,9 +100,7 @@ const RecentActivitySection: React.FC = () => {
           };
         });
         
-        // Filter to only show businesses that haven't been reviewed yet
-        const unreviewedBusinesses = formattedBusinesses.filter(business => !business.hasReviewed);
-        setVisitedBusinesses(unreviewedBusinesses);
+        setVisitedBusinesses(formattedBusinesses);
       } else {
         setVisitedBusinesses([]);
       }
@@ -114,8 +112,7 @@ const RecentActivitySection: React.FC = () => {
     }
   };
 
-  // Since visitedBusinesses now only contains unreviewed businesses, the count is simply the array length
-  const pendingReviewsCount = visitedBusinesses.length;
+  const pendingReviewsCount = visitedBusinesses.filter(b => !b.hasReviewed).length;
 
   const openReviewModal = (business: VisitedBusiness) => {
     setSelectedBusiness(business);
@@ -126,15 +123,42 @@ const RecentActivitySection: React.FC = () => {
     businessId: string;
     rating: 'thumbsUp' | 'thumbsDown';
     text: string;
+    images: File[];
   }) => {
+    // In a real app, this would send the review to your backend
+    console.log('Submitting review:', review);
+    
     // Update local state to show the business as reviewed
-    setVisitedBusinesses(prev => 
-      prev.filter(business => business.id !== review.businessId)
-    );
+    // This is just for demo purposes - in a real app, you'd refetch the data
+    const updatedBusinesses = visitedBusinesses.map(business => {
+      if (business.id === review.businessId) {
+        return {
+          ...business,
+          hasReviewed: true,
+          rating: review.rating === 'thumbsUp' ? 5 : 2
+        };
+      }
+      return business;
+    });
+    
+    // In a real app, you'd update the state with the new data
+    // setVisitedBusinesses(updatedBusinesses);
   };
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-poppins text-lg font-semibold text-neutral-900 flex items-center">
+          <Icons.Navigation className="h-5 w-5 mr-2 text-primary-500" />
+          Activity
+        </h3>
+        
+        {pendingReviewsCount > 0 && (
+          <div className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-xs font-poppins font-semibold">
+            {pendingReviewsCount} to review
+          </div>
+        )}
+      </div>
       
       {visitedBusinesses.length === 0 ? (
         <div className="bg-neutral-50 rounded-lg p-6 text-center">

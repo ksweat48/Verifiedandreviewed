@@ -1,14 +1,6 @@
 // AI Business Search Function with Google Places API Integration
 import OpenAI from 'openai';
 import axios from 'axios';
-import { checkRateLimit, extractUserIdFromAuth, getClientIP, createRateLimitResponse } from '../utils/rateLimiter.mjs';
-
-// Rate limiting configuration for AI business search
-const RATE_LIMIT_CONFIG = {
-  maxRequests: 3,
-  windowSeconds: 60, // 3 requests per minute
-  functionName: 'ai-business-search'
-};
 
 // Helper function to calculate cosine similarity between two vectors
 function cosineSimilarity(vecA, vecB) {
@@ -48,67 +40,6 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
 }
-
-// Helper function to process Google Places result into business object
-function processGooglePlacesResult(result, googlePlacesApiKey, prompt) {
-  const businessLatitude = result.geometry?.location?.lat;
-  const businessLongitude = result.geometry?.location?.lng;
-  
-  // Parse opening hours
-  let businessHours = 'Hours not available';
-  let isOpen = true;
-  
-  if (result.opening_hours) {
-    isOpen = result.opening_hours.open_now !== undefined ? result.opening_hours.open_now : true;
-    if (result.opening_hours.weekday_text && result.opening_hours.weekday_text.length > 0) {
-      const today = new Date().getDay();
-      businessHours = result.opening_hours.weekday_text[today] || result.opening_hours.weekday_text[0];
-    }
-  }
-  
-  // Generate a short description based on the business type and rating
-  const businessTypes = result.types ? result.types.join(', ') : 'establishment';
-  const shortDescription = result.rating 
-    ? `${result.name} is a highly-rated ${businessTypes} with ${result.rating} stars. Known for excellent service and great atmosphere.`
-    : `${result.name} is a ${businessTypes}. Known for excellent service and great atmosphere.`;
-  
-  // Create business text for later batch embedding generation
-  const businessText = [
-    result.name,
-    prompt, // The original user prompt
-    businessTypes,
-    result.rating ? `${result.rating} star rating` : 'no rating available',
-    result.vicinity || '',
-    businessHours
-  ].filter(Boolean).join(' ');
-  
-  return {
-    id: `google-${result.place_id}`,
-    name: result.name,
-    shortDescription: shortDescription,
-    rating: result.rating || 0,
-    image: null, // No images to avoid API quota issues
-    isOpen: isOpen,
-    hours: businessHours,
-    address: result.formatted_address,
-    latitude: businessLatitude || null,
-    longitude: businessLongitude || null,
-    distance: 999999, // Will be calculated accurately later
-    duration: 999999, // Will be calculated accurately later
-    placeId: result.place_id,
-    reviews: [{
-      text: `Great place that matches your vibe! Really enjoyed the atmosphere and service here.`,
-      author: "Google User",
-      thumbsUp: true
-    }],
-    isPlatformBusiness: false,
-    tags: result.types || [],
-    isGoogleVerified: true,
-    businessText: businessText,
-    similarity: 0.8 // Temporary value, will be calculated in batch
-  };
-}
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -132,73 +63,11 @@ export default async function handler(req) {
   }
 
   try {
-    // Check required environment variables first
-    const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return new Response(JSON.stringify({
-        error: 'Supabase credentials not configured',
-        message: 'Please set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment variables'
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Rate limiting check
-    console.log('🚦 Checking rate limits for AI business search...');
-    
-    // Try to get user ID from auth header, fallback to IP
-    const authHeader = req.headers.get('authorization');
-    const userId = await extractUserIdFromAuth(authHeader, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const clientIP = req.headers.get('x-nf-client-ip') || 
-                     req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown';
-    
-    const identifier = userId 
-      ? { value: userId, type: 'user_id' }
-      : { value: clientIP, type: 'ip_address' };
-    
-    console.log('🔍 Rate limit identifier:', identifier);
-    
-    const rateLimitResult = await checkRateLimit(
-      identifier,
-      RATE_LIMIT_CONFIG,
-      SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE_KEY,
-      req.headers.get('user-agent'),
-      { prompt: prompt?.substring(0, 100) }
-    );
-    
-    if (!rateLimitResult.allowed) {
-      console.log('🚫 Rate limit exceeded for AI business search');
-      return new Response(JSON.stringify({
-        error: 'Too Many Requests',
-        message: `Rate limit exceeded. Try again in ${rateLimitResult.retryAfter} seconds.`,
-        retryAfter: rateLimitResult.retryAfter,
-        resetTime: rateLimitResult.resetTime.toISOString()
-      }), {
-        status: 429,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-          'X-RateLimit-Limit': RATE_LIMIT_CONFIG.maxRequests.toString(),
-          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-          'X-RateLimit-Reset': Math.floor(rateLimitResult.resetTime.getTime() / 1000).toString(),
-          'Retry-After': rateLimitResult.retryAfter?.toString() || '60'
-        }
-      });
-    }
-    
-    console.log('✅ Rate limit check passed, remaining:', rateLimitResult.remaining);
-
     const { 
       prompt, 
       searchQuery, 
       existingResultsCount = 0, 
-      numToGenerate = 20,
+     numToGenerate = 7,
       latitude,
       longitude 
     } = await req.json();
@@ -213,13 +82,15 @@ export default async function handler(req) {
     // Use provided coordinates or default to San Francisco for testing
     const searchLatitude = latitude || 37.7749;
     const searchLongitude = longitude || -122.4194;
+    const searchRadius = 16093; // 10 miles in meters (10 * 1609.3)
     
     console.log('🔍 AI Business Search Request:', { 
       prompt, 
       searchQuery, 
       existingResultsCount, 
       numToGenerate,
-      location: `${searchLatitude}, ${searchLongitude}`
+      location: `${searchLatitude}, ${searchLongitude}`,
+      radius: `${searchRadius}m (10 miles)`
     });
 
     // Check if required API keys are configured
@@ -252,36 +123,24 @@ export default async function handler(req) {
     console.log('🔧 Initializing OpenAI client...');
     const openai = new OpenAI({
       apiKey: OPENAI_API_KEY,
-      timeout: 25000
+      timeout: 25000 // 25 second timeout
     });
 
     // Enhanced system prompt for generating Google Places search queries
-    const systemPrompt = `You are an intelligent search query generator for Google Places API. Your job is to interpret user queries about business vibes/moods and convert them into effective Google Places search terms that match the user's specific INTENT.
+    const systemPrompt = `You are a search query generator for Google Places API. Your job is to interpret user queries about business vibes/moods and convert them into effective Google Places search terms that will find diverse, interesting businesses.
 
 CRITICAL: Use the generateSearchQueries function. Do not return raw JSON or explanations.
-
-INTENT ANALYSIS:
-• Analyze the user's query to understand what TYPE of business they're looking for
-• Food/Beverage queries (smoothie, coffee, restaurant, etc.) should generate queries for PLACES THAT SELL those items
-• Service queries (coach, trainer, consultant, etc.) should generate queries for SERVICE PROVIDERS
-• Product queries should focus on RETAILERS or ESTABLISHMENTS that sell those products
-
-EXAMPLES:
-• "healthy smoothies" → "smoothie bar", "juice shop", "health food cafe" (NOT "health coach")
-• "personal trainer" → "fitness trainer", "personal training studio", "gym with trainers"
-• "organic coffee" → "organic coffee shop", "specialty coffee roaster", "fair trade cafe"
-• "life coach" → "life coaching services", "wellness coach", "personal development coach"
 
 Requirements:
 • Generate exactly ${numToGenerate} different search queries
 • Each query should be a unique string suitable for Google Places Text Search
-• Focus on business type + descriptive keywords that match the user's SPECIFIC INTENT
+• Focus on business type + descriptive keywords that match the user's vibe
 • Include MAXIMUM variety in business types (restaurants, cafes, bars, shops, services, entertainment, etc.)
-• Use diverse descriptive terms like "cozy", "trendy", "upscale", "casual", "romantic", "modern", "vintage", "artisan", "boutique", "local", "authentic"
-• MATCH THE INTENT: If user wants smoothies, find smoothie shops, NOT health coaches
+• Use diverse descriptive terms like "cozy", "trendy", "upscale", "casual", "romantic", "modern", "vintage", "artisan", "boutique", "local", "authentic", etc.
+• Examples: "trendy wine bar", "cozy coffee shop", "upscale cocktail lounge", "casual brewery", "artisan bakery", "boutique bookstore", "vintage clothing store", "local art gallery"
 • Keep queries concise (2-4 words typically)
 • Ensure each query is DIFFERENT and will find DIFFERENT types of businesses
-• Mix different business categories to provide variety while staying true to the user's intent`;
+• Mix different business categories to provide variety`;
 
     // Define function schema for generating search queries
     const tools = [{
@@ -383,64 +242,136 @@ Requirements:
     console.log('🔍 Searching Google Places with AI-generated queries...');
     const allPotentialBusinesses = [];
 
-    // Iterate through AI-generated search queries and make Google Places API calls
-    // Limit to 10 queries to avoid excessive API calls
-    for (let i = 0; i < Math.min(searchQueries.length, 10); i++) {
-      const query = searchQueries[i];
-      console.log(`🔍 Making Google Places API call for query: "${query}" (${i + 1}/${Math.min(searchQueries.length, 10)})`);
-
+    // Parallelize Google Places API calls for better performance
+    const searchPromises = searchQueries.map(async (query, index) => {
+      if (!query || typeof query !== 'string') {
+        console.warn(`⚠️ Invalid search query at index ${index}, skipping.`);
+        return null;
+      }
+      
       try {
+        console.log(`🔍 Searching Google Places for: "${query}"`);
+        
+        // Use Google Places Text Search API
         const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json`;
         
         const placesResponse = await axios.get(placesUrl, {
           params: {
             query: query,
             location: `${searchLatitude},${searchLongitude}`,
-            rankby: 'distance',
+            radius: searchRadius,
             type: 'establishment',
-            fields: 'name,formatted_address,geometry,rating,opening_hours,types,place_id,photos',
+            fields: 'name,formatted_address,geometry,rating,opening_hours,types,place_id',
             key: GOOGLE_PLACES_API_KEY
           },
-          timeout: 8000
+         timeout: 5000 // Reduced timeout for faster response
         });
-
+        
         if (placesResponse.data.status === 'OK' && 
             placesResponse.data.results && 
             placesResponse.data.results.length > 0) {
           
-          console.log(`✅ Google Places API call for "${query}" found ${placesResponse.data.results.length} results`);
+          // Get the first result that has a rating and is within 10 miles
+          const result = placesResponse.data.results.find(r => {
+            if (!r.rating) return false;
+            
+            // Check distance if coordinates are available
+            if (r.geometry?.location?.lat && r.geometry?.location?.lng) {
+              const distance = calculateDistance(
+                searchLatitude, searchLongitude,
+                r.geometry.location.lat, r.geometry.location.lng
+              );
+              return distance <= 10; // Within 10 miles
+            }
+            
+            return true; // Include if no coordinates available
+          });
           
-          const validResults = placesResponse.data.results
-            .filter(result => {
-              // Check distance if coordinates are available
-              if (result.geometry?.location?.lat && result.geometry?.location?.lng) {
-                const distance = calculateDistance(
-                  searchLatitude, searchLongitude,
-                  result.geometry.location.lat, result.geometry.location.lng
-                );
-                return distance <= 10; // Within 10 miles
+          if (result) {
+            console.log(`✅ Found business: ${result.name} (${result.rating} stars)`);
+            
+            // Store coordinates for distance calculation
+            const businessLatitude = result.geometry?.location?.lat;
+            const businessLongitude = result.geometry?.location?.lng;
+            
+            // Parse opening hours
+            let businessHours = 'Hours not available';
+            let isOpen = true;
+            
+            if (result.opening_hours) {
+              isOpen = result.opening_hours.open_now !== undefined ? result.opening_hours.open_now : true;
+              if (result.opening_hours.weekday_text && result.opening_hours.weekday_text.length > 0) {
+                // Get today's hours
+                const today = new Date().getDay();
+                businessHours = result.opening_hours.weekday_text[today] || result.opening_hours.weekday_text[0];
               }
-              return true; // Include if no coordinates available
-            })
-            .slice(0, 5) // Limit to 5 results per query
-            .map(result => processGooglePlacesResult(result, GOOGLE_PLACES_API_KEY, prompt));
-          
-          allPotentialBusinesses.push(...validResults);
-          console.log(`📊 Added ${validResults.length} valid businesses from query "${query}"`);
-          
-        } else {
-          console.warn(`⚠️ No Google Places results found for query: "${query}"`);
-          if (placesResponse.data.status !== 'OK') {
-            console.warn(`Google Places API status for "${query}": ${placesResponse.data.status}`);
+            }
+            
+            // Generate a short description based on the business type and rating
+            const shortDescription = `${result.name} is a highly-rated ${query} with ${result.rating} stars. Known for excellent service and great atmosphere.`;
+            
+            // Create business text for later batch embedding generation
+            const businessText = [
+              result.name,
+              query, // The search query that found this business
+              result.types ? result.types.join(' ') : '',
+              `${result.rating} star rating`,
+              result.vicinity || '',
+              businessHours
+            ].filter(Boolean).join(' ');
+            
+            return {
+              id: `google-${result.place_id}`,
+              name: result.name,
+              shortDescription: shortDescription,
+              rating: result.rating,
+              image: null,
+              isOpen: isOpen,
+              hours: businessHours,
+              address: result.formatted_address,
+              latitude: businessLatitude || null,
+              longitude: businessLongitude || null,
+              distance: 999999, // Will be calculated accurately below
+              duration: 999999, // Will be calculated accurately below
+              placeId: result.place_id, // Add place_id for Google Business Profile linking
+              reviews: [{
+                text: `Great ${query}! Really enjoyed the atmosphere and service here.`,
+                author: "Google User",
+                thumbsUp: true
+              }],
+              isPlatformBusiness: false,
+              tags: [],
+              isGoogleVerified: true, // Flag to indicate Google verification
+              businessText: businessText, // Store for batch embedding generation
+              similarity: 0.8 // Temporary value, will be calculated in batch
+            };
+          } else {
+            console.warn(`⚠️ Businesses found for "${query}" but none have ratings, skipping.`);
+            return null;
           }
+        } else {
+          console.warn(`⚠️ No Google Places results found for: "${query}" near ${searchLatitude}, ${searchLongitude}`);
+          if (placesResponse.data.status !== 'OK') {
+            console.warn(`Google Places API status: ${placesResponse.data.status}`);
+          }
+          return null;
         }
-      } catch (specificPlacesError) {
-        console.error(`❌ Google Places API error for query "${query}":`, specificPlacesError.message);
+      } catch (placesError) {
+        console.error(`❌ Google Places API error for "${query}":`, placesError.message);
+        return null;
       }
-      
-      // Add a small delay between calls to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
+    });
+
+    // Wait for all searches to complete in parallel
+    console.log('⚡ Executing up to', searchQueries.length, 'Google Places searches in parallel...');
+    const searchResults = await Promise.all(searchPromises);
+    
+    // Collect all valid results
+    searchResults.forEach(result => {
+      if (result !== null) {
+        allPotentialBusinesses.push(result);
+      }
+    });
     
     console.log('🎯 AI search collected', allPotentialBusinesses.length, 'potential businesses before deduplication');
     
@@ -455,16 +386,16 @@ Requirements:
       }
     });
     
-    // Convert Map back to array and sort by rating
+    // Convert Map back to array and sort by similarity
     const uniqueBusinesses = Array.from(uniqueBusinessesMap.values())
       .sort((a, b) => (b.rating || 0) - (a.rating || 0));
     
-    console.log('🎯 After deduplication and sorting:', uniqueBusinesses.length, 'unique businesses');
+    console.log('🎯 After deduplication:', uniqueBusinesses.length, 'unique businesses');
     
     // Take only the requested number of businesses
     const finalBusinesses = uniqueBusinesses.slice(0, Math.min(numToGenerate, 15));
     
-    console.log('🎯 Final businesses selected for processing:', finalBusinesses.length, 'businesses (max allowed: 15)');
+    console.log('🎯 AI search results after deduplication and limiting:', finalBusinesses.length, 'businesses');
     
     // OPTIMIZATION: Batch generate embeddings for all businesses at once
     if (finalBusinesses.length > 0) {
@@ -519,8 +450,32 @@ Requirements:
       }
     }
     
+    const foundBusinesses = finalBusinesses;
+    
+    // Filter businesses by 10-mile radius if user location is available
+    let radiusFilteredBusinesses = foundBusinesses;
+    if (searchLatitude && searchLongitude) {
+      radiusFilteredBusinesses = foundBusinesses.filter(business => {
+        if (!business.latitude || !business.longitude) return false;
+        
+        const distance = calculateDistance(
+          searchLatitude, searchLongitude,
+          business.latitude, business.longitude
+        );
+        
+        if (distance > 10) {
+          console.log(`🚫 Filtering out business outside radius: ${business.name} (${distance.toFixed(1)} miles)`);
+          return false;
+        }
+        
+        return true;
+      });
+      
+      console.log('🎯 AI search results after 10-mile radius filter:', radiusFilteredBusinesses.length, 'businesses');
+    }
+
     // Calculate accurate distances if we have user location and businesses with coordinates
-    let updatedBusinesses = finalBusinesses;
+    let updatedBusinesses = radiusFilteredBusinesses;
     if (updatedBusinesses.length > 0 && searchLatitude && searchLongitude) {
       try {
         console.log('📏 Calculating accurate distances for', updatedBusinesses.length, 'businesses');
@@ -600,9 +555,6 @@ Requirements:
       name: b.name,
       similarity: Math.round((b.similarity || 0) * 100) + '%'
     })));
-    
-    console.log(`🎯 FINAL RESULT COUNT: ${updatedBusinesses.length} businesses being returned to client`);
-    
     return new Response(JSON.stringify({
       success: true,
       results: updatedBusinesses,
@@ -613,7 +565,8 @@ Requirements:
       foundBusinessesCount: updatedBusinesses.length,
       searchLocation: {
         latitude: searchLatitude,
-        longitude: searchLongitude
+        longitude: searchLongitude,
+        radius: searchRadius
       },
       timestamp: new Date().toISOString()
     }), {

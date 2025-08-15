@@ -351,9 +351,6 @@ export class BusinessService {
     adminView?: boolean;
     userLatitude?: number;
     userLongitude?: number;
-    business_type?: 'product' | 'service' | 'hybrid';
-    primary_offering?: string;
-    intent?: 'food_beverage' | 'service' | 'retail' | 'general';
   }): Promise<Business[]> {
     try {
       console.log('🔍 BusinessService.getBusinesses called with filters:', filters);
@@ -376,68 +373,17 @@ export class BusinessService {
         query = query.eq('is_verified', true);
       }
       
-      // Apply business type filter for intent matching
-      if (filters?.business_type) {
-        query = query.eq('business_type', filters.business_type);
-      }
-      
-      // Apply primary offering filter for more specific intent matching
-      if (filters?.primary_offering) {
-        query = query.eq('primary_offering', filters.primary_offering);
-      }
-      
       if (filters?.search) {
         console.log('🔍 Applying search filter for:', filters.search);
-        
-        // Declare searchConditions at the top of the search block
-        let searchConditions: string[] = [];
-        
-        // Enhanced search with intent-based prioritization
-        if (filters.intent) {
-          console.log('🎯 Applying intent-based search for:', filters.intent);
-          
-          if (filters.intent === 'food_beverage') {
-            // For food/beverage intent, prioritize product businesses and food-related categories
-            searchConditions = [
-              `name.ilike.%${filters.search}%`,
-              `description.ilike.%${filters.search}%`,
-              `short_description.ilike.%${filters.search}%`,
-              `tags.cs.{${filters.search}}`
-            ];
-            
-            // Add additional filter for food/beverage businesses
-            query = query.or(`business_type.eq.product,primary_offering.eq.food_beverage`);
-          } else if (filters.intent === 'service') {
-            // For service intent, prioritize service businesses
-            searchConditions = [
-              `name.ilike.%${filters.search}%`,
-              `description.ilike.%${filters.search}%`,
-              `short_description.ilike.%${filters.search}%`
-            ];
-            
-            query = query.eq('business_type', 'service');
-          } else {
-            // General search - use all fields
-            searchConditions = [
-              `name.ilike.%${filters.search}%`,
-              `description.ilike.%${filters.search}%`,
-              `location.ilike.%${filters.search}%`,
-              `category.ilike.%${filters.search}%`,
-              `short_description.ilike.%${filters.search}%`,
-              `address.ilike.%${filters.search}%`
-            ];
-          }
-        } else {
-          // Fallback to original search logic
-          searchConditions = [
-            `name.ilike.%${filters.search}%`,
-            `description.ilike.%${filters.search}%`,
-            `location.ilike.%${filters.search}%`,
-            `category.ilike.%${filters.search}%`,
-            `short_description.ilike.%${filters.search}%`,
-            `address.ilike.%${filters.search}%`
-          ];
-        }
+        // Build search conditions array to avoid malformed query strings
+        const searchConditions = [
+          `name.ilike.%${filters.search}%`,
+          `description.ilike.%${filters.search}%`,
+          `location.ilike.%${filters.search}%`,
+          `category.ilike.%${filters.search}%`,
+          `short_description.ilike.%${filters.search}%`,
+          `address.ilike.%${filters.search}%`
+        ];
         
         query = query.or(searchConditions.join(','));
       }

@@ -7,7 +7,6 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { formatCredits, formatReviewCount } from '../utils/formatters';
 import { ActivityService } from '../services/activityService';
 import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
-import { StripeService } from '../services/stripeService';
 
 interface UserMenuProps {
   user: User;
@@ -20,31 +19,6 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const { trackEvent } = useAnalytics();
   const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(user.id);
-
-  // Get user's subscription status
-  const [subscription, setSubscription] = useState<any>(null);
-  const [loadingSubscription, setLoadingSubscription] = useState(true);
-
-  useEffect(() => {
-    const loadSubscription = async () => {
-      try {
-        const subscriptionData = await StripeService.getUserSubscription();
-        setSubscription(subscriptionData);
-      } catch (error) {
-        console.error('Error loading subscription:', error);
-      } finally {
-        setLoadingSubscription(false);
-      }
-    };
-
-    loadSubscription();
-  }, []);
-
-  // Get current subscription product
-  const getCurrentSubscriptionProduct = () => {
-    if (!subscription?.price_id) return null;
-    return StripeService.getProductByPriceId(subscription.price_id);
-  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -166,14 +140,6 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
                     {formatCredits(user.credits, user.role)} credits
                   </span>
                 </div>
-                {!loadingSubscription && subscription && subscription.subscription_status === 'active' && (
-                  <div className="flex items-center mt-1">
-                    <Icons.Crown className="h-3 w-3 text-yellow-500 mr-1" />
-                    <span className="font-poppins text-xs font-semibold text-yellow-600">
-                      {getCurrentSubscriptionProduct()?.name || 'Premium Plan'}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           </div>

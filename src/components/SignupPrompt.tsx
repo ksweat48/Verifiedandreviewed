@@ -22,7 +22,7 @@ const SignupPrompt: React.FC<SignupPromptProps> = ({
   signupButtonText = "Sign Up Free For 200 Credits",
   loginButtonText = "Already have an account? Log in",
   benefits = [
-    "100 free credits instantly",
+    "200 free credits instantly",
     "100 free credits every month", 
     "Earn credits for each review",
     "Save favorite businesses",

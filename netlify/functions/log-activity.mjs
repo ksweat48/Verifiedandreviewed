@@ -105,11 +105,7 @@ export const handler = async (event) => {
 
     if (error) {
       console.error('Error inserting activity log:', error);
-      return {
-        statusCode: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Failed to insert activity log', message: error.message })
-      };
+      throw new Error(error.message);
     }
 
     console.log('Activity log successfully inserted.');

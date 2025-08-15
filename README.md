@@ -27,42 +27,4 @@ This ensures Netlify Functions are properly served locally. Do not use `npm run 
 
 ### Other Environment Variables
 
-If you're using other services like WordPress, OpenAI, Google Business Profile, or Google Cloud Vision, you'll need to add those environment variables as well. See `.env.example` for a complete list.
-
-### Google Cloud Vision Setup (Optional)
-
-For AI-powered image moderation using Google Cloud Vision SafeSearch:
-
-1. **Enable the API:** Go to Google Cloud Console → APIs & Services → Library → Search for "Cloud Vision API" → Enable
-2. **Create Service Account:** IAM & Admin → Service Accounts → Create → Grant "Cloud Vision API User" role
-3. **Download JSON Key:** Create and download a JSON key for the service account
-4. **Add Environment Variables:** Extract values from the JSON and add to Netlify:
-   - `GCP_PROJECT_ID`
-   - `GCP_PRIVATE_KEY_ID` 
-   - `GCP_PRIVATE_KEY` (include the full key with headers)
-   - `GCP_CLIENT_EMAIL`
-   - `GCP_CLIENT_ID`
-5. **Enable in Admin:** Go to Admin Dashboard → Tools → Google Cloud Vision SafeSearch → Toggle ON
-
-When disabled, images are moderated using basic checks only (file size, format, source validation).
-
-### Rate Limiting
-
-The application includes comprehensive rate limiting to prevent abuse and control API costs:
-
-**Function Limits:**
-- Semantic Search: 5 requests/minute per user
-- AI Business Search: 3 requests/minute per user  
-- Image Moderation: 20 requests/minute per user
-- Embedding Generation: 5 requests/5 minutes per user
-- Credit Deduction: 30 requests/minute per user
-
-**How it works:**
-- Authenticated users are tracked by user ID
-- Anonymous users are tracked by IP address
-- Rate limit data is stored in Supabase `rate_limits` table
-- Old records are automatically cleaned up after 1 hour
-- Functions return HTTP 429 when limits are exceeded
-- Frontend handles rate limit responses gracefully
-
-Rate limiting is automatically active and requires no additional configuration.
+If you're using other services like WordPress, OpenAI, or Google Business Profile, you'll need to add those environment variables as well. See `.env.example` for a complete list.

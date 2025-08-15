@@ -27,19 +27,6 @@ interface BusinessCard {
   phone_number?: string;
   latitude?: number;
   longitude?: number;
-  // Offering-specific properties
-  isOfferingSearch?: boolean;
-  offeringId?: string;
-  businessId?: string;
-  ctaLabel?: string;
-  offeringDescription?: string;
-  businessAddress?: string;
-  businessCategory?: string;
-  businessHours?: string;
-  businessPhone?: string;
-  businessWebsite?: string;
-  is_virtual?: boolean;
-  website_url?: string;
 }
 
 const AIBusinessCard: React.FC<{
@@ -115,13 +102,6 @@ const AIBusinessCard: React.FC<{
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // Handle offering search results
-                if (business.isOfferingSearch && business.businessId && business.offeringId) {
-                  const offeringUrl = `/b/${business.businessId}?offering=${business.offeringId}`;
-                  window.location.href = offeringUrl;
-                  return;
-                }
-                
                 // Handle mobile business calls vs navigation
                 if (business.is_virtual && business.website_url) {
                   window.open(business.website_url, '_blank', 'noopener,noreferrer');
@@ -185,10 +165,12 @@ const AIBusinessCard: React.FC<{
               }}
               className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-2 px-3 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center text-sm"
             >
-              {business.isOfferingSearch && business.ctaLabel ? (
-                business.ctaLabel
-              ) : (
-              business.is_virtual && business.website_url ? (
+              {business.is_virtual && business.website_url ? (
+                <>
+                  <Icons.Globe className="h-4 w-4 mr-1" />
+                  VISIT
+                </>
+              ) : business.is_mobile_business && business.phone_number ? (
                 <>
                   <Icons.Globe className="h-4 w-4 mr-1" />
                   VISIT
@@ -203,7 +185,7 @@ const AIBusinessCard: React.FC<{
                   <Icons.Navigation className="h-4 w-4 mr-1" />
                   GO
                 </>
-              ))}
+              )}
               {business.distance && business.duration && (
                 <span className="ml-1 text-xs opacity-90">
                   {business.distance}mi • {business.duration} min

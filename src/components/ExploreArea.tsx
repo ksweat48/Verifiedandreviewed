@@ -100,7 +100,7 @@ const ExploreArea = () => {
       
       // Fetch reviews for each business
       const businessesWithReviews = await Promise.all(
-        transformedBusinesses.slice(0, 10).map(async (business) => {
+        transformedBusinesses.slice(0, 6).map(async (business) => {
           try {
             const reviews = await ReviewService.getBusinessReviews(business.id);
             const formattedReviews = reviews.map(review => ({
@@ -290,8 +290,8 @@ const ExploreArea = () => {
         {/* Platform Business Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            // Loading skeletons - create an array of 10 items
-            [...Array(10)].map((_, index) => (
+            // Loading skeletons - create an array of 6 items
+            [...Array(6)].map((_, index) => (
               <div key={index} className="bg-neutral-100 rounded-xl h-[480px] animate-pulse"></div>
             ))
           ) : (

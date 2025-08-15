@@ -14,9 +14,6 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const ReviewerDashboardPage = lazy(() => import('./pages/ReviewerDashboardPage'));
 const AddBusinessPage = lazy(() => import('./pages/AddBusinessPage'));
-const SuccessPage = lazy(() => import('./pages/SuccessPage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const SignupPage = lazy(() => import('./pages/SignupPage'));
 
 function App() {
   const [isAppModeActive, setIsAppModeActive] = useState(false);
@@ -24,6 +21,16 @@ function App() {
   
   // Enable automatic activity tracking
   useActivityTracking();
+  
+  // Prevent immediate exit from the application by adding a dummy history entry
+  useEffect(() => {
+    // Only push state once when the app first loads
+    const hasInitialState = sessionStorage.getItem('app-initial-state');
+    if (!hasInitialState) {
+      window.history.pushState(null, '', window.location.href);
+      sessionStorage.setItem('app-initial-state', 'true');
+    }
+  }, []);
   
   // Auto-refresh when app is reopened (tab becomes visible again)
   useEffect(() => {
@@ -106,9 +113,6 @@ function App() {
           <Route path="/dashboard" element={<ReviewerDashboardPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/add-business" element={<AddBusinessPage />} />
-          <Route path="/success" element={<SuccessPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
         </Routes>
       </Suspense>
       

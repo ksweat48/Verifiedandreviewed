@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { UserService } from '../services/userService';
 import { useAnalytics } from '../hooks/useAnalytics';
 import type { User } from '../types/user';
@@ -21,11 +20,16 @@ const AuthModal: React.FC<AuthModalProps> = ({
   forceMode = false,
   onAuthSuccess 
 }) => {
+  const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { trackEvent } = useAnalytics();
-  const navigate = useNavigate();
+  
+  // Set mode based on initialMode prop when it changes
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
   
   // Handle browser back button for modal
   useEffect(() => {
@@ -66,14 +70,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setError('');
   };
 
-  const handleNavigateToLogin = () => {
-    onClose(); // Close the modal first
-    navigate('/login'); // Then navigate
-  };
-
-  const handleNavigateToSignup = () => {
-    onClose(); // Close the modal first
-    navigate('/signup'); // Then navigate
+  const handleModeSwitch = (newMode: 'login' | 'signup') => {
+    if (forceMode) return; // Don't allow switching if mode is forced
+    setMode(newMode);
+    resetForm();
   };
 
   const validateForm = () => {
@@ -122,7 +122,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
     // Admin login code removed for token efficiency
 
     try {
-      if (initialMode === 'signup') {
+      if (mode === 'signup') {
         const result = await UserService.registerUser({
           username: formData.username,
           email: formData.email,
@@ -200,44 +200,21 @@ const AuthModal: React.FC<AuthModalProps> = ({
         <div className="flex items-center mb-6">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center mr-3">
-              {initialMode === 'signup' ? (
+              {mode === 'signup' ? (
                 <Icons.UserPlus className="h-5 w-5 text-primary-500" />
               ) : (
                 <Icons.LogIn className="h-5 w-5 text-primary-500" />
               )}
             </div>
             <h2 className="font-cinzel text-2xl font-bold text-neutral-900">
-              {initialMode === 'signup' ? 'Create Account' : 'Welcome Back'}
+              {mode === 'signup' ? 'Create Account' : 'Welcome Back'}
             </h2>
           </div>
         </div>
 
-        {/* Mode Switch Buttons - Now close modal and navigate */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={handleNavigateToLogin}
-            className={`flex-1 py-2 px-4 rounded-lg font-poppins font-medium transition-colors duration-200 ${
-              initialMode === 'login'
-                ? 'bg-primary-500 text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={handleNavigateToSignup}
-            className={`flex-1 py-2 px-4 rounded-lg font-poppins font-medium transition-colors duration-200 ${
-              initialMode === 'signup'
-                ? 'bg-primary-500 text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 overflow-y-visible">
-          {initialMode === 'signup' && (
+          {mode === 'signup' && (
             <div>
               <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
                 Full Name
@@ -261,7 +238,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
           <div>
             <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
-              {initialMode === 'signup' ? 'Username' : 'Username or Email'}
+              {mode === 'signup' ? 'Username' : 'Username or Email'}
             </label>
             <div className="relative">
               <Icons.User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
@@ -269,14 +246,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                placeholder={initialMode === 'signup' ? 'Choose a username' : 'Enter username or email'}
+                placeholder={mode === 'signup' ? 'Choose a username' : 'Enter username or email'}
                 className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg font-lora focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               />
             </div>
           </div>
 
-          {initialMode === 'signup' && (
+          {mode === 'signup' && (
             <div>
               <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
                 Email Address
@@ -319,7 +296,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           </div>
 
-          {initialMode === 'signup' && (
+          {mode === 'signup' && (
             <div>
               <label className="font-poppins text-sm font-medium text-neutral-700 block mb-2">
                 Confirm Password
@@ -354,13 +331,25 @@ const AuthModal: React.FC<AuthModalProps> = ({
             }`}
           >
             {loading ? (
-              initialMode === 'signup' ? 'Creating Account...' : 'Signing In...'
+              mode === 'signup' ? 'Creating Account...' : 'Signing In...'
             ) : (
-              initialMode === 'signup' ? 'Create Account' : 'Sign In'
+              mode === 'signup' ? 'Create Account' : 'Sign In'
             )}
           </button>
         </form>
 
+        {/* Mode Switch */}
+        <div className="mt-4 pt-4 text-center">
+          <p className="font-lora text-neutral-600">
+            {mode === 'signup' ? 'Already have an account?' : "Don't have an account?"}
+            <button
+              onClick={() => handleModeSwitch(mode === 'signup' ? 'login' : 'signup')}
+              className="ml-2 font-poppins font-semibold text-primary-500 hover:text-primary-600 transition-colors duration-200"
+            >
+              {mode === 'signup' ? 'Sign In' : 'Sign Up'}
+            </button>
+          </p>
+        </div>
 
         {/* Benefits for Sign Up */}
       </div>

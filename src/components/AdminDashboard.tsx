@@ -7,7 +7,6 @@ import { UserService } from '../services/userService';
 import { supabase } from '../services/supabaseClient';
 import EmbeddingGenerationTest from './EmbeddingGenerationTest';
 import OpenAIConnectionTest from './OpenAIConnectionTest';
-import GoogleVisionModerationSettings from './GoogleVisionModerationSettings';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -657,71 +656,6 @@ const AdminDashboard = () => {
           <div className="space-y-8">
             <OpenAIConnectionTest />
             <EmbeddingGenerationTest />
-            <GoogleVisionModerationSettings />
-            
-            {/* Rate Limiting Status */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
-              <h3 className="font-poppins text-lg font-semibold text-neutral-900 mb-4 flex items-center">
-                <Icons.Shield className="h-5 w-5 mr-2 text-blue-500" />
-                Rate Limiting Status
-              </h3>
-              
-              <div className="space-y-4">
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h4 className="font-poppins font-semibold text-blue-800 mb-2">
-                    🛡️ Active Rate Limits
-                  </h4>
-                  <div className="space-y-2 font-lora text-blue-700 text-sm">
-                    <div className="flex justify-between">
-                      <span>Semantic Search:</span>
-                      <span className="font-semibold">5 requests/minute</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>AI Business Search:</span>
-                      <span className="font-semibold">3 requests/minute</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Image Moderation:</span>
-                      <span className="font-semibold">20 requests/minute</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Embedding Generation:</span>
-                      <span className="font-semibold">5 requests/5 minutes</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Credit Deduction:</span>
-                      <span className="font-semibold">30 requests/minute</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-green-50 rounded-lg p-4">
-                  <h4 className="font-poppins font-semibold text-green-800 mb-2">
-                    ✅ Benefits
-                  </h4>
-                  <ul className="font-lora text-green-700 text-sm space-y-1">
-                    <li>• Prevents API abuse and excessive costs</li>
-                    <li>• Ensures fair usage across all users</li>
-                    <li>• Protects against DoS attacks</li>
-                    <li>• Automatic cleanup of old rate limit records</li>
-                    <li>• Separate limits for authenticated vs anonymous users</li>
-                  </ul>
-                </div>
-                
-                <div className="bg-yellow-50 rounded-lg p-4">
-                  <h4 className="font-poppins font-semibold text-yellow-800 mb-2">
-                    ⚙️ How It Works
-                  </h4>
-                  <ul className="font-lora text-yellow-700 text-sm space-y-1">
-                    <li>• Authenticated users are tracked by user ID</li>
-                    <li>• Anonymous users are tracked by IP address</li>
-                    <li>• Rate limit data is stored in Supabase</li>
-                    <li>• Old records are automatically cleaned up</li>
-                    <li>• Functions return 429 status when limits exceeded</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>
