@@ -65,8 +65,7 @@ const RecentActivitySection: React.FC = () => {
           )
         `)
         .eq('user_id', user.id)
-        .order('visited_at', { ascending: false })
-        .limit(5);
+        .order('visited_at', { ascending: false });
       
       if (visitsError) throw visitsError;
       
@@ -100,7 +99,9 @@ const RecentActivitySection: React.FC = () => {
           };
         });
         
-        setVisitedBusinesses(formattedBusinesses);
+        // Filter to only show businesses that haven't been reviewed yet
+        const unreviewed = formattedBusinesses.filter(business => !business.hasReviewed);
+        setVisitedBusinesses(unreviewed);
       } else {
         setVisitedBusinesses([]);
       }
@@ -112,7 +113,9 @@ const RecentActivitySection: React.FC = () => {
     }
   };
 
-  const pendingReviewsCount = visitedBusinesses.filter(b => !b.hasReviewed).length;
+  // Since visitedBusinesses now only contains unreviewed businesses, 
+  // the pending count is simply the array length
+  const pendingReviewsCount = visitedBusinesses.length;
 
   const openReviewModal = (business: VisitedBusiness) => {
     setSelectedBusiness(business);
