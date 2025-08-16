@@ -8,7 +8,7 @@ interface BusinessCard {
   address: string;
   image: string;
   shortDescription?: string;
-  rating: number;
+  rating: number | null | undefined;
   hours?: string;
   isOpen?: boolean;
   reviews: Array<{
@@ -33,6 +33,8 @@ const AIBusinessCard: React.FC<{
   business: BusinessCard;
   onRecommend: (business: BusinessCard) => void;
 }> = ({ business, onRecommend }) => {
+  // Ensure rating is always a valid number for display
+  const displayRating = typeof business.rating === 'number' && !isNaN(business.rating) ? business.rating : 0;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group">
@@ -46,14 +48,14 @@ const AIBusinessCard: React.FC<{
               <Icons.Star
                 key={i}
                 className={`h-3 w-3 ${
-                  i < Math.floor(business.rating)
+                  i < Math.floor(displayRating)
                     ? 'text-yellow-400 fill-current'
                     : 'text-neutral-300'
                 }`}
               />
             ))}
             <span className="font-poppins text-xs font-semibold text-neutral-700 ml-1">
-              {business.rating.toFixed(1)}
+              {displayRating.toFixed(1)}
             </span>
             {/* Semantic Similarity Score - Only show if available and > 0 */}
             {business.similarity && business.similarity > 0 && (
