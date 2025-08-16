@@ -416,25 +416,25 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       setIsAppModeActive(true); // Show loading screen for authenticated users
       
       // Set search type to unified
-      setSearchType('semantic'); // Keep as 'semantic' for UI display purposes
+      setSearchType('ai'); // Show as 'ai' since we're using the intelligent unified system
       
       // Log search activity if user is authenticated
       if (user) {
-        ActivityService.logSearch(user.id, searchTerm, 'semantic');
+        ActivityService.logSearch(user.id, searchTerm, 'unified');
       }
       
       // Track search event
       trackEvent('search_performed', {
         query: searchTerm,
-        search_type: 'unified',
+        search_type: 'intelligent_unified',
         user_authenticated: !!user,
         has_location: !!(latitude && longitude)
       });
 
       // Deduct credits for unified search
-      const creditDeducted = await CreditService.deductSearchCredits(user.id, 'semantic');
+      const creditDeducted = await CreditService.deductSearchCredits(user.id, 'unified');
       if (!creditDeducted) {
-        console.warn('⚠️ Failed to deduct credits for unified search');
+        console.warn('⚠️ Failed to deduct credits for intelligent search');
         setIsSearching(false);
         setIsAppModeActive(false);
         return;

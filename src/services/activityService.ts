@@ -121,6 +121,7 @@ export class ActivityService {
   }
 
   static logSearch(userId: string, searchQuery: string, searchType: 'platform' | 'ai' | 'semantic'): Promise<boolean> {
+  static logSearch(userId: string, searchQuery: string, searchType: 'platform' | 'ai' | 'semantic' | 'unified' | 'intelligent'): Promise<boolean> {
     return this.logActivity({
       userId,
       eventType: 'search',

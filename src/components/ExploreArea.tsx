@@ -61,42 +61,87 @@ const ExploreArea = () => {
     setLoading(true);
     
     try {
-      // Fetch real businesses from Supabase
-      const realBusinesses = await BusinessService.getBusinesses({
-        verified_only: false // Show all businesses, not just verified ones
+      // Use the new unified search system for better discovery
+      const searchResponse = await SemanticSearchService.searchByVibe('local businesses near me', {
+        latitude: undefined, // Will use user's location if available
+        longitude: undefined,
+        matchThreshold: 0.2, // Lower threshold for broader discovery
+        matchCount: 6
       });
       
-      // Transform the business data to match the expected format
-      const transformedBusinesses = realBusinesses.map(business => ({
-        id: business.id,
-        name: business.name,
-        category: business.category,
-        description: business.description,
-        short_description: business.short_description,
-        phone_number: business.phone_number,
-        website_url: business.website_url,
-        social_media: business.social_media,
-        price_range: business.price_range,
-        service_area: business.service_area,
-        days_closed: business.days_closed,
-        owner_user_id: business.owner_user_id,
-        latitude: business.latitude,
-        longitude: business.longitude,
-        created_at: business.created_at,
-        updated_at: business.updated_at,
-        rating: {
-          thumbsUp: business.thumbs_up || 0,
-          thumbsDown: business.thumbs_down || 0,
-          sentimentScore: business.sentiment_score || 0
-        },
-        image: business.image_url || '/verified and reviewed logo-coral copy copy.png',
-        isOpen: true, // Default to open since we don't have real-time status
-        hours: business.hours || 'Hours unavailable',
-        address: business.address || '',
-        reviews: [],
-        isPlatformBusiness: business.is_verified || false,
-        tags: business.tags || []
-      }));
+      let transformedBusinesses = [];
+      
+      if (searchResponse.success && searchResponse.results.length > 0) {
+        // Use unified search results
+        transformedBusinesses = searchResponse.results.map(business => ({
+          id: business.id || business.business_id,
+          name: business.name || business.business_name,
+          category: business.category || business.business_category,
+          description: business.description || business.business_description,
+          short_description: business.short_description || business.business_short_description,
+          phone_number: business.phone_number,
+          website_url: business.website_url,
+          social_media: business.social_media || [],
+          price_range: business.price_range,
+          service_area: business.service_area,
+          days_closed: business.days_closed,
+          owner_user_id: business.owner_user_id,
+          latitude: business.latitude,
+          longitude: business.longitude,
+          created_at: business.created_at,
+          updated_at: business.updated_at,
+          rating: business.rating || {
+            thumbsUp: business.thumbs_up || 0,
+            thumbsDown: business.thumbs_down || 0,
+            sentimentScore: business.sentiment_score || 0
+          },
+          image: business.image || business.image_url || '/verified and reviewed logo-coral copy copy.png',
+          isOpen: business.isOpen !== undefined ? business.isOpen : true,
+          hours: business.hours || 'Hours unavailable',
+          address: business.address || business.location || '',
+          reviews: business.reviews || [],
+          isPlatformBusiness: business.isPlatformBusiness || business.is_verified || false,
+          tags: business.tags || [],
+          similarity: business.similarity
+        }));
+      } else {
+        // Fallback to legacy business service if unified search fails
+        console.warn('⚠️ Unified search failed, falling back to legacy business service');
+        const realBusinesses = await BusinessService.getBusinesses({
+          verified_only: false
+        });
+        
+        transformedBusinesses = realBusinesses.map(business => ({
+          id: business.id,
+          name: business.name,
+          category: business.category,
+          description: business.description,
+          short_description: business.short_description,
+          phone_number: business.phone_number,
+          website_url: business.website_url,
+          social_media: business.social_media,
+          price_range: business.price_range,
+          service_area: business.service_area,
+          days_closed: business.days_closed,
+          owner_user_id: business.owner_user_id,
+          latitude: business.latitude,
+          longitude: business.longitude,
+          created_at: business.created_at,
+          updated_at: business.updated_at,
+          rating: {
+            thumbsUp: business.thumbs_up || 0,
+            thumbsDown: business.thumbs_down || 0,
+            sentimentScore: business.sentiment_score || 0
+          },
+          image: business.image_url || '/verified and reviewed logo-coral copy copy.png',
+          isOpen: true,
+          hours: business.hours || 'Hours unavailable',
+          address: business.address || '',
+          reviews: [],
+          isPlatformBusiness: business.is_verified || false,
+          tags: business.tags || []
+        }));
+      }
       
       // Fetch reviews for each business
       const businessesWithReviews = await Promise.all(

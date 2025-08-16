@@ -52,23 +52,11 @@ const CreditInfoTooltip: React.FC<CreditInfoTooltipProps> = ({ placement = 'bott
               <span className="w-5 h-5 bg-primary-100 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
                 2
               </span>
-              Platform-only searches cost 2 credits
-            </p>
-            <p className="flex items-center">
-              <span className="w-5 h-5 bg-primary-100 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                2
-              </span>
-              Semantic vibe searches cost 2 credits
-            </p>
-            <p className="flex items-center">
-              <span className="w-5 h-5 bg-primary-100 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                2
-              </span>
-              AI-assisted searches cost 2 credits
+              All searches cost 2 credits
             </p>
             <div className="border-t border-neutral-100 pt-2 mt-2">
               <p className="text-xs text-neutral-500">
-                All searches now cost 2 credits. The system first checks platform businesses, then uses semantic search and AI to provide the best results.
+                Our intelligent unified search automatically combines offerings, platform businesses, and AI suggestions to give you the best results every time.
               </p>
             </div>
           </div>

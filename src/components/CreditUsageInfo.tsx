@@ -24,23 +24,15 @@ const CreditUsageInfo: React.FC<CreditUsageInfoProps> = ({ className = '' }) => 
       </div>
       
       <div className="font-lora text-sm text-primary-700">
-        <div className="flex justify-between mb-2">
-          <span>Platform-only searches:</span>
-          <span className="font-semibold">2 credits</span>
-        </div>
-        <div className="flex justify-between mb-2">
-          <span>Semantic vibe searches:</span>
-          <span className="font-semibold">2 credits</span>
-        </div>
         <div className="flex justify-between">
-          <span>AI-assisted searches:</span>
+          <span>All searches (intelligent unified):</span>
           <span className="font-semibold">2 credits</span>
         </div>
       </div>
       
       {isExpanded && (
-        <div className="mt-3 pt-3 border-t border-primary-200 font-lora text-xs text-primary-600 space-y-2 animate-in slide-in-from-top-4 duration-300">
-          <p>All searches now cost the same amount. Semantic search understands vibe and mood. AI is used when fewer than 10 platform matches are found.</p>
+        <div className="mt-3 pt-3 border-t border-primary-200 font-lora text-xs text-primary-600 space-y-2">
+          <p>Our intelligent search system automatically combines offerings, platform businesses, and AI suggestions for the best results.</p>
           <p className="font-semibold">Earn credits by:</p>
           <ul className="space-y-1 pl-4">
             <li>• Reviews (2 credits each)</li>

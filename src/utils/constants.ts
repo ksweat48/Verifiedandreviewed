@@ -2,10 +2,10 @@
 // These flags control which search mechanism is active
 
 // Service-First Search (new system)
-export const SEARCH_SERVICE_FIRST = false;
+export const SEARCH_SERVICE_FIRST = true;
 
 // Legacy Search (old system)
-export const SEARCH_LEGACY = true;
+export const SEARCH_LEGACY = false;
 
 // Search configuration
 export const SEARCH_CONFIG = {
