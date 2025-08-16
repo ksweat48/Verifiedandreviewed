@@ -390,7 +390,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       
       // User is authenticated - proceed with search
       // Check if user has enough credits for search (2 credits required)
-      const hasEnoughCredits = await CreditService.hasEnoughCreditsForSearch(user.id, 'semantic');
+      const hasEnoughCredits = await CreditService.hasEnoughCreditsForSearch(user.id, 'unified');
       if (!hasEnoughCredits) {
         // User is out of credits - show out of credits modal
         setSignupPromptConfig({
@@ -415,288 +415,95 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       
       setIsAppModeActive(true); // Show loading screen for authenticated users
       
-      // Determine search type based on user authentication and credits
-      let effectiveSearchType: 'platform' | 'ai' | 'semantic' = 'platform';
-      
-      if (user) {
-        // User is authenticated - check credits for advanced searches
-        const hasCreditsForSemantic = await CreditService.hasEnoughCreditsForSearch(user.id, 'semantic');
-        const hasCreditsForAI = await CreditService.hasEnoughCreditsForSearch(user.id, 'ai');
-        
-        if (hasCreditsForSemantic) {
-          effectiveSearchType = 'semantic';
-        } else if (hasCreditsForAI) {
-          effectiveSearchType = 'ai';
-        }
-      }
-      
-      setSearchType(effectiveSearchType);
+      // Set search type to unified
+      setSearchType('semantic'); // Keep as 'semantic' for UI display purposes
       
       // Log search activity if user is authenticated
       if (user) {
-        ActivityService.logSearch(user.id, searchTerm, effectiveSearchType);
+        ActivityService.logSearch(user.id, searchTerm, 'semantic');
       }
       
       // Track search event
       trackEvent('search_performed', {
         query: searchTerm,
-        search_type: effectiveSearchType,
+        search_type: 'unified',
         user_authenticated: !!user,
         has_location: !!(latitude && longitude)
       });
 
-      let platformResults: any[] = [];
-      let semanticResults: any[] = [];
-      let aiResults: any[] = [];
-
-      // Step 1: Always search platform businesses first
-      console.log('🔍 Searching platform businesses...');
-      const rawPlatformResults = await BusinessService.getBusinesses({
-        search: searchTerm,
-        userLatitude: latitude || undefined,
-        userLongitude: longitude || undefined
-      });
-
-      // Transform platform businesses and fetch their reviews
-      // Batch fetch reviews for all platform businesses
-      let allBusinessReviews: any[] = [];
-      if (rawPlatformResults.length > 0) {
-        const businessIds = rawPlatformResults.map(business => business.id);
-        console.log('📦 Batch fetching reviews for', businessIds.length, 'platform businesses');
-        allBusinessReviews = await ReviewService.getBusinessReviews(businessIds);
+      // Deduct credits for unified search
+      const creditDeducted = await CreditService.deductSearchCredits(user.id, 'semantic');
+      if (!creditDeducted) {
+        console.warn('⚠️ Failed to deduct credits for unified search');
+        setIsSearching(false);
+        setIsAppModeActive(false);
+        return;
       }
       
-      // Create a map of business ID to reviews for quick lookup
-      const reviewsMap = new Map();
-      allBusinessReviews.forEach(review => {
-        if (!reviewsMap.has(review.business_id)) {
-          reviewsMap.set(review.business_id, []);
-        }
-        reviewsMap.get(review.business_id).push(review);
+      // Update local credits display
+      setUserCredits(prev => Math.max(0, prev - 2));
+      
+      // Perform unified search
+      console.log('🔍 Performing unified search...');
+      const searchResponse = await SemanticSearchService.searchByVibe(searchTerm, {
+        latitude: latitude || undefined,
+        longitude: longitude || undefined,
+        matchThreshold: 0.3,
+        matchCount: 15
       });
       
-      // Transform platform businesses with their reviews
-      platformResults = rawPlatformResults.map(business => {
-        const businessReviews = reviewsMap.get(business.id) || [];
+      if (searchResponse.success) {
+        console.log(`✅ Unified search completed: ${searchResponse.results.length} results`);
+        console.log('📊 Search sources:', searchResponse.searchSources);
         
-        // Transform reviews to match expected format
-        const formattedReviews = businessReviews.map((review: any) => ({
-          text: review.review_text || 'No review text available',
-          author: review.profiles?.name || 'Anonymous',
-          authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
-          images: (review.image_urls || []).map((url: string) => ({ url })),
-          thumbsUp: review.rating >= 4
-        }));
+        // Fetch reviews for all platform businesses in the results
+        const platformBusinessIds = searchResponse.results
+          .filter(business => business.isPlatformBusiness || business.source === 'offering' || business.source === 'platform_business')
+          .map(business => business.id || business.business_id)
+          .filter(Boolean);
         
-        return {
-          ...business,
-          // Ensure platform business identification
-          isPlatformBusiness: true,
-          // Transform rating structure for compatibility
-          rating: {
-            thumbsUp: business.thumbs_up || 0,
-            thumbsDown: business.thumbs_down || 0,
-            sentimentScore: business.sentiment_score || 0
-          },
-          // Ensure image property is available
-          image: business.image_url || '/verified and reviewed logo-coral copy copy.png',
-          // Ensure isOpen property
-          isOpen: true, // Default to open since we don't have real-time status
-          // Add fetched reviews
-          reviews: formattedReviews
-        };
-      });
-
-      console.log(`✅ Found ${platformResults.length} platform businesses`);
-
-      // Step 2: If authenticated and has credits, try semantic search
-      if (user && effectiveSearchType === 'semantic') {
-        console.log('🧠 Performing semantic search...');
-        try {
-          // Deduct credits for semantic search
-          const creditDeducted = await CreditService.deductSearchCredits(user.id, 'semantic');
-          if (creditDeducted) {
-            // Update local credits display
-            setUserCredits(prev => Math.max(0, prev - 2));
-            
-            const semanticResponse = await SemanticSearchService.searchByVibe(searchTerm, {
-              latitude: latitude || undefined,
-              longitude: longitude || undefined,
-              matchThreshold: 0.3,
-              matchCount: 10
-            });
-            
-            if (semanticResponse.success) {
-              semanticResults = semanticResponse.results || [];
-              console.log(`✅ Semantic search found ${semanticResults.length} results`);
-            }
-          } else {
-            console.warn('⚠️ Failed to deduct credits for semantic search');
+        let allBusinessReviews: any[] = [];
+        if (platformBusinessIds.length > 0) {
+          console.log('📦 Batch fetching reviews for', platformBusinessIds.length, 'platform businesses');
+          allBusinessReviews = await ReviewService.getBusinessReviews(platformBusinessIds);
+        }
+        
+        // Create a map of business ID to reviews for quick lookup
+        const reviewsMap = new Map();
+        allBusinessReviews.forEach(review => {
+          if (!reviewsMap.has(review.business_id)) {
+            reviewsMap.set(review.business_id, []);
           }
-        } catch (error) {
-          console.error('❌ Semantic search failed:', error);
-        }
-      }
-
-      // Step 3: Combine platform and semantic results
-      // Step 3: Combine and deduplicate all results using Map for guaranteed uniqueness
-      console.log('🔄 Deduplicating results...');
-      console.log('📊 Before deduplication:', {
-        platform: platformResults.length,
-        semantic: semanticResults.length,
-        ai: aiResults.length
-      });
-      
-      // Use Map for deduplication with priority: Platform > Semantic > AI
-      const businessMap = new Map();
-      
-      // Add AI results first (lowest priority)
-      aiResults.forEach(business => {
-        if (business.id) {
-          businessMap.set(business.id, business);
-        }
-      });
-      
-      // Add semantic results (medium priority - will overwrite AI if same ID)
-      semanticResults.forEach(business => {
-        if (business.id) {
-          businessMap.set(business.id, business);
-        }
-      });
-      
-      // Add platform results last (highest priority - will overwrite semantic/AI if same ID)
-      platformResults.forEach(business => {
-        if (business.id) {
-          businessMap.set(business.id, business);
-        }
-      });
-      
-      // Convert Map back to array
-      let combinedResults = Array.from(businessMap.values());
-      
-      console.log('📊 After deduplication:', {
-        total: combinedResults.length,
-        uniqueIds: new Set(combinedResults.map(b => b.id)).size
-      });
-
-      // Calculate distances for all businesses that need it (batch operation)
-      if (latitude && longitude && combinedResults.length > 0) {
-        console.log('📏 Batch calculating distances for', combinedResults.length, 'businesses');
-        try {
-          const businessesNeedingDistance = combinedResults.filter(business => 
-            business.latitude && business.longitude && (business.distance === 999999 || !business.distance)
-          );
+          reviewsMap.get(review.business_id).push(review);
+        });
+        
+        // Enrich results with reviews
+        const enrichedResults = searchResponse.results.map(business => {
+          const businessId = business.id || business.business_id;
+          const businessReviews = reviewsMap.get(businessId) || [];
           
-          if (businessesNeedingDistance.length > 0) {
-            const updatedBusinesses = await BusinessService.calculateBusinessDistances(
-              businessesNeedingDistance,
-              latitude,
-              longitude
-            );
-            
-            // Create a map of business ID to distance data
-            const distanceMap = new Map();
-            updatedBusinesses.forEach(business => {
-              distanceMap.set(business.id, {
-                distance: business.distance,
-                duration: business.duration
-              });
-            });
-            
-            // Update combinedResults with calculated distances
-            combinedResults = combinedResults.map(business => {
-              const distanceData = distanceMap.get(business.id);
-              if (distanceData) {
-                return {
-                  ...business,
-                  distance: distanceData.distance,
-                  duration: distanceData.duration
-                };
-              }
-              return business;
-            });
-            
-            console.log('✅ Batch distance calculation completed');
-          }
-        } catch (distanceError) {
-          console.warn('⚠️ Batch distance calculation failed:', distanceError);
-        }
-      }
-
-      // Step 4: If we have fewer than 6 total results and user has AI credits, use AI search
-      if (combinedResults.length < 15 && user && effectiveSearchType !== 'platform' && aiResults.length === 0) {
-        console.log('🤖 Using AI search to fill remaining slots...');
-        try {
-          // Deduct credits for AI search
-          const creditDeducted = await CreditService.deductSearchCredits(user.id, 'ai');
-          if (creditDeducted) {
-            // Update local credits display
-            setUserCredits(prev => Math.max(0, prev - 2));
-            
-            const aiResponse = await fetch('/.netlify/functions/ai-business-search', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                prompt: searchTerm,
-                searchQuery: searchTerm,
-                existingResultsCount: combinedResults.length,
-                numToGenerate: Math.min(7, Math.max(1, 15 - combinedResults.length)),
-                latitude: latitude || undefined,
-                longitude: longitude || undefined
-              })
-            });
-
-            if (aiResponse.ok) {
-              const aiData = await aiResponse.json();
-              if (aiData.success && aiData.results) {
-                aiResults = aiData.results;
-                console.log(`✅ AI search generated ${aiResults.length} results`);
-                
-                // Re-deduplicate with new AI results
-                aiResults.forEach(business => {
-                  if (business.id && !businessMap.has(business.id)) {
-                    businessMap.set(business.id, business);
-                  }
-                });
-                
-                // Update combined results
-                combinedResults = Array.from(businessMap.values());
-                
-                console.log('📊 After adding AI results:', {
-                  total: combinedResults.length,
-                  uniqueIds: new Set(combinedResults.map(b => b.id)).size
-                });
-              }
-            }
-          }
-        } catch (error) {
-          console.error('❌ AI search failed:', error);
-        }
-      }
-
-      // Step 5: Sort and rank results using composite scoring
-      const rankedResults = combinedResults.map(business => ({
-        ...business,
-        compositeScore: calculateCompositeScore({
-          similarity: business.similarity,
-          distance: business.distance,
-          isOpen: business.isOpen,
-          isPlatformBusiness: business.isPlatformBusiness || platformResults.some(p => p.id === business.id)
-        })
-      })).sort((a, b) => {
-        // First priority: Platform businesses always come before Google businesses
-        const aIsPlatform = a.isPlatformBusiness || platformResults.some(p => p.id === a.id);
-        const bIsPlatform = b.isPlatformBusiness || platformResults.some(p => p.id === b.id);
+          // Transform reviews to match expected format
+          const formattedReviews = businessReviews.map((review: any) => ({
+            text: review.review_text || 'No review text available',
+            author: review.profiles?.name || 'Anonymous',
+            authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+            images: (review.image_urls || []).map((url: string) => ({ url })),
+            thumbsUp: review.rating >= 4
+          }));
+          
+          return {
+            ...business,
+            reviews: business.reviews || formattedReviews,
+            // Ensure compatibility fields
+            isPlatformBusiness: business.isPlatformBusiness || business.source === 'offering' || business.source === 'platform_business'
+          };
+        });
         
-        if (aIsPlatform && !bIsPlatform) return -1; // a comes first
-        if (!aIsPlatform && bIsPlatform) return 1;  // b comes first
-        
-        // Second priority: Within the same business type, sort by composite score
-        return b.compositeScore - a.compositeScore;
-      });
-
-      console.log(`🎯 Final ranked results: ${rankedResults.length} businesses`);
-      setSearchResults(rankedResults);
+        setSearchResults(enrichedResults);
+      } else {
+        console.error('❌ Unified search failed:', searchResponse.error);
+        setSearchResults([]);
+      }
       setIsAppModeActive(true);
 
     } catch (error) {

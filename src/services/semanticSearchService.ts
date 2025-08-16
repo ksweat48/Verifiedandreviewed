@@ -1,9 +1,8 @@
 // Semantic Search Service for Vibe-Based Business Discovery
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
-import { SEARCH_SERVICE_FIRST } from '../utils/constants';
 
 export class SemanticSearchService {
-  // Perform semantic search using vector embeddings
+  // Perform unified search using the new endpoint
   static async searchByVibe(
     query: string,
     options: {
@@ -16,24 +15,18 @@ export class SemanticSearchService {
     success: boolean;
     results: any[];
     query: string;
-    usedSemanticSearch: boolean;
+    usedUnifiedSearch: boolean;
+    searchSources?: {
+      offerings: number;
+      platform_businesses: number;
+      ai_generated: number;
+    };
     error?: string;
   }> {
-    // Feature flag: Disable legacy semantic search when service-first is enabled
-    if (SEARCH_SERVICE_FIRST) {
-      console.warn('🚫 Legacy SemanticSearchService.searchByVibe is disabled by SEARCH_SERVICE_FIRST flag.');
-      return {
-        success: true,
-        results: [],
-        query,
-        usedSemanticSearch: false
-      };
-    }
-
     try {
-      console.log('🔍 Performing semantic search for:', query);
+      console.log('🔍 Performing unified search for:', query);
 
-      const response = await fetchWithTimeout('/.netlify/functions/semantic-search', {
+      const response = await fetchWithTimeout('/.netlify/functions/unified-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,20 +35,20 @@ export class SemanticSearchService {
           query: query.trim(),
           latitude: options.latitude,
           longitude: options.longitude,
-          matchThreshold: options.matchThreshold || 0.5,
-          matchCount: options.matchCount || 10
+          matchThreshold: options.matchThreshold || 0.3,
+          matchCount: options.matchCount || 15
         }),
-        timeout: 20000 // 20 second timeout for semantic search
+        timeout: 25000 // 25 second timeout for unified search
       });
 
       if (!response.ok) {
         if (response.status === 404) {
           return {
             success: false,
-            processed: 0,
-            successCount: 0,
-            errorCount: 0,
-            message: 'Embedding generation service not available. The generate-embeddings Netlify Function may not be deployed or running. If developing locally, make sure to run "netlify dev" instead of "npm run dev".'
+            results: [],
+            query,
+            usedUnifiedSearch: false,
+            error: 'Unified search service not available. Make sure to run "netlify dev" instead of "npm run dev".'
           };
         }
         
@@ -69,10 +62,10 @@ export class SemanticSearchService {
         
         return {
           success: false,
-          processed: 0,
-          successCount: 0,
-          errorCount: 0,
-          message: errorMessage
+          results: [],
+          query,
+          usedUnifiedSearch: false,
+          error: errorMessage
         };
       }
 
@@ -80,37 +73,39 @@ export class SemanticSearchService {
       try {
         data = await response.json();
       } catch (jsonError) {
-        console.error('Failed to parse semantic search response:', jsonError);
-        throw new Error('Invalid response from semantic search service');
+        console.error('Failed to parse unified search response:', jsonError);
+        throw new Error('Invalid response from unified search service');
       }
       
       if (!data.success) {
-        throw new Error(data.message || 'Semantic search failed');
+        throw new Error(data.message || 'Unified search failed');
       }
 
-      console.log('✅ Semantic search completed:', data.matchCount, 'results');
+      console.log('✅ Unified search completed:', data.matchCount, 'results');
+      console.log('📊 Search sources:', data.searchSources);
 
       return {
         success: true,
         results: data.results || [],
         query: data.query,
-        usedSemanticSearch: true
+        usedUnifiedSearch: true,
+        searchSources: data.searchSources
       };
 
     } catch (error) {
-      console.error('❌ Semantic search error:', error);
+      console.error('❌ Unified search error:', error);
       
       return {
         success: false,
         results: [],
         query,
-        usedSemanticSearch: false,
+        usedUnifiedSearch: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
 
-  // Generate embeddings for existing businesses (admin function)
+  // Generate embeddings for businesses and offerings (admin function)
   static async generateEmbeddings(options: {
     businessId?: string;
     batchSize?: number;
@@ -177,27 +172,6 @@ export class SemanticSearchService {
         errorCount: 0,
         message: error instanceof Error ? error.message : 'Unknown error'
       };
-    }
-  }
-
-  // Check if semantic search is available
-  static async isSemanticSearchAvailable(): Promise<boolean> {
-    try {
-      const response = await fetchWithTimeout('/.netlify/functions/semantic-search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: 'test'
-        }),
-        timeout: 10000 // 10 second timeout for availability check
-      });
-
-      // Even if the search fails, if we get a response, the function is available
-      return response.status !== 404;
-    } catch (error) {
-      return false;
     }
   }
 }
