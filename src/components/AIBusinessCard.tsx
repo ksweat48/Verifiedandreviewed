@@ -33,9 +33,6 @@ const AIBusinessCard: React.FC<{
   business: BusinessCard;
   onRecommend: (business: BusinessCard) => void;
 }> = ({ business, onRecommend }) => {
-  // Ensure rating is always a valid number for display
-  const displayRating = typeof business.rating === 'number' && !isNaN(business.rating) ? business.rating : 0;
-
   return (
     <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group">
       <div className="p-2">
@@ -43,20 +40,7 @@ const AIBusinessCard: React.FC<{
           {business.name}
         </h3>
           
-          <div className="flex items-center gap-1 mb-2">
-            {[...Array(5)].map((_, i) => (
-              <Icons.Star
-                key={i}
-                className={`h-3 w-3 ${
-                  i < Math.floor(displayRating)
-                    ? 'text-yellow-400 fill-current'
-                    : 'text-neutral-300'
-                }`}
-              />
-            ))}
-            <span className="font-poppins text-xs font-semibold text-neutral-700 ml-1">
-              {displayRating.toFixed(1)}
-            </span>
+          <div className="flex items-center gap-1 mb-2 min-h-[16px]">
             {/* Semantic Similarity Score - Only show if available and > 0 */}
             {business.similarity && business.similarity > 0 && (
               <span className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold ml-2">
