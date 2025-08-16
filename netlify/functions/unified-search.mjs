@@ -130,7 +130,10 @@ export const handler = async (event, context) => {
         {
           query_embedding: queryEmbedding,
           match_threshold: matchThreshold,
-          match_count: Math.min(matchCount, 10)
+          match_count: Math.min(matchCount, 10),
+          user_latitude: latitude,
+          user_longitude: longitude,
+          max_distance_miles: 10.0
         }
       );
 
@@ -316,7 +319,7 @@ Requirements:
             name: "generateSearchQueries",
             description: "Generate Google Places search queries based on user's vibe request",
             parameters: {
-              type: "object",
+        const searchRadius = 16093; // 10 miles in meters (16.093 km)
               properties: {
                 queries: {
                   type: "array",
@@ -396,7 +399,7 @@ Requirements:
                     title: result.name,
                     business_name: result.name,
                     name: result.name,
-                    description: `${result.name} is a highly-rated ${searchQuery} with ${result.rating} stars.`,
+                    description: `${result.name} is a ${searchQuery} location discovered through Google Places.`,
                     short_description: `"${query}" served here, based on user reviews.`,
                     business_description: `"${query}" served here, based on user reviews.`,
                     business_short_description: `"${query}" served here, based on user reviews.`,
@@ -407,7 +410,7 @@ Requirements:
                     category: searchQuery,
                     business_category: searchQuery,
                     tags: [],
-                    rating: null,
+                    rating: null, // No ratings for AI businesses
                     hours: result.opening_hours?.weekday_text?.[0] || 'Hours not available',
                     phone_number: null,
                     website_url: null,
@@ -417,9 +420,9 @@ Requirements:
                     is_verified: false,
                     is_mobile_business: false,
                     is_virtual: false,
-                    thumbs_up: null,
-                    thumbs_down: null,
-                    sentiment_score: null,
+                    thumbs_up: 0, // No ratings for AI businesses
+                    thumbs_down: 0, // No ratings for AI businesses
+                    sentiment_score: 0, // No ratings for AI businesses
                     image_url: '/verified and reviewed logo-coral copy copy.png',
                     gallery_urls: [],
                     similarity: Math.max(0.3, Math.min(1.0, similarity)),
@@ -432,7 +435,7 @@ Requirements:
                     placeId: result.place_id,
                     isGoogleVerified: true,
                     reviews: [{
-                      text: `Great ${searchQuery}! Really enjoyed the atmosphere and service here.`,
+                      text: `Great place for ${query}! Really enjoyed the atmosphere and service here.`,
                       author: "Google User",
                       thumbsUp: true
                     }]
