@@ -28,6 +28,13 @@ interface BusinessCard {
   latitude?: number;
   longitude?: number;
 }
+
+interface AIBusinessCardProps {
+  business: BusinessCard;
+  onRecommend: (business: BusinessCard) => void;
+}
+
+const AIBusinessCard: React.FC<AIBusinessCardProps> = ({ business, onRecommend }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group">
       <div className="p-2">
