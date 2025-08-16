@@ -1,6 +1,7 @@
 import { supabase, type Business, type BusinessRating } from './supabaseClient';
 import { SemanticSearchService } from './semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { SEARCH_SERVICE_FIRST } from '../utils/constants';
 
 export class BusinessService {
   // Create a new business
@@ -352,6 +353,12 @@ export class BusinessService {
     userLatitude?: number;
     userLongitude?: number;
   }): Promise<Business[]> {
+    // Feature flag: Disable legacy business search when service-first is enabled
+    if (SEARCH_SERVICE_FIRST) {
+      console.warn('🚫 Legacy BusinessService.getBusinesses is disabled by SEARCH_SERVICE_FIRST flag.');
+      return [];
+    }
+
     try {
       console.log('🔍 BusinessService.getBusinesses called with filters:', filters);
       

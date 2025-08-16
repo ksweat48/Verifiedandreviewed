@@ -1,5 +1,6 @@
 // Semantic Search Service for Vibe-Based Business Discovery
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { SEARCH_SERVICE_FIRST } from '../utils/constants';
 
 export class SemanticSearchService {
   // Perform semantic search using vector embeddings
@@ -18,6 +19,17 @@ export class SemanticSearchService {
     usedSemanticSearch: boolean;
     error?: string;
   }> {
+    // Feature flag: Disable legacy semantic search when service-first is enabled
+    if (SEARCH_SERVICE_FIRST) {
+      console.warn('🚫 Legacy SemanticSearchService.searchByVibe is disabled by SEARCH_SERVICE_FIRST flag.');
+      return {
+        success: true,
+        results: [],
+        query,
+        usedSemanticSearch: false
+      };
+    }
+
     try {
       console.log('🔍 Performing semantic search for:', query);
 
