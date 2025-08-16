@@ -7,6 +7,7 @@ import BusinessProfileModal from './BusinessProfileModal';
 import LeaveReviewModal from './LeaveReviewModal';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
+import { getMatchPercentage } from '../utils/similarityUtils';
 
 interface ReviewImage {
   url: string;
@@ -169,7 +170,6 @@ const ExploreArea = () => {
       
       setBusinesses(businessesWithReviews);
     } catch (error) {
-              phone_number: business.phone_number,
       setBusinesses([]);
     } finally {
       setLoading(false);
