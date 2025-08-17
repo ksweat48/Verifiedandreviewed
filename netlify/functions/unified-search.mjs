@@ -170,9 +170,8 @@ export const handler = async (event, context) => {
       
       businessQuery = businessQuery.or(searchConditions.join(','));
       
-      // Apply 10-mile radius filter if user location provided
+      // Apply 20-mile radius filter if user location provided (for initial pool)
       if (latitude && longitude) {
-        // Note: This is a simplified filter - in production you'd use PostGIS
         businessQuery = businessQuery
           .not('latitude', 'is', null)
           .not('longitude', 'is', null);
@@ -195,7 +194,7 @@ export const handler = async (event, context) => {
               business.latitude, business.longitude
             );
             
-            return distance <= 10; // 10-mile radius
+            return distance <= 20; // Initial pool up to 20 miles
           });
         }
         
@@ -357,7 +356,7 @@ Requirements:
           // Search Google Places for each query
           const searchLatitude = latitude || 37.7749;
           const searchLongitude = longitude || -122.4194;
-          const searchRadius = 16093; // 10 miles in meters (16.093 km)
+          const searchRadius = 32186; // 20 miles in meters (32.186 km) for AI search
           const aiSearchPromises = searchQueries.map(async (searchQuery) => {
             try {
               const placesResponse = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
@@ -519,63 +518,83 @@ Requirements:
       }
     }
 
-    // Filter combined results by max_distance_miles after distances are calculated
+    // NEW: Filter combined results into two tiers: 0-10 miles and 10-20 miles
+    let results0to10Miles = [];
+    let results10to20Miles = [];
+    const maxDistancePrimary = 10;
+    const maxDistanceSecondary = 20;
+
     if (latitude && longitude) {
-      const maxDistance = 10; // Define the max distance in miles
-      const beforeFilterCount = combinedResults.length;
-      combinedResults = combinedResults.filter(result => {
-        // Only filter if distance was successfully calculated and is within bounds
-        if (result.distance === undefined || result.distance === 999999) {
-          console.log(`⚠️ Excluding business "${result.name}" - no distance calculated`);
-          return false;
+      combinedResults.forEach(result => {
+        if (result.distance !== undefined && result.distance !== 999999) {
+          if (result.distance <= maxDistancePrimary) {
+            results0to10Miles.push(result);
+          } else if (result.distance <= maxDistanceSecondary) {
+            results10to20Miles.push(result);
+          }
         }
-        if (result.distance > maxDistance) {
-          console.log(`🚫 Filtering out business "${result.name}" - ${result.distance.toFixed(1)} miles (beyond ${maxDistance} mile limit)`);
-          return false;
-        }
-        return true;
       });
-      console.log(`✅ Distance filter: ${beforeFilterCount} → ${combinedResults.length} results (within ${maxDistance} miles)`);
+      console.log(`✅ Filtered: ${results0to10Miles.length} within ${maxDistancePrimary} miles, ${results10to20Miles.length} within ${maxDistancePrimary}-${maxDistanceSecondary} miles.`);
+    } else {
+      // If no location, all results are treated as 0-10 miles for simplicity
+      results0to10Miles = combinedResults;
+      console.log('⚠️ No user location, treating all results as 0-10 miles for filtering purposes.');
     }
 
-    // STEP 6: Sort and rank final results
-    console.log('🎯 Step 6: Sorting and ranking final results...');
-    
-    const rankedResults = combinedResults
-      .map(result => ({
-        ...result,
-        // Calculate composite score for ranking
-        compositeScore: (
-          0.45 * (result.similarity || 0.5) +
-          0.25 * (result.source === 'offering' ? 1 : result.source === 'platform_business' ? 0.8 : 0.6) +
-          0.20 * (result.isOpen ? 1 : 0) +
-          0.10 * (result.distance && result.distance < 999999 ? (1 - Math.min(result.distance / 10, 1)) : 0)
-        )
-      }))
-      .sort((a, b) => {
-        // Primary sort: Source priority (offerings > platform businesses > AI)
-        const sourceOrder = { offering: 3, platform_business: 2, ai_generated: 1 };
-        const aSourcePriority = sourceOrder[a.source] || 0;
-        const bSourcePriority = sourceOrder[b.source] || 0;
-        
-        if (aSourcePriority !== bSourcePriority) {
-          return bSourcePriority - aSourcePriority;
-        }
-        
-        // Secondary sort: Composite score
-        return b.compositeScore - a.compositeScore;
-      })
-      .slice(0, matchCount); // Limit final results
+    // STEP 6: Sort and rank results within each tier
+    const sortAndRank = (resultsArray) => {
+      return resultsArray
+        .map(result => ({
+          ...result,
+          // Calculate composite score for ranking
+          compositeScore: (
+            0.45 * (result.similarity || 0.5) +
+            0.25 * (result.source === 'offering' ? 1 : result.source === 'platform_business' ? 0.8 : 0.6) +
+            0.20 * (result.isOpen ? 1 : 0) +
+            0.10 * (result.distance && result.distance < 999999 ? (1 - Math.min(result.distance / 20, 1)) : 0) // Normalize distance over 20 miles for scoring
+          )
+        }))
+        .sort((a, b) => {
+          // Primary sort: Source priority (offerings > platform businesses > AI)
+          const sourceOrder = { offering: 3, platform_business: 2, ai_generated: 1 };
+          const aSourcePriority = sourceOrder[a.source] || 0;
+          const bSourcePriority = sourceOrder[b.source] || 0;
+          
+          if (aSourcePriority !== bSourcePriority) {
+            return bSourcePriority - aSourcePriority;
+          }
+          
+          // Secondary sort: Composite score
+          return b.compositeScore - a.compositeScore;
+        });
+    };
 
-    console.log('🎯 Final ranked results:', rankedResults.length, 'businesses');
+    const ranked0to10Miles = sortAndRank(results0to10Miles);
+    const ranked10to20Miles = sortAndRank(results10to20Miles);
+
+    // STEP 7: Combine results based on desired count (7 results)
+    const finalDesiredCount = 7;
+    let finalRankedResults = [];
+
+    // Add all results within 0-10 miles first
+    finalRankedResults = ranked0to10Miles;
+
+    // If fewer than finalDesiredCount results, add from 10-20 miles
+    if (finalRankedResults.length < finalDesiredCount) {
+      const remainingSlots = finalDesiredCount - finalRankedResults.length;
+      finalRankedResults = finalRankedResults.concat(ranked10to20Miles.slice(0, remainingSlots));
+      console.log(`📍 Added ${Math.min(remainingSlots, ranked10to20Miles.length)} businesses from 10-20 mile range to reach ${finalRankedResults.length} total results`);
+    }
+
+    console.log('🎯 Final ranked results:', finalRankedResults.length, 'businesses');
     console.log('📊 Result sources:', {
-      offerings: rankedResults.filter(r => r.source === 'offering').length,
-      platform_businesses: rankedResults.filter(r => r.source === 'platform_business').length,
-      ai_generated: rankedResults.filter(r => r.source === 'ai_generated').length
+      offerings: finalRankedResults.filter(r => r.source === 'offering').length,
+      platform_businesses: finalRankedResults.filter(r => r.source === 'platform_business').length,
+      ai_generated: finalRankedResults.filter(r => r.source === 'ai_generated').length
     });
 
     // Transform results to match expected frontend format
-    const formattedResults = rankedResults.map(result => ({
+    const formattedResults = finalRankedResults.map(result => ({
       // Spread all properties to ensure complete data flow
       ...result,
       
@@ -603,9 +622,9 @@ Requirements:
         matchCount: formattedResults.length,
         usedUnifiedSearch: true,
         searchSources: {
-          offerings: rankedResults.filter(r => r.source === 'offering').length,
-          platform_businesses: rankedResults.filter(r => r.source === 'platform_business').length,
-          ai_generated: rankedResults.filter(r => r.source === 'ai_generated').length
+          offerings: finalRankedResults.filter(r => r.source === 'offering').length,
+          platform_businesses: finalRankedResults.filter(r => r.source === 'platform_business').length,
+          ai_generated: finalRankedResults.filter(r => r.source === 'ai_generated').length
         },
         matchThreshold: matchThreshold,
         timestamp: new Date().toISOString()
