@@ -357,7 +357,6 @@ Requirements:
           const searchLatitude = latitude || 37.7749;
           const searchLongitude = longitude || -122.4194;
           const searchRadius = 16093; // 10 miles in meters (16.093 km)
-          const searchRadius = 16093; // 10 miles in meters
 
           const aiSearchPromises = searchQueries.map(async (searchQuery) => {
             try {
