@@ -56,12 +56,6 @@ const AIBusinessCard: React.FC<AIBusinessCardProps> = ({ business, onRecommend }
             )}
           </div>
           
-          {business.shortDescription && (
-            <p className="font-lora text-xs text-neutral-600 line-clamp-2 leading-relaxed mb-1">
-              {business.shortDescription}
-            </p>
-          )}
-          
           <div className="mb-1">
             <p className="font-lora text-xs text-neutral-600 flex items-center gap-1">
               <Icons.MapPin className="h-3 w-3 flex-shrink-0 text-neutral-500" />
