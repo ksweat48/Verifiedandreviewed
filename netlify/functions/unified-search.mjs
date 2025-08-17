@@ -357,7 +357,6 @@ Requirements:
           const searchLatitude = latitude || 37.7749;
           const searchLongitude = longitude || -122.4194;
           const searchRadius = 16093; // 10 miles in meters (16.093 km)
-
           const aiSearchPromises = searchQueries.map(async (searchQuery) => {
             try {
               const placesResponse = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
