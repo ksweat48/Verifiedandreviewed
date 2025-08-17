@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
   let currentProcessingBusinessId = null;
   let effectiveBusinessId = undefined;
 
