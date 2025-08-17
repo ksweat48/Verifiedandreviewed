@@ -296,6 +296,7 @@ export const handler = async (event, context) => {
     console.log('📊 After deduplication:', combinedResults.length, 'unique results');
 
     // STEP 4: If we have fewer than 8 results, use AI to fill remaining slots
+    let aiResults = []; // Initialize aiResults here
     if (combinedResults.length < 8 && GOOGLE_PLACES_API_KEY) {
       console.log('🤖 Step 4: Using AI to fill remaining slots...');
       
@@ -447,7 +448,7 @@ Requirements:
             return null;
           });
 
-          const aiResults = (await Promise.all(aiSearchPromises)).filter(Boolean);
+          aiResults = (await Promise.all(aiSearchPromises)).filter(Boolean);
           console.log('🤖 AI search generated', aiResults.length, 'additional results');
 
           // Add AI results to combined results (only if not already present)
@@ -516,6 +517,25 @@ Requirements:
       } catch (distanceError) {
         console.warn('⚠️ Distance calculation failed:', distanceError.message);
       }
+    }
+
+    // Filter combined results by max_distance_miles after distances are calculated
+    if (latitude && longitude) {
+      const maxDistance = 10; // Define the max distance in miles
+      const beforeFilterCount = combinedResults.length;
+      combinedResults = combinedResults.filter(result => {
+        // Only filter if distance was successfully calculated and is within bounds
+        if (result.distance === undefined || result.distance === 999999) {
+          console.log(`⚠️ Excluding business "${result.name}" - no distance calculated`);
+          return false;
+        }
+        if (result.distance > maxDistance) {
+          console.log(`🚫 Filtering out business "${result.name}" - ${result.distance.toFixed(1)} miles (beyond ${maxDistance} mile limit)`);
+          return false;
+        }
+        return true;
+      });
+      console.log(`✅ Distance filter: ${beforeFilterCount} → ${combinedResults.length} results (within ${maxDistance} miles)`);
     }
 
     // STEP 6: Sort and rank final results
