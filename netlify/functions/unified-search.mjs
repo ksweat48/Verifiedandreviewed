@@ -296,11 +296,12 @@ export const handler = async (event, context) => {
 
     // STEP 4: If we have fewer than 8 results, use AI to fill remaining slots
     let aiResults = []; // Initialize aiResults here
-    const slotsToFill = Math.min(7, 15 - combinedResults.length); // Calculate slots to fill based on combined results
-    if (slotsToFill > 0 && GOOGLE_PLACES_API_KEY) { // Only run AI search if slots need filling and API key is present
-      console.log(`🤖 Step 4: Using AI to fill remaining ${slotsToFill} slots...`);
+    if (combinedResults.length < 8 && GOOGLE_PLACES_API_KEY) {
+      console.log('🤖 Step 4: Using AI to fill remaining slots...');
       
       try {
+        const slotsToFill = Math.min(7, 15 - combinedResults.length);
+        
         // Generate AI search queries
         const aiSystemPrompt = `You are a search query generator for Google Places API. Generate exactly ${slotsToFill} different search queries based on the user's vibe request.
 
@@ -370,18 +371,15 @@ Requirements:
               });
 
               if (placesResponse.data.status === 'OK' && placesResponse.data.results?.length > 0) {
-                console.log(`🔍 Google Places returned ${placesResponse.data.results.length} results for "${searchQuery}"`);
-                // IMPORTANT: Removed the filter for 'rating' here to allow more results
-                const result = placesResponse.data.results[0]; // Take the first result, regardless of rating
+                const result = placesResponse.data.results.find(r => r.rating);
                 
                 if (result) {
-                  console.log(`✅ Processing AI result: ${result.name} (Place ID: ${result.place_id})`);
                   // Generate embedding for this business
                   const businessText = [
                     result.name,
                     searchQuery,
                     result.types ? result.types.join(' ') : '',
-                    result.rating ? `${result.rating} star rating` : '' // Include rating if available
+                    `${result.rating} star rating`
                   ].filter(Boolean).join(' ');
 
                   const businessEmbeddingResponse = await openai.embeddings.create({
@@ -411,7 +409,7 @@ Requirements:
                     category: searchQuery,
                     business_category: searchQuery,
                     tags: [],
-                    rating: result.rating || null, // Use actual rating or null
+                    rating: null, // No ratings for AI businesses
                     hours: result.opening_hours?.weekday_text?.[0] || 'Hours not available',
                     phone_number: null,
                     website_url: null,
@@ -441,11 +439,7 @@ Requirements:
                       thumbsUp: true
                     }]
                   };
-                } else {
-                  console.warn(`⚠️ No valid result found for "${searchQuery}"`);
                 }
-              } else {
-                console.warn(`⚠️ Google Places API returned no results for "${searchQuery}". Status: ${placesResponse.data.status}`);
               }
             } catch (error) {
               console.warn(`⚠️ AI search failed for "${searchQuery}":`, error.message);
@@ -454,10 +448,7 @@ Requirements:
           });
 
           aiResults = (await Promise.all(aiSearchPromises)).filter(Boolean);
-          console.log(`🤖 AI search generated ${aiResults.length} additional results.`);
-          if (aiResults.length > 0) {
-            console.log('   Sample AI result:', aiResults[0].name, 'Category:', aiResults[0].category);
-          }
+          console.log('🤖 AI search generated', aiResults.length, 'additional results');
 
           // Add AI results to combined results (only if not already present)
           aiResults.forEach(aiResult => {
