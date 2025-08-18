@@ -72,7 +72,7 @@ export const handler = async (event, context) => {
       latitude, 
       longitude, 
       matchThreshold = 0.3, 
-      matchCount = 15 
+      matchCount = 10
     } = JSON.parse(event.body);
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
@@ -130,10 +130,10 @@ export const handler = async (event, context) => {
         {
           query_embedding: queryEmbedding,
           match_threshold: matchThreshold,
-          match_count: Math.min(matchCount, 10),
+          match_count: matchCount,
           user_latitude: latitude,
           user_longitude: longitude,
-          max_distance_miles: 10.0
+          max_distance_miles: 30.0
         }
       );
 
@@ -195,7 +195,7 @@ export const handler = async (event, context) => {
               business.latitude, business.longitude
             );
             
-            return distance <= 10; // 10-mile radius
+            return distance <= 30; // 30-mile radius
           });
         }
         
@@ -300,7 +300,7 @@ export const handler = async (event, context) => {
       console.log('🤖 Step 4: Using AI to fill remaining slots...');
       
       try {
-        const slotsToFill = Math.min(7, 15 - combinedResults.length);
+        const slotsToFill = Math.min(7, matchCount - combinedResults.length);
         
         // Generate AI search queries
         const aiSystemPrompt = `You are a search query generator for Google Places API. Generate exactly ${slotsToFill} different search queries based on the user's vibe request.
@@ -356,7 +356,7 @@ Requirements:
           // Search Google Places for each query
           const searchLatitude = latitude || 37.7749;
           const searchLongitude = longitude || -122.4194;
-          const searchRadius = 16093; // 10 miles in meters (16.093 km)
+          const searchRadius = 48280; // 30 miles in meters (48.28 km)
           const aiSearchPromises = searchQueries.map(async (searchQuery) => {
             try {
               const placesResponse = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
@@ -518,6 +518,20 @@ Requirements:
       }
     }
 
+    // NEW: Filter combined results by max_distance_miles after distances are calculated
+    if (latitude && longitude) {
+      const maxDistance = 30; // Define the max distance in miles
+      combinedResults = combinedResults.filter(result => {
+        // Keep results without distance data (fallback)
+        if (!result.distance || result.distance === 999999) {
+          return true;
+        }
+        // Filter by distance
+        return result.distance <= maxDistance;
+      });
+      console.log(`📏 Filtered to ${combinedResults.length} results within ${maxDistance} miles`);
+    }
+
     // STEP 6: Sort and rank final results
     console.log('🎯 Step 6: Sorting and ranking final results...');
     
@@ -529,7 +543,7 @@ Requirements:
           0.45 * (result.similarity || 0.5) +
           0.25 * (result.source === 'offering' ? 1 : result.source === 'platform_business' ? 0.8 : 0.6) +
           0.20 * (result.isOpen ? 1 : 0) +
-          0.10 * (result.distance && result.distance < 999999 ? (1 - Math.min(result.distance / 10, 1)) : 0)
+          0.10 * (result.distance && result.distance < 999999 ? (1 - Math.min(result.distance / 30, 1)) : 0)
         )
       }))
       .sort((a, b) => {
