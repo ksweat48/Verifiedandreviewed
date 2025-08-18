@@ -372,15 +372,18 @@ Requirements:
               });
 
               if (placesResponse.data.status === 'OK' && placesResponse.data.results?.length > 0) {
-                const result = placesResponse.data.results.find(r => r.rating);
+                // Take up to the top 3 results from Google Places for each query
+                const resultsToProcess = placesResponse.data.results.slice(0, 3);
                 
-                if (result) {
+                const processedResults = [];
+                
+                for (const result of resultsToProcess) {
                   // Generate embedding for this business
                   const businessText = [
                     result.name,
                     searchQuery,
                     result.types ? result.types.join(' ') : '',
-                    `${result.rating} star rating`
+                    result.rating ? `${result.rating} star rating` : ''
                   ].filter(Boolean).join(' ');
 
                   const businessEmbeddingResponse = await openai.embeddings.create({
@@ -392,7 +395,7 @@ Requirements:
                   const businessEmbedding = businessEmbeddingResponse.data[0].embedding;
                   const similarity = cosineSimilarity(queryEmbedding, businessEmbedding);
 
-                  return {
+                  processedResults.push({
                     id: `ai-${result.place_id}`,
                     business_id: `ai-${result.place_id}`,
                     offering_id: null,
@@ -410,10 +413,10 @@ Requirements:
                     category: searchQuery,
                     business_category: searchQuery,
                     tags: [],
-                    rating: null, // No ratings for AI businesses
+                    rating: result.rating || null,
                     hours: result.opening_hours?.weekday_text?.[0] || 'Hours not available',
-                    phone_number: null,
-                    website_url: null,
+                    phone_number: result.international_phone_number || null,
+                    website_url: result.website || null,
                     social_media: [],
                     price_range: null,
                     service_area: null,
@@ -423,7 +426,9 @@ Requirements:
                     thumbs_up: 0, // No ratings for AI businesses
                     thumbs_down: 0, // No ratings for AI businesses
                     sentiment_score: 0, // No ratings for AI businesses
-                    image_url: '/verified and reviewed logo-coral copy copy.png',
+                    image_url: result.photos?.[0]?.photo_reference ? 
+                      `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${result.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}` : 
+                      '/verified and reviewed logo-coral copy copy.png',
                     gallery_urls: [],
                     similarity: Math.max(0.3, Math.min(1.0, similarity)),
                     source: 'ai_generated',
@@ -439,16 +444,19 @@ Requirements:
                       author: "Google User",
                       thumbsUp: true
                     }]
-                  };
+                  });
                 }
+                
+                return processedResults;
               }
             } catch (error) {
               console.warn(`⚠️ AI search failed for "${searchQuery}":`, error.message);
             }
-            return null;
+            return [];
           });
 
-          aiResults = (await Promise.all(aiSearchPromises)).filter(Boolean);
+          const allAiResults = await Promise.all(aiSearchPromises);
+          aiResults = allAiResults.flat().filter(Boolean);
           console.log('🤖 AI search generated', aiResults.length, 'additional results');
 
           // Add AI results to combined results (only if not already present)
