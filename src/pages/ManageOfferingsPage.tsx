@@ -87,6 +87,8 @@ export default function ManageOfferingsPage() {
   // Load business and offerings data
   useEffect(() => {
     const loadData = async () => {
+      console.log('loadData useEffect triggered for businessId:', businessId);
+      
       if (!businessId) {
         setError('No business ID provided');
         setIsLoading(false);
