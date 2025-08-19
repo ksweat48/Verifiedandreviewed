@@ -198,6 +198,13 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     <Icons.Eye className="h-4 w-4" />
                   </button>
                   <button
+                    onClick={() => navigate(`/manage-offerings?businessId=${business.id}`)}
+                    className="p-2 text-neutral-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200"
+                    title="Manage Offerings"
+                  >
+                    <Icons.Menu className="h-4 w-4" />
+                  </button>
+                  <button
                     onClick={() => handleEditBusiness(business)}
                     className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
                     title="Edit Business"
