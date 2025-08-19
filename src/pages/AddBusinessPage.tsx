@@ -315,7 +315,16 @@ export default function AddBusinessPage() {
       console.log('📊 Final image URLs:', { coverImageUrl });
 
       const businessData = {
-        ...formData,
+        name: formData.name,
+        address: formData.address,
+        category: formData.category,
+        description: formData.description,
+        short_description: formData.short_description,
+        hours: formData.hours,
+        days_closed: formData.days_closed,
+        phone_number: formData.phone_number,
+        website_url: formData.website_url,
+        social_media: formData.social_media,
         location: `${formData.city.trim()}${formData.state.trim() ? ', ' + formData.state.trim() : ''}`,
         image_url: coverImageUrl,
         // Default to physical business
