@@ -137,11 +137,15 @@ export default function ManageOfferingsPage() {
     try {
       const resizedFile = await resizeImage(files[0], 800, 600, 0.8);
       const previewUrl = URL.createObjectURL(resizedFile);
-      setNewOffering(prev => ({
-        ...prev,
-        image_file: resizedFile,
-        image_url: previewUrl
-      }));
+      setNewOffering(prev => {
+        const updatedNewOffering = {
+          ...prev,
+          image_file: resizedFile,
+          image_url: previewUrl
+        };
+        console.log('newOffering state after image upload:', updatedNewOffering);
+        return updatedNewOffering;
+      });
       setNewOfferingImagePreview(previewUrl);
     } catch (error) {
       console.error('Error processing offering image:', error);
