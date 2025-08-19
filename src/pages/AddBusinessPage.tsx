@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Upload, X, Plus, MapPin, Clock, Phone, Globe, DollarSign, Tag } from 'lucide-react';
+import { Upload, X, Plus, MapPin, Clock, Phone, Globe } from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import { useAuth } from '../hooks/useAuth';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
@@ -18,7 +18,6 @@ interface FormData {
   city: string;
   state: string;
   category: string;
-  tags: string[];
   description: string;
   short_description: string;
   hours: string;
@@ -26,7 +25,6 @@ interface FormData {
   phone_number: string;
   website_url: string;
   social_media: string[];
-  price_range: string;
 }
 
 export default function AddBusinessPage() {
@@ -42,7 +40,6 @@ export default function AddBusinessPage() {
     city: '',
     state: '',
     category: '',
-    tags: [],
     description: '',
     short_description: '',
     hours: '',
@@ -50,11 +47,9 @@ export default function AddBusinessPage() {
     phone_number: '',
     website_url: '',
     social_media: [],
-    price_range: '',
   });
 
   const [coverImage, setCoverImage] = useState<UploadedImage | null>(null);
-  const [newTag, setNewTag] = useState('');
   const [newSocialMedia, setNewSocialMedia] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
@@ -123,7 +118,6 @@ export default function AddBusinessPage() {
               city: initialCity,
               state: initialState,
               category: business.category || '',
-              tags: business.tags || [],
               description: business.description || '',
               short_description: business.short_description || '',
               hours: business.hours || '',
@@ -131,7 +125,6 @@ export default function AddBusinessPage() {
               phone_number: business.phone_number || '',
               website_url: business.website_url || '',
               social_media: business.social_media || [],
-              price_range: business.price_range || '',
             });
 
             // Set cover image if exists
@@ -248,23 +241,6 @@ export default function AddBusinessPage() {
     } finally {
       setIsGeocodingAddress(false);
     }
-  };
-
-  const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }));
-      setNewTag('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
   };
 
   const addSocialMedia = () => {
@@ -633,98 +609,6 @@ export default function AddBusinessPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., Sundays, Holidays"
                 />
-              </div>
-            </div>
-
-            {/* Pricing */}
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                <DollarSign className="w-5 h-5 mr-2" />
-                Pricing
-              </h2>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price Range
-                </label>
-                <select
-                  name="price_range"
-                  value={formData.price_range}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select price range</option>
-                  <option value="$">$ (Budget-friendly)</option>
-                  <option value="$$">$$ (Moderate)</option>
-                  <option value="$$$">$$$ (Upscale)</option>
-                  <option value="$$$$">$$$$ (Luxury)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Tags */}
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                <Tag className="w-5 h-5 mr-2" />
-                Tags
-              </h2>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Add Tags
-                </label>
-                <p className="font-lora text-xs text-gray-600 mb-2">
-                  Add 5-10 relevant keywords that describe your services, atmosphere, and target audience.
-                </p>
-                <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                  <p className="font-poppins text-sm font-semibold text-blue-800 mb-1">
-                    Great tag examples:
-                  </p>
-                  <div className="font-lora text-xs text-blue-700 space-y-1">
-                    <p><strong>Atmosphere:</strong> cozy, modern, rustic, upscale, casual, intimate, lively</p>
-                    <p><strong>Services:</strong> organic, vegan-friendly, family-owned, locally-sourced, handcrafted</p>
-                    <p><strong>Audience:</strong> family-friendly, pet-friendly, date-night, business-casual, kid-friendly</p>
-                  </div>
-                </div>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., cozy, organic, family-friendly, live-music"
-                  />
-                  <button
-                    type="button"
-                    onClick={addTag}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="font-lora text-xs text-gray-500 mb-2">
-                  <span className={formData.tags.length >= 5 ? 'text-green-600' : 'text-gray-500'}>
-                    {formData.tags.length} tags added
-                  </span>
-                  {formData.tags.length < 5 && ' - Add at least 5 tags for better search visibility'}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="ml-2 text-gray-600 hover:text-gray-800"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
               </div>
             </div>
 
