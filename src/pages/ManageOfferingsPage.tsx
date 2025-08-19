@@ -25,6 +25,8 @@ interface Business {
 }
 
 export default function ManageOfferingsPage() {
+  console.log('ManageOfferingsPage component rendering...');
+  
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
