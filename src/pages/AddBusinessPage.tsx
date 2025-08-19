@@ -59,6 +59,7 @@ export default function AddBusinessPage() {
   const uploadImageToSupabase = async (file: File, folder: string): Promise<string | null> => {
     try {
       if (!user) {
+        console.error('❌ Upload Error: User not authenticated. Please ensure you are logged in.');
         throw new Error('User not authenticated');
       }
 
@@ -66,9 +67,13 @@ export default function AddBusinessPage() {
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
       const filePath = `${user.id}/${folder}/${fileName}`;
 
-      console.log('📤 Uploading image to Supabase:', filePath);
+      console.log(`📤 Attempting to upload image to Supabase:`);
+      console.log(`   - Path: ${filePath}`);
+      console.log(`   - File details: Name=${file.name}, Type=${file.type}, Size=${file.size} bytes`);
+      console.log(`   - User ID: ${user.id}`);
+      console.log(`   - Bucket: review-images`);
 
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('review-images')
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -76,18 +81,40 @@ export default function AddBusinessPage() {
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
+        console.error('❌ Supabase Upload Error Details:', {
+          message: uploadError.message,
+          statusCode: uploadError.statusCode,
+          error: uploadError.error,
+          details: uploadError
+        });
         throw uploadError;
       }
+
+      console.log('✅ Upload successful, getting public URL...');
+      console.log('   - Upload data:', uploadData);
 
       const { data } = supabase.storage
         .from('review-images')
         .getPublicUrl(filePath);
 
-      console.log('✅ Image uploaded successfully:', data.publicUrl);
+      if (!data || !data.publicUrl) {
+        console.error('❌ Failed to get public URL for uploaded file');
+        throw new Error('Failed to get public URL for uploaded file');
+      }
+
+      console.log('✅ Image uploaded successfully:');
+      console.log(`   - Public URL: ${data.publicUrl}`);
       return data.publicUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('❌ General Image Upload Error:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        error: error,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Image upload failed: ${errorMessage}. Please check the browser console for more details.`);
       return null;
     }
   };
