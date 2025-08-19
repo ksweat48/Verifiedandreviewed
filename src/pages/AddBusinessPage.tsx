@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Upload, X, Plus, MapPin, Clock, Phone, Globe, DollarSign, Trash2 } from 'lucide-react';
+import { Upload, X, Plus, MapPin, Clock, Phone, Globe } from 'lucide-react';
 import { BusinessService } from '../services/businessService';
-import { OfferingService } from '../services/offeringService';
 import { useAuth } from '../hooks/useAuth';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { supabase } from '../services/supabaseClient';
@@ -11,16 +10,6 @@ import { resizeImage } from '../utils/imageResizer';
 interface UploadedImage {
   file: File | null;
   preview: string;
-}
-
-interface OfferingData {
-  id?: string;
-  name: string;
-  short_description: string;
-  image_file: File | null;
-  image_url: string;
-  price: number;
-  currency: string;
 }
 
 interface FormData {
@@ -36,7 +25,6 @@ interface FormData {
   phone_number: string;
   website_url: string;
   social_media: string[];
-  offerings: OfferingData[];
 }
 
 export default function AddBusinessPage() {
@@ -59,7 +47,6 @@ export default function AddBusinessPage() {
     phone_number: '',
     website_url: '',
     social_media: [],
-    offerings: [],
   });
 
   const [coverImage, setCoverImage] = useState<UploadedImage | null>(null);
@@ -67,17 +54,6 @@ export default function AddBusinessPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
   const [geocodingError, setGeocodingError] = useState<string>('');
-
-  // New offering state
-  const [newOffering, setNewOffering] = useState<OfferingData>({
-    name: '',
-    short_description: '',
-    image_file: null,
-    image_url: '',
-    price: 0,
-    currency: 'USD',
-  });
-  const [newOfferingImagePreview, setNewOfferingImagePreview] = useState<string | null>(null);
 
   // Helper function to upload image to Supabase Storage
   const uploadImageToSupabase = async (file: File, folder: string): Promise<string | null> => {
@@ -136,18 +112,6 @@ export default function AddBusinessPage() {
               }
             }
 
-            // Fetch existing offerings
-            const existingOfferings = await OfferingService.getBusinessOfferings(editBusinessId);
-            const formattedOfferings: OfferingData[] = existingOfferings.map(offering => ({
-              id: offering.id,
-              name: offering.title,
-              short_description: offering.description || '',
-              image_file: null,
-              image_url: '', // Will need to fetch from offering_images table
-              price: (offering.price_cents || 0) / 100,
-              currency: offering.currency || 'USD',
-            }));
-
             setFormData({
               name: business.name || '',
               address: business.address || '',
@@ -161,7 +125,6 @@ export default function AddBusinessPage() {
               phone_number: business.phone_number || '',
               website_url: business.website_url || '',
               social_media: business.social_media || [],
-              offerings: formattedOfferings,
             });
 
             // Set cover image if exists
@@ -297,64 +260,6 @@ export default function AddBusinessPage() {
     }));
   };
 
-  // Offering management functions
-  const handleNewOfferingInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewOffering(prev => ({
-      ...prev,
-      [name]: name === 'price' ? parseFloat(value) || 0 : value
-    }));
-  };
-
-  const handleNewOfferingImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    try {
-      const resizedFile = await resizeImage(files[0], 800, 600, 0.8);
-      const previewUrl = URL.createObjectURL(resizedFile);
-      setNewOffering(prev => ({
-        ...prev,
-        image_file: resizedFile,
-        image_url: previewUrl
-      }));
-      setNewOfferingImagePreview(previewUrl);
-    } catch (error) {
-      console.error('Error processing offering image:', error);
-      alert('Failed to process offering image. Please try a different file or a smaller image.');
-    }
-  };
-
-  const addOffering = () => {
-    if (!newOffering.name.trim() || !newOffering.short_description.trim() || newOffering.price <= 0) {
-      alert('Please fill in all required fields for the offering (Name, Short Description, Price).');
-      return;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      offerings: [...prev.offerings, { ...newOffering }]
-    }));
-    
-    // Reset new offering form
-    setNewOffering({
-      name: '',
-      short_description: '',
-      image_file: null,
-      image_url: '',
-      price: 0,
-      currency: 'USD',
-    });
-    setNewOfferingImagePreview(null);
-  };
-
-  const removeOffering = (indexToRemove: number) => {
-    setFormData(prev => ({
-      ...prev,
-      offerings: prev.offerings.filter((_, index) => index !== indexToRemove)
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -391,77 +296,19 @@ export default function AddBusinessPage() {
         is_virtual: false,
       };
 
-      let businessId: string;
-
       if (isEditMode && editBusinessId) {
         console.log('✏️ Updating business with image URLs...');
         await BusinessService.updateBusiness(editBusinessId, businessData);
-        businessId = editBusinessId;
+        navigate('/dashboard');
       } else {
         console.log('➕ Creating business with image URLs...');
         const result = await BusinessService.createBusiness(businessData, user.id);
         if (!result.success || !result.businessId) {
           throw new Error(result.error || 'Failed to create business');
         }
-        businessId = result.businessId;
+        // Redirect to offerings management for new businesses
+        navigate(`/manage-offerings?businessId=${result.businessId}`);
       }
-
-      // Handle offerings
-      console.log('🍽️ Processing offerings...');
-      
-      // Get existing offerings if in edit mode
-      const existingOfferings = isEditMode ? await OfferingService.getBusinessOfferings(businessId) : [];
-      
-      // Determine which offerings to delete, create, or update
-      const offeringsToDelete = existingOfferings.filter(
-        existing => !formData.offerings.some(current => current.id === existing.id)
-      );
-      const offeringsToCreate = formData.offerings.filter(offering => !offering.id);
-      const offeringsToUpdate = formData.offerings.filter(offering => offering.id);
-
-      // Delete removed offerings
-      for (const offering of offeringsToDelete) {
-        console.log('🗑️ Deleting offering:', offering.title);
-        // Note: OfferingService.deleteOffering needs to be implemented
-      }
-
-      // Create new offerings
-      for (const offering of offeringsToCreate) {
-        console.log('➕ Creating offering:', offering.name);
-        let offeringImageUrl = '';
-        
-        if (offering.image_file) {
-          offeringImageUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
-          if (!offeringImageUrl) {
-            console.warn(`Failed to upload image for offering: ${offering.name}`);
-          }
-        }
-        
-        await OfferingService.createOffering(businessId, {
-          title: offering.name,
-          description: offering.short_description,
-          price_cents: Math.round(offering.price * 100),
-          currency: offering.currency,
-          service_type: 'onsite',
-          status: 'active'
-        });
-      }
-
-      // Update existing offerings
-      for (const offering of offeringsToUpdate) {
-        console.log('✏️ Updating offering:', offering.name);
-        let offeringImageUrl = offering.image_url;
-        
-        if (offering.image_file) {
-          const uploadedUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
-          if (uploadedUrl) {
-            offeringImageUrl = uploadedUrl;
-          }
-        }
-        
-        // Note: OfferingService.updateOffering needs to be implemented
-      }
-      navigate('/dashboard');
     } catch (error) {
       console.error('Error saving business:', error);
       alert(`Error saving business: ${error instanceof Error ? error.message : 'Please try again.'}`);
@@ -816,146 +663,6 @@ export default function AddBusinessPage() {
               </div>
             </div>
 
-            {/* Create Your Menu Offerings */}
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 uppercase tracking-wide">
-                  Create Your Menu Offerings
-                </h2>
-                <p className="font-lora text-gray-600 mt-2">
-                  Upload at least 10 menu items for the best results.
-                </p>
-                <p className="font-lora text-gray-600">
-                  The more offerings you add, the easier it is for customers to find you.
-                </p>
-              </div>
-
-              <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    name="name"
-                    value={newOffering.name}
-                    onChange={handleNewOfferingInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-200 placeholder-gray-500"
-                    placeholder="NAME"
-                  />
-                </div>
-                
-                <div>
-                  <textarea
-                    name="short_description"
-                    value={newOffering.short_description}
-                    onChange={handleNewOfferingInputChange}
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-200 placeholder-gray-500"
-                    placeholder="SHORT DESCRIPTION"
-                  />
-                </div>
-                
-                <div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-200">
-                    {newOfferingImagePreview ? (
-                      <div className="relative w-32 h-32 mx-auto">
-                        <img 
-                          src={newOfferingImagePreview} 
-                          alt="Offering Preview" 
-                          className="w-full h-full object-cover rounded-lg" 
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNewOffering(prev => ({ ...prev, image_file: null, image_url: '' }));
-                            setNewOfferingImagePreview(null);
-                          }}
-                          className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="cursor-pointer">
-                        <div className="text-gray-500">
-                          <Upload className="mx-auto h-8 w-8 mb-2" />
-                          <span className="block text-sm font-medium">UPLOAD IMAGE</span>
-                        </div>
-                        <input
-                          type="file"
-                          className="sr-only"
-                          accept="image/*"
-                          onChange={handleNewOfferingImageUpload}
-                        />
-                      </label>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <input
-                    type="number"
-                    name="price"
-                    value={newOffering.price === 0 ? '' : newOffering.price}
-                    onChange={handleNewOfferingInputChange}
-                    min="0"
-                    step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-200 placeholder-gray-500"
-                    placeholder="PRICE"
-                  />
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={addOffering}
-                  className="w-full px-4 py-3 bg-gray-400 text-white rounded-lg hover:bg-gray-500 font-medium uppercase tracking-wide"
-                >
-                  Add Offering
-                </button>
-              </div>
-            </div>
-
-            {/* Your Offerings List */}
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900 uppercase tracking-wide">
-                Your Offerings {formData.offerings.length}
-              </h2>
-              
-              {formData.offerings.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="font-lora text-gray-600 text-lg">
-                    You currently have 0 offerings
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {formData.offerings.map((offering, index) => (
-                    <div key={offering.id || index} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center space-x-4">
-                      {offering.image_url && (
-                        <img 
-                          src={offering.image_url} 
-                          alt={offering.name} 
-                          className="w-16 h-16 object-cover rounded-lg flex-shrink-0" 
-                        />
-                      )}
-                      <div className="flex-1">
-                        <h3 className="font-poppins font-semibold text-gray-900">{offering.name}</h3>
-                        <p className="font-lora text-sm text-gray-600">{offering.short_description}</p>
-                        <p className="font-poppins text-sm font-medium text-gray-800">
-                          ${offering.price.toFixed(2)}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeOffering(index)}
-                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors duration-200"
-                        title="Remove offering"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
             {/* Submit Button */}
             <div className="flex justify-end space-x-4">
               <button

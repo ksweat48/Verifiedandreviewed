@@ -14,6 +14,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const ReviewerDashboardPage = lazy(() => import('./pages/ReviewerDashboardPage'));
 const AddBusinessPage = lazy(() => import('./pages/AddBusinessPage'));
+const ManageOfferingsPage = lazy(() => import('./pages/ManageOfferingsPage'));
 
 function App() {
   const [isAppModeActive, setIsAppModeActive] = useState(false);
@@ -113,6 +114,7 @@ function App() {
           <Route path="/dashboard" element={<ReviewerDashboardPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/add-business" element={<AddBusinessPage />} />
+          <Route path="/manage-offerings" element={<ManageOfferingsPage />} />
         </Routes>
       </Suspense>
       
