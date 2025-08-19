@@ -150,12 +150,17 @@ export default function ManageOfferingsPage() {
   };
 
   const addOffering = () => {
+    console.log('addOffering called. newOffering before validation:', newOffering);
     if (!newOffering.name.trim() || !newOffering.short_description.trim() || newOffering.price <= 0) {
       alert('Please fill in all required fields for the offering (Name, Short Description, Price).');
       return;
     }
 
-    setOfferings(prev => [...prev, { ...newOffering }]);
+    setOfferings(prev => {
+      const updatedOfferings = [...prev, { ...newOffering }];
+      console.log('Offerings after adding new item:', updatedOfferings);
+      return updatedOfferings;
+    });
     
     // Reset new offering form
     setNewOffering({
@@ -167,6 +172,7 @@ export default function ManageOfferingsPage() {
       currency: 'USD',
     });
     setNewOfferingImagePreview(null);
+    console.log('Form reset completed');
   };
 
   const removeOffering = (indexToRemove: number) => {
