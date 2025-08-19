@@ -386,5 +386,3 @@ export class OfferingService {
     }
   }
 }
-
-export { OfferingService }
