@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Upload, X, Plus, MapPin, Clock, Phone, Globe, DollarSign, Tag, TrendingUp, Info, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, X, Plus, MapPin, Clock, Phone, Globe, DollarSign, Tag } from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import { useAuth } from '../hooks/useAuth';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
@@ -27,8 +27,6 @@ interface FormData {
   website_url: string;
   social_media: string[];
   price_range: string;
-  service_area: string;
-  businessType: 'physical' | 'mobile' | 'virtual';
 }
 
 export default function AddBusinessPage() {
@@ -53,21 +51,17 @@ export default function AddBusinessPage() {
     website_url: '',
     social_media: [],
     price_range: '',
-    service_area: '',
-    businessType: 'physical'
   });
 
   const [coverImage, setCoverImage] = useState<UploadedImage | null>(null);
-  const [galleryImages, setGalleryImages] = useState<UploadedImage[]>([]);
   const [newTag, setNewTag] = useState('');
   const [newSocialMedia, setNewSocialMedia] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
   const [geocodingError, setGeocodingError] = useState<string>('');
-  const [contentQualityScore, setContentQualityScore] = useState(0);
 
   // Helper function to upload image to Supabase Storage
-  const uploadImageToSupabase = async (file: File, imageType: 'cover' | 'gallery'): Promise<string | null> => {
+  const uploadImageToSupabase = async (file: File, imageType: 'cover'): Promise<string | null> => {
     try {
       if (!user) {
         throw new Error('User not authenticated');
@@ -138,8 +132,6 @@ export default function AddBusinessPage() {
               website_url: business.website_url || '',
               social_media: business.social_media || [],
               price_range: business.price_range || '',
-              service_area: business.service_area || '',
-              businessType: business.is_virtual ? 'virtual' : (business.is_mobile_business ? 'mobile' : 'physical')
             });
 
             // Set cover image if exists
@@ -148,15 +140,6 @@ export default function AddBusinessPage() {
                 file: null,
                 preview: business.image_url
               });
-            }
-
-            // Set gallery images if exist
-            if (business.gallery_urls && business.gallery_urls.length > 0) {
-              const galleryImgs = business.gallery_urls.map(url => ({
-                file: null,
-                preview: url
-              }));
-              setGalleryImages(galleryImgs);
             }
           }
         } catch (error) {
@@ -168,94 +151,6 @@ export default function AddBusinessPage() {
     }
   }, [isEditMode, editBusinessId]);
 
-  // Calculate content quality score
-  const calculateContentQualityScore = () => {
-    let score = 0;
-    const maxScore = 100;
-    
-    // Business name (10 points)
-    if (formData.name.trim().length > 0) {
-      score += 10;
-    }
-    
-    // Category (10 points)
-    if (formData.category.trim().length > 0) {
-      score += 10;
-    }
-    
-    // Short description (20 points)
-    if (formData.short_description.trim().length >= 50) {
-      score += 20;
-    } else if (formData.short_description.trim().length >= 20) {
-      score += 10;
-    }
-    
-    // Full description (30 points)
-    if (formData.description.trim().length >= 150) {
-      score += 30;
-    } else if (formData.description.trim().length >= 75) {
-      score += 15;
-    }
-    
-    // Tags (20 points)
-    if (formData.tags.length >= 5) {
-      score += 20;
-    } else if (formData.tags.length >= 3) {
-      score += 10;
-    }
-    
-    // Contact info (10 points) - phone is more important for mobile businesses
-    if (formData.businessType === 'mobile') {
-      if (formData.phone_number.trim().length > 0) {
-        score += 5;
-      }
-    } else if (formData.businessType === 'virtual') {
-      // For virtual businesses, both phone and website are required
-      if (formData.phone_number.trim().length > 0) {
-        score += 5;
-      }
-      if (formData.website_url.trim().length > 0) {
-        score += 10; // Website is crucial for virtual businesses
-      }
-    } else {
-      // For physical businesses, either phone or website contributes
-      if (formData.phone_number.trim().length > 0) {
-        score += 5;
-      }
-      if (formData.website_url.trim().length > 0) {
-        score += 5;
-      }
-    }
-    
-    // Service area for mobile businesses (additional 10 points)
-    if (formData.businessType === 'mobile' && formData.service_area.trim().length > 0) {
-      score += 10;
-    }
-    
-    // Location (City and State) - replaces the old location check
-    if (formData.city.trim().length > 0 && formData.state.trim().length > 0) {
-      score += 5;
-    }
-    
-    return Math.min(score, maxScore);
-  };
-
-  // Update content quality score when form data changes
-  useEffect(() => {
-    const score = calculateContentQualityScore();
-    setContentQualityScore(score);
-  }, [formData]);
-
-  const getQualityLevel = (score: number) => {
-    if (score >= 80) return { level: 'Excellent', color: 'text-green-600', bgColor: 'bg-green-100', icon: CheckCircle };
-    if (score >= 60) return { level: 'Good', color: 'text-blue-600', bgColor: 'bg-blue-100', icon: TrendingUp };
-    if (score >= 40) return { level: 'Fair', color: 'text-yellow-600', bgColor: 'bg-yellow-100', icon: AlertCircle };
-    return { level: 'Poor', color: 'text-red-600', bgColor: 'bg-red-100', icon: AlertCircle };
-  };
-
-  const qualityLevel = getQualityLevel(contentQualityScore);
-  const QualityIcon = qualityLevel.icon;
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -264,16 +159,7 @@ export default function AddBusinessPage() {
     }));
   };
 
-  const handleBusinessTypeChange = (type: 'physical' | 'mobile' | 'virtual') => {
-    setFormData(prev => ({
-      ...prev,
-      businessType: type,
-      // Clear service area if not mobile
-      service_area: type === 'mobile' ? prev.service_area : ''
-    }));
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'gallery') => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'cover') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -287,18 +173,6 @@ export default function AddBusinessPage() {
             preview: URL.createObjectURL(resizedFile)
           });
           console.log('✅ Cover image resized successfully');
-        } else if (type === 'gallery') {
-          console.log('📤 Resizing gallery images...');
-          const newImages: UploadedImage[] = [];
-          for (const file of Array.from(files)) {
-            const resizedFile = await resizeImage(file, 800, 600, 0.7); // Max 800px width, 600px height, 70% quality
-            newImages.push({
-              file: resizedFile,
-              preview: URL.createObjectURL(resizedFile)
-            });
-          }
-          setGalleryImages(prev => [...prev, ...newImages]);
-          console.log('✅ Gallery images resized successfully');
         }
       } catch (error) {
         console.error('Error resizing image:', error);
@@ -309,26 +183,17 @@ export default function AddBusinessPage() {
     processImages();
   };
 
-  const removeImage = (index: number, type: 'cover' | 'gallery') => {
+  const removeImage = (type: 'cover') => {
     if (type === 'cover') {
       if (coverImage?.preview && coverImage.file) {
         URL.revokeObjectURL(coverImage.preview);
       }
       setCoverImage(null);
-    } else {
-      const imageToRemove = galleryImages[index];
-      if (imageToRemove?.preview && imageToRemove.file) {
-        URL.revokeObjectURL(imageToRemove.preview);
-      }
-      setGalleryImages(prev => prev.filter((_, i) => i !== index));
     }
   };
 
   // Geocode address when user finishes typing
   const handleAddressBlur = async () => {
-    // Skip geocoding for virtual businesses as their address is private
-    if (formData.businessType === 'virtual') return;
-    
     if (!formData.address.trim()) return;
     
     setIsGeocodingAddress(true);
@@ -423,22 +288,10 @@ export default function AddBusinessPage() {
     e.preventDefault();
     if (!user) return;
 
-    // Validation for required fields based on business type
-    if (formData.businessType === 'virtual' && !formData.website_url.trim()) {
-      alert('Virtual businesses require a Website URL.');
-      return;
-    }
-    
-    if (formData.businessType === 'mobile' && !formData.service_area.trim()) {
-      alert('Mobile services require a Service Area.');
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
       let coverImageUrl = '';
-      let galleryUrls: string[] = [];
 
       // Handle cover image upload
       if (coverImage) {
@@ -456,32 +309,15 @@ export default function AddBusinessPage() {
         }
       }
 
-      // Handle gallery images upload
-      for (const image of galleryImages) {
-        if (image.file) {
-          console.log('📤 Uploading gallery image...');
-          const uploadedUrl = await uploadImageToSupabase(image.file, 'gallery');
-          if (uploadedUrl) {
-            galleryUrls.push(uploadedUrl);
-          } else {
-            console.warn('Failed to upload gallery image, skipping...');
-          }
-        } else {
-          // Existing image URL
-          galleryUrls.push(image.preview);
-        }
-      }
-
-      console.log('📊 Final image URLs:', { coverImageUrl, galleryUrls });
+      console.log('📊 Final image URLs:', { coverImageUrl });
 
       const businessData = {
         ...formData,
         location: `${formData.city.trim()}${formData.state.trim() ? ', ' + formData.state.trim() : ''}`,
         image_url: coverImageUrl,
-        gallery_urls: galleryUrls,
-        // Map businessType to boolean flags for database compatibility
-        is_mobile_business: formData.businessType === 'mobile',
-        is_virtual: formData.businessType === 'virtual',
+        // Default to physical business
+        is_mobile_business: false,
+        is_virtual: false,
       };
 
       if (isEditMode && editBusinessId) {
@@ -512,73 +348,6 @@ export default function AddBusinessPage() {
             <p className="text-gray-600 mt-2">
               {isEditMode ? 'Update your business information' : 'Share your business with the community'}
             </p>
-          </div>
-
-          {/* Content Quality Indicator */}
-          <div className={`${qualityLevel.bgColor} rounded-xl p-6 mb-8 border-2 ${qualityLevel.color.replace('text-', 'border-').replace('-600', '-200')}`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <QualityIcon className={`h-6 w-6 ${qualityLevel.color} mr-3`} />
-                <div>
-                  <h3 className="font-poppins text-lg font-semibold text-neutral-900">
-                    Search Relevance Score: {contentQualityScore}%
-                  </h3>
-                  <p className={`font-lora text-sm ${qualityLevel.color}`}>
-                    Content Quality: {qualityLevel.level}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="w-32 bg-gray-200 rounded-full h-3 mb-2">
-                  <div 
-                    className={`h-3 rounded-full transition-all duration-300 ${
-                      contentQualityScore >= 80 ? 'bg-green-500' :
-                      contentQualityScore >= 60 ? 'bg-blue-500' :
-                      contentQualityScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${contentQualityScore}%` }}
-                  ></div>
-                </div>
-                <p className="font-lora text-xs text-gray-600">
-                  Higher scores = better search visibility
-                </p>
-              </div>
-            </div>
-            
-            {/* Dynamic recommendations */}
-            <div className="space-y-2">
-              {contentQualityScore < 80 && (
-                <div className="bg-white bg-opacity-50 rounded-lg p-3">
-                  <h4 className="font-poppins font-semibold text-neutral-900 mb-2 flex items-center">
-                    <Info className="h-4 w-4 mr-2" />
-                    Tips to improve your search ranking:
-                  </h4>
-                  <ul className="font-lora text-sm text-neutral-700 space-y-1">
-                    {formData.short_description.length < 50 && (
-                      <li>• Add a compelling short description (50+ characters)</li>
-                    )}
-                    {formData.description.length < 150 && (
-                      <li>• Write a detailed description (150+ words) including your unique vibe and atmosphere</li>
-                    )}
-                    {formData.tags.length < 5 && (
-                      <li>• Add more tags (5+ recommended) like "cozy", "family-friendly", "organic", etc.</li>
-                    )}
-                    {!formData.phone_number && (
-                      <li>• Add a phone number for customer contact</li>
-                    )}
-                    {formData.businessType === 'virtual' && !formData.website_url && (
-                      <li>• Add a website URL (required for virtual businesses)</li>
-                    )}
-                    {formData.businessType !== 'virtual' && !formData.website_url && (
-                      <li>• Add a website URL for better online presence</li>
-                    )}
-                    {formData.businessType === 'mobile' && !formData.service_area && (
-                      <li>• Specify your service area for mobile services</li>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -660,18 +429,18 @@ export default function AddBusinessPage() {
                 >
                   <option value="">Select a category</option>
                   <option value="Restaurant">Restaurant</option>
-                  <option value="Health & Wellness">Health & Wellness</option>
-                  <option value="Fitness">Fitness</option>
-                  <option value="Beauty & Spa">Beauty & Spa</option>
-                  <option value="Coffee & Tea">Coffee & Tea</option>
-                  <option value="Retail">Retail</option>
-                  <option value="Service">Service</option>
-                  <option value="Entertainment">Entertainment</option>
-                  <option value="Professional">Professional</option>
-                  <option value="Other">Other</option>
+                  <option value="Cafe">Cafe</option>
+                  <option value="Bakery">Bakery</option>
+                  <option value="Bar">Bar</option>
+                  <option value="Food Truck">Food Truck</option>
+                  <option value="Dessert Shop">Dessert Shop</option>
+                  <option value="Catering">Catering</option>
+                  <option value="Brewery">Brewery</option>
+                  <option value="Winery">Winery</option>
+                  <option value="Other Food & Drink">Other Food & Drink</option>
                 </select>
                 <p className="font-lora text-xs text-gray-500 mt-1">
-                  Choose the most specific category that describes your business
+                  Choose the most specific category that describes your food business
                 </p>
               </div>
             </div>
@@ -683,56 +452,9 @@ export default function AddBusinessPage() {
                 Location Information
               </h2>
               
-              {/* Business Type Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Business Type
-                </label>
-                <div className="flex flex-wrap gap-6">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="businessTypeRadio"
-                      value="physical"
-                      checked={formData.businessType === 'physical'}
-                      onChange={() => handleBusinessTypeChange('physical')}
-                      className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300"
-                    />
-                    <span className="ml-2 font-poppins text-sm text-gray-700">Physical Location</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="businessTypeRadio"
-                      value="mobile"
-                      checked={formData.businessType === 'mobile'}
-                      onChange={() => handleBusinessTypeChange('mobile')}
-                      className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300"
-                    />
-                    <span className="ml-2 font-poppins text-sm text-gray-700">Mobile Service</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="businessTypeRadio"
-                      value="virtual"
-                      checked={formData.businessType === 'virtual'}
-                      onChange={() => handleBusinessTypeChange('virtual')}
-                      className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300"
-                    />
-                    <span className="ml-2 font-poppins text-sm text-gray-700">Virtual Business</span>
-                  </label>
-                </div>
-                <p className="font-lora text-xs text-gray-500 mt-2">
-                  {formData.businessType === 'physical' && 'Physical locations have a storefront or office that customers visit'}
-                  {formData.businessType === 'mobile' && 'Mobile services operate from a home base and travel to customers'}
-                  {formData.businessType === 'virtual' && 'Virtual businesses operate entirely online without a physical storefront'}
-                </p>
-              </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {formData.businessType === 'physical' ? 'Business Address *' : 'Home Base Address (Private) *'}
+                  Business Address *
                 </label>
                 <input
                   type="text"
@@ -742,14 +464,8 @@ export default function AddBusinessPage() {
                   onBlur={handleAddressBlur}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={formData.businessType === 'physical' ? 'Full street address' : 'Your private home base address (not publicly displayed)'}
+                  placeholder="Full street address"
                 />
-                
-                {(formData.businessType === 'mobile' || formData.businessType === 'virtual') && (
-                  <p className="font-lora text-xs text-gray-500 mt-1">
-                    🔒 This address will not be publicly displayed. Only your city/area will be shown to customers.
-                  </p>
-                )}
                 
                 {/* Geocoding Status */}
                 {isGeocodingAddress && (
@@ -776,8 +492,7 @@ export default function AddBusinessPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {formData.businessType === 'physical' ? 'City *' :
-                     formData.businessType === 'mobile' ? 'Service City (Public) *' : 'Operating City/Region (Public) *'}
+                    City *
                   </label>
                   <input
                     type="text"
@@ -786,14 +501,12 @@ export default function AddBusinessPage() {
                     onChange={handleInputChange}
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder={formData.businessType === 'physical' ? 'e.g., New York' :
-                                 formData.businessType === 'mobile' ? 'e.g., Portland' : 'e.g., Global, Online'}
+                    placeholder="e.g., New York"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {formData.businessType === 'physical' ? 'State/Area *' :
-                     formData.businessType === 'mobile' ? 'Service State/Area (Public) *' : 'Operating State/Region (Public) *'}
+                    State/Area *
                   </label>
                   <input
                     type="text"
@@ -802,37 +515,10 @@ export default function AddBusinessPage() {
                     onChange={handleInputChange}
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder={formData.businessType === 'physical' ? 'e.g., NY' :
-                                 formData.businessType === 'mobile' ? 'e.g., OR' : 'e.g., North America'}
+                    placeholder="e.g., NY"
                   />
                 </div>
               </div>
-              {(formData.businessType === 'mobile' || formData.businessType === 'virtual') && (
-                <p className="font-lora text-xs text-gray-500 mt-1">
-                  This will be publicly displayed instead of your home address
-                </p>
-              )}
-
-              {/* Service Area - Only show for mobile businesses */}
-              {formData.businessType === 'mobile' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Service Area *
-                  </label>
-                  <input
-                    type="text"
-                    name="service_area"
-                    value={formData.service_area}
-                    onChange={handleInputChange}
-                    required={formData.businessType === 'mobile'}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Areas you serve (e.g., Within 20 miles, Citywide, Tri-state area)"
-                  />
-                  <p className="font-lora text-xs text-gray-500 mt-1">
-                    Specify the geographic area where you provide services. This helps customers understand if you serve their location.
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Contact Information */}
@@ -856,30 +542,22 @@ export default function AddBusinessPage() {
                   placeholder="(555) 123-4567"
                 />
                 <p className="font-lora text-xs text-gray-500 mt-1">
-                  {formData.businessType === 'mobile' && 'Primary contact method for mobile services'}
-                  {formData.businessType === 'virtual' && 'Important for customer support and inquiries'}
-                  {formData.businessType === 'physical' && 'Helps customers contact you directly'}
+                  Helps customers contact you directly
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Website URL {formData.businessType === 'virtual' && '*'}
+                  Website URL
                 </label>
                 <input
                   type="url"
                   name="website_url"
                   value={formData.website_url}
                   onChange={handleInputChange}
-                  required={formData.businessType === 'virtual'}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="https://www.yourbusiness.com"
                 />
-                {formData.businessType === 'virtual' && (
-                  <p className="font-lora text-xs text-gray-500 mt-1">
-                    Required for virtual businesses - this is where customers will access your services
-                  </p>
-                )}
               </div>
 
               <div>
@@ -1004,7 +682,7 @@ export default function AddBusinessPage() {
                   </p>
                   <div className="font-lora text-xs text-blue-700 space-y-1">
                     <p><strong>Atmosphere:</strong> cozy, modern, rustic, upscale, casual, intimate, lively</p>
-                    <p><strong>Services:</strong> organic, vegan-friendly, family-owned, locally-sourced, handcrafted{formData.businessType === 'virtual' && ', online, digital, remote'}</p>
+                    <p><strong>Services:</strong> organic, vegan-friendly, family-owned, locally-sourced, handcrafted</p>
                     <p><strong>Audience:</strong> family-friendly, pet-friendly, date-night, business-casual, kid-friendly</p>
                   </div>
                 </div>
@@ -1069,7 +747,7 @@ export default function AddBusinessPage() {
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage(0, 'cover')}
+                        onClick={() => removeImage('cover')}
                         className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
                       >
                         <X className="w-4 h-4" />
@@ -1091,53 +769,6 @@ export default function AddBusinessPage() {
                           />
                         </label>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Gallery Images */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Gallery Images
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                  <div className="text-center mb-4">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="mt-4">
-                      <label className="cursor-pointer">
-                        <span className="mt-2 block text-sm font-medium text-gray-900">
-                          Upload gallery images
-                        </span>
-                        <input
-                          type="file"
-                          className="sr-only"
-                          accept="image/*"
-                          multiple
-                          onChange={(e) => handleImageUpload(e, 'gallery')}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  
-                  {galleryImages.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                      {galleryImages.map((image, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={image.preview}
-                            alt={`Gallery ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index, 'gallery')}
-                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
                     </div>
                   )}
                 </div>
