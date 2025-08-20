@@ -153,6 +153,25 @@ export type Business = {
     images?: Array<{ url: string; alt?: string }>;
     thumbsUp: boolean;
   }>;
+  // Offerings array for businesses
+  offerings?: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    tags: string[];
+    price_cents?: number;
+    currency: string;
+    service_type: 'onsite' | 'mobile' | 'remote' | 'delivery';
+    status: 'active' | 'inactive' | 'draft';
+    created_at: string;
+    updated_at: string;
+    images?: Array<{
+      id: string;
+      url: string;
+      is_primary: boolean;
+      approved: boolean;
+    }>;
+  }>;
   // Dynamic properties added during search processing
   isExactMatch?: boolean;
   isPlatformBusiness?: boolean;
