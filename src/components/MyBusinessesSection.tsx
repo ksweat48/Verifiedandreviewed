@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import BusinessProfileModal from './BusinessProfileModal';
+import { supabase } from '../services/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
 import type { Business } from '../services/supabaseClient';
