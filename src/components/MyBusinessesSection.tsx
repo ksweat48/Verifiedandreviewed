@@ -1,12 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { BusinessService } from '../services/businessService';
+import { OfferingService } from '../services/offeringService';
 import BusinessProfileModal from './BusinessProfileModal';
-import { supabase } from '../services/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
 import type { Business } from '../services/supabaseClient';
-// Force rebuild to clear stale cache
+
+interface BusinessWithOfferings extends Business {
+  offerings?: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    tags: string[];
+    price_cents?: number;
+    currency: string;
+    service_type: 'onsite' | 'mobile' | 'remote' | 'delivery';
+    status: 'active' | 'inactive' | 'draft';
+    created_at: string;
+    updated_at: string;
+    images?: Array<{
+      id: string;
+      url: string;
+      is_primary: boolean;
+      approved: boolean;
+    }>;
+  }>;
+}
 
 interface MyBusinessesSectionProps {
   user: User | null;
@@ -14,12 +34,16 @@ interface MyBusinessesSectionProps {
 
 const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   const navigate = useNavigate();
-  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [businesses, setBusinesses] = useState<BusinessWithOfferings[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingOfferings, setLoadingOfferings] = useState<{ [businessId: string]: boolean }>({});
   const [error, setError] = useState<string | null>(null);
   const [deletingBusinessId, setDeletingBusinessId] = useState<string | null>(null);
   const [isBusinessProfileModalOpen, setIsBusinessProfileModalOpen] = useState(false);
   const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
+  const [offeringPages, setOfferingPages] = useState<{ [businessId: string]: number }>({});
+
+  const OFFERINGS_PER_PAGE = 5;
 
   useEffect(() => {
     const fetchMyBusinesses = async () => {
@@ -34,6 +58,11 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
       try {
         const userBusinesses = await BusinessService.getUserBusinesses(user.id);
         setBusinesses(userBusinesses);
+        
+        // Fetch offerings for each business
+        for (const business of userBusinesses) {
+          fetchBusinessOfferings(business.id);
+        }
       } catch (err) {
         setError('Failed to load your businesses.');
         console.error('Error fetching user businesses:', err);
@@ -45,6 +74,25 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
     fetchMyBusinesses();
   }, [user]);
 
+  const fetchBusinessOfferings = async (businessId: string) => {
+    setLoadingOfferings(prev => ({ ...prev, [businessId]: true }));
+    
+    try {
+      const offerings = await OfferingService.getBusinessOfferings(businessId);
+      
+      // Update the specific business with its offerings
+      setBusinesses(prev => prev.map(business => 
+        business.id === businessId 
+          ? { ...business, offerings }
+          : business
+      ));
+    } catch (error) {
+      console.error(`Error fetching offerings for business ${businessId}:`, error);
+    } finally {
+      setLoadingOfferings(prev => ({ ...prev, [businessId]: false }));
+    }
+  };
+
   const handleAddBusiness = () => {
     navigate('/add-business');
   };
@@ -55,7 +103,6 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   };
 
   const handleEditBusiness = (business: Business) => {
-    // For now, navigate to add-business page with edit parameter. AddBusinessPage needs to handle loading data.
     navigate(`/add-business?edit=${business.id}`);
   };
 
@@ -67,7 +114,6 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
     setDeletingBusinessId(businessId);
     try {
       await BusinessService.deleteBusiness(businessId);
-      // Remove the business from the local state
       setBusinesses(prev => prev.filter(business => business.id !== businessId));
     } catch (err) {
       console.error('Error deleting business:', err);
@@ -75,6 +121,43 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
     } finally {
       setDeletingBusinessId(null);
     }
+  };
+
+  const getOfferingPage = (businessId: string): number => {
+    return offeringPages[businessId] || 0;
+  };
+
+  const setOfferingPage = (businessId: string, page: number) => {
+    setOfferingPages(prev => ({ ...prev, [businessId]: page }));
+  };
+
+  const getPaginatedOfferings = (offerings: any[], businessId: string) => {
+    const currentPage = getOfferingPage(businessId);
+    const startIndex = currentPage * OFFERINGS_PER_PAGE;
+    return offerings.slice(startIndex, startIndex + OFFERINGS_PER_PAGE);
+  };
+
+  const getTotalPages = (offerings: any[]): number => {
+    return Math.ceil(offerings.length / OFFERINGS_PER_PAGE);
+  };
+
+  const getServiceTypeBadge = (serviceType: string) => {
+    const badges = {
+      onsite: { label: 'On-site', color: 'bg-blue-100 text-blue-700' },
+      mobile: { label: 'Mobile', color: 'bg-green-100 text-green-700' },
+      remote: { label: 'Remote', color: 'bg-purple-100 text-purple-700' },
+      delivery: { label: 'Delivery', color: 'bg-orange-100 text-orange-700' }
+    };
+    return badges[serviceType as keyof typeof badges] || badges.onsite;
+  };
+
+  const formatPrice = (priceCents?: number, currency: string = 'USD'): string => {
+    if (!priceCents) return 'Free';
+    const price = priceCents / 100;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency
+    }).format(price);
   };
 
   if (loading) {
@@ -101,7 +184,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   }
 
   return (
-    <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
+    <div className="space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto">
       <div className="flex items-center justify-between">
         <h2 className="font-cinzel text-xl sm:text-2xl font-bold text-neutral-900"> 
           My Businesses ({businesses.length})
@@ -133,109 +216,217 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
-          {businesses.map((business) => (
-            <div key={business.id} className="bg-neutral-50 rounded-xl p-4 border border-neutral-200 hover:bg-white transition-all duration-200">
-              {/* Business Name - Line 1 */}
-              <div className="flex items-center gap-3 mb-2">
-                {/* Business Image - 25% */}
-                <div className="w-1/4 flex-shrink-0">
-                  <img
-                    src={business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'}
-                    alt={business.name}
-                    className="w-full h-16 object-cover rounded-lg"
-                  />
-                </div>
-                
-                {/* Business Name - 75% */}
-                <div className="w-3/4 flex-shrink-0">
-                  <h3 className="font-poppins text-lg font-semibold text-neutral-900 line-clamp-2 break-words leading-tight">
-                    {business.name}
-                  </h3>
-                </div>
-              </div>
-              
-              {/* Status and Thumbs Up - Line 2 */}
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
-                  business.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                }`}>
-                  {business.is_verified ? 'Verified' : 'Pending Verification'}
-                </span>
-                {business.thumbs_up > 0 && (
-                  <div className="flex items-center bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                    <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
-                    <span className="font-poppins text-xs font-semibold">{business.thumbs_up} Thumbs Up</span>
+        <div className="space-y-6">
+          {businesses.map((business) => {
+            const currentPage = getOfferingPage(business.id);
+            const totalPages = getTotalPages(business.offerings || []);
+            const paginatedOfferings = getPaginatedOfferings(business.offerings || [], business.id);
+            
+            return (
+              <div key={business.id} className="bg-white rounded-xl p-6 border border-neutral-200 hover:shadow-md transition-all duration-200">
+                {/* Business Header */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-20 h-20 flex-shrink-0">
+                    <img
+                      src={business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                      alt={business.name}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
                   </div>
-                )}
-              </div>
-              
-              {/* Category and Date - Line 3 */}
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <Icons.Tag className="h-4 w-4 text-neutral-500 mr-1" />
-                <span className="font-lora text-sm text-neutral-600">{business.category}</span>
-                <span className="font-lora text-sm text-neutral-600">•</span>
-                <span className="font-lora text-sm text-neutral-600">
-                  {new Date(business.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              
-              {/* Address - Line 4 */}
-              <div className="flex items-center mb-2">
-                <Icons.MapPin className="h-4 w-4 text-neutral-500 mr-1" />
-                <span className="font-lora text-sm text-neutral-600 break-words">{business.address}</span>
-              </div>
-              
-              {/* Actions - Line 5 */}
-              <div className="flex items-center justify-between">
-                <div></div>
-                
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleViewBusiness(business)}
-                    className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-                    title="View Business"
-                  >
-                    <Icons.Eye className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => navigate(`/manage-offerings?businessId=${business.id}`)}
-                    className="p-2 text-neutral-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200"
-                    title="Manage Offerings"
-                  >
-                    <Icons.Menu className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleEditBusiness(business)}
-                    className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
-                    title="Edit Business"
-                  >
-                    <Icons.Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteBusiness(business.id)}
-                    className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                    title="Delete Business"
-                    disabled={deletingBusinessId === business.id}
-                  >
-                    {deletingBusinessId === business.id ? (
-                      <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <Icons.Trash2 className="h-4 w-4" />
+                  
+                  <div className="flex-1">
+                    <h3 className="font-poppins text-xl font-semibold text-neutral-900 mb-1">
+                      {business.name}
+                    </h3>
+                    
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
+                        business.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {business.is_verified ? 'Verified' : 'Pending Verification'}
+                      </span>
+                      {business.thumbs_up > 0 && (
+                        <div className="flex items-center bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                          <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                          <span className="font-poppins text-xs font-semibold">{business.thumbs_up} Thumbs Up</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-sm text-neutral-600">
+                      <div className="flex items-center">
+                        <Icons.Tag className="h-4 w-4 mr-1" />
+                        <span className="font-lora">{business.category}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Icons.MapPin className="h-4 w-4 mr-1" />
+                        <span className="font-lora">{business.address}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleViewBusiness(business)}
+                      className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                      title="View Business"
+                    >
+                      <Icons.Eye className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => navigate(`/manage-offerings?businessId=${business.id}`)}
+                      className="p-2 text-neutral-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200"
+                      title="Manage Offerings"
+                    >
+                      <Icons.Menu className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEditBusiness(business)}
+                      className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
+                      title="Edit Business"
+                    >
+                      <Icons.Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBusiness(business.id)}
+                      className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                      title="Delete Business"
+                      disabled={deletingBusinessId === business.id}
+                    >
+                      {deletingBusinessId === business.id ? (
+                        <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Icons.Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Offerings Section */}
+                <div className="border-t border-neutral-200 pt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-poppins text-lg font-semibold text-neutral-900 flex items-center">
+                      <Icons.Package className="h-5 w-5 mr-2 text-primary-500" />
+                      Offerings ({business.offerings?.length || 0})
+                    </h4>
+                    
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setOfferingPage(business.id, Math.max(0, currentPage - 1))}
+                          disabled={currentPage === 0}
+                          className="p-1 rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Icons.ChevronLeft className="h-4 w-4" />
+                        </button>
+                        
+                        <span className="font-poppins text-sm text-neutral-600">
+                          {currentPage + 1} of {totalPages}
+                        </span>
+                        
+                        <button
+                          onClick={() => setOfferingPage(business.id, Math.min(totalPages - 1, currentPage + 1))}
+                          disabled={currentPage === totalPages - 1}
+                          className="p-1 rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Icons.ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
                     )}
-                  </button>
+                  </div>
+
+                  {/* Offerings Display */}
+                  {loadingOfferings[business.id] ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <div key={i} className="bg-neutral-100 rounded-lg h-32 animate-pulse"></div>
+                      ))}
+                    </div>
+                  ) : !business.offerings || business.offerings.length === 0 ? (
+                    <div className="bg-neutral-50 rounded-lg p-6 text-center">
+                      <Icons.Package className="h-8 w-8 text-neutral-300 mx-auto mb-2" />
+                      <h5 className="font-poppins font-semibold text-neutral-700 mb-1">
+                        No Offerings Yet
+                      </h5>
+                      <p className="font-lora text-sm text-neutral-600 mb-3">
+                        Add offerings to help customers find your services
+                      </p>
+                      <button
+                        onClick={() => navigate(`/manage-offerings?businessId=${business.id}`)}
+                        className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 text-sm"
+                      >
+                        Add Offerings
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                      {paginatedOfferings.map((offering) => {
+                        const serviceTypeBadge = getServiceTypeBadge(offering.service_type);
+                        const primaryImage = offering.images?.find(img => img.is_primary && img.approved);
+                        const fallbackImage = offering.images?.find(img => img.approved);
+                        const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
+                        
+                        return (
+                          <div key={offering.id} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200">
+                            {/* Offering Image */}
+                            <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100">
+                              <img
+                                src={imageUrl}
+                                alt={offering.title}
+                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                            
+                            {/* Offering Details */}
+                            <div className="space-y-2">
+                              <h6 className="font-poppins font-semibold text-neutral-900 text-sm line-clamp-1">
+                                {offering.title}
+                              </h6>
+                              
+                              {offering.description && (
+                                <p className="font-lora text-xs text-neutral-600 line-clamp-2">
+                                  {offering.description}
+                                </p>
+                              )}
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="font-poppins font-bold text-primary-600 text-sm">
+                                  {formatPrice(offering.price_cents, offering.currency)}
+                                </span>
+                                
+                                <span className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${serviceTypeBadge.color}`}>
+                                  {serviceTypeBadge.label}
+                                </span>
+                              </div>
+                              
+                              {offering.tags && offering.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {offering.tags.slice(0, 2).map((tag, index) => (
+                                    <span key={index} className="bg-neutral-200 text-neutral-700 px-2 py-0.5 rounded-full text-xs font-lora">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                  {offering.tags.length > 2 && (
+                                    <span className="bg-neutral-200 text-neutral-700 px-2 py-0.5 rounded-full text-xs font-lora">
+                                      +{offering.tags.length - 2}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
-
-      <BusinessProfileModal
-        isOpen={isBusinessProfileModalOpen}
-        onClose={() => setIsBusinessProfileModalOpen(false)}
-        business={selectedBusinessForProfile}
-      />
 
       <BusinessProfileModal
         isOpen={isBusinessProfileModalOpen}
