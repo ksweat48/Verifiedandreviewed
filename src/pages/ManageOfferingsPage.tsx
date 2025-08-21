@@ -244,6 +244,27 @@ export default function ManageOfferingsPage() {
       );
       const offeringsToCreate = offerings.filter(offering => !offering.id);
       const offeringsToUpdate = offerings.filter(offering => offering.id);
+      
+      console.log('🔍 DEBUG: Offerings categorization:', {
+        totalOfferings: offerings.length,
+        offeringsToCreate: offeringsToCreate.length,
+        offeringsToUpdate: offeringsToUpdate.length,
+        offeringsToDelete: offeringsToDelete.length
+      });
+      
+      console.log('🔍 DEBUG: offeringsToCreate array:', offeringsToCreate.map(o => ({
+        name: o.name,
+        hasId: !!o.id,
+        hasImageFile: !!o.image_file,
+        imageUrl: o.image_url
+      })));
+      
+      console.log('🔍 DEBUG: offeringsToUpdate array:', offeringsToUpdate.map(o => ({
+        name: o.name,
+        id: o.id,
+        hasImageFile: !!o.image_file,
+        imageUrl: o.image_url
+      })));
 
       // Delete removed offerings
       for (const offering of offeringsToDelete) {
@@ -253,11 +274,22 @@ export default function ManageOfferingsPage() {
 
       // Create new offerings
       for (const offering of offeringsToCreate) {
+        console.log('🔍 DEBUG: Processing offering for creation:', {
+          name: offering.name,
+          hasImageFile: !!offering.image_file,
+          imageFileType: offering.image_file ? typeof offering.image_file : 'none',
+          imageFileConstructor: offering.image_file ? offering.image_file.constructor.name : 'none',
+          imageUrl: offering.image_url,
+          imageUrlType: typeof offering.image_url,
+          isBlob: offering.image_url ? offering.image_url.startsWith('blob:') : false
+        });
+        
         console.log('➕ Creating offering:', offering.name);
         let finalImageUrl = '';
         
         // Handle image upload for new offerings
         if (offering.image_file) {
+          console.log('🔍 DEBUG: Entering image_file upload branch for creation');
           console.log('📤 Uploading new image for offering:', offering.name);
           const uploadedUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
           if (uploadedUrl) {
@@ -267,10 +299,12 @@ export default function ManageOfferingsPage() {
             console.warn(`❌ Failed to upload image for offering: ${offering.name}`);
           }
         } else if (offering.image_url && !offering.image_url.startsWith('blob:')) {
+          console.log('🔍 DEBUG: Entering existing permanent URL branch for creation');
           // Use existing permanent URL (not a blob URL)
           finalImageUrl = offering.image_url;
           console.log('🔗 Using existing image URL:', finalImageUrl);
         } else {
+          console.log('🔍 DEBUG: No valid image found for creation, setting finalImageUrl to empty');
           console.log('📷 No valid image for offering:', offering.name);
         }
         
@@ -292,11 +326,23 @@ export default function ManageOfferingsPage() {
 
       // Update existing offerings
       for (const offering of offeringsToUpdate) {
+        console.log('🔍 DEBUG: Processing offering for update:', {
+          name: offering.name,
+          id: offering.id,
+          hasImageFile: !!offering.image_file,
+          imageFileType: offering.image_file ? typeof offering.image_file : 'none',
+          imageFileConstructor: offering.image_file ? offering.image_file.constructor.name : 'none',
+          imageUrl: offering.image_url,
+          imageUrlType: typeof offering.image_url,
+          isBlob: offering.image_url ? offering.image_url.startsWith('blob:') : false
+        });
+        
         console.log('✏️ Updating offering:', offering.name);
         let finalImageUrl = '';
         
         // Handle image upload for updated offerings
         if (offering.image_file) {
+          console.log('🔍 DEBUG: Entering image_file upload branch for update');
           console.log('📤 Uploading new image for updated offering:', offering.name);
           const uploadedUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
           if (uploadedUrl) {
@@ -308,10 +354,12 @@ export default function ManageOfferingsPage() {
             finalImageUrl = offering.image_url && !offering.image_url.startsWith('blob:') ? offering.image_url : '';
           }
         } else if (offering.image_url && !offering.image_url.startsWith('blob:')) {
+          console.log('🔍 DEBUG: Entering existing permanent URL branch for update');
           // Keep existing permanent URL (not a blob URL)
           finalImageUrl = offering.image_url;
           console.log('🔗 Keeping existing image URL:', finalImageUrl);
         } else {
+          console.log('🔍 DEBUG: No valid image found for update, setting finalImageUrl to empty');
           console.log('📷 No valid image for updated offering:', offering.name);
         }
         
