@@ -391,6 +391,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                               </h6>
                               
                               <p className="font-lora text-xs text-neutral-500 font-bold line-clamp-1">
+                              <p className="font-lora text-xs text-black font-bold line-clamp-1">
                                 at {business.name}
                               </p>
                               
