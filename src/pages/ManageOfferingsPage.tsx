@@ -213,7 +213,7 @@ export default function ManageOfferingsPage() {
       name: '',
       short_description: '',
       image_file: null,
-      image_url: '',
+      image_url: '', // Explicitly clear to prevent blob URLs
       price: 0,
       currency: 'USD',
     });
@@ -254,48 +254,79 @@ export default function ManageOfferingsPage() {
       // Create new offerings
       for (const offering of offeringsToCreate) {
         console.log('➕ Creating offering:', offering.name);
-        let offeringImageUrl = '';
+        let finalImageUrl = '';
         
+        // Handle image upload for new offerings
         if (offering.image_file) {
+          console.log('📤 Uploading new image for offering:', offering.name);
           const uploadedUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
           if (uploadedUrl) {
-            offeringImageUrl = uploadedUrl;
+            finalImageUrl = uploadedUrl;
+            console.log('✅ Image uploaded successfully:', uploadedUrl);
+          } else {
+            console.warn(`❌ Failed to upload image for offering: ${offering.name}`);
           }
-          if (!offeringImageUrl) {
-            console.warn(`Failed to upload image for offering: ${offering.name}`);
-          }
+        } else if (offering.image_url && !offering.image_url.startsWith('blob:')) {
+          // Use existing permanent URL (not a blob URL)
+          finalImageUrl = offering.image_url;
+          console.log('🔗 Using existing image URL:', finalImageUrl);
+        } else {
+          console.log('📷 No valid image for offering:', offering.name);
         }
         
-        await OfferingService.createOffering(businessId, {
+        console.log('💾 Creating offering with image URL:', finalImageUrl);
+        const result = await OfferingService.createOffering(businessId, {
           title: offering.name,
           description: offering.short_description,
           price_cents: Math.round(offering.price * 100),
           currency: offering.currency,
           service_type: 'onsite',
           status: 'active',
-          image_url: offeringImageUrl
+          image_url: finalImageUrl
         });
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to create offering');
+        }
       }
 
       // Update existing offerings
       for (const offering of offeringsToUpdate) {
         console.log('✏️ Updating offering:', offering.name);
-        let offeringImageUrl = offering.image_url;
+        let finalImageUrl = '';
         
+        // Handle image upload for updated offerings
         if (offering.image_file) {
+          console.log('📤 Uploading new image for updated offering:', offering.name);
           const uploadedUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
           if (uploadedUrl) {
-            offeringImageUrl = uploadedUrl;
+            finalImageUrl = uploadedUrl;
+            console.log('✅ New image uploaded successfully:', uploadedUrl);
+          } else {
+            console.warn(`❌ Failed to upload new image for offering: ${offering.name}`);
+            // Keep existing image if upload fails
+            finalImageUrl = offering.image_url && !offering.image_url.startsWith('blob:') ? offering.image_url : '';
           }
+        } else if (offering.image_url && !offering.image_url.startsWith('blob:')) {
+          // Keep existing permanent URL (not a blob URL)
+          finalImageUrl = offering.image_url;
+          console.log('🔗 Keeping existing image URL:', finalImageUrl);
+        } else {
+          console.log('📷 No valid image for updated offering:', offering.name);
         }
         
-        await OfferingService.updateOffering(offering.id!, {
+        console.log('💾 Updating offering with image URL:', finalImageUrl);
+        const result = await OfferingService.updateOffering(offering.id!, {
           title: offering.name,
           description: offering.short_description,
           price_cents: Math.round(offering.price * 100),
           currency: offering.currency,
-          image_url: offeringImageUrl
+          image_url: finalImageUrl
         });
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to update offering');
+        }
       }
 
       navigate('/dashboard');
