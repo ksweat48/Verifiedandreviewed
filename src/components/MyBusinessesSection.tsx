@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as Icons from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Plus, Eye, Menu, Edit, Trash2, Package, ChevronLeft, ChevronRight, Building, AlertCircle, Tag, MapPin, Calendar } from 'lucide-react';
 import { BusinessService } from '../services/businessService';
 import { OfferingService } from '../services/offeringService';
 import BusinessProfileModal from './BusinessProfileModal';
@@ -225,7 +225,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-2xl p-6 shadow-sm text-center">
-        <Icons.AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
+        <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
         <h3 className="font-poppins text-lg font-semibold text-red-700 mb-2">
           Error Loading Businesses
         </h3>
@@ -244,14 +244,14 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
           onClick={handleAddBusiness}
           className="font-poppins bg-primary-500 text-white px-3 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 flex items-center"
         >
-          <Icons.Plus className="h-3 w-3 mr-1.5 sm:h-4 sm:w-4 sm:mr-2" />
+          <Plus className="h-3 w-3 mr-1.5 sm:h-4 sm:w-4 sm:mr-2" />
           Add New Business
         </button>
       </div>
 
       {businesses.length === 0 ? (
         <div className="bg-neutral-50 rounded-xl p-6 text-center">
-          <Icons.Building className="h-10 w-10 text-neutral-300 mx-auto mb-4" />
+          <Building className="h-10 w-10 text-neutral-300 mx-auto mb-4" />
           <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
             No Businesses Added Yet
           </h3>
@@ -262,7 +262,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
             onClick={handleAddBusiness}
             className="font-poppins bg-primary-500 text-white px-4 py-2 text-sm sm:px-6 sm:py-3 sm:text-base rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
           >
-            <Icons.Plus className="h-4 w-4 mr-1.5 sm:h-5 sm:w-5 sm:mr-2" />
+            <Plus className="h-4 w-4 mr-1.5 sm:h-5 sm:w-5 sm:mr-2" />
             Add Your First Business
           </button>
         </div>
@@ -298,7 +298,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                       </span>
                       {business.thumbs_up > 0 && (
                         <div className="flex items-center bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                          <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                          <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
                           <span className="font-poppins text-xs font-semibold">{business.thumbs_up} Thumbs Up</span>
                         </div>
                       )}
@@ -306,11 +306,11 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     
                     <div className="flex items-center gap-4 text-sm text-neutral-600">
                       <div className="flex items-center">
-                        <Icons.Tag className="h-4 w-4 mr-1" />
+                        <Tag className="h-4 w-4 mr-1" />
                         <span className="font-lora">{business.category}</span>
                       </div>
                       <div className="flex items-center">
-                        <Icons.MapPin className="h-4 w-4 mr-1" />
+                        <MapPin className="h-4 w-4 mr-1" />
                         <span className="font-lora">{business.address}</span>
                       </div>
                     </div>
@@ -323,21 +323,21 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                       className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                       title="View Business"
                     >
-                      <Icons.Eye className="h-4 w-4" />
+                      <Eye className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => navigate(`/manage-offerings?businessId=${business.id}`)}
                       className="p-2 text-neutral-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200"
                       title="Manage Offerings"
                     >
-                      <Icons.Menu className="h-4 w-4" />
+                      <Menu className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleEditBusiness(business)}
                       className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
                       title="Edit Business"
                     >
-                      <Icons.Edit className="h-4 w-4" />
+                      <Edit className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteBusiness(business.id)}
@@ -348,7 +348,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                       {deletingBusinessId === business.id ? (
                         <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                       ) : (
-                        <Icons.Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -358,7 +358,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                 <div className="border-t border-neutral-200 pt-4">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-poppins text-lg font-semibold text-neutral-900 flex items-center">
-                      <Icons.Package className="h-5 w-5 mr-2 text-primary-500" />
+                      <Package className="h-5 w-5 mr-2 text-primary-500" />
                       Offerings ({business.offerings?.length || 0})
                     </h4>
                     
@@ -370,7 +370,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                           disabled={currentPage === 0}
                           className="p-1 rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Icons.ChevronLeft className="h-4 w-4" />
+                          <ChevronLeft className="h-4 w-4" />
                         </button>
                         
                         <span className="font-poppins text-sm text-neutral-600">
@@ -382,7 +382,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                           disabled={currentPage === totalPages - 1}
                           className="p-1 rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Icons.ChevronRight className="h-4 w-4" />
+                          <ChevronRight className="h-4 w-4" />
                         </button>
                       </div>
                     )}
@@ -397,7 +397,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     </div>
                   ) : !business.offerings || business.offerings.length === 0 ? (
                     <div className="bg-neutral-50 rounded-lg p-6 text-center">
-                      <Icons.Package className="h-8 w-8 text-neutral-300 mx-auto mb-2" />
+                      <Package className="h-8 w-8 text-neutral-300 mx-auto mb-2" />
                       <h5 className="font-poppins font-semibold text-neutral-700 mb-1">
                         No Offerings Yet
                       </h5>
@@ -488,7 +488,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                   className="p-1.5 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
                                   title="Edit offering"
                                 >
-                                  <Icons.Edit className="h-4 w-4" />
+                                  <Edit className="h-4 w-4" />
                                 </button>
                               </div>
                               
