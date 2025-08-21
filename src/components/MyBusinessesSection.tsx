@@ -390,6 +390,10 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                 {offering.title}
                               </h6>
                               
+                              <p className="font-lora text-xs text-neutral-500 line-clamp-1">
+                                at {business.name}
+                              </p>
+                              
                               {offering.description && (
                                 <p className="font-lora text-xs text-neutral-600 line-clamp-2">
                                   {offering.description}
