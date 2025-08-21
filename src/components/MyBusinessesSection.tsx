@@ -386,11 +386,11 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                             
                             {/* Offering Details */}
                             <div className="space-y-2">
-                              <h6 className="font-poppins font-semibold text-neutral-900 text-sm line-clamp-1">
+                              <h6 className="font-poppins font-semibold text-primary-600 text-sm line-clamp-1">
                                 {offering.title}
                               </h6>
                               
-                              <p className="font-lora text-xs text-neutral-500 line-clamp-1">
+                              <p className="font-lora text-xs text-neutral-500 font-bold line-clamp-1">
                                 at {business.name}
                               </p>
                               
