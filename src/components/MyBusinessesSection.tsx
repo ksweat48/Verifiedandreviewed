@@ -6,6 +6,7 @@ import BusinessProfileModal from './BusinessProfileModal';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
 import type { Business } from '../services/supabaseClient';
+import OfferingReviewsModal from './OfferingReviewsModal';
 
 interface BusinessWithOfferings extends Business {
   offerings?: Array<{
@@ -42,6 +43,12 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   const [isBusinessProfileModalOpen, setIsBusinessProfileModalOpen] = useState(false);
   const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
   const [offeringPages, setOfferingPages] = useState<{ [businessId: string]: number }>({});
+  const [isOfferingReviewsModalOpen, setIsOfferingReviewsModalOpen] = useState(false);
+  const [selectedOfferingForReviews, setSelectedOfferingForReviews] = useState<{
+    id: string;
+    title: string;
+    businessName: string;
+  } | null>(null);
 
   const OFFERINGS_PER_PAGE = 5;
 
@@ -91,6 +98,46 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
     } finally {
       setLoadingOfferings(prev => ({ ...prev, [businessId]: false }));
     }
+  };
+
+  // Helper function to determine if business is currently open
+  const isBusinessOpen = (business: Business): boolean => {
+    // For demo purposes, return a random status
+    // In production, this would parse business.hours and business.days_closed
+    // to determine actual open/closed status based on current time
+    return Math.random() > 0.3; // 70% chance of being open
+  };
+
+  // Helper function to get offering rating data
+  const getOfferingRating = (offeringId: string) => {
+    // For demo purposes, return mock rating data
+    // In production, this would come from aggregated review data
+    const thumbsUp = Math.floor(Math.random() * 20) + 5;
+    const thumbsDown = Math.floor(Math.random() * 5);
+    return { thumbsUp, thumbsDown };
+  };
+
+  // Helper function to get sample review for offering
+  const getSampleReview = (offeringId: string): string => {
+    // For demo purposes, return mock review text
+    // In production, this would come from actual offering reviews
+    const sampleReviews = [
+      "Amazing taste and fresh ingredients!",
+      "Perfect portion size and great value.",
+      "Love the healthy options here.",
+      "Excellent quality and service.",
+      "Fresh and delicious every time!"
+    ];
+    return sampleReviews[Math.floor(Math.random() * sampleReviews.length)];
+  };
+
+  const handleOpenOfferingReviews = (offering: any, businessName: string) => {
+    setSelectedOfferingForReviews({
+      id: offering.id,
+      title: offering.title,
+      businessName: businessName
+    });
+    setIsOfferingReviewsModalOpen(true);
   };
 
   const handleAddBusiness = () => {
@@ -376,12 +423,41 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                         return (
                           <div key={offering.id} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200">
                             {/* Offering Image */}
-                            <div className="aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100">
+                            <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100">
                               <img
                                 src={imageUrl}
                                 alt={offering.title}
                                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                               />
+                              
+                              {/* Open/Closed Overlay - Bottom Left */}
+                              <div className="absolute bottom-2 left-2">
+                                <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
+                                  isBusinessOpen(business) ? 'bg-green-500' : 'bg-red-500'
+                                }`}>
+                                  {isBusinessOpen(business) ? 'OPEN' : 'CLOSED'}
+                                </div>
+                              </div>
+                              
+                              {/* Rating Overlay - Bottom Right */}
+                              <div className="absolute bottom-2 right-2">
+                                {(() => {
+                                  const rating = getOfferingRating(offering.id);
+                                  const isPositive = rating.thumbsUp > rating.thumbsDown;
+                                  return (
+                                    <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold flex items-center ${
+                                      isPositive ? 'bg-green-500' : 'bg-red-500'
+                                    }`}>
+                                      {isPositive ? (
+                                        <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
+                                      ) : (
+                                        <ThumbsDown className="h-3 w-3 mr-1 fill-current" />
+                                      )}
+                                      <span>{isPositive ? rating.thumbsUp : rating.thumbsDown}</span>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
                             </div>
                             
                             {/* Offering Details */}
@@ -416,6 +492,19 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                 </button>
                               </div>
                               
+                              {/* Sample Review */}
+                              <div 
+                                className="bg-neutral-50 rounded-lg p-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
+                                onClick={() => handleOpenOfferingReviews(offering, business.name)}
+                              >
+                                <p className="font-lora text-xs text-neutral-600 italic line-clamp-2">
+                                  "{getSampleReview(offering.id)}"
+                                </p>
+                                <p className="font-poppins text-xs text-primary-500 font-semibold mt-1">
+                                  View all reviews →
+                                </p>
+                              </div>
+                              
                               {offering.tags && offering.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                   {offering.tags.slice(0, 2).map((tag, index) => (
@@ -448,6 +537,20 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
         onClose={() => setIsBusinessProfileModalOpen(false)}
         business={selectedBusinessForProfile}
       />
+      
+      {/* Offering Reviews Modal */}
+      {selectedOfferingForReviews && (
+        <OfferingReviewsModal
+          isOpen={isOfferingReviewsModalOpen}
+          onClose={() => {
+            setIsOfferingReviewsModalOpen(false);
+            setSelectedOfferingForReviews(null);
+          }}
+          offeringId={selectedOfferingForReviews.id}
+          offeringTitle={selectedOfferingForReviews.title}
+          businessName={selectedOfferingForReviews.businessName}
+        />
+      )}
     </div>
   );
 };
