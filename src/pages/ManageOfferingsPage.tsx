@@ -201,7 +201,11 @@ export default function ManageOfferingsPage() {
     if (newOffering.id) {
       // Update existing offering
       setOfferings(prev => prev.map(offering => 
-        offering.id === newOffering.id ? { ...newOffering } : offering
+        offering.id === newOffering.id ? {
+          ...newOffering,
+          image_file: newOffering.image_file, // Explicitly carry over the File object
+          image_url: newOffering.image_url || offering.image_url // Keep existing permanent URL if no new one
+        } : offering
       ));
       console.log('🔄 Updated existing offering in local state');
     } else {
