@@ -167,15 +167,14 @@ export default function ManageOfferingsPage() {
       const resizedFile = await resizeImage(files[0], 800, 600, 0.8);
       const previewUrl = URL.createObjectURL(resizedFile);
       setNewOffering(prev => {
-        const updatedNewOffering = {
+        return {
           ...prev,
-          image_file: resizedFile,
-          image_url: previewUrl
+          image_file: resizedFile, // Store the actual File object
+          image_url: '' // Do NOT store the blob URL here. This will be populated after upload.
         };
-        console.log('newOffering state after image upload:', updatedNewOffering);
-        return updatedNewOffering;
       });
       setNewOfferingImagePreview(previewUrl);
+      console.log('🖼️ Image uploaded - File object stored, preview URL set separately');
     } catch (error) {
       console.error('Error processing offering image:', error);
       alert('Failed to process offering image. Please try a different file or a smaller image.');
@@ -183,7 +182,17 @@ export default function ManageOfferingsPage() {
   };
 
   const addOffering = () => {
-    console.log('addOffering called. newOffering before validation:', newOffering);
+    console.log('🔍 DEBUG: addOffering called. newOffering state:', {
+      name: newOffering.name,
+      id: newOffering.id,
+      hasImageFile: !!newOffering.image_file,
+      imageFileType: newOffering.image_file ? typeof newOffering.image_file : 'none',
+      imageFileConstructor: newOffering.image_file ? newOffering.image_file.constructor.name : 'none',
+      imageUrl: newOffering.image_url,
+      imageUrlType: typeof newOffering.image_url,
+      isBlob: newOffering.image_url ? newOffering.image_url.startsWith('blob:') : false
+    });
+    
     if (!newOffering.name.trim() || !newOffering.short_description.trim() || newOffering.price <= 0) {
       alert('Please fill in all required fields for the offering (Name, Short Description, Price).');
       return;
@@ -194,18 +203,25 @@ export default function ManageOfferingsPage() {
       setOfferings(prev => prev.map(offering => 
         offering.id === newOffering.id ? { ...newOffering } : offering
       ));
+      console.log('🔄 Updated existing offering in local state');
     } else {
       // Add new offering
       setOfferings(prev => {
-        const updatedOfferings = [...prev, { ...newOffering }];
-        console.log('Offerings after adding new item:', updatedOfferings);
-        return updatedOfferings;
+        const newOfferingCopy = { ...newOffering };
+        console.log('🔍 DEBUG: Adding offering to local state:', {
+          name: newOfferingCopy.name,
+          hasImageFile: !!newOfferingCopy.image_file,
+          imageFileType: newOfferingCopy.image_file ? typeof newOfferingCopy.image_file : 'none',
+          imageUrl: newOfferingCopy.image_url
+        });
+        return [...prev, newOfferingCopy];
       });
+      console.log('➕ Added new offering to local state');
     }
     
     // Reset form
     clearForm();
-    console.log('Form reset completed');
+    console.log('🧹 Form reset completed');
   };
   
   const clearForm = () => {
@@ -224,6 +240,7 @@ export default function ManageOfferingsPage() {
     if (offeringId) {
       navigate(`/manage-offerings?businessId=${businessId}`, { replace: true });
     }
+    console.log('🧹 Form cleared - all state reset');
   };
 
   const removeOffering = (indexToRemove: number) => {
@@ -231,6 +248,9 @@ export default function ManageOfferingsPage() {
   };
 
   const handleSaveOfferings = async () => {
+    alert('🚀 Saving process initiated! Check console for detailed logs.');
+    console.log('🚀 DEBUG: handleSaveOfferings function called');
+    
     if (!businessId) return;
 
     setIsSaving(true);
@@ -252,18 +272,26 @@ export default function ManageOfferingsPage() {
         offeringsToDelete: offeringsToDelete.length
       });
       
-      console.log('🔍 DEBUG: offeringsToCreate array:', offeringsToCreate.map(o => ({
+      console.log('🔍 DEBUG: offeringsToCreate detailed analysis:', offeringsToCreate.map(o => ({
         name: o.name,
         hasId: !!o.id,
         hasImageFile: !!o.image_file,
-        imageUrl: o.image_url
+        imageFileType: o.image_file ? typeof o.image_file : 'none',
+        imageFileConstructor: o.image_file ? o.image_file.constructor.name : 'none',
+        imageUrl: o.image_url,
+        imageUrlType: typeof o.image_url,
+        isBlob: o.image_url ? o.image_url.startsWith('blob:') : false
       })));
       
-      console.log('🔍 DEBUG: offeringsToUpdate array:', offeringsToUpdate.map(o => ({
+      console.log('🔍 DEBUG: offeringsToUpdate detailed analysis:', offeringsToUpdate.map(o => ({
         name: o.name,
         id: o.id,
         hasImageFile: !!o.image_file,
-        imageUrl: o.image_url
+        imageFileType: o.image_file ? typeof o.image_file : 'none',
+        imageFileConstructor: o.image_file ? o.image_file.constructor.name : 'none',
+        imageUrl: o.image_url,
+        imageUrlType: typeof o.image_url,
+        isBlob: o.image_url ? o.image_url.startsWith('blob:') : false
       })));
 
       // Delete removed offerings
@@ -274,11 +302,14 @@ export default function ManageOfferingsPage() {
 
       // Create new offerings
       for (const offering of offeringsToCreate) {
-        console.log('🔍 DEBUG: Processing offering for creation:', {
+        console.log('🔍 DEBUG: Processing offering for creation:', offering.name);
+        console.log('🔍 DEBUG: Offering details:', {
           name: offering.name,
           hasImageFile: !!offering.image_file,
           imageFileType: offering.image_file ? typeof offering.image_file : 'none',
           imageFileConstructor: offering.image_file ? offering.image_file.constructor.name : 'none',
+          imageFileSize: offering.image_file ? offering.image_file.size : 'none',
+          imageFileName: offering.image_file ? offering.image_file.name : 'none',
           imageUrl: offering.image_url,
           imageUrlType: typeof offering.image_url,
           isBlob: offering.image_url ? offering.image_url.startsWith('blob:') : false
@@ -289,7 +320,7 @@ export default function ManageOfferingsPage() {
         
         // Handle image upload for new offerings
         if (offering.image_file) {
-          console.log('🔍 DEBUG: Entering image_file upload branch for creation');
+          console.log('🔍 DEBUG: ✅ ENTERING image_file upload branch for creation');
           console.log('📤 Uploading new image for offering:', offering.name);
           const uploadedUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
           if (uploadedUrl) {
@@ -299,12 +330,12 @@ export default function ManageOfferingsPage() {
             console.warn(`❌ Failed to upload image for offering: ${offering.name}`);
           }
         } else if (offering.image_url && !offering.image_url.startsWith('blob:')) {
-          console.log('🔍 DEBUG: Entering existing permanent URL branch for creation');
+          console.log('🔍 DEBUG: ✅ ENTERING existing permanent URL branch for creation');
           // Use existing permanent URL (not a blob URL)
           finalImageUrl = offering.image_url;
           console.log('🔗 Using existing image URL:', finalImageUrl);
         } else {
-          console.log('🔍 DEBUG: No valid image found for creation, setting finalImageUrl to empty');
+          console.log('🔍 DEBUG: ❌ NO VALID IMAGE found for creation, setting finalImageUrl to empty');
           console.log('📷 No valid image for offering:', offering.name);
         }
         
@@ -322,16 +353,20 @@ export default function ManageOfferingsPage() {
         if (!result.success) {
           throw new Error(result.error || 'Failed to create offering');
         }
+        console.log('✅ Successfully created offering:', offering.name);
       }
 
       // Update existing offerings
       for (const offering of offeringsToUpdate) {
-        console.log('🔍 DEBUG: Processing offering for update:', {
+        console.log('🔍 DEBUG: Processing offering for update:', offering.name);
+        console.log('🔍 DEBUG: Update offering details:', {
           name: offering.name,
           id: offering.id,
           hasImageFile: !!offering.image_file,
           imageFileType: offering.image_file ? typeof offering.image_file : 'none',
           imageFileConstructor: offering.image_file ? offering.image_file.constructor.name : 'none',
+          imageFileSize: offering.image_file ? offering.image_file.size : 'none',
+          imageFileName: offering.image_file ? offering.image_file.name : 'none',
           imageUrl: offering.image_url,
           imageUrlType: typeof offering.image_url,
           isBlob: offering.image_url ? offering.image_url.startsWith('blob:') : false
@@ -342,7 +377,7 @@ export default function ManageOfferingsPage() {
         
         // Handle image upload for updated offerings
         if (offering.image_file) {
-          console.log('🔍 DEBUG: Entering image_file upload branch for update');
+          console.log('🔍 DEBUG: ✅ ENTERING image_file upload branch for update');
           console.log('📤 Uploading new image for updated offering:', offering.name);
           const uploadedUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
           if (uploadedUrl) {
@@ -354,12 +389,12 @@ export default function ManageOfferingsPage() {
             finalImageUrl = offering.image_url && !offering.image_url.startsWith('blob:') ? offering.image_url : '';
           }
         } else if (offering.image_url && !offering.image_url.startsWith('blob:')) {
-          console.log('🔍 DEBUG: Entering existing permanent URL branch for update');
+          console.log('🔍 DEBUG: ✅ ENTERING existing permanent URL branch for update');
           // Keep existing permanent URL (not a blob URL)
           finalImageUrl = offering.image_url;
           console.log('🔗 Keeping existing image URL:', finalImageUrl);
         } else {
-          console.log('🔍 DEBUG: No valid image found for update, setting finalImageUrl to empty');
+          console.log('🔍 DEBUG: ❌ NO VALID IMAGE found for update, setting finalImageUrl to empty');
           console.log('📷 No valid image for updated offering:', offering.name);
         }
         
@@ -375,14 +410,17 @@ export default function ManageOfferingsPage() {
         if (!result.success) {
           throw new Error(result.error || 'Failed to update offering');
         }
+        console.log('✅ Successfully updated offering:', offering.name);
       }
 
+      console.log('🎉 All offerings processed successfully, navigating to dashboard');
       navigate('/dashboard');
     } catch (error) {
       console.error('Error saving offerings:', error);
       alert(`Error saving offerings: ${error instanceof Error ? error.message : 'Please try again.'}`);
     } finally {
       setIsSaving(false);
+      console.log('🔚 handleSaveOfferings function completed');
     }
   };
 
