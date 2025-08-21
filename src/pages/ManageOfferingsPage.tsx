@@ -36,6 +36,7 @@ export default function ManageOfferingsPage() {
 
   const [business, setBusiness] = useState<Business | null>(null);
   const [offerings, setOfferings] = useState<OfferingData[]>([]);
+  const [offeringFiles, setOfferingFiles] = useState<Map<string, File>>(new Map()); // Store File objects separately
   const [newOffering, setNewOffering] = useState<OfferingData>({
     name: '',
     short_description: '',
@@ -198,28 +199,41 @@ export default function ManageOfferingsPage() {
       return;
     }
 
+    // Generate a unique key for this offering
+    const offeringKey = newOffering.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Store the File object separately if it exists
+    if (newOffering.image_file) {
+      console.log('📁 Storing File object for offering:', offeringKey);
+      setOfferingFiles(prev => new Map(prev).set(offeringKey, newOffering.image_file!));
+    }
     if (newOffering.id) {
       // Update existing offering
       setOfferings(prev => prev.map(offering => 
         offering.id === newOffering.id ? {
-          ...newOffering,
-          image_file: newOffering.image_file, // Explicitly carry over the File object
+          id: newOffering.id,
+          name: newOffering.name,
+          short_description: newOffering.short_description,
+          price: newOffering.price,
+          currency: newOffering.currency,
+          image_file: null, // Don't store File in state
           image_url: newOffering.image_url || offering.image_url // Keep existing permanent URL if no new one
         } : offering
       ));
       console.log('🔄 Updated existing offering in local state');
     } else {
       // Add new offering
-      setOfferings(prev => {
-        const newOfferingCopy = { ...newOffering };
-        console.log('🔍 DEBUG: Adding offering to local state:', {
-          name: newOfferingCopy.name,
-          hasImageFile: !!newOfferingCopy.image_file,
-          imageFileType: newOfferingCopy.image_file ? typeof newOfferingCopy.image_file : 'none',
-          imageUrl: newOfferingCopy.image_url
-        });
-        return [...prev, newOfferingCopy];
-      });
+      const newOfferingForState = {
+        id: offeringKey,
+        name: newOffering.name,
+        short_description: newOffering.short_description,
+        price: newOffering.price,
+        currency: newOffering.currency,
+        image_file: null, // Don't store File in state
+        image_url: newOffering.image_url
+      };
+      
+      setOfferings(prev => [...prev, newOfferingForState]);
       console.log('➕ Added new offering to local state');
     }
     
@@ -248,6 +262,15 @@ export default function ManageOfferingsPage() {
   };
 
   const removeOffering = (indexToRemove: number) => {
+    const offeringToRemove = offerings[indexToRemove];
+    if (offeringToRemove?.id) {
+      // Remove associated File object
+      setOfferingFiles(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(offeringToRemove.id!);
+        return newMap;
+      });
+    }
     setOfferings(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
@@ -307,13 +330,17 @@ export default function ManageOfferingsPage() {
       // Create new offerings
       for (const offering of offeringsToCreate) {
         console.log('🔍 DEBUG: Processing offering for creation:', offering.name);
-        console.log('🔍 DEBUG: Offering details:', {
+        
+        // Get the File object from our separate storage
+        const storedFile = offeringFiles.get(offering.id!);
+        console.log('🔍 DEBUG: Creation offering details:', {
           name: offering.name,
-          hasImageFile: !!offering.image_file,
-          imageFileType: offering.image_file ? typeof offering.image_file : 'none',
-          imageFileConstructor: offering.image_file ? offering.image_file.constructor.name : 'none',
-          imageFileSize: offering.image_file ? offering.image_file.size : 'none',
-          imageFileName: offering.image_file ? offering.image_file.name : 'none',
+          id: offering.id,
+          hasStoredFile: !!storedFile,
+          storedFileType: storedFile ? typeof storedFile : 'none',
+          storedFileConstructor: storedFile ? storedFile.constructor.name : 'none',
+          storedFileSize: storedFile ? storedFile.size : 'none',
+          storedFileName: storedFile ? storedFile.name : 'none',
           imageUrl: offering.image_url,
           imageUrlType: typeof offering.image_url,
           isBlob: offering.image_url ? offering.image_url.startsWith('blob:') : false
@@ -323,10 +350,10 @@ export default function ManageOfferingsPage() {
         let finalImageUrl = '';
         
         // Handle image upload for new offerings
-        if (offering.image_file) {
-          console.log('🔍 DEBUG: ✅ ENTERING image_file upload branch for creation');
+        if (storedFile) {
+          console.log('🔍 DEBUG: ✅ ENTERING stored file upload branch for creation');
           console.log('📤 Uploading new image for offering:', offering.name);
-          const uploadedUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
+          const uploadedUrl = await uploadImageToSupabase(storedFile, 'offerings');
           if (uploadedUrl) {
             finalImageUrl = uploadedUrl;
             console.log('✅ Image uploaded successfully:', uploadedUrl);
@@ -363,14 +390,17 @@ export default function ManageOfferingsPage() {
       // Update existing offerings
       for (const offering of offeringsToUpdate) {
         console.log('🔍 DEBUG: Processing offering for update:', offering.name);
+        
+        // Get the File object from our separate storage
+        const storedFile = offeringFiles.get(offering.id!);
         console.log('🔍 DEBUG: Update offering details:', {
           name: offering.name,
           id: offering.id,
-          hasImageFile: !!offering.image_file,
-          imageFileType: offering.image_file ? typeof offering.image_file : 'none',
-          imageFileConstructor: offering.image_file ? offering.image_file.constructor.name : 'none',
-          imageFileSize: offering.image_file ? offering.image_file.size : 'none',
-          imageFileName: offering.image_file ? offering.image_file.name : 'none',
+          hasStoredFile: !!storedFile,
+          storedFileType: storedFile ? typeof storedFile : 'none',
+          storedFileConstructor: storedFile ? storedFile.constructor.name : 'none',
+          storedFileSize: storedFile ? storedFile.size : 'none',
+          storedFileName: storedFile ? storedFile.name : 'none',
           imageUrl: offering.image_url,
           imageUrlType: typeof offering.image_url,
           isBlob: offering.image_url ? offering.image_url.startsWith('blob:') : false
@@ -380,10 +410,10 @@ export default function ManageOfferingsPage() {
         let finalImageUrl = '';
         
         // Handle image upload for updated offerings
-        if (offering.image_file) {
-          console.log('🔍 DEBUG: ✅ ENTERING image_file upload branch for update');
+        if (storedFile) {
+          console.log('🔍 DEBUG: ✅ ENTERING stored file upload branch for update');
           console.log('📤 Uploading new image for updated offering:', offering.name);
-          const uploadedUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
+          const uploadedUrl = await uploadImageToSupabase(storedFile, 'offerings');
           if (uploadedUrl) {
             finalImageUrl = uploadedUrl;
             console.log('✅ New image uploaded successfully:', uploadedUrl);
