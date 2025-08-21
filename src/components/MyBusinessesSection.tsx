@@ -364,6 +364,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                       {paginatedOfferings.map((offering) => {
                         const serviceTypeBadge = getServiceTypeBadge(offering.service_type);
+                        // Get the primary image from offering_images, fallback to business image
                         const primaryImage = offering.images?.find(img => img.is_primary && img.approved);
                         const fallbackImage = offering.images?.find(img => img.approved);
                         const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';

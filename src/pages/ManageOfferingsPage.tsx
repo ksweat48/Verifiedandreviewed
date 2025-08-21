@@ -214,7 +214,10 @@ export default function ManageOfferingsPage() {
         let offeringImageUrl = '';
         
         if (offering.image_file) {
-          offeringImageUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
+          const uploadedUrl = await uploadImageToSupabase(offering.image_file, 'offerings');
+          if (uploadedUrl) {
+            offeringImageUrl = uploadedUrl;
+          }
           if (!offeringImageUrl) {
             console.warn(`Failed to upload image for offering: ${offering.name}`);
           }
@@ -226,7 +229,8 @@ export default function ManageOfferingsPage() {
           price_cents: Math.round(offering.price * 100),
           currency: offering.currency,
           service_type: 'onsite',
-          status: 'active'
+          status: 'active',
+          image_url: offeringImageUrl
         });
       }
 

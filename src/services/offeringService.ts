@@ -38,7 +38,7 @@ export class OfferingService {
   // Create a new offering
   static async createOffering(
     businessId: string,
-    offeringData: Partial<Offering>
+    offeringData: Partial<Offering> & { image_url?: string }
   ): Promise<{ success: boolean; offeringId?: string; error?: string }> {
     try {
       const { data: newOffering, error } = await supabase
@@ -60,6 +60,25 @@ export class OfferingService {
 
       if (error) throw error;
 
+      // Add offering image if provided
+      if (newOffering?.id && offeringData.image_url) {
+        const { error: imageError } = await supabase
+          .from('offering_images')
+          .insert({
+            offering_id: newOffering.id,
+            source: 'platform',
+            url: offeringData.image_url,
+            is_primary: true,
+            approved: true,
+            created_at: new Date().toISOString()
+          });
+        
+        if (imageError) {
+          console.error('Error adding offering image:', imageError);
+          // Don't fail the entire operation if image fails
+        }
+      }
+
       // Generate embedding for the new offering
       if (newOffering?.id) {
         await this.generateOfferingEmbedding(newOffering.id);
@@ -78,18 +97,109 @@ export class OfferingService {
     }
   }
 
+  // Update an existing offering
+  static async updateOffering(
+    offeringId: string,
+    offeringData: Partial<Offering> & { image_url?: string }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('offerings')
+        .update({
+          title: offeringData.title,
+          description: offeringData.description,
+          tags: offeringData.tags,
+          price_cents: offeringData.price_cents,
+          currency: offeringData.currency,
+          service_type: offeringData.service_type,
+          status: offeringData.status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', offeringId);
+
+      if (error) throw error;
+
+      // Update offering image if provided
+      if (offeringData.image_url) {
+        const { error: imageError } = await supabase
+          .from('offering_images')
+          .upsert({
+            offering_id: offeringId,
+            source: 'platform',
+            url: offeringData.image_url,
+            is_primary: true,
+            approved: true,
+            created_at: new Date().toISOString()
+          });
+        
+        if (imageError) {
+          console.error('Error updating offering image:', imageError);
+          // Don't fail the entire operation if image fails
+        }
+      }
+
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error('Error updating offering:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update offering'
+      };
+    }
+  }
+
+  // Delete an offering
+  static async deleteOffering(offeringId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('offerings')
+        .delete()
+        .eq('id', offeringId);
+
+      if (error) throw error;
+
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error('Error deleting offering:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete offering'
+      };
+    }
+  }
+
   // Get offerings for a business
   static async getBusinessOfferings(businessId: string): Promise<Offering[]> {
     try {
       const { data, error } = await supabase
         .from('offerings')
-        .select('*')
+        .select(`
+          *,
+          offering_images!left (
+            id,
+            url,
+            source,
+            is_primary,
+            approved
+          )
+        `)
         .eq('business_id', businessId)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform data to include images
+      const offeringsWithImages = (data || []).map(offering => ({
+        ...offering,
+        images: offering.offering_images?.filter(img => img.approved) || []
+      }));
+      
+      return offeringsWithImages;
     } catch (error) {
       console.error('Error fetching business offerings:', error);
       return [];
