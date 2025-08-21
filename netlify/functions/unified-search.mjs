@@ -148,141 +148,15 @@ export const handler = async (event, context) => {
     }
 
     // STEP 2: Search existing businesses (legacy platform businesses)
-    console.log('🔍 Step 2: Searching existing platform businesses...');
-    let businessResults = [];
-    
-    try {
-      // Search businesses with text matching
-      let businessQuery = supabase
-        .from('businesses')
-        .select('*')
-        .eq('is_visible_on_platform', true);
+    console.log('🔍 Step 2: Skipping direct business search - only offerings represent businesses');
 
-      // Apply text search across multiple fields
-      const searchConditions = [
-        `name.ilike.%${query}%`,
-        `description.ilike.%${query}%`,
-        `location.ilike.%${query}%`,
-        `category.ilike.%${query}%`,
-        `short_description.ilike.%${query}%`,
-        `address.ilike.%${query}%`
-      ];
-      
-      businessQuery = businessQuery.or(searchConditions.join(','));
-      
-      // Apply 10-mile radius filter if user location provided
-      if (latitude && longitude) {
-        // Note: This is a simplified filter - in production you'd use PostGIS
-        businessQuery = businessQuery
-          .not('latitude', 'is', null)
-          .not('longitude', 'is', null);
-      }
-      
-      const { data: businessData, error: businessError } = await businessQuery.limit(10);
-      
-      if (businessError) {
-        console.warn('⚠️ Business search failed:', businessError.message);
-      } else {
-        // Filter by radius if coordinates available
-        let filteredBusinesses = businessData || [];
-        
-        if (latitude && longitude) {
-          filteredBusinesses = filteredBusinesses.filter(business => {
-            if (!business.latitude || !business.longitude) return false;
-            
-            const distance = calculateDistance(
-              latitude, longitude,
-              business.latitude, business.longitude
-            );
-            
-            return distance <= 30; // 30-mile radius
-          });
-        }
-        
-        // Transform business results to unified format
-        businessResults = filteredBusinesses.map(business => ({
-          // Core identifiers
-          id: business.id,
-          business_id: business.id,
-          offering_id: null,
-          
-          // Names and descriptions
-          title: business.name,
-          business_name: business.name,
-          name: business.name,
-          description: business.description,
-          short_description: business.short_description,
-          business_description: business.description,
-          business_short_description: business.short_description,
-          
-          // Location data
-          address: business.address,
-          location: business.location,
-          latitude: business.latitude,
-          longitude: business.longitude,
-          
-          // Business details
-          category: business.category,
-          business_category: business.category,
-          tags: business.tags || [],
-          hours: business.hours,
-          days_closed: business.days_closed,
-          phone_number: business.phone_number,
-          website_url: business.website_url,
-          social_media: business.social_media || [],
-          price_range: business.price_range,
-          service_area: business.service_area,
-          
-          // Status and verification
-          is_verified: business.is_verified,
-          is_mobile_business: business.is_mobile_business,
-          is_virtual: business.is_virtual,
-          
-          // Rating data
-          thumbs_up: business.thumbs_up || 0,
-          thumbs_down: business.thumbs_down || 0,
-          sentiment_score: business.sentiment_score || 0,
-          
-          // Image data
-          image_url: business.image_url,
-          gallery_urls: business.gallery_urls || [],
-          
-          // Search metadata
-          similarity: 0.7, // Default similarity for text matches
-          source: 'platform_business',
-          isPlatformBusiness: true,
-          isOpen: true,
-          distance: 999999,
-          duration: 999999,
-          
-          // Service type (inferred from business type)
-          service_type: business.is_virtual ? 'remote' : 
-                       business.is_mobile_business ? 'mobile' : 'onsite'
-        }));
-        
-        console.log('✅ Found', businessResults.length, 'platform business matches');
-      }
-    } catch (error) {
-      console.warn('⚠️ Business search error:', error.message);
-    }
-
-    // STEP 3: Combine and deduplicate results
-    console.log('🔄 Step 3: Combining and deduplicating results...');
+    // STEP 3: Prepare offering results for combination with AI results
+    console.log('🔄 Step 3: Preparing offering results...');
     
-    // Use Map for deduplication with priority: Offerings > Platform Businesses
+    // Use Map for deduplication with priority: Offerings > AI Results
     const resultsMap = new Map();
     
-    // Add platform business results first (lower priority)
-    businessResults.forEach(business => {
-      if (business.business_id) {
-        resultsMap.set(business.business_id, {
-          ...business,
-          source: 'platform_business'
-        });
-      }
-    });
-    
-    // Add offering results (higher priority - will overwrite platform businesses)
+    // Add offering results (highest priority)
     offeringResults.forEach(offering => {
       if (offering.business_id) {
         resultsMap.set(offering.business_id, {
@@ -293,7 +167,7 @@ export const handler = async (event, context) => {
     });
     
     let combinedResults = Array.from(resultsMap.values());
-    console.log('📊 After deduplication:', combinedResults.length, 'unique results');
+    console.log('📊 Offering results prepared:', combinedResults.length, 'unique results');
 
     // STEP 4: If we have fewer than 8 results, use AI to fill remaining slots
     if (combinedResults.length < 8 && GOOGLE_PLACES_API_KEY) {
@@ -598,7 +472,7 @@ Requirements:
         usedUnifiedSearch: true,
         searchSources: {
           offerings: rankedResults.filter(r => r.source === 'offering').length,
-          platform_businesses: rankedResults.filter(r => r.source === 'platform_business').length,
+          platform_businesses: 0, // No longer searching businesses directly
           ai_generated: rankedResults.filter(r => r.source === 'ai_generated').length
         },
         matchThreshold: matchThreshold,
