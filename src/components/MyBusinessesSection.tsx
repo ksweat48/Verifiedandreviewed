@@ -106,6 +106,10 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
     navigate(`/add-business?edit=${business.id}`);
   };
 
+  const handleEditOffering = (businessId: string, offeringId: string) => {
+    navigate(`/manage-offerings?businessId=${businessId}&offeringId=${offeringId}`);
+  };
+
   const handleDeleteBusiness = async (businessId: string) => {
     if (!confirm('Are you sure you want to delete this business? This action cannot be undone.')) {
       return;
@@ -397,9 +401,13 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                   {formatPrice(offering.price_cents, offering.currency)}
                                 </span>
                                 
-                                <span className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${serviceTypeBadge.color}`}>
-                                  {serviceTypeBadge.label}
-                                </span>
+                                <button
+                                  onClick={() => handleEditOffering(business.id, offering.id)}
+                                  className="p-1.5 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
+                                  title="Edit offering"
+                                >
+                                  <Icons.Edit className="h-4 w-4" />
+                                </button>
                               </div>
                               
                               {offering.tags && offering.tags.length > 0 && (

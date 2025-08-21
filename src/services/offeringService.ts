@@ -206,6 +206,39 @@ export class OfferingService {
     }
   }
 
+  // Get a single offering by ID
+  static async getOfferingById(offeringId: string): Promise<Offering | null> {
+    try {
+      const { data, error } = await supabase
+        .from('offerings')
+        .select(`
+          *,
+          offering_images!left (
+            id,
+            url,
+            source,
+            is_primary,
+            approved
+          )
+        `)
+        .eq('id', offeringId)
+        .single();
+
+      if (error) throw error;
+      
+      // Transform data to include images
+      const offeringWithImages = {
+        ...data,
+        images: data.offering_images?.filter(img => img.approved) || []
+      };
+      
+      return offeringWithImages;
+    } catch (error) {
+      console.error('Error fetching offering by ID:', error);
+      return null;
+    }
+  }
+
   // Generate embedding for an offering
   static async generateOfferingEmbedding(offeringId: string): Promise<boolean> {
     try {

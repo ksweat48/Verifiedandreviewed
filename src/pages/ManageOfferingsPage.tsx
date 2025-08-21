@@ -31,6 +31,8 @@ export default function ManageOfferingsPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const businessId = searchParams.get('businessId');
+  const offeringId = searchParams.get('offeringId');
+  const isEditMode = !!offeringId;
 
   const [business, setBusiness] = useState<Business | null>(null);
   const [offerings, setOfferings] = useState<OfferingData[]>([]);
@@ -46,6 +48,7 @@ export default function ManageOfferingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>('');
+  const [editingOffering, setEditingOffering] = useState<any>(null);
 
   // Helper function to upload image to Supabase Storage
   const uploadImageToSupabase = async (file: File, folder: string): Promise<string | null> => {
@@ -110,11 +113,33 @@ export default function ManageOfferingsPage() {
           name: offering.title,
           short_description: offering.description || '',
           image_file: null,
-          image_url: '', // Will need to fetch from offering_images table
+          image_url: offering.images?.[0]?.url || '',
           price: (offering.price_cents || 0) / 100,
           currency: offering.currency || 'USD',
         }));
         setOfferings(formattedOfferings);
+        
+        // If editing a specific offering, load it into the form
+        if (offeringId) {
+          const offeringToEdit = await OfferingService.getOfferingById(offeringId);
+          if (offeringToEdit) {
+            const primaryImage = offeringToEdit.images?.find(img => img.is_primary && img.approved);
+            const fallbackImage = offeringToEdit.images?.find(img => img.approved);
+            const imageUrl = primaryImage?.url || fallbackImage?.url || '';
+            
+            setEditingOffering(offeringToEdit);
+            setNewOffering({
+              id: offeringToEdit.id,
+              name: offeringToEdit.title,
+              short_description: offeringToEdit.description || '',
+              image_file: null,
+              image_url: imageUrl,
+              price: (offeringToEdit.price_cents || 0) / 100,
+              currency: offeringToEdit.currency || 'USD',
+            });
+            setNewOfferingImagePreview(imageUrl || null);
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
@@ -123,7 +148,7 @@ export default function ManageOfferingsPage() {
     };
 
     loadData();
-  }, [businessId]);
+  }, [businessId, offeringId]);
 
   // Offering management functions
   const handleNewOfferingInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -164,13 +189,26 @@ export default function ManageOfferingsPage() {
       return;
     }
 
-    setOfferings(prev => {
-      const updatedOfferings = [...prev, { ...newOffering }];
-      console.log('Offerings after adding new item:', updatedOfferings);
-      return updatedOfferings;
-    });
+    if (newOffering.id) {
+      // Update existing offering
+      setOfferings(prev => prev.map(offering => 
+        offering.id === newOffering.id ? { ...newOffering } : offering
+      ));
+    } else {
+      // Add new offering
+      setOfferings(prev => {
+        const updatedOfferings = [...prev, { ...newOffering }];
+        console.log('Offerings after adding new item:', updatedOfferings);
+        return updatedOfferings;
+      });
+    }
     
-    // Reset new offering form
+    // Reset form
+    clearForm();
+    console.log('Form reset completed');
+  };
+  
+  const clearForm = () => {
     setNewOffering({
       name: '',
       short_description: '',
@@ -180,7 +218,12 @@ export default function ManageOfferingsPage() {
       currency: 'USD',
     });
     setNewOfferingImagePreview(null);
-    console.log('Form reset completed');
+    setEditingOffering(null);
+    
+    // Remove offeringId from URL
+    if (offeringId) {
+      navigate(`/manage-offerings?businessId=${businessId}`, { replace: true });
+    }
   };
 
   const removeOffering = (indexToRemove: number) => {
@@ -344,13 +387,13 @@ export default function ManageOfferingsPage() {
           <div className="bg-white rounded-2xl shadow-lg border border-neutral-200 overflow-hidden">
             <div className="bg-gradient-to-r from-primary-500 to-accent-500 p-6 text-white">
               <h2 className="font-cinzel text-2xl font-bold mb-2">
-                CREATE YOUR MENU OFFERINGS
+                {isEditMode ? 'EDIT OFFERING' : 'CREATE YOUR MENU OFFERINGS'}
               </h2>
               <p className="font-lora text-white/90">
-                Upload at least 10 menu items for the best results.
-              </p>
-              <p className="font-lora text-white/90">
-                The more offerings you add, the easier it is for customers to find you.
+                {isEditMode 
+                  ? 'Update your offering details and save changes.'
+                  : 'Upload at least 10 menu items for the best results. The more offerings you add, the easier it is for customers to find you.'
+                }
               </p>
             </div>
             
@@ -434,9 +477,29 @@ export default function ManageOfferingsPage() {
                 onClick={addOffering}
                 className="w-full px-6 py-4 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl font-poppins font-bold text-lg uppercase tracking-wide hover:shadow-lg hover:shadow-primary-500/25 transition-all duration-200 flex items-center justify-center"
               >
-                <Plus className="w-6 h-6 mr-2" />
-                Add Offering
+                {isEditMode ? (
+                  <>
+                    <Save className="w-6 h-6 mr-2" />
+                    Update Offering
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-6 h-6 mr-2" />
+                    Add Offering
+                  </>
+                )}
               </button>
+              
+              {isEditMode && (
+                <button
+                  type="button"
+                  onClick={clearForm}
+                  className="w-full px-6 py-3 bg-neutral-100 text-neutral-700 rounded-xl font-poppins font-semibold hover:bg-neutral-200 transition-all duration-200 flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 mr-2" />
+                  Cancel Edit
+                </button>
+              )}
             </div>
           </div>
 
