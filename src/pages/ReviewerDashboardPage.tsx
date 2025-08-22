@@ -207,6 +207,55 @@ const ReviewerDashboardPage = () => {
             </div>
 
             {/* Recent Activity */}
+            {/* Review Level Progress */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-poppins text-lg font-semibold text-neutral-900 flex items-center">
+                  <Icons.Award className="h-5 w-5 mr-2 text-primary-500" />
+                  Level Progress
+                </h3>
+                <div className="flex items-center gap-2">
+                  <div className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-poppins font-semibold">
+                    Level {user.level}
+                  </div>
+                  <div className="bg-accent-100 text-accent-700 px-3 py-1 rounded-full text-sm font-poppins font-semibold">
+                    {formatCredits(user.credits, user.role)} credits
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-lora text-neutral-600">
+                    Reviews for Level {user.level}:
+                  </span>
+                  <span className="font-poppins font-semibold text-neutral-900">
+                    {reviewProgress.currentLevelReviews} / {reviewProgress.totalForLevel}
+                  </span>
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="w-full bg-neutral-200 rounded-full h-3">
+                  <div 
+                    className="bg-gradient-to-r from-primary-500 to-accent-500 h-3 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${reviewProgress.progress}%` }}
+                  ></div>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-lora text-neutral-600">
+                    Progress to Level {user.level + 1}
+                  </span>
+                  <span className="font-poppins font-semibold text-primary-600">
+                    {reviewProgress.reviewsNeeded === 0 
+                      ? 'Ready to level up!' 
+                      : `${reviewProgress.reviewsNeeded} more reviews needed`
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <RecentActivitySection />
           </div>
         )}
