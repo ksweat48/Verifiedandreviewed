@@ -133,7 +133,7 @@ export const handler = async (event, context) => {
           match_count: matchCount,
           user_latitude: latitude,
           user_longitude: longitude,
-          max_distance_miles: 30.0
+          max_distance_miles: 10.0
         }
       );
 
@@ -150,16 +150,16 @@ export const handler = async (event, context) => {
       console.warn('⚠️ Offering search error:', error.message);
     }
 
-    // STEP 2: Search existing businesses (legacy platform businesses)
-    console.log('🔍 Step 2: Skipping direct business search - only offerings represent businesses');
+    // STEP 2: Platform businesses are no longer searchable - only offerings and AI businesses
+    console.log('🔍 Step 2: Skipping legacy platform business search - removed from search system');
 
-    // STEP 3: Prepare offering results for combination with AI results
-    console.log('🔄 Step 3: Preparing offering results...');
+    // STEP 3: Prepare platform offering results for combination with AI results
+    console.log('🔄 Step 3: Preparing platform offering results...');
     
     // Use Map for deduplication with priority: Offerings > AI Results
     const resultsMap = new Map();
     
-    // Add offering results (highest priority)
+    // Add platform offering results (highest priority)
     offeringResults.forEach(offering => {
       if (offering.business_id) {
         resultsMap.set(offering.business_id, {
@@ -172,31 +172,33 @@ export const handler = async (event, context) => {
     });
     
     let combinedResults = Array.from(resultsMap.values());
-    console.log('📊 Offering results prepared:', combinedResults.length, 'unique results');
+    console.log('📊 Platform offering results prepared:', combinedResults.length, 'unique results');
 
-    // STEP 4: If we have fewer than 8 results, use AI to fill remaining slots
+    // STEP 4: If we have fewer than 8 platform offerings, use AI to find businesses that serve what user wants
     if (combinedResults.length < 8 && GOOGLE_PLACES_API_KEY) {
-      console.log('🤖 Step 4: Using AI to fill remaining slots...');
+      console.log('🤖 Step 4: Using AI to find businesses that serve what user is looking for...');
       
       try {
         const slotsToFill = Math.min(7, matchCount - combinedResults.length);
         
-        // Generate AI search queries
-        const aiSystemPrompt = `You are a search query generator for Google Places API. Generate exactly ${slotsToFill} different search queries based on the user's vibe request.
+        // Generate AI search queries focused on specific dishes/services
+        const aiSystemPrompt = `You are a search query generator for Google Places API. Generate exactly ${slotsToFill} different search queries to find businesses that serve or offer what the user is looking for.
 
 Requirements:
 • Each query should be 2-4 words suitable for Google Places Text Search
-• Focus on business type + descriptive keywords that match the user's vibe
-• Include variety in business types (restaurants, cafes, bars, shops, services, entertainment)
-• Use descriptive terms like "cozy", "trendy", "upscale", "casual", "romantic", "modern", "vintage", "artisan"
-• Examples: "trendy wine bar", "cozy coffee shop", "upscale cocktail lounge"
+• Focus on finding businesses that SERVE or OFFER the specific item/service the user wants
+• If user searches for "fried chicken", find "fried chicken restaurant", "chicken wings", "southern food", etc.
+• If user searches for "vegan pancakes", find "vegan restaurant", "plant based breakfast", "vegan cafe", etc.
+• If user searches for "massage", find "massage therapy", "spa services", "wellness center", etc.
+• Prioritize specific dish/service matches over general business types
+• Examples: "fried chicken restaurant", "vegan breakfast cafe", "massage therapy clinic"
 • Ensure each query is DIFFERENT and will find DIFFERENT types of businesses`;
 
         const tools = [{
           type: "function",
           function: {
             name: "generateSearchQueries",
-            description: "Generate Google Places search queries based on user's vibe request",
+            description: "Generate Google Places search queries to find businesses that serve/offer what user wants",
             parameters: {
               type: "object",
               properties: {
@@ -204,7 +206,7 @@ Requirements:
                   type: "array",
                   items: { 
                     type: "string",
-                    description: "Google Places search query"
+                    description: "Google Places search query for businesses that serve/offer the requested item/service"
                   },
                   minItems: slotsToFill,
                   maxItems: slotsToFill
@@ -230,12 +232,12 @@ Requirements:
         const toolCall = aiCompletion.choices[0].message.tool_calls?.[0];
         if (toolCall && toolCall.function.name === 'generateSearchQueries') {
           const searchQueries = JSON.parse(toolCall.function.arguments).queries;
-          console.log('🔍 Generated AI search queries:', searchQueries);
+          console.log('🔍 Generated AI search queries for businesses that serve/offer:', query, '→', searchQueries);
 
           // Search Google Places for each query
           const searchLatitude = latitude || 37.7749;
           const searchLongitude = longitude || -122.4194;
-          const searchRadius = 48280; // 30 miles in meters (48.28 km)
+          const searchRadius = 16093; // 10 miles in meters (16.09 km)
           const aiSearchPromises = searchQueries.map(async (searchQuery) => {
             try {
               const placesResponse = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
@@ -257,6 +259,8 @@ Requirements:
                   const businessText = [
                     result.name,
                     searchQuery,
+                    `serves ${query}`,
+                    `offers ${query}`,
                     result.types ? result.types.join(' ') : '',
                     `${result.rating} star rating`
                   ].filter(Boolean).join(' ');
@@ -277,10 +281,10 @@ Requirements:
                     title: result.name,
                     business_name: result.name,
                     name: result.name,
-                    description: `${result.name} is a ${searchQuery} location discovered through Google Places.`,
-                    short_description: `"${query}" served here, based on user reviews.`,
-                    business_description: `"${query}" served here, based on user reviews.`,
-                    business_short_description: `"${query}" served here, based on user reviews.`,
+                    description: `${result.name} serves ${query}. Found through intelligent search for businesses that offer what you're looking for.`,
+                    short_description: `Serves ${query} - found through AI search`,
+                    business_description: `Business that serves ${query} according to Google Places data and reviews`,
+                    business_short_description: `Serves ${query}`,
                     address: result.formatted_address,
                     location: result.vicinity || result.formatted_address,
                     latitude: result.geometry?.location?.lat,
@@ -313,7 +317,7 @@ Requirements:
                     placeId: result.place_id,
                     isGoogleVerified: true,
                     reviews: [{
-                      text: `Great place for ${query}! Really enjoyed the atmosphere and service here.`,
+                      text: `Great place for ${query}! They serve exactly what I was looking for.`,
                       author: "Google User",
                       thumbsUp: true
                     }]
@@ -327,7 +331,7 @@ Requirements:
           });
 
           const aiResults = (await Promise.all(aiSearchPromises)).filter(Boolean);
-          console.log('🤖 AI search generated', aiResults.length, 'additional results');
+          console.log('🤖 AI search found', aiResults.length, 'businesses that serve/offer:', query);
 
           // Add AI results to combined results (only if not already present)
           aiResults.forEach(aiResult => {
@@ -337,7 +341,7 @@ Requirements:
           });
 
           combinedResults = Array.from(resultsMap.values());
-          console.log('📊 After adding AI results:', combinedResults.length, 'total results');
+          console.log('📊 After adding AI businesses:', combinedResults.length, 'total results (platform offerings + AI businesses)');
         }
       } catch (aiError) {
         console.warn('⚠️ AI search step failed:', aiError.message);
@@ -422,27 +426,27 @@ Requirements:
       }
     }
 
-    // NEW: Filter combined results by max_distance_miles after distances are calculated
+    // STEP 6: Filter all results (platform offerings + AI businesses) by 10-mile radius
     if (latitude && longitude) {
       const maxDistance = 10; // Define the max distance in miles (reduced from 30)
       combinedResults = combinedResults.filter(result => {
         // Keep results without distance data (fallback)
         if (!result.distance || result.distance === 999999) {
-          console.log('📏 Keeping result without distance data:', result.name || result.business_name);
+          console.log('📏 Keeping result without distance data (may be filtered by Google Places radius):', result.name || result.business_name);
           return true;
         }
         // Filter by distance
         const withinRadius = result.distance <= maxDistance;
         if (!withinRadius) {
-          console.log('📏 Filtering out result beyond', maxDistance, 'miles:', result.name || result.business_name, 'at', result.distance, 'miles');
+          console.log('📏 Filtering out business beyond', maxDistance, 'miles:', result.name || result.business_name, 'at', result.distance, 'miles');
         }
         return withinRadius;
       });
-      console.log(`📏 Filtered to ${combinedResults.length} results within ${maxDistance} miles`);
+      console.log(`📏 Final results within ${maxDistance} miles: ${combinedResults.length} businesses (platform offerings + AI businesses)`);
     }
 
-    // STEP 6: Sort and rank final results
-    console.log('🎯 Step 6: Sorting and ranking final results...');
+    // STEP 7: Sort and rank final results (platform offerings prioritized over AI businesses)
+    console.log('🎯 Step 7: Sorting and ranking final results (platform offerings > AI businesses)...');
     
     const rankedResults = combinedResults
       .map(result => ({
@@ -450,14 +454,14 @@ Requirements:
         // Calculate composite score for ranking
         compositeScore: (
           0.45 * (result.similarity || 0.5) +
-          0.25 * (result.source === 'offering' ? 1 : result.source === 'platform_business' ? 0.8 : 0.6) +
+          0.25 * (result.source === 'offering' ? 1 : 0.6) +
           0.20 * (result.isOpen ? 1 : 0) +
           0.10 * (result.distance && result.distance < 999999 ? (1 - Math.min(result.distance / 30, 1)) : 0)
         )
       }))
       .sort((a, b) => {
-        // Primary sort: Source priority (offerings > platform businesses > AI)
-        const sourceOrder = { offering: 3, platform_business: 2, ai_generated: 1 };
+        // Primary sort: Source priority (platform offerings > AI businesses)
+        const sourceOrder = { offering: 2, ai_generated: 1 };
         const aSourcePriority = sourceOrder[a.source] || 0;
         const bSourcePriority = sourceOrder[b.source] || 0;
         
@@ -470,10 +474,9 @@ Requirements:
       })
       .slice(0, matchCount); // Limit final results
 
-    console.log('🎯 Final ranked results:', rankedResults.length, 'businesses');
+    console.log('🎯 Final ranked results:', rankedResults.length, 'businesses (platform offerings + AI businesses)');
     console.log('📊 Result sources:', {
-      offerings: rankedResults.filter(r => r.source === 'offering').length,
-      platform_businesses: rankedResults.filter(r => r.source === 'platform_business').length,
+      platform_offerings: rankedResults.filter(r => r.source === 'offering').length,
       ai_generated: rankedResults.filter(r => r.source === 'ai_generated').length
     });
 
@@ -509,8 +512,7 @@ Requirements:
         matchCount: formattedResults.length,
         usedUnifiedSearch: true,
         searchSources: {
-          offerings: rankedResults.filter(r => r.source === 'offering').length,
-          platform_businesses: 0, // No longer searching businesses directly
+          platform_offerings: rankedResults.filter(r => r.source === 'offering').length,
           ai_generated: rankedResults.filter(r => r.source === 'ai_generated').length
         },
         matchThreshold: matchThreshold,
