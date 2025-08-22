@@ -375,7 +375,7 @@ const ExploreArea = () => {
   };
 
   return (
-    <section className="pt-4 pb-6 bg-white">
+    <section className="pb-6 bg-white">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <div>
