@@ -328,7 +328,7 @@ const ExploreArea = () => {
               // Get the primary image from offering_images, fallback to business image
               const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
               const fallbackImage = offering.offering_images?.find(img => img.approved);
-              const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
+              const imageUrl = primaryImage?.url || fallbackImage?.url || business?.image_url || '/verified and reviewed logo-coral copy copy.png';
 
               return (
                 <div key={offering.id} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200">
@@ -343,9 +343,9 @@ const ExploreArea = () => {
                     {/* Open/Closed Overlay - Bottom Left */}
                     <div className="absolute bottom-2 left-2">
                       <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
-                        isBusinessOpen(business) ? 'bg-green-500' : 'bg-red-500'
+                        isBusinessOpen(business || {}) ? 'bg-green-500' : 'bg-red-500'
                       }`}>
-                        {isBusinessOpen(business) ? 'OPEN' : 'CLOSED'}
+                        {isBusinessOpen(business || {}) ? 'OPEN' : 'CLOSED'}
                       </div>
                     </div>
                     
@@ -381,7 +381,7 @@ const ExploreArea = () => {
                     </h6>
                     
                     <p className="font-lora text-xs text-black font-bold line-clamp-1">
-                      at {business.name}
+                      at {business?.name || 'Unknown Business'}
                     </p>
                     
                     {offering.description && (
@@ -416,7 +416,7 @@ const ExploreArea = () => {
                     
                     {/* Phone and Directions Buttons */}
                     <div className="flex items-center justify-end gap-2 mt-2">
-                      {business.phone_number && (
+                      {business?.phone_number && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -429,12 +429,12 @@ const ExploreArea = () => {
                         </button>
                       )}
                       
-                      {business.address && (
+                      {business?.address && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             let mapsUrl;
-                            if (business.latitude && business.longitude) {
+                            if (business?.latitude && business?.longitude) {
                               mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
                             } else {
                               mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
