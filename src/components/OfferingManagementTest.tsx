@@ -49,7 +49,22 @@ const OfferingManagementTest = () => {
     try {
       console.log('🧠 Starting embedding generation test...');
       
-      const result = await OfferingService.generateAllEmbeddings(batchSize);
+      const response = await fetch('/.netlify/functions/generate-offering-embeddings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          batchSize: batchSize,
+          forceRegenerate: false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
       
       if (result.success) {
         setEmbeddingStatus('success');
@@ -116,31 +131,6 @@ const OfferingManagementTest = () => {
 
   return (
     <div className="space-y-6">
-      {/* Development Warning */}
-      {isDevelopment && !isNetlifyDev && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
-          <div className="flex items-center mb-4">
-            <AlertCircle className="h-6 w-6 text-yellow-600 mr-3" />
-            <h3 className="font-poppins text-lg font-semibold text-yellow-800">
-              ⚠️ Development Setup Required
-            </h3>
-          </div>
-          
-          <p className="font-lora text-yellow-700 mb-4">
-            You need to run "netlify dev" instead of "npm run dev" to test the offering management functions.
-          </p>
-          
-          <div className="bg-yellow-100 rounded-lg p-4">
-            <h4 className="font-poppins font-semibold text-yellow-800 mb-2">Quick Fix:</h4>
-            <ol className="font-lora text-yellow-700 space-y-1 text-sm">
-              <li>1. Stop current server: <kbd className="bg-yellow-200 px-2 py-1 rounded">Ctrl+C</kbd></li>
-              <li>2. Run: <code className="bg-yellow-200 px-2 py-1 rounded">netlify dev</code></li>
-              <li>3. Access at: <code className="bg-yellow-200 px-2 py-1 rounded">localhost:8888</code></li>
-            </ol>
-          </div>
-        </div>
-      )}
-
       {/* Step 1: Business Ingestion */}
       <div className={`border-2 rounded-2xl p-6 ${getStatusColor(ingestionStatus)}`}>
         <div className="flex items-center mb-4">
@@ -204,17 +194,11 @@ const OfferingManagementTest = () => {
 
           <button
             onClick={testIngestion}
-            disabled={ingestionStatus === 'running' || (isDevelopment && !isNetlifyDev)}
+            disabled={ingestionStatus === 'running'}
             className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {ingestionStatus === 'running' ? 'Ingesting...' : 'Start Business Ingestion'}
           </button>
-        </div>
-      </div>
-
-      {/* Step 2: Embedding Generation */}
-      <div className={`border-2 rounded-2xl p-6 ${getStatusColor(embeddingStatus)}`}>
-        <div className="flex items-center mb-4">
           {getStatusIcon(embeddingStatus)}
           <h3 className="font-poppins text-lg font-semibold ml-3">
             Step 2: Generate Offering Embeddings
@@ -281,7 +265,7 @@ const OfferingManagementTest = () => {
 
           <button
             onClick={testEmbeddingGeneration}
-            disabled={embeddingStatus === 'running' || (isDevelopment && !isNetlifyDev)}
+            disabled={embeddingStatus === 'running'}
             className="font-poppins bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {embeddingStatus === 'running' ? 'Generating...' : 'Generate Embeddings'}
@@ -375,7 +359,7 @@ const OfferingManagementTest = () => {
 
           <button
             onClick={testOfferingSearch}
-            disabled={searchStatus === 'running' || !searchQuery.trim() || (isDevelopment && !isNetlifyDev)}
+            disabled={searchStatus === 'running' || !searchQuery.trim()}
             className="font-poppins bg-purple-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {searchStatus === 'running' ? 'Searching...' : 'Test Offering Search'}
