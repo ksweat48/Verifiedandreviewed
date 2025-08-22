@@ -10,6 +10,50 @@ import type { Business } from '../services/supabaseClient';
 import OfferingReviewsModal from './OfferingReviewsModal';
 import { getServiceTypeBadge, formatPrice } from '../utils/displayUtils';
 
+interface MyBusinessesSectionProps {
+  user: User;
+}
+
+const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
+  const navigate = useNavigate();
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [loadingOfferings, setLoadingOfferings] = useState<Record<string, boolean>>({});
+  const [deletingBusinessId, setDeletingBusinessId] = useState<string | null>(null);
+  const [isBusinessProfileModalOpen, setIsBusinessProfileModalOpen] = useState(false);
+  const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
+  const [isOfferingReviewsModalOpen, setIsOfferingReviewsModalOpen] = useState(false);
+  const [selectedOfferingForReviews, setSelectedOfferingForReviews] = useState<{
+    id: string;
+    title: string;
+    businessName: string;
+  } | null>(null);
+  const [offeringPages, setOfferingPages] = useState<Record<string, number>>({});
+
+  const OFFERINGS_PER_PAGE = 5;
+
+  useEffect(() => {
+    fetchUserBusinesses();
+  }, [user.id]);
+
+  const fetchUserBusinesses = async () => {
+    try {
+      setLoading(true);
+      const userBusinesses = await BusinessService.getUserBusinesses(user.id);
+      setBusinesses(userBusinesses);
+      
+      // Fetch offerings for each business
+      for (const business of userBusinesses) {
+        await fetchBusinessOfferings(business.id);
+      }
+    } catch (err) {
+      console.error('Error fetching user businesses:', err);
+      setError('Failed to load your businesses. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchBusinessOfferings = async (businessId: string) => {
     setLoadingOfferings(prev => ({ ...prev, [businessId]: true }));
