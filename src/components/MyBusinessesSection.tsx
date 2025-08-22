@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ThumbsUp, ThumbsDown, Plus, Eye, Menu, Edit, Trash2, Package, ChevronLeft, ChevronRight, Building, AlertCircle, Tag, MapPin, Calendar, Phone } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { format, getDay, getHours, getMinutes } from 'date-fns';
 import { BusinessService } from '../services/businessService';
 import { OfferingService } from '../services/offeringService';
@@ -8,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
 import type { Business } from '../services/supabaseClient';
 import OfferingReviewsModal from './OfferingReviewsModal';
+import { ReviewService } from '../services/reviewService';
 import { getServiceTypeBadge, formatPrice } from '../utils/displayUtils';
 
 interface MyBusinessesSectionProps {
@@ -30,6 +32,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
     businessName: string;
   } | null>(null);
   const [offeringPages, setOfferingPages] = useState<Record<string, number>>({});
+  const [offeringReviewCounts, setOfferingReviewCounts] = useState<Record<string, number>>({});
 
   const OFFERINGS_PER_PAGE = 5;
 
@@ -67,6 +70,32 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
           ? { ...business, offerings }
           : business
       ));
+      
+      // Fetch review counts for all offerings
+      if (offerings.length > 0) {
+        const offeringIds = offerings.map(o => o.id);
+        console.log('📊 Fetching review counts for offerings:', offeringIds);
+        try {
+          const reviewCounts: Record<string, number> = {};
+          
+          // Fetch reviews for all offerings concurrently
+          const reviewPromises = offeringIds.map(async (offeringId) => {
+            try {
+              const reviews = await ReviewService.getReviewsForOffering(offeringId);
+              reviewCounts[offeringId] = reviews.length;
+            } catch (error) {
+              console.error(`Error fetching reviews for offering ${offeringId}:`, error);
+              reviewCounts[offeringId] = 0;
+            }
+          });
+          
+          await Promise.all(reviewPromises);
+          setOfferingReviewCounts(prev => ({ ...prev, ...reviewCounts }));
+          console.log('✅ Review counts fetched for business offerings:', reviewCounts);
+        } catch (error) {
+          console.error('Error fetching offering review counts:', error);
+        }
+      }
     } catch (error) {
       console.error(`Error fetching offerings for business ${businessId}:`, error);
     } finally {
@@ -440,31 +469,33 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                 }`}>
                                   {isBusinessOpen(business) ? 'OPEN' : 'CLOSED'}
                                 </div>
-                              </div>
-                              
-                              {/* Rating Overlay - Bottom Right */}
-                              <div className="absolute bottom-2 right-2">
-                                <div className="px-2 py-1 rounded-full bg-neutral-500 text-white text-xs font-poppins font-bold flex items-center">
-                                  <span>No ratings</span>
-                                </div>
-                              </div>
                             </div>
                             
-                            {/* Offering Details */}
-                            <div className="space-y-2">
-                              <h6 className="font-poppins font-bold text-black text-sm line-clamp-1">
-                                {offering.title}
-                              </h6>
-                              
-                              <p className="font-lora text-xs text-black font-bold line-clamp-1">
-                                at {business.name}
-                              </p>
-                              
-                              {offering.description && (
-                                <p className="font-lora text-xs text-neutral-600 line-clamp-2">
+                            {/* Action Buttons - Phone, Reviews, Directions */}
+                            <div className="flex items-center justify-between gap-2 mt-2">
                                   {offering.description}
                                 </p>
                               )}
+                              
+                              {/* Review Icon with Notification Badge */}
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenOfferingReviews(offering, business.name);
+                                  }}
+                                  className="p-2 bg-purple-100 hover:bg-purple-200 text-purple-600 hover:text-purple-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                                  title="View reviews"
+                                >
+                                  <MessageSquare className="h-4 w-4" />
+                                </button>
+                                {/* Review Count Notification Badge */}
+                                {offeringReviewCounts[offering.id] > 0 && (
+                                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                                    {offeringReviewCounts[offering.id]}
+                                  </span>
+                                )}
+                              </div>
                               
                               <div className="flex items-center justify-between">
                                 <span className="font-poppins font-bold text-primary-600 text-sm">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Clock, ThumbsUp, MapPin, Navigation, Phone, Edit, Package } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -61,6 +62,7 @@ const ExploreArea = () => {
     title: string;
     businessName: string;
   } | null>(null);
+  const [offeringReviewCounts, setOfferingReviewCounts] = useState<Record<string, number>>({});
   
   useEffect(() => {
     loadNearbyBusinesses();
@@ -141,6 +143,32 @@ const ExploreArea = () => {
         });
         
         console.log('🔍 DEBUG: Final transformed businesses with offering data:', transformedBusinesses);
+        
+        // Fetch review counts for all offerings
+        const offeringIds = transformedBusinesses.map(b => b.offeringId).filter(Boolean);
+        if (offeringIds.length > 0) {
+          console.log('📊 Fetching review counts for offerings:', offeringIds);
+          try {
+            const reviewCounts: Record<string, number> = {};
+            
+            // Fetch reviews for all offerings concurrently
+            const reviewPromises = offeringIds.map(async (offeringId) => {
+              try {
+                const reviews = await ReviewService.getReviewsForOffering(offeringId);
+                reviewCounts[offeringId] = reviews.length;
+              } catch (error) {
+                console.error(`Error fetching reviews for offering ${offeringId}:`, error);
+                reviewCounts[offeringId] = 0;
+              }
+            });
+            
+            await Promise.all(reviewPromises);
+            setOfferingReviewCounts(reviewCounts);
+            console.log('✅ Review counts fetched:', reviewCounts);
+          } catch (error) {
+            console.error('Error fetching offering review counts:', error);
+          }
+        }
       } else {
         console.log('🔍 DEBUG: No offerings found in database');
         transformedBusinesses = [];
@@ -411,18 +439,8 @@ const ExploreArea = () => {
                       </span>
                     </div>
                     
-                    {/* Sample Review */}
-                    <div 
-                      className="bg-neutral-50 rounded-lg p-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
-                      onClick={() => handleOpenOfferingReviews(offering, business.name)}
-                    >
-                      <p className="font-lora text-xs text-neutral-500 italic text-center">
-                        No reviews yet for this offering.
-                      </p>
-                    </div>
-                    
-                    {/* Phone and Directions Buttons */}
-                    <div className="flex items-center justify-end gap-2 mt-2">
+                    {/* Action Buttons - Phone, Reviews, Directions */}
+                    <div className="flex items-center justify-between gap-2 mt-2">
                       {business.phone_number && (
                         <button
                           onClick={(e) => {
@@ -435,6 +453,26 @@ const ExploreArea = () => {
                           <Phone className="h-4 w-4" />
                         </button>
                       )}
+                      
+                      {/* Review Icon with Notification Badge */}
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenOfferingReviews(offering, business.name);
+                          }}
+                          className="p-2 bg-purple-100 hover:bg-purple-200 text-purple-600 hover:text-purple-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                          title="View reviews"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </button>
+                        {/* Review Count Notification Badge */}
+                        {offeringReviewCounts[offering.offeringId] > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                            {offeringReviewCounts[offering.offeringId]}
+                          </span>
+                        )}
+                      </div>
                       
                       {business.address && (
                         <button
