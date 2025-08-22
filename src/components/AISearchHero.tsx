@@ -580,7 +580,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-cinzel text-xl font-bold text-neutral-900">
-                Search for Vibes
+                What are you Hungry for?
               </h3>
               <button
                 onClick={() => setShowFloatingSearchInput(false)}
