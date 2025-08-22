@@ -322,16 +322,11 @@ const ExploreArea = () => {
           ) : (
             // Actual offering cards
             businesses.map((offering) => {
-              // Robust check for business data
-              if (!offering.businesses) {
-                console.warn(`⚠️ Skipping offering ${offering.id} due to missing business data`);
-                return null;
-              }
-              
-              const business = offering.businesses;
+              // 'offering' here is already the transformed business object from loadNearbyBusinesses
+              const business = offering;
               const serviceTypeBadge = getServiceTypeBadge(offering.service_type);
               
-              // Get the primary image from offering_images, fallback to business image
+              // Get the primary image from offering_images (from original Supabase query), fallback to business image
               const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
               const fallbackImage = offering.offering_images?.find(img => img.approved);
               const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
@@ -472,7 +467,7 @@ const ExploreArea = () => {
                   </div>
                 </div>
               );
-            }).filter(Boolean)
+            })
           )}
         </div>
       </div>
