@@ -558,9 +558,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               </h1>
               <p className="font-lora text-lg text-neutral-600 text-center mt-2">
               </p>
-              <p className="font-lora text-lg text-neutral-600 text-center mt-4 pt-8">
-                Discover new businesses by offerings
-              </p>
             </div>
           )}
         </div>
