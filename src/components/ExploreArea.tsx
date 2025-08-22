@@ -379,9 +379,6 @@ const ExploreArea = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="font-cinzel text-xl font-bold text-neutral-900">
-              Explore new businesses
-            </h2>
           </div>
           
           <button
