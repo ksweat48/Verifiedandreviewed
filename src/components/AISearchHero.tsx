@@ -18,6 +18,7 @@ import AuthModal from './AuthModal';
 import CreditInfoTooltip from './CreditInfoTooltip';
 import { supabase } from '../services/supabaseClient';
 import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
+import { getAvatarForUser } from '../utils/displayUtils';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -55,36 +56,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   
   // Get pending reviews count for notification dot
   const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);
-  
-  // Diverse default avatars for users without custom avatars
-  const defaultAvatars = [
-    'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
-    'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100',
-    'https://images.pexels.com/photos/1300402/pexels-photo-1300402.jpeg?auto=compress&cs=tinysrgb&w=100',
-    'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=100',
-    'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100',
-    'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=100',
-    'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=100',
-    'https://images.pexels.com/photos/1484794/pexels-photo-1484794.jpeg?auto=compress&cs=tinysrgb&w=100',
-    'https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg?auto=compress&cs=tinysrgb&w=100',
-    'https://images.pexels.com/photos/1674752/pexels-photo-1674752.jpeg?auto=compress&cs=tinysrgb&w=100'
-  ];
-  
-  // Function to get a consistent avatar for a user ID
-  const getAvatarForUser = (userId: string, customAvatar?: string) => {
-    if (customAvatar && customAvatar.trim() !== '') {
-      return customAvatar;
-    }
-    
-    // Use user ID to consistently assign the same default avatar
-    const hash = userId.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    
-    const index = Math.abs(hash) % defaultAvatars.length;
-    return defaultAvatars[index];
-  };
   
   // Random user search display state
   const [currentUserSearchIndex, setCurrentUserSearchIndex] = useState(0);

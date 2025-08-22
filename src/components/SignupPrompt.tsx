@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { X, Zap } from 'lucide-react';
 import FallingCredits from './FallingCredits';
+import { useModalControl } from '../hooks/useModalControl';
 
 interface SignupPromptProps {
   onSignup: () => void;
@@ -29,11 +30,11 @@ const SignupPrompt: React.FC<SignupPromptProps> = ({
     "Access to all features"
   ]
 }) => {
-  // Prevent body scrolling when modal is open
+  // Use centralized modal control
+  useModalControl({ isOpen: true, onClose: onClose || (() => {}) });
+  
+  // Create a custom event listener for auth modal
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    
-    // Create a custom event listener for auth modal
     const handleAuthEvent = (event: CustomEvent) => {
       const { mode } = event.detail;
       if (mode === 'signup') {
@@ -46,28 +47,9 @@ const SignupPrompt: React.FC<SignupPromptProps> = ({
     document.addEventListener('open-auth-modal', handleAuthEvent as EventListener);
     
     return () => {
-      document.body.style.overflow = 'auto';
       document.removeEventListener('open-auth-modal', handleAuthEvent as EventListener);
     };
   }, [onSignup, onLogin]);
-
-  // Handle browser back button for modal
-  useEffect(() => {
-    // Push a new state when modal opens
-    window.history.pushState(null, '', window.location.href);
-    
-    const handlePopState = (event) => {
-      if (onClose) {
-        onClose();
-      }
-    };
-    
-    window.addEventListener('popstate', handlePopState);
-    
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [onClose]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 overflow-y-auto">

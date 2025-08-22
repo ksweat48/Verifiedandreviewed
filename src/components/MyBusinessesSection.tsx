@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import type { User } from '../types/user';
 import type { Business } from '../services/supabaseClient';
 import OfferingReviewsModal from './OfferingReviewsModal';
+import { getServiceTypeBadge, formatPrice } from '../utils/displayUtils';
 
 interface BusinessWithOfferings extends Business {
   offerings?: Array<{
@@ -180,12 +181,6 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
     return { thumbsUp: 0, thumbsDown: 0 };
   };
 
-  // Helper function to get sample review for offering
-  const getSampleReview = (offeringId: string): string => {
-    // Return empty string until real reviews are integrated
-    return '';
-  };
-
   const handleOpenOfferingReviews = (offering: any, businessName: string) => {
     setSelectedOfferingForReviews({
       id: offering.id,
@@ -245,25 +240,6 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
 
   const getTotalPages = (offerings: any[]): number => {
     return Math.ceil(offerings.length / OFFERINGS_PER_PAGE);
-  };
-
-  const getServiceTypeBadge = (serviceType: string) => {
-    const badges = {
-      onsite: { label: 'On-site', color: 'bg-blue-100 text-blue-700' },
-      mobile: { label: 'Mobile', color: 'bg-green-100 text-green-700' },
-      remote: { label: 'Remote', color: 'bg-purple-100 text-purple-700' },
-      delivery: { label: 'Delivery', color: 'bg-orange-100 text-orange-700' }
-    };
-    return badges[serviceType as keyof typeof badges] || badges.onsite;
-  };
-
-  const formatPrice = (priceCents?: number, currency: string = 'USD'): string => {
-    if (!priceCents) return 'Free';
-    const price = priceCents / 100;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(price);
   };
 
   if (loading) {
@@ -537,20 +513,9 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                 className="bg-neutral-50 rounded-lg p-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
                                 onClick={() => handleOpenOfferingReviews(offering, business.name)}
                               >
-                                {getSampleReview(offering.id) ? (
-                                  <>
-                                    <p className="font-lora text-xs text-neutral-600 italic line-clamp-2">
-                                      "{getSampleReview(offering.id)}"
-                                    </p>
-                                    <p className="font-poppins text-xs text-primary-500 font-semibold mt-1">
-                                      View all reviews →
-                                    </p>
-                                  </>
-                                ) : (
-                                  <p className="font-lora text-xs text-neutral-500 italic text-center">
-                                    No reviews yet for this offering.
-                                  </p>
-                                )}
+                                <p className="font-lora text-xs text-neutral-500 italic text-center">
+                                  No reviews yet for this offering.
+                                </p>
                               </div>
                               
                               {/* Phone and Directions Buttons */}

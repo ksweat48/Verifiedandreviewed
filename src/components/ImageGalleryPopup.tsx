@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
+import { useModalControl } from '../hooks/useModalControl';
 
 interface ImageGalleryPopupProps {
   isOpen: boolean;
@@ -15,6 +16,9 @@ const ImageGalleryPopup: React.FC<ImageGalleryPopupProps> = ({
   initialIndex = 0 
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+  // Use centralized modal control
+  useModalControl({ isOpen, onClose });
 
   // Reset current index when images change
   useEffect(() => {
@@ -42,39 +46,6 @@ const ImageGalleryPopup: React.FC<ImageGalleryPopupProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, currentIndex, images.length]);
-
-  // Prevent body scrolling when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-    
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, [isOpen]);
-
-  // Handle browser back button for modal
-  useEffect(() => {
-    if (isOpen) {
-      // Push a new state when modal opens
-      window.history.pushState(null, '', window.location.href);
-      
-      const handlePopState = (event) => {
-        if (isOpen) {
-          onClose();
-        }
-      };
-      
-      window.addEventListener('popstate', handlePopState);
-      
-      return () => {
-        window.removeEventListener('popstate', handlePopState);
-      };
-    }
-  }, [isOpen, onClose]);
 
   const nextImage = () => {
     if (images.length <= 1) return;

@@ -4,6 +4,7 @@ import ReviewerProfile from './ReviewerProfile';
 import ImageGalleryPopup from './ImageGalleryPopup';
 import BusinessProfileModal from './BusinessProfileModal';
 import { getMatchPercentage } from '../utils/similarityUtils';
+import { getSentimentRating } from '../utils/displayUtils';
 
 interface ReviewImage {
   url: string;
@@ -73,13 +74,6 @@ const PlatformBusinessCard: React.FC<{
     console.log("🎴 PlatformBusinessCard received reviews:", business.reviews);
   }, [business]);
   
-  const getSentimentRating = (score: number) => {
-    if (score >= 80) return { text: 'Great', color: 'bg-green-500' };
-    if (score >= 70 && score < 80) return { text: 'Good', color: 'bg-blue-500' };
-    if (score >= 65) return { text: 'Fair', color: 'bg-yellow-500' };
-    return { text: 'Improve', color: 'bg-red-500' };
-  };
-
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [reviewerProfileOpen, setReviewerProfileOpen] = useState(false);
   const [selectedReviewer, setSelectedReviewer] = useState<any>(null);

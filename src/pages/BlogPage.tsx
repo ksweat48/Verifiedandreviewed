@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Filter, ChevronLeft, ChevronRight, MapPin, Calendar, ArrowRight, Star, Info, Shield } from 'lucide-react';
 import { useWordPressPosts } from '../hooks/useWordPress';
 import { WordPressPost } from '../types/wordpress';
+import { getHealthScoreColor, getHealthScoreDescription, getHealthScoreIcon } from '../data/mockData';
 // Lazy load components
 const PendingBadgeTooltip = lazy(() => import('../components/PendingBadgeTooltip'));
 
@@ -73,27 +74,6 @@ const BlogPage: React.FC<BlogPageProps> = ({ verified = false }) => {
       isVerified: acf?.is_verified === true,
       reviewText: shortExcerpt
     };
-  };
-
-  const getHealthScoreColor = (score: number) => {
-    if (score >= 90) return { bg: 'bg-green-500', text: 'text-green-700', bgLight: 'bg-green-100' };
-    if (score >= 70) return { bg: 'bg-yellow-500', text: 'text-yellow-700', bgLight: 'bg-yellow-100' };
-    if (score >= 50) return { bg: 'bg-red-500', text: 'text-red-700', bgLight: 'bg-red-100' };
-    return { bg: 'bg-gray-800', text: 'text-gray-700', bgLight: 'bg-gray-100' };
-  };
-
-  const getHealthScoreDescription = (score: number) => {
-    if (score >= 90) return 'Exceptionally clean & health-forward';
-    if (score >= 70) return 'Adequate but with room for improvement';
-    if (score >= 50) return 'Significant issues (not seal-eligible)';
-    return 'May be listed publicly as not recommended';
-  };
-
-  const getHealthScoreIcon = (score: number) => {
-    if (score >= 90) return '✅';
-    if (score >= 70) return '⚠️';
-    if (score >= 50) return '🔴';
-    return '🚫';
   };
 
   const HealthScoreTooltip = ({ score }: { score: number }) => (

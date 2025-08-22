@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ThumbsUp, ThumbsDown, Star, Calendar, User } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
+import { useModalControl } from '../hooks/useModalControl';
 
 interface OfferingReview {
   id: string;
@@ -36,37 +37,8 @@ const OfferingReviewsModal: React.FC<OfferingReviewsModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Handle browser back button for modal
-  useEffect(() => {
-    if (isOpen) {
-      window.history.pushState(null, '', window.location.href);
-      
-      const handlePopState = (event) => {
-        if (isOpen) {
-          onClose();
-        }
-      };
-      
-      window.addEventListener('popstate', handlePopState);
-      
-      return () => {
-        window.removeEventListener('popstate', handlePopState);
-      };
-    }
-  }, [isOpen, onClose]);
-
-  // Prevent body scrolling when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-    
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, [isOpen]);
+  // Use centralized modal control
+  useModalControl({ isOpen, onClose });
 
   // Fetch reviews when modal opens
   useEffect(() => {

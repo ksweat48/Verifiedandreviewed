@@ -4,6 +4,8 @@ import ImageGallery from './ImageGallery';
 import { ReviewService } from '../services/reviewService';
 import { ActivityService } from '../services/activityService';
 import { UserService } from '../services/userService';
+import { useModalControl } from '../hooks/useModalControl';
+import { getPriceRangeText } from '../utils/displayUtils';
 
 interface BusinessProfileModalProps {
   isOpen: boolean;
@@ -46,38 +48,8 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
   const [businessReviews, setBusinessReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   
-  // Prevent body scrolling when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-    
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, [isOpen]);
-
-  // Handle browser back button for modal
-  useEffect(() => {
-    if (isOpen) {
-      // Push a new state when modal opens
-      window.history.pushState(null, '', window.location.href);
-      
-      const handlePopState = (event) => {
-        if (isOpen) {
-          onClose();
-        }
-      };
-      
-      window.addEventListener('popstate', handlePopState);
-      
-      return () => {
-        window.removeEventListener('popstate', handlePopState);
-      };
-    }
-  }, [isOpen, onClose]);
+  // Use centralized modal control
+  useModalControl({ isOpen, onClose });
 
   // Fetch business reviews when modal opens or business changes
   useEffect(() => {
@@ -129,16 +101,6 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
     if (score >= 70) return { text: 'Good', color: 'bg-blue-500' };
     if (score >= 65) return { text: 'Fair', color: 'bg-yellow-500' };
     return { text: 'Improve', color: 'bg-red-500' };
-  };
-
-  const getPriceRangeText = (priceRange?: string) => {
-    switch (priceRange) {
-      case '$': return 'Budget';
-      case '$$': return 'Moderate';
-      case '$$$': return 'Expensive';
-      case '$$$$': return 'Very Expensive';
-      default: return priceRange || 'Not specified';
-    }
   };
 
   const handleTakeMeThere = () => {

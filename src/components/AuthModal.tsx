@@ -4,6 +4,7 @@ import { UserService } from '../services/userService';
 import { useAnalytics } from '../hooks/useAnalytics';
 import type { User } from '../types/user';
 import { ActivityService } from '../services/activityService';
+import { useModalControl } from '../hooks/useModalControl';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -26,30 +27,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError] = useState('');
   const { trackEvent } = useAnalytics();
   
+  // Use centralized modal control
+  useModalControl({ isOpen, onClose });
+  
   // Set mode based on initialMode prop when it changes
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
-  
-  // Handle browser back button for modal
-  useEffect(() => {
-    if (isOpen) {
-      // Push a new state when modal opens
-      window.history.pushState(null, '', window.location.href);
-      
-      const handlePopState = (event) => {
-        if (isOpen) {
-          onClose();
-        }
-      };
-      
-      window.addEventListener('popstate', handlePopState);
-      
-      return () => {
-        window.removeEventListener('popstate', handlePopState);
-      };
-    }
-  }, [isOpen, onClose]);
   
   const [formData, setFormData] = useState({
     username: '',
