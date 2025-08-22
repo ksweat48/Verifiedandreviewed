@@ -409,14 +409,6 @@ const ExploreArea = () => {
                       <span className="font-poppins font-bold text-primary-600 text-sm">
                         {formatPrice(offering.priceCents, offering.currency)}
                       </span>
-                      
-                      <button
-                        onClick={() => navigate(`/manage-offerings?businessId=${business.id}&offeringId=${offering.offeringId}`)}
-                        className="p-1.5 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
-                        title="Edit offering"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
                     </div>
                     
                     {/* Sample Review */}
