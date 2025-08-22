@@ -133,7 +133,7 @@ const ExploreArea = () => {
             offeringDescription: offering.description, // Corrected: Use offering.description
             serviceType: offering.service_type,
             priceCents: offering.price_cents, // Corrected: Ensure price_cents is passed
-            currency: offering.currency
+            currency: offering.currency,
             offering_images: offering.offering_images // Pass through offering_images
           };
         });
