@@ -72,6 +72,12 @@ const ExploreArea = () => {
         matchCount: 6
       });
       
+      // DEBUG: Log the complete search response
+      console.log('🔍 DEBUG: Complete searchResponse from unified search:', searchResponse);
+      console.log('🔍 DEBUG: searchResponse.success:', searchResponse.success);
+      console.log('🔍 DEBUG: searchResponse.results length:', searchResponse.results?.length || 0);
+      console.log('🔍 DEBUG: searchResponse.results:', searchResponse.results);
+      
       let transformedBusinesses = [];
       
       if (searchResponse.success && searchResponse.results.length > 0) {
@@ -80,6 +86,17 @@ const ExploreArea = () => {
         const platformOfferings = searchResponse.results.filter(business => 
           business.source === 'offering'
         );
+        
+        // DEBUG: Log the filtering results
+        console.log('🔍 DEBUG: All results before filtering:', searchResponse.results.map(r => ({
+          id: r.id,
+          name: r.name || r.business_name,
+          source: r.source,
+          business_id: r.business_id,
+          offering_id: r.offering_id
+        })));
+        console.log('🔍 DEBUG: Platform offerings after filtering (source === "offering"):', platformOfferings);
+        console.log('🔍 DEBUG: Platform offerings count:', platformOfferings.length);
         
         transformedBusinesses = platformOfferings.map(business => ({
           id: business.id || business.business_id,
