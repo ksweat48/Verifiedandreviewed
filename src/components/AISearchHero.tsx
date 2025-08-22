@@ -508,7 +508,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   return (
     <>
       {/* Hero Section */}
-      <section className="relative bg-white pt-4 pb-0">
+      <section className="relative bg-white pt-4">
         {/* Credits Display - Top Left */}
         {currentUser && !isAppModeActive && (
           <div className="absolute top-4 left-4 z-20 flex items-center bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-neutral-200">
