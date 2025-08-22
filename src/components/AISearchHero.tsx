@@ -9,6 +9,7 @@ import { CreditService } from '../services/creditService';
 import { UserService } from '../services/userService';
 import { ActivityService } from '../services/activityService';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { useGeolocation } from '../hooks/useGeolocation';
 import PlatformBusinessCard from './PlatformBusinessCard';
 import AIBusinessCard from './AIBusinessCard';
 import SignupPrompt from './SignupPrompt';
@@ -25,6 +26,7 @@ interface AISearchHeroProps {
 const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppModeActive }) => {
   const navigate = useNavigate();
   const { trackEvent } = useAnalytics();
+  const { latitude, longitude, error: locationError, loading: locationLoading } = useGeolocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -221,8 +223,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // Perform unified search
       console.log('🔍 Performing unified search...');
       const searchResponse = await SemanticSearchService.searchByVibe(searchTerm, {
-        latitude: undefined,
-        longitude: undefined,
+        latitude: latitude,
+        longitude: longitude,
         matchThreshold: 0.3,
         matchCount: 15
       });
