@@ -43,6 +43,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [signupPromptConfig, setSignupPromptConfig] = useState<any>(null);
   const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [showFloatingSearchInput, setShowFloatingSearchInput] = useState(false);
   
   // Get pending reviews count for notification dot
   const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);
@@ -186,6 +187,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       }
       
       setIsAppModeActive(true); // Show loading screen for authenticated users
+      
+      // Hide floating search input when starting search
+      setShowFloatingSearchInput(false);
       
       // Set search type to unified
       setSearchType('ai'); // Show as 'ai' since we're using the intelligent unified system
@@ -565,12 +569,77 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       {/* Floating Search Button */}
       {!isAppModeActive && (
         <button
-          onClick={() => setIsAppModeActive(true)}
+          onClick={() => setShowFloatingSearchInput(true)}
           className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
           title="Search for experiences"
         >
           <Search className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
         </button>
+      )}
+
+      {/* Floating Search Input */}
+      {showFloatingSearchInput && !isAppModeActive && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-cinzel text-xl font-bold text-neutral-900">
+                Search for Vibes
+              </h3>
+              <button
+                onClick={() => setShowFloatingSearchInput(false)}
+                className="text-neutral-500 hover:text-neutral-700 transition-colors duration-200"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder="cozy coffee shop, romantic dinner..."
+                  className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg font-lora text-neutral-900 placeholder-neutral-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  autoFocus
+                />
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSearch}
+                  disabled={!searchQuery.trim() || isSearching}
+                  className="flex-1 bg-gradient-to-r from-primary-500 to-accent-500 text-white py-3 px-4 rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  <Search className="h-5 w-5 mr-2" />
+                  {isSearching ? 'Searching...' : 'Search'}
+                </button>
+                
+                <button
+                  onClick={handleVoiceSearch}
+                  disabled={isListening}
+                  className="p-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  title="Voice search"
+                >
+                  <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
+                </button>
+              </div>
+              
+              {currentUser && (
+                <div className="bg-primary-50 rounded-lg p-3 text-center">
+                  <div className="flex items-center justify-center">
+                    <Zap className="h-4 w-4 mr-2 text-primary-500" />
+                    <span className="font-poppins text-sm text-primary-700">
+                      You have {userCredits} credits • 2 credits per search
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Signup Prompt Modal */}
