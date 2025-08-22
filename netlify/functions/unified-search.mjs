@@ -142,6 +142,9 @@ export const handler = async (event, context) => {
       } else {
         offeringResults = offeringSearchResults || [];
         console.log('✅ Found', offeringResults.length, 'offering matches');
+        // ADD DEBUG LOGGING:
+        console.log('DEBUG: Raw offeringSearchResults from RPC:', JSON.stringify(offeringSearchResults, null, 2));
+        console.log('DEBUG: offeringError from RPC:', offeringError);
       }
     } catch (error) {
       console.warn('⚠️ Offering search error:', error.message);
@@ -163,6 +166,8 @@ export const handler = async (event, context) => {
           ...offering,
           source: 'offering'
         });
+        // ADD DEBUG LOGGING:
+        console.log('DEBUG: Added to resultsMap (offering):', offering.business_id, JSON.stringify(resultsMap.get(offering.business_id), null, 2));
       }
     });
     
@@ -460,6 +465,9 @@ Requirements:
       businessName: result.business_name,
       shortDescription: result.short_description || result.business_short_description
     }));
+
+    // ADD DEBUG LOGGING:
+    console.log('DEBUG: Final formattedResults sent to frontend:', JSON.stringify(formattedResults, null, 2));
 
     return {
       statusCode: 200,
