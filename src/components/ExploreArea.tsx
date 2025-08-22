@@ -130,13 +130,15 @@ const ExploreArea = () => {
             // Add offering-specific data
             offeringId: offering.id,
             offeringTitle: offering.title,
-            offeringDescription: offering.description,
+            offeringDescription: offering.description, // Corrected: Use offering.description
             serviceType: offering.service_type,
-            priceCents: offering.price_cents,
+            priceCents: offering.price_cents, // Corrected: Ensure price_cents is passed
             currency: offering.currency
+            offering_images: offering.offering_images // Pass through offering_images
           };
         });
         
+        console.log('🔍 DEBUG: Final transformed businesses with offering data:', transformedBusinesses);
         console.log('🔍 DEBUG: Final transformed businesses:', transformedBusinesses);
       } else {
         console.log('🔍 DEBUG: No offerings found in database');
@@ -242,8 +244,8 @@ const ExploreArea = () => {
 
   const handleOpenOfferingReviews = (offering: any, businessName: string) => {
     setSelectedOfferingForReviews({
-      id: offering.id,
-      title: offering.title,
+      id: offering.offeringId, // Use offeringId from transformed object
+      title: offering.offeringTitle, // Use offeringTitle from transformed object
       businessName: businessName
     });
     setIsOfferingReviewsModalOpen(true);
@@ -324,20 +326,31 @@ const ExploreArea = () => {
             businesses.map((offering) => {
               // 'offering' here is already the transformed business object from loadNearbyBusinesses
               const business = offering;
-              const serviceTypeBadge = getServiceTypeBadge(offering.service_type);
+              const serviceTypeBadge = getServiceTypeBadge(offering.serviceType); // Corrected: Use offering.serviceType
               
               // Get the primary image from offering_images (from original Supabase query), fallback to business image
               const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
               const fallbackImage = offering.offering_images?.find(img => img.approved);
               const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
 
+              // DEBUG LOG: Check values just before rendering
+              console.log('🔍 DEBUG: Rendering offering:', {
+                id: offering.offeringId,
+                title: offering.offeringTitle,
+                description: offering.offeringDescription, // Check this value
+                priceCents: offering.priceCents, // Check this value
+                currency: offering.currency,
+                imageUrl: imageUrl, // Check this value
+                offering_images: offering.offering_images // Check this array
+              });
+
               return (
-                <div key={offering.id} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200">
+                <div key={offering.offeringId} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200">
                   {/* Offering Image */}
                   <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100">
                     <img
                       src={imageUrl}
-                      alt={offering.title}
+                      alt={offering.offeringTitle} // Corrected: Use offeringTitle
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                     
@@ -378,26 +391,26 @@ const ExploreArea = () => {
                   {/* Offering Details */}
                   <div className="space-y-2">
                     <h6 className="font-poppins font-bold text-black text-sm line-clamp-1">
-                      {offering.title}
+                      {offering.offeringTitle} {/* Corrected: Use offeringTitle */}
                     </h6>
                     
                     <p className="font-lora text-xs text-black font-bold line-clamp-1">
                       at {business.name}
                     </p>
                     
-                    {offering.description && (
+                    {offering.offeringDescription && ( // Corrected: Use offeringDescription
                       <p className="font-lora text-xs text-neutral-600 line-clamp-2">
-                        {offering.description}
+                        {offering.offeringDescription} {/* Corrected: Use offeringDescription */}
                       </p>
                     )}
                     
                     <div className="flex items-center justify-between">
                       <span className="font-poppins font-bold text-primary-600 text-sm">
-                        {formatPrice(offering.price_cents, offering.currency)}
+                        {formatPrice(offering.priceCents, offering.currency)} {/* Corrected: Use priceCents */}
                       </span>
                       
                       <button
-                        onClick={() => navigate(`/manage-offerings?businessId=${business.id}&offeringId=${offering.id}`)}
+                        onClick={() => navigate(`/manage-offerings?businessId=${business.id}&offeringId=${offering.offeringId}`)} {/* Corrected: Use offeringId */}
                         className="p-1.5 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
                         title="Edit offering"
                       >
