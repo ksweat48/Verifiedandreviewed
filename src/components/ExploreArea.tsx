@@ -7,7 +7,7 @@ import BusinessProfileModal from './BusinessProfileModal';
 import LeaveReviewModal from './LeaveReviewModal';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
-import { SemanticSearchService } from '../services/semanticSearchService';
+import { OfferingService } from '../services/offeringService';
 import { getMatchPercentage } from '../utils/similarityUtils';
 import { getSentimentRating } from '../utils/displayUtils';
 
@@ -64,73 +64,76 @@ const ExploreArea = () => {
     setLoading(true);
     
     try {
-      // Use the unified search system to get platform offerings
-      const searchResponse = await SemanticSearchService.searchByVibe('restaurants cafes bars food services', {
-        latitude: undefined,
-        longitude: undefined,
-        matchThreshold: 0.1, // Very low threshold for broad discovery
-        matchCount: 6
-      });
+      // Fetch platform offerings directly from database
+      console.log('🔍 DEBUG: Fetching explore offerings directly from database...');
+      const offerings = await OfferingService.getExploreOfferings(6);
       
-      // DEBUG: Log the complete search response
-      console.log('🔍 DEBUG: Complete searchResponse from unified search:', searchResponse);
-      console.log('🔍 DEBUG: searchResponse.success:', searchResponse.success);
-      console.log('🔍 DEBUG: searchResponse.results length:', searchResponse.results?.length || 0);
-      console.log('🔍 DEBUG: searchResponse.results:', searchResponse.results);
+      console.log('🔍 DEBUG: Raw offerings from database:', offerings);
+      console.log('🔍 DEBUG: Number of offerings fetched:', offerings.length);
       
       let transformedBusinesses = [];
       
-      if (searchResponse.success && searchResponse.results.length > 0) {
-        // Use unified search results (prioritizing platform offerings)
-        // Filter to only show platform offerings (source: 'offering')
-        const platformOfferings = searchResponse.results.filter(business => 
-          business.source === 'offering'
-        );
+      if (offerings.length > 0) {
+        console.log('🔍 DEBUG: Transforming offerings to business format...');
         
-        // DEBUG: Log the filtering results
-        console.log('🔍 DEBUG: All results before filtering:', searchResponse.results.map(r => ({
-          id: r.id,
-          name: r.name || r.business_name,
-          source: r.source,
-          business_id: r.business_id,
-          offering_id: r.offering_id
-        })));
-        console.log('🔍 DEBUG: Platform offerings after filtering (source === "offering"):', platformOfferings);
-        console.log('🔍 DEBUG: Platform offerings count:', platformOfferings.length);
+        transformedBusinesses = offerings.map(offering => {
+          const business = offering.businesses;
+          
+          // Get primary image or fallback
+          const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
+          const fallbackImage = offering.offering_images?.find(img => img.approved);
+          const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
+          
+          console.log('🔍 DEBUG: Processing offering:', {
+            offeringId: offering.id,
+            offeringTitle: offering.title,
+            businessId: business.id,
+            businessName: business.name,
+            imageUrl: imageUrl
+          });
+          
+          return {
+            id: business.id,
+            name: business.name,
+            category: business.category,
+            description: business.description,
+            short_description: business.short_description,
+            phone_number: business.phone_number,
+            website_url: business.website_url,
+            social_media: business.social_media || [],
+            price_range: business.price_range,
+            service_area: business.service_area,
+            days_closed: business.days_closed,
+            owner_user_id: business.owner_user_id,
+            latitude: business.latitude,
+            longitude: business.longitude,
+            created_at: business.created_at,
+            updated_at: business.updated_at,
+            rating: {
+              thumbsUp: business.thumbs_up || 0,
+              thumbsDown: business.thumbs_down || 0,
+              sentimentScore: business.sentiment_score || 0
+            },
+            image: imageUrl,
+            isOpen: true, // Default to open for explore section
+            hours: business.hours || 'Hours unavailable',
+            address: business.address || business.location || '',
+            reviews: [], // Will be fetched separately if needed
+            isPlatformBusiness: true, // All offerings are platform businesses
+            tags: business.tags || [],
+            // Add offering-specific data
+            offeringId: offering.id,
+            offeringTitle: offering.title,
+            offeringDescription: offering.description,
+            serviceType: offering.service_type,
+            priceCents: offering.price_cents,
+            currency: offering.currency
+          };
+        });
         
-        transformedBusinesses = platformOfferings.map(business => ({
-          id: business.id || business.business_id,
-          name: business.name || business.business_name,
-          category: business.category || business.business_category,
-          description: business.description || business.business_description,
-          short_description: business.short_description || business.business_short_description,
-          phone_number: business.phone_number,
-          website_url: business.website_url,
-          social_media: business.social_media || [],
-          price_range: business.price_range,
-          service_area: business.service_area,
-          days_closed: business.days_closed,
-          owner_user_id: business.owner_user_id,
-          latitude: business.latitude,
-          longitude: business.longitude,
-          created_at: business.created_at,
-          updated_at: business.updated_at,
-          rating: business.rating || {
-            thumbsUp: business.thumbs_up || 0,
-            thumbsDown: business.thumbs_down || 0,
-            sentimentScore: business.sentiment_score || 0
-          },
-          image: business.image || business.image_url || '/verified and reviewed logo-coral copy copy.png',
-          isOpen: business.isOpen !== undefined ? business.isOpen : true,
-          hours: business.hours || 'Hours unavailable',
-          address: business.address || business.location || '',
-          reviews: business.reviews || [],
-          isPlatformBusiness: business.isPlatformBusiness || business.is_verified || false,
-          tags: business.tags || [],
-          similarity: business.similarity
-        }));
+        console.log('🔍 DEBUG: Final transformed businesses:', transformedBusinesses);
       } else {
-        // No results from unified search
+        console.log('🔍 DEBUG: No offerings found in database');
         transformedBusinesses = [];
       }
       

@@ -479,6 +479,67 @@ export class OfferingService {
     }
   }
 
+  // Get offerings for explore section (random/curated display)
+  static async getExploreOfferings(limit: number = 6): Promise<any[]> {
+    try {
+      console.log('🔍 Fetching explore offerings with limit:', limit);
+
+      const { data, error } = await supabase
+        .from('offerings')
+        .select(`
+          *,
+          businesses!inner (
+            id,
+            name,
+            address,
+            location,
+            category,
+            description,
+            short_description,
+            image_url,
+            gallery_urls,
+            hours,
+            days_closed,
+            phone_number,
+            website_url,
+            social_media,
+            price_range,
+            service_area,
+            is_verified,
+            is_mobile_business,
+            is_virtual,
+            latitude,
+            longitude,
+            thumbs_up,
+            thumbs_down,
+            sentiment_score,
+            is_visible_on_platform
+          ),
+          offering_images!left (
+            url,
+            source,
+            is_primary,
+            approved
+          )
+        `)
+        .eq('status', 'active')
+        .eq('businesses.is_visible_on_platform', true)
+        .limit(limit)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Error fetching explore offerings:', error);
+        throw error;
+      }
+
+      console.log('✅ Fetched', data?.length || 0, 'explore offerings');
+      return data || [];
+    } catch (error) {
+      console.error('❌ Error in getExploreOfferings:', error);
+      return [];
+    }
+  }
+
   // Search offerings by semantic similarity
   static async searchOfferings(
     query: string,
