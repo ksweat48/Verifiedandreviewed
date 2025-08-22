@@ -199,6 +199,12 @@ const OfferingManagementTest = () => {
           >
             {ingestionStatus === 'running' ? 'Ingesting...' : 'Start Business Ingestion'}
           </button>
+        </div>
+      </div>
+
+      {/* Step 2: Embedding Generation */}
+      <div className={`border-2 rounded-2xl p-6 ${getStatusColor(embeddingStatus)}`}>
+        <div className="flex items-center mb-4">
           {getStatusIcon(embeddingStatus)}
           <h3 className="font-poppins text-lg font-semibold ml-3">
             Step 2: Generate Offering Embeddings
