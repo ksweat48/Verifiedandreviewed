@@ -73,7 +73,7 @@ function App() {
         </Routes>
       </Suspense>
       
-      {!isAppModeActive && <Footer />}
+      {!isAppModeActive && location.pathname === '/' && <Footer />}
     </div>
   );
 }

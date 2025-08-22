@@ -210,23 +210,8 @@ const AccountPage = () => {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* User Profile Header - Scrollable */}
-      <div className="bg-white border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {/* Account Settings Title */}
-          <div>
-            <h2 className="font-cinzel text-2xl font-bold text-neutral-900">
-              Account Settings
-            </h2>
-            <p className="font-lora text-neutral-600">
-              Manage your profile, security, and payment information
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Tab Navigation - Sticky */}
-      <div className="sticky top-16 z-40 bg-white border-b border-neutral-200 shadow-sm">
+      <div className="sticky top-0 z-40 bg-white border-b border-neutral-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex">
             {tabs.map((tab) => {
