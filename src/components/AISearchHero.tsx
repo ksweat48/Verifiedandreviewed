@@ -126,7 +126,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   }, [isAppModeActive, hasSearched, lastSearchQuery]);
 
   const handleSearch = async (query?: string) => {
-    const searchTerm = query || searchQuery;
+    const searchTerm = String(query || searchQuery || '');
     if (!searchTerm.trim()) return;
 
     // Clear previous search results immediately for clean UX
