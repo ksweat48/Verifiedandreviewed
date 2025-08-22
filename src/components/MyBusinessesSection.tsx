@@ -553,6 +553,41 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                 )}
                               </div>
                               
+                              {/* Phone and Directions Buttons */}
+                              <div className="flex items-center justify-end gap-2 mt-2">
+                                {business.phone_number && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(`tel:${business.phone_number}`, '_self');
+                                    }}
+                                    className="p-2 bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                                    title="Call business"
+                                  >
+                                    <Icons.Phone className="h-4 w-4" />
+                                  </button>
+                                )}
+                                
+                                {business.address && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      let mapsUrl;
+                                      if (business.latitude && business.longitude) {
+                                        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+                                      } else {
+                                        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+                                      }
+                                      window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+                                    }}
+                                    className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                                    title="Get directions"
+                                  >
+                                    <Icons.MapPin className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                              
                               {offering.tags && offering.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                   {offering.tags.slice(0, 2).map((tag, index) => (
