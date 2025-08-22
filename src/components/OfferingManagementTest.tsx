@@ -12,6 +12,7 @@ const OfferingManagementTest = () => {
   const [searchResult, setSearchResult] = useState<any>(null);
   
   const [batchSize, setBatchSize] = useState(10);
+  const [forceRegenerate, setForceRegenerate] = useState(false);
   const [searchQuery, setSearchQuery] = useState('cozy coffee shop');
   const [error, setError] = useState<string>('');
 
@@ -56,7 +57,7 @@ const OfferingManagementTest = () => {
         },
         body: JSON.stringify({
           batchSize: batchSize,
-          forceRegenerate: false
+          forceRegenerate: forceRegenerate
         })
       });
 
@@ -234,6 +235,25 @@ const OfferingManagementTest = () => {
             <p className="font-lora text-xs text-neutral-500 mt-1">
               Number of offerings to process in each batch (1-50)
             </p>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 border border-neutral-200">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={forceRegenerate}
+                onChange={(e) => setForceRegenerate(e.target.checked)}
+                className="rounded border-neutral-300 text-primary-500 focus:ring-primary-500 mr-3"
+              />
+              <div>
+                <span className="font-poppins text-sm font-medium text-neutral-700 block">
+                  Force regenerate existing embeddings
+                </span>
+                <p className="font-lora text-xs text-neutral-500 mt-1">
+                  By default, only offerings without embeddings are processed. Check this to regenerate all embeddings.
+                </p>
+              </div>
+            </label>
           </div>
 
           <div>
