@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Clock, ThumbsUp, MapPin, Navigation } from 'lucide-react';
+import { RefreshCw, Clock, ThumbsUp, MapPin, Navigation, Phone, Edit, Package } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -8,8 +8,8 @@ import LeaveReviewModal from './LeaveReviewModal';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
 import { OfferingService } from '../services/offeringService';
-import { getMatchPercentage } from '../utils/similarityUtils';
-import { getSentimentRating } from '../utils/displayUtils';
+import { getServiceTypeBadge, formatPrice, isBusinessOpen } from '../utils/displayUtils';
+import OfferingReviewsModal from './OfferingReviewsModal';
 
 interface ReviewImage {
   url: string;
@@ -297,191 +297,157 @@ const ExploreArea = () => {
           </button>
         </div>
 
-        {/* Platform Business Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Platform Offering Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? (
-            // Loading skeletons - create an array of 6 items
+            // Loading skeletons
             [...Array(6)].map((_, index) => (
-              <div key={index} className="bg-neutral-100 rounded-xl h-[480px] animate-pulse"></div>
+              <div key={index} className="bg-neutral-100 rounded-lg h-64 animate-pulse"></div>
             ))
           ) : (
-            // Actual business cards
-            businesses.map((business) => {
-              // Use businessIndex to create unique state for each card
-              const currentReviewIndex = currentReviewIndices[business.id] || 0;
-              const sentimentRating = getSentimentRating(business.rating.sentimentScore);
+            // Actual offering cards
+            offerings.map((offering) => {
+              const business = offering.businesses;
+              const serviceTypeBadge = getServiceTypeBadge(offering.service_type);
+              
+              // Get the primary image from offering_images, fallback to business image
+              const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
+              const fallbackImage = offering.offering_images?.find(img => img.approved);
+              const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
 
               return (
-                <div key={business.id} className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col min-h-[480px]">
-                  {/* Main Image with Overlay */}
-                  <div 
-                    className="relative h-60 flex-shrink-0 cursor-pointer"
-                    onClick={(e) => {e.stopPropagation(); openBusinessProfile(business);}}
-                  >
-                    <img 
-                      src={business.image} 
-                      alt={business.name} 
-                      className="w-full h-full object-cover"
+                <div key={offering.id} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200">
+                  {/* Offering Image */}
+                  <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100">
+                    <img
+                      src={imageUrl}
+                      alt={offering.title}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                     
-                    {/* Open/Closed Tag */}
-                    <div className="absolute top-3 right-3 z-10">
-                      <div className={`px-3 py-1 rounded-full text-white text-sm font-poppins font-semibold ${
-                        business.isOpen ? 'bg-green-500' : 'bg-red-500'
+                    {/* Open/Closed Overlay - Bottom Left */}
+                    <div className="absolute bottom-2 left-2">
+                      <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
+                        isBusinessOpen(business) ? 'bg-green-500' : 'bg-red-500'
                       }`}>
-                        {business.isOpen ? 'Open' : 'Closed'}
+                        {isBusinessOpen(business) ? 'OPEN' : 'CLOSED'}
                       </div>
                     </div>
                     
-                    {/* Favorite Button - Bottom Right */}
+                    {/* Rating Overlay - Bottom Right */}
+                    <div className="absolute bottom-2 right-2">
+                      <div className="px-2 py-1 rounded-full bg-neutral-500 text-white text-xs font-poppins font-bold flex items-center">
+                        <span>No ratings</span>
+                      </div>
+                    </div>
+                    
+                    {/* Favorite Button - Top Right */}
                     {currentUser && (
-                      <div className="absolute bottom-3 right-3 z-10">
+                      <div className="absolute top-2 right-2">
                         <button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleFavoritePlatformBusiness(business);
+                            handleFavoritePlatformBusiness(offering);
                           }}
-                          className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
+                          className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
                           title="Add to favorites"
                         >
-                          <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+                          <Icons.Heart className="h-3 w-3 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
                         </button>
                       </div>
                     )}
-                    
-                    {/* Dark Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80"></div>
-                    
-                    {/* Business Info Overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                      <h3 
-                        className="font-poppins text-lg font-bold mb-1 text-shadow line-clamp-1 cursor-pointer"
-                        onClick={(e) => {e.stopPropagation(); openBusinessProfile(business);}}
-                      >
-                        {business.name}
-                      </h3>
-                      
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <Clock className="h-3 w-3 mr-1" />
-                          <span className="font-lora text-xs">{business.hours || 'Hours unavailable'}</span>
-                          {business.distance && (
-                            <span className="font-lora text-xs ml-2">• {business.distance.toFixed(1)} mi • 10 min</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Badges positioned at bottom-left */}
-                      <div className="flex items-center gap-2">
-                        {/* Semantic Similarity Score - Only show if available and > 0 */}
-                        {business.similarity && business.similarity > 0 && (
-                          <div className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
-                            {getMatchPercentage(business.similarity)}% match
-                          </div>
-                        )}
-                        
-                        <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-xs font-poppins font-semibold flex items-center shadow-md`}>
-                          <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
-                          <span className="mr-1">{business.rating?.thumbsUp || 0}</span> 
-                          <span className="mr-1">{business.rating?.thumbsDown ? `/${business.rating.thumbsDown}` : ''}</span>
-                          <span>{sentimentRating.text}</span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
-                   
-                  {/* Reviews Section */}
-                  <div className="bg-white p-3 border-t border-neutral-100 flex-grow flex flex-col">
-                    {/* Review Images - Only show if available */}
-                    {business.reviews && business.reviews[currentReviewIndex]?.images && business.reviews[currentReviewIndex].images.length > 0 && (
-                      <div className="flex gap-1 mb-2">
-                        {business.reviews[currentReviewIndex].images.slice(0, 3).map((image, index) => (
-                          <img 
-                            key={index}
-                            src={image.url} 
-                            alt={image.alt || `Review image ${index + 1}`}
-                            className="w-[32%] aspect-square object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openImageGallery(business, currentReviewIndex, index);
-                            }}
-                          />
-                        ))}
-                      </div>
+                  
+                  {/* Offering Details */}
+                  <div className="space-y-2">
+                    <h6 className="font-poppins font-bold text-black text-sm line-clamp-1">
+                      {offering.title}
+                    </h6>
+                    
+                    <p className="font-lora text-xs text-black font-bold line-clamp-1">
+                      at {business.name}
+                    </p>
+                    
+                    {offering.description && (
+                      <p className="font-lora text-xs text-neutral-600 line-clamp-2">
+                        {offering.description}
+                      </p>
                     )}
                     
-                    <div className="bg-neutral-50 rounded-lg p-3 flex-grow">
-                      {business.reviews && business.reviews.length > 0 ? (
-                        <div className="flex justify-between h-full">
-                          <div 
-                            className="flex-1 pr-2 cursor-pointer" 
-                            onClick={(e) => {e.stopPropagation(); openBusinessProfile(business);}}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center">
-                               <ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-neutral-400'}`} />
-                                <span className="font-poppins text-xs font-semibold text-neutral-700">Review</span>
-                              </div>
-                              <span className="font-poppins text-xs text-neutral-500">
-                                {currentReviewIndex + 1} of {business.reviews.length}
-                              </span>
-                            </div>
-                            
-                            <p className="font-lora text-sm text-neutral-700 mb-1 line-clamp-2">
-                             "{business.reviews[currentReviewIndex]?.text || 'No review text available'}" 
-                            </p>
-                            
-                            <div className="flex items-center justify-between mt-auto">
-                              <div className="flex items-center">
-                                <div className="w-6 h-6 rounded-full overflow-hidden mr-2 flex-shrink-0">
-                                  <img 
-                                    src={business.reviews[currentReviewIndex]?.authorImage || "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100"} 
-                                    alt={business.reviews[currentReviewIndex]?.author || 'Anonymous'} 
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <p 
-                                  className="font-poppins text-xs text-neutral-500"
-                                >
-                                  {business.reviews[currentReviewIndex]?.author || 'Anonymous'}
-                                </p>
-                              </div>
-                              
-                              {business.reviews.length > 1 && (
-                                <div className="flex space-x-2">
-                                 <button onClick={() => prevReview(business.id)} className="text-neutral-400 hover:text-neutral-600 text-xs">←</button>
-                                 <button onClick={() => nextReview(business.id)} className="text-neutral-400 hover:text-neutral-600 text-xs">→</button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex-shrink-0 self-end">
-                            <button
-                              onClick={(e) => {e.stopPropagation(); handleTakeMeThere(business);}}
-                              className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
-                              aria-label="Take me there"
-                            >
-                              GO
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex justify-between h-full" onClick={(e) => {e.stopPropagation(); openReviewModal(business);}}>
-                          <p className="font-lora text-sm text-neutral-500 text-center py-4 flex-1 cursor-pointer">No reviews available</p>
-                          <div className="flex-shrink-0 self-end">
-                            <button
-                              onClick={(e) => {e.stopPropagation(); handleTakeMeThere(business);}}
-                              className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
-                              aria-label="Take me there"
-                            >
-                              GO
-                            </button>
-                          </div>
-                        </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-poppins font-bold text-primary-600 text-sm">
+                        {formatPrice(offering.price_cents, offering.currency)}
+                      </span>
+                      
+                      <button
+                        onClick={() => navigate(`/manage-offerings?businessId=${business.id}&offeringId=${offering.id}`)}
+                        className="p-1.5 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
+                        title="Edit offering"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    </div>
+                    
+                    {/* Sample Review */}
+                    <div 
+                      className="bg-neutral-50 rounded-lg p-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
+                      onClick={() => handleOpenOfferingReviews(offering, business.name)}
+                    >
+                      <p className="font-lora text-xs text-neutral-500 italic text-center">
+                        No reviews yet for this offering.
+                      </p>
+                    </div>
+                    
+                    {/* Phone and Directions Buttons */}
+                    <div className="flex items-center justify-end gap-2 mt-2">
+                      {business.phone_number && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`tel:${business.phone_number}`, '_self');
+                          }}
+                          className="p-2 bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                          title="Call business"
+                        >
+                          <Phone className="h-4 w-4" />
+                        </button>
+                      )}
+                      
+                      {business.address && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            let mapsUrl;
+                            if (business.latitude && business.longitude) {
+                              mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+                            } else {
+                              mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+                            }
+                            window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+                          }}
+                          className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                          title="Get directions"
+                        >
+                          <MapPin className="h-4 w-4" />
+                        </button>
                       )}
                     </div>
+                    
+                    {offering.tags && offering.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {offering.tags.slice(0, 2).map((tag, index) => (
+                          <span key={index} className="bg-neutral-200 text-neutral-700 px-2 py-0.5 rounded-full text-xs font-lora">
+                            {tag}
+                          </span>
+                        ))}
+                        {offering.tags.length > 2 && (
+                          <span className="bg-neutral-200 text-neutral-700 px-2 py-0.5 rounded-full text-xs font-lora">
+                            +{offering.tags.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -540,6 +506,20 @@ const ExploreArea = () => {
           }}
           visitDate={new Date().toISOString().split('T')[0]}
           onSubmit={handleReviewSubmit}
+        />
+      )}
+      
+      {/* Offering Reviews Modal */}
+      {selectedOfferingForReviews && (
+        <OfferingReviewsModal
+          isOpen={isOfferingReviewsModalOpen}
+          onClose={() => {
+            setIsOfferingReviewsModalOpen(false);
+            setSelectedOfferingForReviews(null);
+          }}
+          offeringId={selectedOfferingForReviews.id}
+          offeringTitle={selectedOfferingForReviews.title}
+          businessName={selectedOfferingForReviews.businessName}
         />
       )}
     </section>
