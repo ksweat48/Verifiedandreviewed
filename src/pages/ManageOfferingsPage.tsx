@@ -36,7 +36,7 @@ export default function ManageOfferingsPage() {
 
   const [business, setBusiness] = useState<Business | null>(null);
   const [offerings, setOfferings] = useState<OfferingData[]>([]);
-  const [offeringFiles, setOfferingFiles] = useState<Map<string, File>>(new Map()); // Store File objects separately
+  const [newOfferingFile, setNewOfferingFile] = useState<File | null>(null); // Store current form's File object
   const [newOffering, setNewOffering] = useState<OfferingData>({
     name: '',
     short_description: '',
@@ -50,6 +50,23 @@ export default function ManageOfferingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>('');
   const [editingOffering, setEditingOffering] = useState<any>(null);
+
+  // Update offerings list when newOffering changes (for real-time preview)
+  useEffect(() => {
+    if (newOffering.id) {
+      // Update the offering in the list for real-time preview
+      setOfferings(prev => prev.map(offering => 
+        offering.id === newOffering.id ? {
+          ...offering,
+          name: newOffering.name,
+          short_description: newOffering.short_description,
+          price: newOffering.price,
+          currency: newOffering.currency,
+          image_url: newOffering.image_url || offering.image_url
+        } : offering
+      ));
+    }
+  }, [newOffering.name, newOffering.short_description, newOffering.price, newOffering.currency, newOffering.image_url, newOffering.id]);
 
   // Helper function to upload image to Supabase Storage
   const uploadImageToSupabase = async (file: File, folder: string): Promise<string | null> => {
@@ -167,90 +184,79 @@ export default function ManageOfferingsPage() {
     try {
       const resizedFile = await resizeImage(files[0], 800, 600, 0.8);
       const previewUrl = URL.createObjectURL(resizedFile);
-      setNewOffering(prev => {
-        return {
-          ...prev,
-          image_file: resizedFile, // Store the actual File object
-          image_url: '' // Do NOT store the blob URL here. This will be populated after upload.
-        };
-      });
+      
+      // Store the File object separately
+      setNewOfferingFile(resizedFile);
+      
+      // Update the form state with the preview URL for immediate visual feedback
+      setNewOffering(prev => ({
+        ...prev,
+        image_url: previewUrl
+      }));
+      
       setNewOfferingImagePreview(previewUrl);
-      console.log('🖼️ Image uploaded - File object stored, preview URL set separately');
+      console.log('🖼️ Image selected - File object stored, preview URL set for immediate feedback');
     } catch (error) {
       console.error('Error processing offering image:', error);
       alert('Failed to process offering image. Please try a different file or a smaller image.');
     }
   };
 
-  const addOffering = () => {
-    console.log('🔍 DEBUG: addOffering called. newOffering state:', {
-      name: newOffering.name,
-      id: newOffering.id,
-      hasImageFile: !!newOffering.image_file,
-      imageFileType: newOffering.image_file ? typeof newOffering.image_file : 'none',
-      imageFileConstructor: newOffering.image_file ? newOffering.image_file.constructor.name : 'none',
-      imageUrl: newOffering.image_url,
-      imageUrlType: typeof newOffering.image_url,
-      isBlob: newOffering.image_url ? newOffering.image_url.startsWith('blob:') : false
-    });
-    
+  const handleSaveOfferingToLocalState = () => {
     if (!newOffering.name.trim() || !newOffering.short_description.trim() || newOffering.price <= 0) {
       alert('Please fill in all required fields for the offering (Name, Short Description, Price).');
       return;
     }
 
-    // Generate a unique key for this offering
-    const offeringKey = newOffering.id || `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Store the File object separately if it exists
-    if (newOffering.image_file) {
-      console.log('📁 Storing File object for offering:', offeringKey);
-      setOfferingFiles(prev => new Map(prev).set(offeringKey, newOffering.image_file!));
-    }
     if (newOffering.id) {
       // Update existing offering
       setOfferings(prev => prev.map(offering => 
         offering.id === newOffering.id ? {
-          id: newOffering.id,
+          ...offering,
           name: newOffering.name,
           short_description: newOffering.short_description,
           price: newOffering.price,
           currency: newOffering.currency,
-          image_file: null, // Don't store File in state
-          image_url: newOffering.image_url || offering.image_url // Keep existing permanent URL if no new one
+          image_url: newOffering.image_url || offering.image_url
         } : offering
       ));
-      console.log('🔄 Updated existing offering in local state');
+      console.log('🔄 Updated existing offering in local state - form remains populated for further edits');
     } else {
       // Add new offering
+      const offeringKey = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const newOfferingForState = {
         id: offeringKey,
         name: newOffering.name,
         short_description: newOffering.short_description,
         price: newOffering.price,
         currency: newOffering.currency,
-        image_file: null, // Don't store File in state
+        image_file: null,
         image_url: newOffering.image_url
       };
       
       setOfferings(prev => [...prev, newOfferingForState]);
-      console.log('➕ Added new offering to local state');
+      
+      // Clear form only for new offerings
+      clearForm();
+      console.log('➕ Added new offering to local state and cleared form');
     }
-    
-    // Reset form
-    clearForm();
-    console.log('🧹 Form reset completed');
   };
   
   const clearForm = () => {
+    // Revoke blob URL if it exists
+    if (newOfferingImagePreview && newOfferingImagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(newOfferingImagePreview);
+    }
+    
     setNewOffering({
       name: '',
       short_description: '',
       image_file: null,
-      image_url: '', // Explicitly clear to prevent blob URLs
+      image_url: '',
       price: 0,
       currency: 'USD',
     });
+    setNewOfferingFile(null);
     setNewOfferingImagePreview(null);
     setEditingOffering(null);
     
@@ -263,14 +269,12 @@ export default function ManageOfferingsPage() {
 
   const removeOffering = (indexToRemove: number) => {
     const offeringToRemove = offerings[indexToRemove];
-    if (offeringToRemove?.id) {
-      // Remove associated File object
-      setOfferingFiles(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(offeringToRemove.id!);
-        return newMap;
-      });
+    
+    // If we're removing the currently edited offering, clear the form
+    if (offeringToRemove?.id === newOffering.id) {
+      clearForm();
     }
+    
     setOfferings(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
@@ -292,34 +296,12 @@ export default function ManageOfferingsPage() {
       const offeringsToCreate = offerings.filter(offering => !offering.id);
       const offeringsToUpdate = offerings.filter(offering => offering.id);
       
-      console.log('🔍 DEBUG: Offerings categorization:', {
+      console.log('🔍 Offerings categorization:', {
         totalOfferings: offerings.length,
         offeringsToCreate: offeringsToCreate.length,
         offeringsToUpdate: offeringsToUpdate.length,
         offeringsToDelete: offeringsToDelete.length
       });
-      
-      console.log('🔍 DEBUG: offeringsToCreate detailed analysis:', offeringsToCreate.map(o => ({
-        name: o.name,
-        hasId: !!o.id,
-        hasImageFile: !!o.image_file,
-        imageFileType: o.image_file ? typeof o.image_file : 'none',
-        imageFileConstructor: o.image_file ? o.image_file.constructor.name : 'none',
-        imageUrl: o.image_url,
-        imageUrlType: typeof o.image_url,
-        isBlob: o.image_url ? o.image_url.startsWith('blob:') : false
-      })));
-      
-      console.log('🔍 DEBUG: offeringsToUpdate detailed analysis:', offeringsToUpdate.map(o => ({
-        name: o.name,
-        id: o.id,
-        hasImageFile: !!o.image_file,
-        imageFileType: o.image_file ? typeof o.image_file : 'none',
-        imageFileConstructor: o.image_file ? o.image_file.constructor.name : 'none',
-        imageUrl: o.image_url,
-        imageUrlType: typeof o.image_url,
-        isBlob: o.image_url ? o.image_url.startsWith('blob:') : false
-      })));
 
       // Delete removed offerings
       for (const offering of offeringsToDelete) {
@@ -329,31 +311,13 @@ export default function ManageOfferingsPage() {
 
       // Create new offerings
       for (const offering of offeringsToCreate) {
-        console.log('🔍 DEBUG: Processing offering for creation:', offering.name);
-        
-        // Get the File object from our separate storage
-        const storedFile = offeringFiles.get(offering.id!);
-        console.log('🔍 DEBUG: Creation offering details:', {
-          name: offering.name,
-          id: offering.id,
-          hasStoredFile: !!storedFile,
-          storedFileType: storedFile ? typeof storedFile : 'none',
-          storedFileConstructor: storedFile ? storedFile.constructor.name : 'none',
-          storedFileSize: storedFile ? storedFile.size : 'none',
-          storedFileName: storedFile ? storedFile.name : 'none',
-          imageUrl: offering.image_url,
-          imageUrlType: typeof offering.image_url,
-          isBlob: offering.image_url ? offering.image_url.startsWith('blob:') : false
-        });
-        
         console.log('➕ Creating offering:', offering.name);
         let finalImageUrl = '';
         
-        // Handle image upload for new offerings
-        if (storedFile) {
-          console.log('🔍 DEBUG: ✅ ENTERING stored file upload branch for creation');
+        // Check if this is the currently edited offering with a new file
+        if (offering.id === newOffering.id && newOfferingFile) {
           console.log('📤 Uploading new image for offering:', offering.name);
-          const uploadedUrl = await uploadImageToSupabase(storedFile, 'offerings');
+          const uploadedUrl = await uploadImageToSupabase(newOfferingFile, 'offerings');
           if (uploadedUrl) {
             finalImageUrl = uploadedUrl;
             console.log('✅ Image uploaded successfully:', uploadedUrl);
@@ -361,16 +325,11 @@ export default function ManageOfferingsPage() {
             console.warn(`❌ Failed to upload image for offering: ${offering.name}`);
           }
         } else if (offering.image_url && !offering.image_url.startsWith('blob:')) {
-          console.log('🔍 DEBUG: ✅ ENTERING existing permanent URL branch for creation');
-          // Use existing permanent URL (not a blob URL)
+          // Use existing permanent URL
           finalImageUrl = offering.image_url;
           console.log('🔗 Using existing image URL:', finalImageUrl);
-        } else {
-          console.log('🔍 DEBUG: ❌ NO VALID IMAGE found for creation, setting finalImageUrl to empty');
-          console.log('📷 No valid image for offering:', offering.name);
         }
         
-        console.log('💾 Creating offering with image URL:', finalImageUrl);
         const result = await OfferingService.createOffering(businessId, {
           title: offering.name,
           description: offering.short_description,
@@ -389,50 +348,26 @@ export default function ManageOfferingsPage() {
 
       // Update existing offerings
       for (const offering of offeringsToUpdate) {
-        console.log('🔍 DEBUG: Processing offering for update:', offering.name);
-        
-        // Get the File object from our separate storage
-        const storedFile = offeringFiles.get(offering.id!);
-        console.log('🔍 DEBUG: Update offering details:', {
-          name: offering.name,
-          id: offering.id,
-          hasStoredFile: !!storedFile,
-          storedFileType: storedFile ? typeof storedFile : 'none',
-          storedFileConstructor: storedFile ? storedFile.constructor.name : 'none',
-          storedFileSize: storedFile ? storedFile.size : 'none',
-          storedFileName: storedFile ? storedFile.name : 'none',
-          imageUrl: offering.image_url,
-          imageUrlType: typeof offering.image_url,
-          isBlob: offering.image_url ? offering.image_url.startsWith('blob:') : false
-        });
-        
         console.log('✏️ Updating offering:', offering.name);
         let finalImageUrl = '';
         
-        // Handle image upload for updated offerings
-        if (storedFile) {
-          console.log('🔍 DEBUG: ✅ ENTERING stored file upload branch for update');
+        // Check if this is the currently edited offering with a new file
+        if (offering.id === newOffering.id && newOfferingFile) {
           console.log('📤 Uploading new image for updated offering:', offering.name);
-          const uploadedUrl = await uploadImageToSupabase(storedFile, 'offerings');
+          const uploadedUrl = await uploadImageToSupabase(newOfferingFile, 'offerings');
           if (uploadedUrl) {
             finalImageUrl = uploadedUrl;
             console.log('✅ New image uploaded successfully:', uploadedUrl);
           } else {
             console.warn(`❌ Failed to upload new image for offering: ${offering.name}`);
-            // Keep existing image if upload fails
             finalImageUrl = offering.image_url && !offering.image_url.startsWith('blob:') ? offering.image_url : '';
           }
         } else if (offering.image_url && !offering.image_url.startsWith('blob:')) {
-          console.log('🔍 DEBUG: ✅ ENTERING existing permanent URL branch for update');
-          // Keep existing permanent URL (not a blob URL)
+          // Keep existing permanent URL
           finalImageUrl = offering.image_url;
           console.log('🔗 Keeping existing image URL:', finalImageUrl);
-        } else {
-          console.log('🔍 DEBUG: ❌ NO VALID IMAGE found for update, setting finalImageUrl to empty');
-          console.log('📷 No valid image for updated offering:', offering.name);
         }
         
-        console.log('💾 Updating offering with image URL:', finalImageUrl);
         const result = await OfferingService.updateOffering(offering.id!, {
           title: offering.name,
           description: offering.short_description,
@@ -447,14 +382,19 @@ export default function ManageOfferingsPage() {
         console.log('✅ Successfully updated offering:', offering.name);
       }
 
-      console.log('🎉 All offerings processed successfully, navigating to dashboard');
+      console.log('🎉 All offerings processed successfully');
+      
+      // Clear the current form if we were editing
+      if (newOffering.id) {
+        clearForm();
+      }
+      
       navigate('/dashboard');
     } catch (error) {
       console.error('Error saving offerings:', error);
       alert(`Error saving offerings: ${error instanceof Error ? error.message : 'Please try again.'}`);
     } finally {
       setIsSaving(false);
-      console.log('🔚 handleSaveOfferings function completed');
     }
   };
 
@@ -625,7 +565,7 @@ export default function ManageOfferingsPage() {
               
               <button
                 type="button"
-                onClick={addOffering}
+                onClick={handleSaveOfferingToLocalState}
                 className="w-full px-6 py-4 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl font-poppins font-bold text-lg uppercase tracking-wide hover:shadow-lg hover:shadow-primary-500/25 transition-all duration-200 flex items-center justify-center"
               >
                 {isEditMode ? (
@@ -699,13 +639,37 @@ export default function ManageOfferingsPage() {
                           <h3 className="font-poppins font-bold text-neutral-900 text-lg mb-1 truncate">
                             {offering.name}
                           </h3>
-                          <p className="font-lora text-sm text-neutral-600 line-clamp-2 mb-2">
-                            {offering.short_description}
-                          </p>
-                          <div className="flex items-center">
-                            <span className="font-poppins text-lg font-bold text-primary-600">
-                              ${offering.price.toFixed(2)}
-                            </span>
+                          <div className="flex flex-col gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // Load this offering into the edit form
+                                setNewOffering({
+                                  id: offering.id,
+                                  name: offering.name,
+                                  short_description: offering.short_description,
+                                  price: offering.price,
+                                  currency: offering.currency,
+                                  image_file: null,
+                                  image_url: offering.image_url
+                                });
+                                setNewOfferingImagePreview(offering.image_url || null);
+                                setNewOfferingFile(null);
+                                setEditingOffering(offering);
+                              }}
+                              className="p-2 text-neutral-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all duration-200 opacity-0 group-hover:opacity-100"
+                              title="Edit offering"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeOffering(index)}
+                              className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-200 opacity-0 group-hover:opacity-100"
+                              title="Remove offering"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
                           </div>
                         </div>
                         <button
