@@ -7,6 +7,7 @@ import BusinessProfileModal from './BusinessProfileModal';
 import LeaveReviewModal from './LeaveReviewModal';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
+import { SemanticSearchService } from '../services/semanticSearchService';
 import { getMatchPercentage } from '../utils/similarityUtils';
 import { getSentimentRating } from '../utils/displayUtils';
 
@@ -118,6 +119,7 @@ const ExploreArea = () => {
           .map(business => business.business_id || business.id)
           .filter(Boolean);
         
+        const realBusinesses = await BusinessService.getAllBusinesses();
         transformedBusinesses = realBusinesses.map(business => ({
           id: business.id,
           name: business.name,
@@ -159,39 +161,78 @@ const ExploreArea = () => {
               text: review.review_text || 'No review text available',
               author: review.profiles?.name || 'Anonymous',
               authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
-        let allOfferingReviews: any[] = [];
-        let allBusinessReviews: any[] = [];
-        
-        if (offeringIds.length > 0) {
-          console.log('📦 Batch fetching reviews for', offeringIds.length, 'offerings');
-          allOfferingReviews = await ReviewService.getReviewsForOffering(offeringIds);
-        }
-        
-          const formattedReviews = reviews.map((review: any) => ({
-          console.log('📦 Batch fetching reviews for', businessIds.length, 'businesses');
-          allBusinessReviews = await ReviewService.getReviewsForBusiness(businessIds);
+              images: review.images || [],
+              thumbsUp: review.thumbs_up || false
+            }));
+            
             return {
               ...business,
-        // Create maps for quick lookup
-        const offeringReviewsMap = new Map();
-        const businessReviewsMap = new Map();
-        
-        allOfferingReviews.forEach(review => {
-            reviews: formattedReviews,
-            offeringReviewsMap.set(review.offering_id, []);
-          }
-          offeringReviewsMap.get(review.offering_id).push(review);
-        });
-        
+              reviews: formattedReviews
+            };
           } catch (error) {
-          if (!businessReviewsMap.has(review.business_id)) {
-            businessReviewsMap.set(review.business_id, []);
+            console.error('Error fetching reviews for business:', business.id, error);
+            return business;
           }
         })
       );
       
+      // Handle batch review fetching
+      let allOfferingReviews: any[] = [];
+      let allBusinessReviews: any[] = [];
+      
+      if (offeringIds.length > 0) {
+        console.log('📦 Batch fetching reviews for', offeringIds.length, 'offerings');
+        allOfferingReviews = await ReviewService.getReviewsForOffering(offeringIds);
+      }
+      
+      if (businessIds.length > 0) {
+        console.log('📦 Batch fetching reviews for', businessIds.length, 'businesses');
+        allBusinessReviews = await ReviewService.getReviewsForBusiness(businessIds);
+      }
+      
+      // Create maps for quick lookup
+      const offeringReviewsMap = new Map();
+      const businessReviewsMap = new Map();
+      
+      allOfferingReviews.forEach(review => {
+        if (!offeringReviewsMap.has(review.offering_id)) {
+          offeringReviewsMap.set(review.offering_id, []);
+        }
+        offeringReviewsMap.get(review.offering_id).push(review);
+      });
+      
+      allBusinessReviews.forEach(review => {
+        if (!businessReviewsMap.has(review.business_id)) {
+          businessReviewsMap.set(review.business_id, []);
+        }
+        businessReviewsMap.get(review.business_id).push(review);
+      });
+      
+      // Attach reviews to businesses
+      transformedBusinesses.forEach(business => {
+        let reviews = [];
+        
+        if (business.source === 'offering') {
+          reviews = offeringReviewsMap.get(business.id) || [];
+        } else if (business.source === 'platform_business') {
+          const businessId = business.business_id || business.id;
+          reviews = businessReviewsMap.get(businessId) || [];
+        }
+        
+        const formattedReviews = reviews.map((review: any) => ({
+          text: review.review_text || 'No review text available',
+          author: review.profiles?.name || 'Anonymous',
+          authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
+          images: review.images || [],
+          thumbsUp: review.thumbs_up || false
+        }));
+        
+        business.reviews = formattedReviews;
+      });
+      
       setBusinesses(businessesWithReviews);
     } catch (error) {
+      console.error('Error loading nearby businesses:', error);
       setBusinesses([]);
     } finally {
       setLoading(false);
@@ -328,21 +369,20 @@ const ExploreArea = () => {
     }
   };
 
+  const openImageGallery = (business: Business, reviewIndex: number, imageIndex: number) => {
+    // Handle image gallery opening logic here
+    console.log('Opening image gallery for business:', business.name, 'review:', reviewIndex, 'image:', imageIndex);
+  };
+
   return (
     <section className="py-6 bg-white">
-          businessReviewsMap.get(review.business_id).push(review);
+      <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="font-cinzel text-xl font-bold text-neutral-900">
               Explore new businesses
-          let reviews = [];
-          
-          if (business.source === 'offering') {
-            reviews = offeringReviewsMap.get(business.id) || [];
-          } else if (business.source === 'platform_business') {
-            const businessId = business.business_id || business.id;
-            reviews = businessReviewsMap.get(businessId) || [];
-          }
+            </h2>
+          </div>
           
           <button
             onClick={handleRefresh}
