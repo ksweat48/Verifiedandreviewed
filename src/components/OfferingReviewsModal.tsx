@@ -100,37 +100,8 @@ const OfferingReviewsModal: React.FC<OfferingReviewsModalProps> = ({
     } catch (err) {
       console.error('Error fetching offering reviews:', err);
       setError('Failed to load reviews');
-      // For demo purposes, show mock reviews
-      setReviews([
-        {
-          id: 'mock-1',
-          user_id: 'user-1',
-          offering_id: offeringId,
-          review_text: 'Amazing smoothie! Fresh ingredients and perfect blend. Highly recommend!',
-          rating: 5,
-          image_urls: [],
-          status: 'approved',
-          created_at: new Date().toISOString(),
-          profiles: {
-            name: 'Sarah Johnson',
-            avatar_url: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100'
-          }
-        },
-        {
-          id: 'mock-2',
-          user_id: 'user-2',
-          offering_id: offeringId,
-          review_text: 'Good taste but a bit pricey for the portion size.',
-          rating: 3,
-          image_urls: [],
-          status: 'approved',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          profiles: {
-            name: 'Mike Chen',
-            avatar_url: 'https://images.pexels.com/photos/1126993/pexels-photo-1126993.jpeg?auto=compress&cs=tinysrgb&w=100'
-          }
-        }
-      ]);
+      // Clear reviews on error
+      setReviews([]);
     } finally {
       setLoading(false);
     }
