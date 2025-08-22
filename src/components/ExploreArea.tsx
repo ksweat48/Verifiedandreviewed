@@ -240,6 +240,15 @@ const ExploreArea = () => {
     alert(`Thanks! We'll review ${business.name} for addition to our platform.`);
   };
 
+  const handleOpenOfferingReviews = (offering: any, businessName: string) => {
+    setSelectedOfferingForReviews({
+      id: offering.id,
+      title: offering.title,
+      businessName: businessName
+    });
+    setIsOfferingReviewsModalOpen(true);
+  };
+
   // Handle favoriting platform businesses
   const handleFavoritePlatformBusiness = async (business: Business) => {
     if (!currentUser) {
