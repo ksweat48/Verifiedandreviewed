@@ -532,6 +532,9 @@ export class OfferingService {
         throw error;
       }
 
+      // ADD DEBUG LOG TO INSPECT RAW SUPABASE DATA:
+      console.log('🔍 DEBUG: Raw data from Supabase in OfferingService:', JSON.stringify(data, null, 2));
+
       console.log('✅ Fetched', data?.length || 0, 'explore offerings');
       return data || [];
     } catch (error) {
