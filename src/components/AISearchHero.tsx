@@ -598,7 +598,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="cozy coffee shop, romantic dinner..."
+                  placeholder="vegan pancakes, stew chicken, tacos..."
                   className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg font-lora text-neutral-900 placeholder-neutral-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   autoFocus
                 />
