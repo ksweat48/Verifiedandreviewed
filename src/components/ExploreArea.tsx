@@ -321,7 +321,7 @@ const ExploreArea = () => {
             ))
           ) : (
             // Actual offering cards
-            offerings.map((offering) => {
+            businesses.map((offering) => {
               const business = offering.businesses;
               const serviceTypeBadge = getServiceTypeBadge(offering.service_type);
               
