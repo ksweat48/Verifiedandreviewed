@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ThumbsUp, ThumbsDown, Plus, Eye, Menu, Edit, Trash2, Package, ChevronLeft, ChevronRight, Building, AlertCircle, Tag, MapPin, Calendar } from 'lucide-react';
+import { format, getDay, getHours, getMinutes } from 'date-fns';
 import { BusinessService } from '../services/businessService';
 import { OfferingService } from '../services/offeringService';
 import BusinessProfileModal from './BusinessProfileModal';
@@ -102,10 +103,75 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
 
   // Helper function to determine if business is currently open
   const isBusinessOpen = (business: Business): boolean => {
-    // For demo purposes, return a random status
-    // In production, this would parse business.hours and business.days_closed
-    // to determine actual open/closed status based on current time
-    return Math.random() > 0.3; // 70% chance of being open
+    if (!business.hours) return false;
+    
+    const now = new Date();
+    const currentDay = getDay(now); // 0 = Sunday, 1 = Monday, etc.
+    const currentHour = getHours(now);
+    const currentMinute = getMinutes(now);
+    const currentTime = currentHour * 60 + currentMinute; // Convert to minutes
+    
+    // Check if today is a closed day
+    if (business.days_closed) {
+      const closedDays = business.days_closed.toLowerCase();
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const todayName = dayNames[currentDay];
+      
+      if (closedDays.includes(todayName) || closedDays.includes('daily')) {
+        return false;
+      }
+    }
+    
+    // Parse business hours (simplified parsing for common formats)
+    const hours = business.hours.toLowerCase();
+    
+    // Handle "24/7" or "24 hours"
+    if (hours.includes('24') && (hours.includes('7') || hours.includes('hour'))) {
+      return true;
+    }
+    
+    // Handle "closed" status
+    if (hours.includes('closed')) {
+      return false;
+    }
+    
+    // Try to parse time ranges like "9AM - 5PM" or "Monday - Friday 9AM - 5PM"
+    const timeMatch = hours.match(/(\d{1,2}):?(\d{0,2})\s*(am|pm)?\s*-\s*(\d{1,2}):?(\d{0,2})\s*(am|pm)/i);
+    
+    if (timeMatch) {
+      const [, startHour, startMin = '0', startPeriod, endHour, endMin = '0', endPeriod] = timeMatch;
+      
+      // Convert to 24-hour format
+      let openHour = parseInt(startHour);
+      let closeHour = parseInt(endHour);
+      
+      if (startPeriod && startPeriod.toLowerCase() === 'pm' && openHour !== 12) {
+        openHour += 12;
+      }
+      if (startPeriod && startPeriod.toLowerCase() === 'am' && openHour === 12) {
+        openHour = 0;
+      }
+      
+      if (endPeriod && endPeriod.toLowerCase() === 'pm' && closeHour !== 12) {
+        closeHour += 12;
+      }
+      if (endPeriod && endPeriod.toLowerCase() === 'am' && closeHour === 12) {
+        closeHour = 0;
+      }
+      
+      const openTime = openHour * 60 + parseInt(startMin);
+      const closeTime = closeHour * 60 + parseInt(endMin);
+      
+      // Handle overnight hours (e.g., 10PM - 2AM)
+      if (closeTime < openTime) {
+        return currentTime >= openTime || currentTime <= closeTime;
+      } else {
+        return currentTime >= openTime && currentTime <= closeTime;
+      }
+    }
+    
+    // Default to closed if we can't parse the hours
+    return false;
   };
 
   // Helper function to get offering rating data
@@ -438,7 +504,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                             
                             {/* Offering Details */}
                             <div className="space-y-2">
-                              <h6 className="font-poppins font-semibold text-primary-600 text-sm line-clamp-1">
+                              <h6 className="font-poppins font-bold text-black text-sm line-clamp-1">
                                 {offering.title}
                               </h6>
                               
