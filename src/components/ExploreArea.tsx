@@ -55,6 +55,12 @@ const ExploreArea = () => {
   const [selectedBusinessForProfile, setSelectedBusinessForProfile] = useState<Business | null>(null);
   const [leaveReviewModalOpen, setLeaveReviewModalOpen] = useState(false);
   const [selectedBusinessForReview, setSelectedBusinessForReview] = useState<Business | null>(null);
+  const [isOfferingReviewsModalOpen, setIsOfferingReviewsModalOpen] = useState(false);
+  const [selectedOfferingForReviews, setSelectedOfferingForReviews] = useState<{
+    id: string;
+    title: string;
+    businessName: string;
+  } | null>(null);
   
   useEffect(() => {
     loadNearbyBusinesses();
