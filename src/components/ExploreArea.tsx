@@ -377,6 +377,10 @@ const ExploreArea = () => {
   return (
     <section className="bg-white">
       <div className="container mx-auto px-4">
+        <h2 className="font-cinzel text-xl font-bold text-neutral-900 mb-6 text-center">
+          Discover new businesses by offerings
+        </h2>
+        
         <div className="flex items-center justify-between mb-8">
           <div>
           </div>
