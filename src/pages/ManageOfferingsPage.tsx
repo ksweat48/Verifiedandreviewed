@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Upload, X, Plus, ArrowLeft, Trash2, Save, Camera, DollarSign } from 'lucide-react';
+import { Upload, X, Plus, ArrowLeft, Trash2, Save, Camera, DollarSign, Edit } from 'lucide-react';
 import { OfferingService } from '../services/offeringService';
 import { BusinessService } from '../services/businessService';
 import { useAuth } from '../hooks/useAuth';
