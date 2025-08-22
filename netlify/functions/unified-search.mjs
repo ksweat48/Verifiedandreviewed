@@ -347,11 +347,14 @@ Requirements:
     // STEP 5: Calculate distances if user location provided
     if (combinedResults.length > 0 && latitude && longitude) {
       try {
-        console.log('📏 Step 5: Calculating accurate distances...');
+        console.log('📏 Step 5: Calculating accurate distances for', combinedResults.length, 'results...');
+        console.log('📏 User location:', { latitude, longitude });
         
         const businessesWithCoords = combinedResults.filter(result => 
           result.latitude && result.longitude
         );
+        
+        console.log('📏 Businesses with coordinates:', businessesWithCoords.length, 'out of', combinedResults.length);
         
         if (businessesWithCoords.length > 0) {
           const origin = { latitude, longitude };
@@ -361,12 +364,21 @@ Requirements:
             businessId: result.business_id
           }));
           
+          console.log('📏 Calling distance calculation service with:', {
+            origin,
+            destinationCount: destinations.length,
+            destinations: destinations.slice(0, 3) // Log first 3 for debugging
+          });
+          
           const distanceResponse = await axios.post(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/get-business-distances`, {
             origin,
             destinations
           }, {
             timeout: 15000
           });
+          
+          console.log('📏 Distance service response status:', distanceResponse.status);
+          console.log('📏 Distance service response data:', distanceResponse.data);
           
           if (distanceResponse.data.success) {
             const distanceMap = new Map();
@@ -377,9 +389,13 @@ Requirements:
               });
             });
             
+            console.log('📏 Distance map created with', distanceMap.size, 'entries');
+            console.log('📏 Sample distance data:', Array.from(distanceMap.entries()).slice(0, 3));
+            
             combinedResults = combinedResults.map(result => {
               const distanceData = distanceMap.get(result.business_id);
               if (distanceData) {
+                console.log('📏 Updating distance for', result.name || result.business_name, ':', distanceData);
                 return {
                   ...result,
                   distance: distanceData.distance,
@@ -390,23 +406,37 @@ Requirements:
             });
             
             console.log('✅ Updated results with accurate distances');
+          } else {
+            console.error('❌ Distance service returned failure:', distanceResponse.data);
           }
+        } else {
+          console.log('⚠️ No businesses have coordinates for distance calculation');
         }
       } catch (distanceError) {
-        console.warn('⚠️ Distance calculation failed:', distanceError.message);
+        console.error('❌ Distance calculation failed:', {
+          message: distanceError.message,
+          response: distanceError.response?.data,
+          status: distanceError.response?.status,
+          config: distanceError.config
+        });
       }
     }
 
     // NEW: Filter combined results by max_distance_miles after distances are calculated
     if (latitude && longitude) {
-      const maxDistance = 30; // Define the max distance in miles
+      const maxDistance = 10; // Define the max distance in miles (reduced from 30)
       combinedResults = combinedResults.filter(result => {
         // Keep results without distance data (fallback)
         if (!result.distance || result.distance === 999999) {
+          console.log('📏 Keeping result without distance data:', result.name || result.business_name);
           return true;
         }
         // Filter by distance
-        return result.distance <= maxDistance;
+        const withinRadius = result.distance <= maxDistance;
+        if (!withinRadius) {
+          console.log('📏 Filtering out result beyond', maxDistance, 'miles:', result.name || result.business_name, 'at', result.distance, 'miles');
+        }
+        return withinRadius;
       });
       console.log(`📏 Filtered to ${combinedResults.length} results within ${maxDistance} miles`);
     }
