@@ -378,8 +378,9 @@ const ExploreArea = () => {
     <section className="bg-white">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
-          <div>
-          </div>
+          <span className="font-lora text-sm text-neutral-600">
+            Discover new businesses by offerings
+          </span>
           
           <button
             onClick={handleRefresh}
