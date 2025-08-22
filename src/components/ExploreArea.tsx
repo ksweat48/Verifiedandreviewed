@@ -76,7 +76,12 @@ const ExploreArea = () => {
       
       if (searchResponse.success && searchResponse.results.length > 0) {
         // Use unified search results (prioritizing platform offerings)
-        transformedBusinesses = searchResponse.results.map(business => ({
+        // Filter to only show platform offerings (source: 'offering')
+        const platformOfferings = searchResponse.results.filter(business => 
+          business.source === 'offering'
+        );
+        
+        transformedBusinesses = platformOfferings.map(business => ({
           id: business.id || business.business_id,
           name: business.name || business.business_name,
           category: business.category || business.business_category,
