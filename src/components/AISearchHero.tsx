@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Zap, X, ArrowRight, Navigation, Sparkles, Mic, LayoutDashboard } from 'lucide-react';
+import { Search, Zap, X, ArrowRight, Mic, LayoutDashboard } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useGeolocation } from '../hooks/useGeolocation';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
 import { SemanticSearchService } from '../services/semanticSearchService';
@@ -10,12 +9,10 @@ import { CreditService } from '../services/creditService';
 import { UserService } from '../services/userService';
 import { ActivityService } from '../services/activityService';
 import { useAnalytics } from '../hooks/useAnalytics';
-import { calculateCompositeScore } from '../utils/similarityUtils';
 import PlatformBusinessCard from './PlatformBusinessCard';
 import AIBusinessCard from './AIBusinessCard';
 import SignupPrompt from './SignupPrompt';
 import AuthModal from './AuthModal';
-import CreditInfoTooltip from './CreditInfoTooltip';
 import { supabase } from '../services/supabaseClient';
 import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
 import { getAvatarForUser } from '../utils/displayUtils';
@@ -44,203 +41,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [isListening, setIsListening] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [signupPromptConfig, setSignupPromptConfig] = useState<any>(null);
-  const [realUserSearches, setRealUserSearches] = useState<Array<{
-    avatar: string;
-    username: string;
-    query: string;
-  }>>([]);
-  const [loadingRealSearches, setLoadingRealSearches] = useState(true);
-  const [quickSearches, setQuickSearches] = useState<string[]>([]);
   const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   // Get pending reviews count for notification dot
   const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);
   
-  // Random user search display state
-  const [currentUserSearchIndex, setCurrentUserSearchIndex] = useState(0);
-  const [isSearchAnimating, setIsSearchAnimating] = useState(false);
-  
-  const { latitude, longitude, error: locationError } = useGeolocation();
-
-  // All possible quick search options
-  const allQuickSearches = [
-    'cozy coffee shop',
-    'romantic dinner',
-    'energetic workout',
-    'peaceful brunch',
-    'trendy bar',
-    'artisan bakery',
-    'vintage bookstore',
-    'rooftop lounge',
-    'farm-to-table',
-    'craft brewery',
-    'yoga studio',
-    'jazz club',
-    'sushi bar',
-    'wine tasting',
-    'live music venue',
-    'healthy smoothies',
-    'late night eats',
-    'outdoor patio',
-    'intimate bistro',
-    'hipster cafe'
-  ];
-
-  // Randomly select 4 quick searches on component mount
-  useEffect(() => {
-    const shuffled = [...allQuickSearches].sort(() => 0.5 - Math.random());
-    setQuickSearches(shuffled.slice(0, 4)); // Only show 4 instead of 5
-  }, []);
-
-  // Fetch real user searches from Supabase
-  useEffect(() => {
-    const fetchRealUserSearches = async () => {
-      try {
-        setLoadingRealSearches(true);
-        
-        // Query user activity logs for search events from ALL users with profile data
-        const { data, error } = await supabase
-          .from('user_activity_logs')
-          .select(`
-            event_details,
-            created_at,
-            profiles!inner (
-              id,
-              name,
-              username,
-              avatar_url
-            )
-          `)
-          .eq('event_type', 'search')
-          .not('event_details->search_query', 'is', null)
-          .order('created_at', { ascending: false })
-          .limit(50); // Get more searches to ensure variety
-
-        if (error) {
-          console.error('Error fetching real user searches:', error);
-          // Fallback to mock data if fetch fails
-          setRealUserSearches([
-            {
-              avatar: defaultAvatars[0],
-              username: 'Sarah',
-              query: 'cozy coffee shop'
-            },
-            {
-              avatar: defaultAvatars[1],
-              username: 'Mike',
-              query: 'romantic dinner'
-            },
-            {
-              avatar: defaultAvatars[2],
-              username: 'Emma',
-              query: 'trendy bar'
-            }
-          ]);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          // Transform the data and ensure we're showing different users
-          const formattedSearches = data
-            .filter(log => 
-              log.event_details?.search_query && 
-              log.profiles?.name &&
-              log.profiles?.id &&
-              log.event_details.search_query.trim().length > 0 &&
-              log.event_details.search_query.trim().length < 50 // Exclude very long queries
-            )
-            .map(log => ({
-              avatar: getAvatarForUser(log.profiles.id, log.profiles.avatar_url),
-              username: log.profiles.username || log.profiles.name.split(' ')[0], // Use first name if no username
-              query: log.event_details.search_query,
-              userId: log.profiles.id // Add user ID for debugging
-            }))
-            // Remove duplicates by user + query combination
-            .filter((search, index, array) => 
-              array.findIndex(s => s.userId === search.userId && s.query === search.query) === index
-            )
-            .slice(0, 15); // Limit to 15 most recent searches
-
-          setRealUserSearches(formattedSearches);
-          console.log('✅ Fetched', formattedSearches.length, 'real user searches');
-          console.log('🔍 Sample searches:', formattedSearches.slice(0, 3).map(s => `${s.username}: "${s.query}"`));
-          console.log('🖼️ Sample avatars:', formattedSearches.slice(0, 3).map(s => `${s.username}: ${s.avatar}`));
-        } else {
-          console.log('⚠️ No real user searches found');
-          // Fallback to mock data if no real searches
-          setRealUserSearches([
-            {
-              avatar: defaultAvatars[0],
-              username: 'Sarah',
-              query: 'cozy coffee shop'
-            },
-            {
-              avatar: defaultAvatars[1],
-              username: 'Mike',
-              query: 'romantic dinner'
-            },
-            {
-              avatar: defaultAvatars[2],
-              username: 'Emma',
-              query: 'trendy bar'
-            }
-          ]);
-        }
-      } catch (error) {
-        console.error('Error fetching real user searches:', error);
-        // Fallback to mock data on error
-        setRealUserSearches([
-          {
-            avatar: defaultAvatars[0],
-            username: 'Sarah',
-            query: 'cozy coffee shop'
-          },
-          {
-            avatar: defaultAvatars[1],
-            username: 'Mike',
-            query: 'romantic dinner'
-          },
-          {
-            avatar: defaultAvatars[2],
-            username: 'Emma',
-            query: 'trendy bar'
-          }
-        ]);
-      } finally {
-        setLoadingRealSearches(false);
-      }
-    };
-
-    fetchRealUserSearches();
-  }, []);
-
-  // Cycle through user searches every 3 seconds
-  useEffect(() => {
-    if (isAppModeActive || realUserSearches.length === 0) return; // Don't cycle when in app mode or no data
-    
-    const interval = setInterval(() => {
-      setIsSearchAnimating(true);
-      
-      setTimeout(() => {
-        // Randomly select a different user search (not the current one)
-        const availableIndices = realUserSearches
-          .map((_, index) => index)
-          .filter(index => index !== currentUserSearchIndex);
-        
-        if (availableIndices.length > 0) {
-          const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-          setCurrentUserSearchIndex(randomIndex);
-        } else {
-          // Fallback if only one search available
-          setCurrentUserSearchIndex((prev) => (prev + 1) % realUserSearches.length);
-        }
-        setIsSearchAnimating(false);
-      }, 150); // Half of the transition duration
-    }, 3000);
-    
-    return () => clearInterval(interval);
-  }, [isAppModeActive, realUserSearches.length, currentUserSearchIndex]);
 
   // Handle browser back button when in app mode
   useEffect(() => {
@@ -318,11 +124,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     };
   }, [isAppModeActive, hasSearched, lastSearchQuery]);
 
-  const handleQuickSearch = (query: string) => {
-    setSearchQuery(query);
-    handleSearch(query);
-  };
-
   const handleSearch = async (query?: string) => {
     const searchTerm = query || searchQuery;
     if (!searchTerm.trim()) return;
@@ -398,8 +199,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       trackEvent('search_performed', {
         query: searchTerm,
         search_type: 'intelligent_unified',
-        user_authenticated: !!user,
-        has_location: !!(latitude && longitude)
+        user_authenticated: !!user
       });
 
       // Deduct credits for unified search
@@ -417,8 +217,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // Perform unified search
       console.log('🔍 Performing unified search...');
       const searchResponse = await SemanticSearchService.searchByVibe(searchTerm, {
-        latitude: latitude || undefined,
-        longitude: longitude || undefined,
+        latitude: undefined,
+        longitude: undefined,
         matchThreshold: 0.3,
         matchCount: 15
       });
@@ -708,12 +508,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   return (
     <>
       {/* Hero Section */}
-      <section className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
+      <section className="relative bg-white py-4">
         {/* Credits Display - Top Left */}
         {currentUser && !isAppModeActive && (
-          <div className="absolute top-4 left-4 z-20 flex items-center">
-            <Zap className="h-5 w-5 mr-2 text-white" />
-            <span className="font-poppins text-lg font-bold text-white">
+          <div className="absolute top-4 left-4 z-20 flex items-center bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-neutral-200">
+            <Zap className="h-5 w-5 mr-2 text-primary-500" />
+            <span className="font-poppins text-lg font-bold text-neutral-900">
               {currentUser.role === 'administrator' && userCredits >= 999999 ? '∞' : userCredits}
             </span>
           </div>
@@ -723,20 +523,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         {currentUser && !isAppModeActive && (
           <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
             <button
-             onClick={() => navigate('/dashboard', { state: { activeTab: 'favorites' } })}
-              className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+              onClick={() => navigate('/dashboard', { state: { activeTab: 'favorites' } })}
+              className="p-3 rounded-full bg-white/90 backdrop-blur-sm border border-neutral-200 hover:bg-neutral-100 transition-all duration-200 group"
               title="Favorites"
             >
-              <Icons.Heart className="h-5 w-5 text-white group-hover:text-red-300 transition-colors duration-200" />
+              <Icons.Heart className="h-5 w-5 text-neutral-600 group-hover:text-red-500 transition-colors duration-200" />
             </button>
             
             <div className="relative">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+                className="p-3 rounded-full bg-white/90 backdrop-blur-sm border border-neutral-200 hover:bg-neutral-100 transition-all duration-200 group"
                 title="Dashboard"
               >
-                <LayoutDashboard className="h-5 w-5 text-white group-hover:text-primary-300 transition-colors duration-200" />
+                <LayoutDashboard className="h-5 w-5 text-neutral-600 group-hover:text-primary-500 transition-colors duration-200" />
               </button>
               {/* Notification dot for pending reviews */}
               {!loadingPendingReviews && pendingReviewsCount > 0 && (
@@ -746,145 +546,31 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           </div>
         )}
 
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,107,94,0.2),transparent_50%)]"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(123,68,155,0.2),transparent_50%)]"></div>
-        </div>
-
-        {/* Floating Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-2 h-2 bg-white rounded-full opacity-60 animate-pulse"></div>
-          <div className="absolute top-40 right-20 w-1 h-1 bg-primary-400 rounded-full opacity-80 animate-pulse delay-1000"></div>
-          <div className="absolute bottom-40 left-20 w-1.5 h-1.5 bg-accent-400 rounded-full opacity-70 animate-pulse delay-2000"></div>
-          <div className="absolute bottom-20 right-10 w-2 h-2 bg-white rounded-full opacity-50 animate-pulse delay-500"></div>
-        </div>
-
-        {/* Main Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 text-center">
-          {/* Random User Search Display */}
-          <div className="mb-8 h-24 flex flex-col items-center justify-center">
-            {loadingRealSearches ? (
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-white/20 rounded-full animate-pulse mb-2"></div>
-                <p className="font-lora text-white/60 text-sm animate-pulse">
-                  Loading recent searches...
-                </p>
-              </div>
-            ) : realUserSearches.length > 0 ? (
-              <div className={`transition-opacity duration-300 ${isSearchAnimating ? 'opacity-0' : 'opacity-100'}`}>
-                <div className="flex flex-col items-center">
-                  <img 
-                    src={realUserSearches[currentUserSearchIndex].avatar}
-                    alt={realUserSearches[currentUserSearchIndex].username}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg mb-2"
-                  />
-                  <p className="font-lora text-white/80 text-sm">
-                    {realUserSearches[currentUserSearchIndex].username} searched: "{realUserSearches[currentUserSearchIndex].query}"
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-2">
-                  <Search className="h-6 w-6 text-white/40" />
-                </div>
-                <p className="font-lora text-white/60 text-sm">
-                  Be the first to search!
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Main Heading */}
-          <div className="mb-8">
-            <p className="font-lora text-2xl md:text-4xl text-white/90 max-w-2xl mx-auto leading-relaxed">
-              Experience something new
-            </p>
-          </div>
-
-          {/* Search Section */}
-          <div className="w-full max-w-2xl mx-auto mb-12">
+        {/* Minimal Header Content */}
+        <div className="relative z-10 flex flex-col items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+          {!isAppModeActive && (
             <div className="relative mb-6">
-              <div className="absolute inset-0 bg-white/10 backdrop-blur-sm rounded-2xl"></div>
-              <div className="relative bg-white/40 backdrop-blur-md rounded-2xl p-6 border border-white/50">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 relative">
-                    <button
-                      onClick={handleVoiceSearch}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-neutral-100 transition-colors duration-200"
-                      title={isListening ? 'Stop listening' : 'Voice search'}
-                    >
-                      <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : 'text-neutral-400'}`} />
-                    </button>
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                      placeholder="Describe your perfect vibe..."
-                     maxLength={150}
-                      className="w-full pl-4 pr-16 py-4 bg-white border border-white rounded-xl font-lora text-neutral-900 placeholder-neutral-600 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-                  <button
-                    onClick={() => handleSearch()}
-                    disabled={isSearching || !searchQuery.trim()}
-                    className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 py-4 md:px-8 rounded-xl font-poppins font-semibold hover:shadow-lg hover:shadow-primary-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                  >
-                    {isSearching ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    ) : (
-                      <>
-                        {/* Mobile: Search icon only */}
-                        <Search className="h-5 w-5 md:hidden" />
-                        {/* Desktop: Sparkles icon + Vibe text */}
-                        <span className="hidden md:inline">Vibe</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-               
-              </div>
-            </div>
-
-            {/* Quick Search Tags */}
-            <div className="text-center">
-              <div className="flex flex-wrap justify-center gap-2">
-                {quickSearches.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleQuickSearch(suggestion)}
-                    className="bg-white/10 backdrop-blur-sm text-white/90 px-4 py-2 rounded-full font-lora text-sm hover:bg-white/20 transition-all duration-200 border border-white/20 hover:border-white/30"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Location Status */}
-          {latitude && longitude ? (
-            <div className="flex items-center text-white/60 text-sm font-lora">
-              <MapPin className="h-4 w-4 mr-2" />
-              <span>Location detected • Finding nearby matches</span>
-            </div>
-          ) : locationError ? (
-            <div className="flex items-center text-white/60 text-sm font-lora">
-              <MapPin className="h-4 w-4 mr-2" />
-              <span>Enable location for better results</span>
-            </div>
-          ) : (
-            <div className="flex items-center text-white/60 text-sm font-lora">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white/60 mr-2"></div>
-              <span>Getting your location...</span>
+              <h1 className="font-cinzel text-3xl md:text-4xl font-bold text-neutral-900 text-center">
+                Verified & Reviewed
+              </h1>
+              <p className="font-lora text-lg text-neutral-600 text-center mt-2">
+                Discover amazing experiences, verified and reviewed
+              </p>
             </div>
           )}
         </div>
       </section>
+
+      {/* Floating Search Button */}
+      {!isAppModeActive && (
+        <button
+          onClick={() => setIsAppModeActive(true)}
+          className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
+          title="Search for experiences"
+        >
+          <Search className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
+        </button>
+      )}
 
       {/* Signup Prompt Modal */}
       {showSignupPrompt && (

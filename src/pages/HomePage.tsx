@@ -19,12 +19,12 @@ const HomePage: React.FC<HomePageProps> = ({ isAppModeActive, setIsAppModeActive
       
       {!isAppModeActive && (
         <>
-          <Suspense fallback={<div className="h-64 flex items-center justify-center">Loading featured blogs...</div>}>
-            <FeaturedBlogSection />
-          </Suspense>
-      
           <Suspense fallback={<div className="h-64 flex items-center justify-center">Loading explore area...</div>}>
             <ExploreArea />
+          </Suspense>
+      
+          <Suspense fallback={<div className="h-64 flex items-center justify-center">Loading featured blogs...</div>}>
+            <FeaturedBlogSection />
           </Suspense>
       
           <Suspense fallback={<div className="h-32 flex items-center justify-center">Loading digest...</div>}>

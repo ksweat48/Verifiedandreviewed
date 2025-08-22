@@ -63,18 +63,18 @@ const ExploreArea = () => {
     setLoading(true);
     
     try {
-      // Use the new unified search system for better discovery
-      const searchResponse = await SemanticSearchService.searchByVibe('local businesses near me', {
-        latitude: undefined, // Will use user's location if available
+      // Use the unified search system to get platform offerings
+      const searchResponse = await SemanticSearchService.searchByVibe('restaurants cafes bars food services', {
+        latitude: undefined,
         longitude: undefined,
-        matchThreshold: 0.2, // Lower threshold for broader discovery
+        matchThreshold: 0.1, // Very low threshold for broad discovery
         matchCount: 6
       });
       
       let transformedBusinesses = [];
       
       if (searchResponse.success && searchResponse.results.length > 0) {
-        // Use unified search results
+        // Use unified search results (prioritizing platform offerings)
         transformedBusinesses = searchResponse.results.map(business => ({
           id: business.id || business.business_id,
           name: business.name || business.business_name,
