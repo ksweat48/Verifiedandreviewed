@@ -78,7 +78,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         window.removeEventListener('popstate', handlePopState);
       };
     }
-  }, [isAppModeActive]);
+  }, [isAppModeActive, setIsAppModeActive]);
   // Check for current user and load credits
   useEffect(() => {
     const checkUser = async () => {
@@ -553,6 +553,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               <h1 className="font-cinzel text-3xl md:text-4xl font-bold text-neutral-900 text-center">
               </h1>
               <p className="font-lora text-lg text-neutral-600 text-center mt-2">
+              </p>
               <p className="font-lora text-lg text-neutral-600 text-center mt-6 pt-8">
                 Discover new businesses by offerings
               </p>
