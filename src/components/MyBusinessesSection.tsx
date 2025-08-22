@@ -110,25 +110,14 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
 
   // Helper function to get offering rating data
   const getOfferingRating = (offeringId: string) => {
-    // For demo purposes, return mock rating data
-    // In production, this would come from aggregated review data
-    const thumbsUp = Math.floor(Math.random() * 20) + 5;
-    const thumbsDown = Math.floor(Math.random() * 5);
-    return { thumbsUp, thumbsDown };
+    // Return empty rating data until real reviews are integrated
+    return { thumbsUp: 0, thumbsDown: 0 };
   };
 
   // Helper function to get sample review for offering
   const getSampleReview = (offeringId: string): string => {
-    // For demo purposes, return mock review text
-    // In production, this would come from actual offering reviews
-    const sampleReviews = [
-      "Amazing taste and fresh ingredients!",
-      "Perfect portion size and great value.",
-      "Love the healthy options here.",
-      "Excellent quality and service.",
-      "Fresh and delicious every time!"
-    ];
-    return sampleReviews[Math.floor(Math.random() * sampleReviews.length)];
+    // Return empty string until real reviews are integrated
+    return '';
   };
 
   const handleOpenOfferingReviews = (offering: any, businessName: string) => {
@@ -441,22 +430,9 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                               
                               {/* Rating Overlay - Bottom Right */}
                               <div className="absolute bottom-2 right-2">
-                                {(() => {
-                                  const rating = getOfferingRating(offering.id);
-                                  const isPositive = rating.thumbsUp > rating.thumbsDown;
-                                  return (
-                                    <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold flex items-center ${
-                                      isPositive ? 'bg-green-500' : 'bg-red-500'
-                                    }`}>
-                                      {isPositive ? (
-                                        <ThumbsUp className="h-3 w-3 mr-1 fill-current" />
-                                      ) : (
-                                        <ThumbsDown className="h-3 w-3 mr-1 fill-current" />
-                                      )}
-                                      <span>{isPositive ? rating.thumbsUp : rating.thumbsDown}</span>
-                                    </div>
-                                  );
-                                })()}
+                                <div className="px-2 py-1 rounded-full bg-neutral-500 text-white text-xs font-poppins font-bold flex items-center">
+                                  <span>No ratings</span>
+                                </div>
                               </div>
                             </div>
                             
@@ -495,12 +471,20 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                 className="bg-neutral-50 rounded-lg p-2 cursor-pointer hover:bg-neutral-100 transition-colors duration-200"
                                 onClick={() => handleOpenOfferingReviews(offering, business.name)}
                               >
-                                <p className="font-lora text-xs text-neutral-600 italic line-clamp-2">
-                                  "{getSampleReview(offering.id)}"
-                                </p>
-                                <p className="font-poppins text-xs text-primary-500 font-semibold mt-1">
-                                  View all reviews →
-                                </p>
+                                {getSampleReview(offering.id) ? (
+                                  <>
+                                    <p className="font-lora text-xs text-neutral-600 italic line-clamp-2">
+                                      "{getSampleReview(offering.id)}"
+                                    </p>
+                                    <p className="font-poppins text-xs text-primary-500 font-semibold mt-1">
+                                      View all reviews →
+                                    </p>
+                                  </>
+                                ) : (
+                                  <p className="font-lora text-xs text-neutral-500 italic text-center">
+                                    No reviews yet for this offering.
+                                  </p>
+                                )}
                               </div>
                               
                               {offering.tags && offering.tags.length > 0 && (
