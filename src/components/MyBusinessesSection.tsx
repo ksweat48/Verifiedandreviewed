@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, Plus, Eye, Menu, Edit, Trash2, Package, ChevronLeft, ChevronRight, Building, AlertCircle, Tag, MapPin, Calendar } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Plus, Eye, Menu, Edit, Trash2, Package, ChevronLeft, ChevronRight, Building, AlertCircle, Tag, MapPin, Calendar, Phone } from 'lucide-react';
 import { format, getDay, getHours, getMinutes } from 'date-fns';
 import { BusinessService } from '../services/businessService';
 import { OfferingService } from '../services/offeringService';
@@ -564,7 +564,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                     className="p-2 bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-700 rounded-lg transition-all duration-200 flex items-center justify-center"
                                     title="Call business"
                                   >
-                                    <Icons.Phone className="h-4 w-4" />
+                                    <Phone className="h-4 w-4" />
                                   </button>
                                 )}
                                 
@@ -583,7 +583,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                     className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center"
                                     title="Get directions"
                                   >
-                                    <Icons.MapPin className="h-4 w-4" />
+                                    <MapPin className="h-4 w-4" />
                                   </button>
                                 )}
                               </div>
