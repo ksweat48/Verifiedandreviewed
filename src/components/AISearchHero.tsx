@@ -508,7 +508,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   return (
     <>
       {/* Hero Section */}
-      <section className="relative bg-white py-4">
+      <section className="relative bg-white pt-4 pb-0">
         {/* Credits Display - Top Left */}
         {currentUser && !isAppModeActive && (
           <div className="absolute top-4 left-4 z-20 flex items-center bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-neutral-200">
@@ -554,7 +554,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               </h1>
               <p className="font-lora text-lg text-neutral-600 text-center mt-2">
               </p>
-              <p className="font-lora text-lg text-neutral-600 text-center mt-4 pt-4">
+              <p className="font-lora text-lg text-neutral-600 text-center mt-4 pt-8">
                 Discover new businesses by offerings
               </p>
             </div>
