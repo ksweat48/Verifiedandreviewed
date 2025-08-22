@@ -97,7 +97,7 @@ export class ReviewService {
   }
 
   // Get approved reviews for a business
-  static async getBusinessReviews(businessId: string | string[]): Promise<UserReview[]> {
+  static async getReviewsForBusiness(businessId: string | string[]): Promise<UserReview[]> {
     try {
       // Handle both single businessId and array of businessIds
       const isArray = Array.isArray(businessId);
@@ -125,6 +125,40 @@ export class ReviewService {
     }
   }
 
+  // Get approved reviews for an offering
+  static async getReviewsForOffering(offeringIds: string | string[]): Promise<UserReview[]> {
+    try {
+      // Handle both single offeringId and array of offeringIds
+      const isArray = Array.isArray(offeringIds);
+      const offeringIdArray = isArray ? offeringIds : [offeringIds];
+      
+      const { data, error } = await supabase
+        .from('user_reviews')
+        .select(`
+          *,
+          profiles!inner (
+            id,
+            name,
+            avatar_url
+          )
+        `)
+        .in('offering_id', offeringIdArray)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching offering reviews:', error);
+      return [];
+    }
+  }
+
+  // Legacy alias for backward compatibility
+  static async getBusinessReviews(businessId: string | string[]): Promise<UserReview[]> {
+    return this.getReviewsForBusiness(businessId);
+  }
+
   // Get user's reviews
   static async getUserReviews(userId: string): Promise<UserReview[]> {
     try {
@@ -132,10 +166,19 @@ export class ReviewService {
         .from('user_reviews')
         .select(`
           *,
-          businesses!inner (
+          businesses!left (
             id,
             name,
             location
+          ),
+          offerings!left (
+            id,
+            title,
+            businesses!inner (
+              id,
+              name,
+              location
+            )
           )
         `)
         .eq('user_id', userId)

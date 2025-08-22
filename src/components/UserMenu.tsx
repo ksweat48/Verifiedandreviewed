@@ -83,6 +83,38 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
       }
     },
     {
+      icon: Icons.BookOpen,
+      label: 'Blog',
+      action: () => {
+        navigate('/blog');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: Icons.Mail,
+      label: 'Contact Us',
+      action: () => {
+        alert('Contact form coming soon!');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: Icons.Shield,
+      label: 'Privacy Policy',
+      action: () => {
+        alert('Privacy Policy - Coming Soon');
+        setIsOpen(false);
+      }
+    },
+    {
+      icon: Icons.FileText,
+      label: 'Terms of Use',
+      action: () => {
+        alert('Terms of Service - Coming Soon');
+        setIsOpen(false);
+      }
+    },
+    {
       icon: Icons.LogOut,
       label: 'Sign Out',
       action: handleLogout,

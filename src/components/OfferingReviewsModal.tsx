@@ -52,23 +52,8 @@ const OfferingReviewsModal: React.FC<OfferingReviewsModalProps> = ({
     setError(null);
     
     try {
-      // Note: This assumes the database schema has been updated to include offering_id
-      const { data, error } = await supabase
-        .from('user_reviews')
-        .select(`
-          *,
-          profiles!inner (
-            name,
-            avatar_url
-          )
-        `)
-        .eq('offering_id', offeringId)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      setReviews(data || []);
+      const reviews = await ReviewService.getReviewsForOffering(offeringId);
+      setReviews(reviews);
     } catch (err) {
       console.error('Error fetching offering reviews:', err);
       setError('Failed to load reviews');

@@ -42,9 +42,9 @@ const ReviewerDashboardPage = () => {
           // Transform reviews to match expected format
           const formattedReviews = reviews.map(review => ({
             id: review.id,
-            businessId: review.business_id,
-            businessName: review.businesses?.name || 'Unknown Business',
-            location: review.businesses?.location || 'Unknown Location',
+            businessId: review.business_id || review.offering_id,
+            businessName: review.businesses?.name || review.offerings?.businesses?.name || 'Unknown Business',
+            location: review.businesses?.location || review.offerings?.businesses?.location || 'Unknown Location',
             rating: review.rating,
             status: review.status,
             isVerified: true,

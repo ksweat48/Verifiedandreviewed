@@ -79,7 +79,7 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
       setLoadingReviews(true);
       try {
         console.log('🔍 Fetching reviews for business:', business.id);
-        const reviews = await ReviewService.getBusinessReviews(business.id);
+        const reviews = await ReviewService.getReviewsForBusiness(business.id);
         console.log('✅ Fetched', reviews.length, 'reviews for business');
         setBusinessReviews(reviews);
       } catch (error) {

@@ -108,10 +108,15 @@ const ExploreArea = () => {
         }));
       } else {
         // Fallback to legacy business service if unified search fails
-        console.warn('⚠️ Unified search failed, falling back to legacy business service');
-        const realBusinesses = await BusinessService.getBusinesses({
-          verified_only: false
-        });
+        const offeringIds = searchResponse.results
+          .filter(business => business.source === 'offering')
+          .map(business => business.id)
+          .filter(Boolean);
+          
+        const businessIds = searchResponse.results
+          .filter(business => business.source === 'platform_business')
+          .map(business => business.business_id || business.id)
+          .filter(Boolean);
         
         transformedBusinesses = realBusinesses.map(business => ({
           id: business.id,
@@ -154,17 +159,33 @@ const ExploreArea = () => {
               text: review.review_text || 'No review text available',
               author: review.profiles?.name || 'Anonymous',
               authorImage: review.profiles?.avatar_url || 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100',
-              images: (review.image_urls || []).map(url => ({ url })),
-              thumbsUp: review.rating >= 4
-            }));
-            
+        let allOfferingReviews: any[] = [];
+        let allBusinessReviews: any[] = [];
+        
+        if (offeringIds.length > 0) {
+          console.log('📦 Batch fetching reviews for', offeringIds.length, 'offerings');
+          allOfferingReviews = await ReviewService.getReviewsForOffering(offeringIds);
+        }
+        
+          const formattedReviews = reviews.map((review: any) => ({
+          console.log('📦 Batch fetching reviews for', businessIds.length, 'businesses');
+          allBusinessReviews = await ReviewService.getReviewsForBusiness(businessIds);
             return {
               ...business,
-              reviews: formattedReviews
-            };
+        // Create maps for quick lookup
+        const offeringReviewsMap = new Map();
+        const businessReviewsMap = new Map();
+        
+        allOfferingReviews.forEach(review => {
+            reviews: formattedReviews,
+            offeringReviewsMap.set(review.offering_id, []);
+          }
+          offeringReviewsMap.get(review.offering_id).push(review);
+        });
+        
           } catch (error) {
-            console.error(`Error fetching reviews for business ${business.id}:`, error);
-            return business; // Return business without reviews if fetch fails
+          if (!businessReviewsMap.has(review.business_id)) {
+            businessReviewsMap.set(review.business_id, []);
           }
         })
       );
@@ -309,13 +330,19 @@ const ExploreArea = () => {
 
   return (
     <section className="py-6 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          businessReviewsMap.get(review.business_id).push(review);
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="font-cinzel text-xl font-bold text-neutral-900">
               Explore new businesses
-            </h2>
-          </div>
+          let reviews = [];
+          
+          if (business.source === 'offering') {
+            reviews = offeringReviewsMap.get(business.id) || [];
+          } else if (business.source === 'platform_business') {
+            const businessId = business.business_id || business.id;
+            reviews = businessReviewsMap.get(businessId) || [];
+          }
           
           <button
             onClick={handleRefresh}

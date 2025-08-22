@@ -63,7 +63,7 @@ const SinglePostPage = () => {
         // For now, we'll use a simple approach - in a full implementation,
         // you'd need to map WordPress posts to Supabase businesses
         // This is a placeholder that shows the structure
-        const reviews = await ReviewService.getBusinessReviews('placeholder-business-id');
+        const reviews = await ReviewService.getReviewsForBusiness('placeholder-business-id');
         setUserReviews(reviews);
       } catch (error) {
         console.error('Error fetching user reviews:', error);
