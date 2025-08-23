@@ -129,7 +129,7 @@ export const handler = async (event, context) => {
         'search_offerings_by_vibe',
         {
           query_embedding: queryEmbedding,
-          match_threshold: matchThreshold,
+          match_threshold: 0.5, // Increased from 0.3 for more accurate matching
           match_count: matchCount,
           user_latitude: latitude,
           user_longitude: longitude,
@@ -146,20 +146,21 @@ export const handler = async (event, context) => {
         // DEBUG: Log raw RPC results with similarity scores
         console.log('🔍 DEBUG: Raw offering search results from RPC:');
         offeringResults.forEach((result, index) => {
-          console.log(`  ${index + 1}. Offering ID: ${result.id}, Similarity: ${result.similarity}, Title: "${result.title || 'NO TITLE'}"`);
+          console.log(`  ${index + 1}. Offering ID: ${result.id}, Similarity: ${result.similarity?.toFixed(3)}, Title: "${result.title || 'NO TITLE'}", Business: "${result.business_name || 'NO BUSINESS'}"`);
         });
         
-        // Filter out results with very low similarity scores
+        // Filter out results with very low similarity scores (stricter than RPC threshold)
+        const strictThreshold = 0.5; // Even stricter filtering on the function side
         const filteredOfferingResults = offeringResults.filter(result => {
-          const hasGoodSimilarity = result.similarity >= matchThreshold;
+          const hasGoodSimilarity = result.similarity >= strictThreshold;
           if (!hasGoodSimilarity) {
-            console.log(`🚫 Filtering out offering "${result.title}" with low similarity: ${result.similarity}`);
+            console.log(`🚫 Filtering out offering "${result.title}" with low similarity: ${result.similarity?.toFixed(3)} (below ${strictThreshold})`);
           }
           return hasGoodSimilarity;
         });
         
         offeringResults = filteredOfferingResults;
-        console.log('✅ After similarity filtering:', offeringResults.length, 'relevant offerings remain');
+        console.log('✅ After strict similarity filtering (>= 0.5):', offeringResults.length, 'relevant offerings remain');
       }
     } catch (error) {
       console.warn('⚠️ Offering search error:', error.message);
@@ -660,10 +661,19 @@ Requirements:
       })
       .slice(0, matchCount); // Limit final results
 
-    console.log('🎯 Final ranked results:', rankedResults.length, 'businesses (platform offerings + AI businesses)');
-    console.log('📊 Result sources:', {
+    // Calculate accurate source counts
+    const finalSourceCounts = {
       platform_offerings: rankedResults.filter(r => r.source === 'offering').length,
       ai_generated: rankedResults.filter(r => r.source === 'ai_generated').length
+    };
+    
+    console.log('🎯 Final ranked results:', rankedResults.length, 'businesses (platform offerings + AI businesses)');
+    console.log('📊 Accurate result sources:', finalSourceCounts);
+    
+    // DEBUG: Log each final result with its source and key data
+    console.log('🔍 DEBUG: Final results breakdown:');
+    rankedResults.forEach((result, index) => {
+      console.log(`  ${index + 1}. [${result.source?.toUpperCase()}] "${result.title || result.name}" - Similarity: ${result.similarity?.toFixed(3) || 'N/A'}, Business: "${result.business_name || result.name}"`);
     });
 
     // Transform results to match expected frontend format
@@ -694,10 +704,7 @@ Requirements:
         query: query,
         matchCount: formattedResults.length,
         usedUnifiedSearch: true,
-        searchSources: {
-          platform_offerings: rankedResults.filter(r => r.source === 'offering').length,
-          ai_generated: rankedResults.filter(r => r.source === 'ai_generated').length
-        },
+        searchSources: finalSourceCounts,
         matchThreshold: matchThreshold,
         timestamp: new Date().toISOString()
       })
