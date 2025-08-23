@@ -482,6 +482,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               <div className="px-4 py-4 space-y-4">
                 {searchResults.map((business, index) => (
                   <div key={business.id || index} className="w-full max-w-sm mx-auto">
+                    {/* Debug log to inspect business object */}
+                    {console.log('🔍 DEBUG: Business object being passed to OfferingCard:', business)}
                     {business.isPlatformBusiness || business.id?.startsWith('platform-') ? (
                       <PlatformBusinessCard
                         business={business}
