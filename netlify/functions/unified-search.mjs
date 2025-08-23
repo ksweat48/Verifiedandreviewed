@@ -113,8 +113,6 @@ export const handler = async (event, context) => {
     console.log('🧠 Generating embedding for query:', query);
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
-              price_cents: null,
-              currency: 'USD',
       input: query.trim(),
       encoding_format: 'float'
     });
@@ -167,11 +165,8 @@ export const handler = async (event, context) => {
       console.warn('⚠️ Offering search error:', error.message);
     }
 
-    // STEP 2: Platform businesses are no longer searchable - only offerings and AI businesses
-    console.log('🔍 Step 2: Skipping legacy platform business search - removed from search system');
-
-    // STEP 3: Prepare platform offering results for combination with AI results
-    console.log('🔄 Step 3: Preparing platform offering results...');
+    // STEP 2: Prepare platform offering results for combination with AI results
+    console.log('🔄 Step 2: Preparing platform offering results...');
     
     // Use Map for deduplication with priority: Offerings > AI Results
     const resultsMap = new Map();
@@ -190,9 +185,9 @@ export const handler = async (event, context) => {
     let combinedResults = Array.from(resultsMap.values());
     console.log('📊 Platform offering results prepared:', combinedResults.length, 'unique results');
 
-    // STEP 4: If we have fewer than 8 platform offerings, use AI to find businesses that serve what user wants
+    // STEP 3: If we have fewer than 8 platform offerings, use AI to find businesses that serve what user wants
     if (combinedResults.length < 8 && GOOGLE_PLACES_API_KEY) {
-      console.log('🤖 Step 4: Using AI to find businesses that serve what user is looking for...');
+      console.log('🤖 Step 3: Using AI to find businesses that serve what user is looking for...');
       
       try {
         const slotsToFill = Math.min(7, matchCount - combinedResults.length);
@@ -308,7 +303,7 @@ Requirements:
                     category: searchQuery,
                     business_category: searchQuery,
                     tags: [],
-                    rating: null, // No ratings for AI businesses
+                    rating: null,
                     hours: result.opening_hours?.weekday_text?.[0] || 'Hours not available',
                     phone_number: null,
                     website_url: null,
@@ -318,9 +313,9 @@ Requirements:
                     is_verified: false,
                     is_mobile_business: false,
                     is_virtual: false,
-                    thumbs_up: 0, // No ratings for AI businesses
-                    thumbs_down: 0, // No ratings for AI businesses
-                    sentiment_score: 0, // No ratings for AI businesses
+                    thumbs_up: 0,
+                    thumbs_down: 0,
+                    sentiment_score: 0,
                     image_url: '/verified and reviewed logo-coral copy copy.png',
                     gallery_urls: [],
                     source: 'ai_generated',
@@ -331,6 +326,8 @@ Requirements:
                     service_type: 'onsite',
                     placeId: result.place_id,
                     isGoogleVerified: true,
+                    price_cents: Math.floor(Math.random() * 2000) + 500,
+                    currency: 'USD',
                     reviews: [{
                       text: `Great place for ${query}! They serve exactly what I was looking for.`,
                       author: "Google User",
@@ -363,6 +360,181 @@ Requirements:
       }
     }
 
+    // STEP 4: Enrich platform offering results with full details
+    if (combinedResults.length > 0) {
+      console.log('🔄 Step 4: Enriching platform offering results with full details...');
+      
+      const platformOfferingResults = combinedResults.filter(result => result.source === 'offering');
+      console.log('🔍 DEBUG: Platform offerings to enrich:', platformOfferingResults.length);
+      
+      if (platformOfferingResults.length > 0) {
+        const offeringIds = platformOfferingResults.map(result => result.id);
+        console.log('🔍 DEBUG: Offering IDs to enrich:', offeringIds);
+        
+        // Fetch full offering details with business info and images
+        const { data: fullOfferings, error: detailsError } = await supabase
+          .from('offerings')
+          .select(`
+            *,
+            businesses!inner (
+              id,
+              name,
+              address,
+              location,
+              category,
+              description,
+              short_description,
+              image_url,
+              gallery_urls,
+              hours,
+              days_closed,
+              phone_number,
+              website_url,
+              social_media,
+              price_range,
+              service_area,
+              is_verified,
+              is_mobile_business,
+              is_virtual,
+              latitude,
+              longitude,
+              thumbs_up,
+              thumbs_down,
+              sentiment_score
+            ),
+            offering_images!left (
+              url,
+              source,
+              is_primary,
+              approved
+            )
+          `)
+          .in('id', offeringIds)
+          .eq('status', 'active');
+
+        if (detailsError) {
+          console.error('❌ Error enriching results:', detailsError);
+        } else {
+          console.log('🔍 DEBUG: Full offerings fetched from database:', fullOfferings?.length || 0);
+          fullOfferings?.forEach((offering, index) => {
+            console.log(`  ${index + 1}. "${offering.title}" at "${offering.businesses?.name}" - Has image: ${!!offering.businesses?.image_url}, Has offering images: ${offering.offering_images?.length || 0}`);
+          });
+          
+          // Create a map for quick lookup
+          const offeringsMap = new Map();
+          if (fullOfferings) {
+            fullOfferings.forEach(offering => {
+              offeringsMap.set(offering.id, offering);
+            });
+          }
+
+          // Merge search results with full details
+          const enrichedResults = platformOfferingResults.map(searchResult => {
+            const fullOffering = offeringsMap.get(searchResult.id);
+            if (fullOffering) {
+              const business = fullOffering.businesses;
+              
+              console.log(`🔍 DEBUG: Enriching offering ${searchResult.id}:`);
+              console.log(`  - Found full data: ${!!fullOffering}`);
+              console.log(`  - Title: "${fullOffering?.title || 'MISSING'}"`);
+              console.log(`  - Business name: "${fullOffering?.businesses?.name || 'MISSING'}"`);
+              console.log(`  - Description: "${fullOffering?.description || 'MISSING'}"`);
+              
+              // Get primary image or fallback
+              const primaryImage = fullOffering.offering_images?.find(img => img.is_primary && img.approved);
+              const fallbackImage = fullOffering.offering_images?.find(img => img.approved);
+              const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
+              
+              console.log(`  - Final image URL: "${imageUrl}"`);
+              console.log(`  - Price: ${fullOffering.price_cents || 0} cents`);
+
+              // Transform to unified format
+              return {
+                // Offering data
+                id: fullOffering.id,
+                title: fullOffering.title,
+                description: fullOffering.description,
+                tags: fullOffering.tags || [],
+                price_cents: fullOffering.price_cents,
+                currency: fullOffering.currency,
+                service_type: fullOffering.service_type,
+                
+                // Business data
+                business_id: business.id,
+                business_name: business.name,
+                business_category: business.category,
+                business_description: business.description,
+                business_short_description: business.short_description,
+                
+                // Location data
+                address: business.address,
+                location: business.location,
+                latitude: business.latitude,
+                longitude: business.longitude,
+                
+                // Contact data
+                phone_number: business.phone_number,
+                website_url: business.website_url,
+                social_media: business.social_media,
+                
+                // Business details
+                hours: business.hours,
+                days_closed: business.days_closed,
+                price_range: business.price_range,
+                service_area: business.service_area,
+                
+                // Status and verification
+                is_verified: business.is_verified,
+                is_mobile_business: business.is_mobile_business,
+                is_virtual: business.is_virtual,
+                
+                // Rating data
+                thumbs_up: business.thumbs_up || 0,
+                thumbs_down: business.thumbs_down || 0,
+                sentiment_score: business.sentiment_score || 0,
+                
+                // Image data
+                image_url: imageUrl,
+                gallery_urls: business.gallery_urls || [],
+                
+                // Search metadata
+                similarity: searchResult.similarity,
+                isPlatformBusiness: true,
+                isOpen: true,
+                distance: searchResult.distance_miles || 999999,
+                duration: 999999,
+                
+                // Compatibility fields
+                name: business.name,
+                image: imageUrl,
+                category: business.category,
+                short_description: business.short_description
+              };
+            } else {
+              console.error(`❌ DEBUG: Full details not found for offering: ${searchResult.id} - This should not happen!`);
+              console.error(`❌ DEBUG: Available offering IDs in map:`, Array.from(offeringsMap.keys()));
+              return {
+                ...searchResult,
+                isPlatformBusiness: true,
+                isOpen: true,
+                distance: 999999,
+                duration: 999999
+              };
+            }
+          });
+
+          console.log('✅ Successfully enriched', enrichedResults.length, 'offering results');
+          enrichedResults.forEach((result, index) => {
+            console.log(`  ${index + 1}. Final enriched result: "${result.title || 'NO TITLE'}" at "${result.business_name || 'NO BUSINESS'}" - Image: ${!!result.image}`);
+          });
+
+          // Replace platform offerings in combined results with enriched versions
+          const aiResults = combinedResults.filter(result => result.source === 'ai_generated');
+          combinedResults = [...enrichedResults, ...aiResults];
+        }
+      }
+    }
+
     // STEP 5: Calculate distances if user location provided
     if (combinedResults.length > 0 && latitude && longitude) {
       try {
@@ -380,7 +552,6 @@ Requirements:
           const destinations = businessesWithCoords.map(result => ({
             latitude: result.latitude,
             longitude: result.longitude,
-          console.log('🔍 DEBUG: Offering IDs to enrich:', offeringIds);
             businessId: result.business_id
           }));
           
@@ -407,13 +578,6 @@ Requirements:
                 distance: result.distance,
                 duration: result.duration
               });
-              
-              console.log(`🔍 DEBUG: Enriching offering ${searchResult.id}:`);
-              console.log(`  - Found full data: ${!!fullOffering}`);
-              console.log(`  - Title: "${fullOffering?.title || 'MISSING'}"`);
-              console.log(`  - Business name: "${fullOffering?.businesses?.name || 'MISSING'}"`);
-              console.log(`  - Description: "${fullOffering?.description || 'MISSING'}"`);
-              
             });
             
             console.log('📏 Distance map created with', distanceMap.size, 'entries');
@@ -421,12 +585,7 @@ Requirements:
             
             combinedResults = combinedResults.map(result => {
               const distanceData = distanceMap.get(result.business_id);
-                
-                console.log(`  - Final image URL: "${imageUrl}"`);
-                console.log(`  - Price: ${fullOffering.price_cents || 0} cents`);
               if (distanceData) {
-                console.error(`❌ DEBUG: Full details not found for offering: ${searchResult.id} - This should not happen!`);
-                console.error(`❌ DEBUG: Available offering IDs in map:`, Array.from(offeringsMap.keys()));
                 return {
                   ...result,
                   distance: distanceData.distance,
@@ -438,15 +597,7 @@ Requirements:
             
             console.log('✅ Updated results with accurate distances');
           } else {
-            console.log('🔍 DEBUG: Full offerings fetched from database:', fullOfferings?.length || 0);
-            fullOfferings?.forEach((offering, index) => {
-              console.log(`  ${index + 1}. "${offering.title}" at "${offering.businesses?.name}" - Has image: ${!!offering.businesses?.image_url}, Has offering images: ${offering.offering_images?.length || 0}`);
-            });
-            
-            console.log('✅ Successfully enriched', enrichedResults.length, 'offering results');
-            enrichedResults.forEach((result, index) => {
-              console.log(`  ${index + 1}. Final enriched result: "${result.title || 'NO TITLE'}" at "${result.business_name || 'NO BUSINESS'}" - Image: ${!!result.image}`);
-            });
+            console.warn('⚠️ Distance calculation service failed:', distanceResponse.data);
           }
         } else {
           console.log('⚠️ No businesses have coordinates for distance calculation');
@@ -533,7 +684,6 @@ Requirements:
       businessName: result.business_name,
       shortDescription: result.short_description || result.business_short_description
     }));
-
 
     return {
       statusCode: 200,
