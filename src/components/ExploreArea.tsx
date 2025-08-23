@@ -9,7 +9,7 @@ import LeaveReviewModal from './LeaveReviewModal';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
 import { OfferingService } from '../services/offeringService';
-import { getServiceTypeBadge, formatPrice, isBusinessOpen } from '../utils/displayUtils';
+import { formatPrice, isBusinessOpen } from '../utils/displayUtils';
 import OfferingReviewsModal from './OfferingReviewsModal';
 
 interface ReviewImage {
@@ -72,18 +72,12 @@ const ExploreArea = () => {
     setLoading(true);
     
     try {
-      // Fetch platform offerings directly from database
-      console.log('🔍 DEBUG: Fetching explore offerings directly from database...');
+      // Fetch platform offerings for explore section
       const offerings = await OfferingService.getExploreOfferings(6);
-      
-      console.log('🔍 DEBUG: Raw offerings from database:', offerings);
-      console.log('🔍 DEBUG: Number of offerings fetched:', offerings.length);
       
       let transformedBusinesses = [];
       
       if (offerings.length > 0) {
-        console.log('🔍 DEBUG: Transforming offerings to business format...');
-        
         transformedBusinesses = offerings.map(offering => {
           const business = offering.businesses;
           
@@ -91,16 +85,6 @@ const ExploreArea = () => {
           const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
           const fallbackImage = offering.offering_images?.find(img => img.approved);
           const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
-          
-          console.log('🔍 DEBUG: Processing offering:', {
-            offeringId: offering.id,
-            offeringTitle: offering.title,
-            businessId: business.id,
-            businessName: business.name,
-            imageUrl: imageUrl,
-            priceCents: offering.price_cents,
-            offeringDescription: offering.description
-          });
           
           return {
             id: business.id,
@@ -142,12 +126,9 @@ const ExploreArea = () => {
           };
         });
         
-        console.log('🔍 DEBUG: Final transformed businesses with offering data:', transformedBusinesses);
-        
         // Fetch review counts for all offerings
         const offeringIds = transformedBusinesses.map(b => b.offeringId).filter(Boolean);
         if (offeringIds.length > 0) {
-          console.log('📊 Fetching review counts for offerings:', offeringIds);
           try {
             const reviewCounts: Record<string, number> = {};
             
@@ -164,14 +145,10 @@ const ExploreArea = () => {
             
             await Promise.all(reviewPromises);
             setOfferingReviewCounts(reviewCounts);
-            console.log('✅ Review counts fetched:', reviewCounts);
           } catch (error) {
             console.error('Error fetching offering review counts:', error);
           }
         }
-      } else {
-        console.log('🔍 DEBUG: No offerings found in database');
-        transformedBusinesses = [];
       }
       
       setBusinesses(transformedBusinesses);
@@ -348,23 +325,11 @@ const ExploreArea = () => {
             businesses.map((offering) => {
               // 'offering' here is already the transformed business object from loadNearbyBusinesses
               const business = offering;
-              const serviceTypeBadge = getServiceTypeBadge(offering.serviceType);
               
               // Get the primary image from offering_images (from original Supabase query), fallback to business image
               const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
               const fallbackImage = offering.offering_images?.find(img => img.approved);
               const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
-
-              // DEBUG LOG: Check values just before rendering
-              console.log('🔍 DEBUG: Rendering offering:', {
-                id: offering.offeringId,
-                title: offering.offeringTitle,
-                description: offering.offeringDescription,
-                priceCents: offering.priceCents,
-                currency: offering.currency,
-                imageUrl: imageUrl,
-                offering_images: offering.offering_images
-              });
 
               return (
                 <div key={offering.offeringId} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200">

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Zap, X, ArrowRight, Mic, LayoutDashboard } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
 import { SemanticSearchService } from '../services/semanticSearchService';
 import { CreditService } from '../services/creditService';
@@ -303,7 +302,22 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     }
 
     try {
-      const success = await BusinessService.saveAIRecommendation(business, currentUser.id);
+      // Save AI recommendation to favorites
+      const { error } = await supabase
+        .from('business_recommendations')
+        .insert({
+          name: business.name,
+          address: business.address || business.location || 'Address not available',
+          location: business.location || business.address || 'Location not available',
+          category: business.category || 'AI Generated',
+          description: `AI-generated business. ${business.description || business.short_description || ''}`,
+          image_url: business.image || '/verified and reviewed logo-coral copy copy.png',
+          recommended_by: currentUser.id,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        });
+      
+      const success = !error;
       if (success) {
         alert(`${business.name} has been saved to your favorites!`);
       } else {
@@ -316,11 +330,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleTakeMeThere = (business: any) => {
-    // Record business visit if user is authenticated
-    if (currentUser) {
-      BusinessService.recordBusinessVisit(business.id, currentUser.id);
-    }
-    
     // Navigate to business
     let mapsUrl;
     if (business.latitude && business.longitude) {

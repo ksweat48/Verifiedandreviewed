@@ -34,7 +34,7 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
 
   const handleViewBusinessProfile = (business: any) => {
     // Transform the business recommendation data to match Business type
-    const businessForModal: Business = {
+    const businessForModal = {
       id: business.id,
       name: business.name,
       address: business.address || business.location,

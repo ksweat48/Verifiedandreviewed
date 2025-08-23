@@ -1,7 +1,5 @@
 import { supabase, type Business, type BusinessRating } from './supabaseClient';
-import { SemanticSearchService } from './semanticSearchService';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
-import { SEARCH_SERVICE_FIRST } from '../utils/constants';
 
 export class BusinessService {
   // Create a new business
@@ -73,17 +71,7 @@ export class BusinessService {
       if (updateError) throw updateError;
       
       // Generate embedding for the new business
-      console.log(`🧠 Triggering embedding generation for new business: ${newBusiness.id}`);
-      try {
-        const embeddingResult = await SemanticSearchService.generateEmbeddings({ businessId: newBusiness.id });
-        if (embeddingResult && embeddingResult.success) {
-          console.log(`✅ Embedding generated successfully for business: ${newBusiness.id}`);
-        } else {
-          console.warn(`⚠️ Embedding generation skipped for business: ${newBusiness.id}`, embeddingResult?.message || 'Service unavailable');
-        }
-      } catch (error) {
-        console.warn(`⚠️ Embedding generation failed for new business ${newBusiness.id}:`, error.message);
-      }
+      // Note: Embedding generation will be handled by the offerings system
       
       return {
         success: true,
@@ -135,18 +123,7 @@ export class BusinessService {
       
       if (error) throw error;
       
-      // Generate embedding for the updated business
-      console.log(`🧠 Triggering embedding generation for updated business: ${businessId}`);
-      try {
-        const embeddingResult = await SemanticSearchService.generateEmbeddings({ businessId });
-        if (embeddingResult && embeddingResult.success) {
-          console.log(`✅ Embedding updated successfully for business: ${businessId}`);
-        } else {
-          console.warn(`⚠️ Embedding update skipped for business: ${businessId}`, embeddingResult?.message || 'Service unavailable');
-        }
-      } catch (error) {
-        console.warn(`⚠️ Embedding update failed for business ${businessId}:`, error.message);
-      }
+      // Note: Embedding updates will be handled by the offerings system
       
       return {
         success: true
@@ -280,263 +257,8 @@ export class BusinessService {
   }
 
   // Get business by exact name match (for direct searches)
-  static async getBusinessByName(name: string): Promise<Business | null> {
-    try {
-      console.log('🔍 Searching for exact business name:', name);
-      
-      const { data, error } = await supabase
-        .from('businesses')
-        .select('*')
-        .ilike('name', name)
-        .limit(1);
-      
-      if (error) {
-        console.warn('⚠️ Error in exact name search:', error);
-        // If error in exact match, try partial match
-        const { data: partialData, error: partialError } = await supabase
-          .from('businesses')
-          .select('*')
-          .ilike('name', `%${name}%`)
-          .limit(1);
-        
-        if (partialError) {
-          console.warn('⚠️ Error in partial name search:', partialError);
-          return null;
-        }
-        
-        if (partialData && partialData.length > 0) {
-          console.log('✅ Found partial match:', partialData[0].name);
-          return partialData[0];
-        }
-        
-        return null;
-      }
-      
-      if (data && data.length > 0) {
-        console.log('✅ Found exact match:', data[0].name);
-        return data[0];
-      }
-      
-      // If no exact match found, try partial match
-      console.log('🔍 No exact match, trying partial match...');
-      const { data: partialData, error: partialError } = await supabase
-        .from('businesses')
-        .select('*')
-        .ilike('name', `%${name}%`)
-        .limit(1);
-      
-      if (partialError) {
-        console.warn('⚠️ Error in partial name search:', partialError);
-        return null;
-      }
-      
-      if (partialData && partialData.length > 0) {
-        console.log('✅ Found partial match:', partialData[0].name);
-        return partialData[0];
-      }
-      
-      console.log('❌ No business found with name:', name);
-      return null;
-    } catch (error) {
-      console.error('Error fetching business by name:', error);
-      return null;
-    }
-  }
 
-  // Get all businesses
-  static async getBusinesses(filters?: {
-    category?: string;
-    verified_only?: boolean;
-    search?: string;
-    tags?: string[];
-    adminView?: boolean;
-    userLatitude?: number;
-    userLongitude?: number;
-  }): Promise<Business[]> {
-    // Feature flag: Disable legacy business search when service-first is enabled
-    if (SEARCH_SERVICE_FIRST) {
-      console.warn('🚫 Legacy BusinessService.getBusinesses is disabled by SEARCH_SERVICE_FIRST flag.');
-      return [];
-    }
 
-    try {
-      console.log('🔍 BusinessService.getBusinesses called with filters:', filters);
-      
-      let query = supabase
-        .from('businesses')
-        .select('*');
-
-      // By default, only show visible businesses for public views
-      if (!filters?.adminView) {
-        query = query.eq('is_visible_on_platform', true);
-      }
-      
-      // Apply filters
-      if (filters?.category) {
-        query = query.eq('category', filters.category);
-      }
-      
-      if (filters?.verified_only) {
-        query = query.eq('is_verified', true);
-      }
-      
-      if (filters?.search) {
-        console.log('🔍 Applying search filter for:', filters.search);
-        // Build search conditions array to avoid malformed query strings
-        const searchConditions = [
-          `name.ilike.%${filters.search}%`,
-          `description.ilike.%${filters.search}%`,
-          `location.ilike.%${filters.search}%`,
-          `category.ilike.%${filters.search}%`,
-          `short_description.ilike.%${filters.search}%`,
-          `address.ilike.%${filters.search}%`
-        ];
-        
-        query = query.or(searchConditions.join(','));
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      let businesses = data || [];
-      console.log('✅ Query returned', businesses.length, 'businesses');
-      
-      // Filter by 10-mile radius if user location is provided and not admin view
-      if (filters?.userLatitude && filters?.userLongitude && !filters?.adminView) {
-        console.log('🗺️ Filtering businesses within 10-mile radius');
-        
-        businesses = businesses.filter(business => {
-          if (!business.latitude || !business.longitude) {
-            console.log(`⚠️ Business ${business.name} has no coordinates, excluding from radius filter`);
-            return false;
-          }
-          
-          // Calculate distance using Haversine formula
-          const R = 3959; // Earth's radius in miles
-          const dLat = (business.latitude - filters.userLatitude) * Math.PI / 180;
-          const dLon = (business.longitude - filters.userLongitude) * Math.PI / 180;
-          const a = 
-            Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(filters.userLatitude * Math.PI / 180) * Math.cos(business.latitude * Math.PI / 180) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-          const distance = R * c;
-          
-          if (distance > 10) {
-            console.log(`🚫 Filtering out business outside 10-mile radius: ${business.name} (${distance.toFixed(1)} miles)`);
-            return false;
-          }
-          
-          return true;
-        });
-        
-        console.log('✅ After 10-mile radius filter:', businesses.length, 'businesses remain');
-      }
-      
-      // Add placeholder distance/duration values for external calculation
-      businesses = businesses.map(business => ({
-        ...business,
-        distance: 999999, // Will be calculated externally
-        duration: 999999
-      }));
-      
-      console.log('📊 Final businesses with distances:', businesses.map(b => ({
-        name: b.name,
-        distance: b.distance
-      })));
-      return businesses;
-    } catch (error) {
-      console.error('❌ Error in getBusinesses:', error);
-      return [];
-    }
-  }
-
-  // Calculate accurate distances using Google Distance Matrix API
-  static async calculateBusinessDistances(
-    businesses: Business[],
-    userLatitude: number,
-    userLongitude: number
-  ): Promise<Business[]> {
-    // Filter businesses that have coordinates
-    const businessesWithCoords = businesses.filter(b => b.latitude && b.longitude);
-    const businessesWithoutCoords = businesses.filter(b => !b.latitude || !b.longitude);
-    
-    if (businessesWithCoords.length === 0) {
-      // No businesses have coordinates, return with fallback values
-      return businesses.map(business => ({
-        ...business,
-        distance: Math.round((Math.random() * 4 + 1) * 10) / 10,
-        duration: Math.floor(Math.random() * 10 + 5)
-      }));
-    }
-    
-    // Prepare data for distance calculation
-    const origin = {
-      latitude: userLatitude,
-      longitude: userLongitude
-    };
-    
-    const destinations = businessesWithCoords.map(business => ({
-      latitude: business.latitude!,
-      longitude: business.longitude!,
-      businessId: business.id
-    }));
-    
-    // Call the distance calculation function
-    const response = await fetch('/.netlify/functions/get-business-distances', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        is_mobile_business: businessData.is_mobile_business || false,
-        origin,
-        destinations
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Distance calculation failed: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (!data.success) {
-      throw new Error(data.message || 'Distance calculation failed');
-    }
-    
-    // Map distance results back to businesses
-    const distanceMap = new Map();
-    data.results.forEach((result: any) => {
-      distanceMap.set(result.businessId, {
-        distance: result.distance,
-        duration: result.duration
-      });
-    });
-    
-    // Apply distances to businesses
-    const updatedBusinesses = businesses.map(business => {
-      const distanceData = distanceMap.get(business.id);
-      if (distanceData) {
-        return {
-          ...business,
-          distance: distanceData.distance,
-          duration: distanceData.duration
-        };
-      } else {
-        // Fallback for businesses without coordinates
-        return {
-          ...business,
-          distance: Math.round((Math.random() * 4 + 1) * 10) / 10,
-          duration: Math.floor(Math.random() * 10 + 5)
-        };
-      }
-    });
-    
-    return updatedBusinesses;
-  }
-  // Get a single business by ID
   static async getBusinessById(id: string): Promise<Business | null> {
     try {
       const { data, error } = await supabase
@@ -759,30 +481,6 @@ export class BusinessService {
   }
 
   // Save AI business recommendation to favorites
-  static async saveAIRecommendation(business: any, userId: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('business_recommendations')
-        .insert({
-          name: business.name,
-          address: business.address || business.location || 'Address not available',
-          location: business.location || business.address || 'Location not available',
-          category: business.category || 'AI Generated',
-          description: `AI-generated business with ${Math.round((business.similarity || 0.8) * 100)}% match. ${business.shortDescription || business.description || ''}`,
-          image_url: business.image || '/verified and reviewed logo-coral copy copy.png',
-          recommended_by: userId,
-          status: 'pending',
-          created_at: new Date().toISOString()
-        });
-      
-      if (error) throw error;
-      
-      return true;
-    } catch (error) {
-      console.error('Error saving AI recommendation:', error);
-      return false;
-    }
-  }
 
   // Get user's favorited AI businesses
   static async getUserFavorites(userId: string): Promise<any[]> {

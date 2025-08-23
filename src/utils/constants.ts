@@ -1,15 +1,9 @@
-// Feature flags for search system migration
-// These flags control which search mechanism is active
 
-// Service-First Search (new system)
-export const SEARCH_SERVICE_FIRST = true;
 
-// Legacy Search (old system)
-export const SEARCH_LEGACY = false;
 
 // Search configuration
 export const SEARCH_CONFIG = {
-  // Maximum results to return from service-first search
+  // Maximum results to return from unified search
   MAX_RESULTS: 7,
   
   // Embedding model for OpenAI

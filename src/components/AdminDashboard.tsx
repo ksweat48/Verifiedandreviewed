@@ -34,8 +34,18 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       // Load existing data
-      const businessData = await BusinessService.getBusinesses({ adminView: true });
-      setBusinesses(businessData);
+      // Fetch businesses directly for admin view
+      const { data: businessData, error: businessError } = await supabase
+        .from('businesses')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (businessError) {
+        console.error('Error fetching businesses:', businessError);
+        setBusinesses([]);
+      } else {
+        setBusinesses(businessData || []);
+      }
       
       const reviewData = await ReviewService.getPendingReviews();
       setPendingReviews(reviewData);
@@ -88,10 +98,10 @@ const AdminDashboard = () => {
         totalUsers: usersResult.count || 0,
         dailyActiveUsers: realDAU, // Real DAU from activity logs
         userSearches: searchesResult.count || 0, // Real data from activity logs
-        totalBusinesses: businessData.length,
+        totalBusinesses: businessData?.length || 0,
         favoriteAIBusinesses: favoritesResult.count || 0,
         platformReviews: reviewsResult.count || 0,
-        verifiedBusinesses: businessData.filter(b => b.is_verified).length,
+        verifiedBusinesses: businessData?.filter(b => b.is_verified).length || 0,
         tokensPurchased: Math.floor(Math.random() * 5000) + 2000, // Mock data - requires payment integration
         tokensEarned: tokensEarned
       });
