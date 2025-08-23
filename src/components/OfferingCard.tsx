@@ -153,7 +153,7 @@ const OfferingCard: React.FC<{
         {/* Offering Image */}
         <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100 cursor-pointer" onClick={handleBusinessClick}>
           <img
-            src={business.image}
+            src={business.image || business.image_url || '/verified and reviewed logo-coral copy copy.png'}
             alt={business.name || business.title}
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           />
@@ -196,12 +196,12 @@ const OfferingCard: React.FC<{
         <div className="space-y-2">
           {/* Main Text: Offering name */}
           <h6 className="font-poppins font-bold text-black text-sm line-clamp-1">
-            {business.title || business.name}
+            {business.title || business.name || 'Untitled Offering'}
           </h6>
           
           {/* Sub Text: "at [Business Name]" */}
           <p className="font-lora text-xs text-black font-bold line-clamp-1">
-            at {business.business_name || business.name}
+            at {business.business_name || business.name || 'Unknown Business'}
           </p>
           
           {/* Description */}
@@ -212,7 +212,7 @@ const OfferingCard: React.FC<{
           )}
           
           {/* Price */}
-          {business.price_cents && (
+          {business.price_cents && business.price_cents > 0 && (
             <div className="flex items-center justify-between">
               <span className="font-poppins font-bold text-primary-600 text-sm">
                 ${(business.price_cents / 100).toFixed(2)}

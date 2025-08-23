@@ -144,9 +144,24 @@ export const handler = async (event, context) => {
       } else {
         offeringResults = offeringSearchResults || [];
         console.log('✅ Found', offeringResults.length, 'offering matches');
-        // ADD DEBUG LOGGING:
-        console.log('DEBUG: Raw offeringSearchResults from RPC:', JSON.stringify(offeringSearchResults, null, 2));
-        console.log('DEBUG: offeringError from RPC:', offeringError);
+        
+        // DEBUG: Log raw RPC results with similarity scores
+        console.log('🔍 DEBUG: Raw offering search results from RPC:');
+        offeringResults.forEach((result, index) => {
+          console.log(`  ${index + 1}. Offering ID: ${result.id}, Similarity: ${result.similarity}, Title: "${result.title || 'NO TITLE'}"`);
+        });
+        
+        // Filter out results with very low similarity scores
+        const filteredOfferingResults = offeringResults.filter(result => {
+          const hasGoodSimilarity = result.similarity >= matchThreshold;
+          if (!hasGoodSimilarity) {
+            console.log(`🚫 Filtering out offering "${result.title}" with low similarity: ${result.similarity}`);
+          }
+          return hasGoodSimilarity;
+        });
+        
+        offeringResults = filteredOfferingResults;
+        console.log('✅ After similarity filtering:', offeringResults.length, 'relevant offerings remain');
       }
     } catch (error) {
       console.warn('⚠️ Offering search error:', error.message);
@@ -168,8 +183,7 @@ export const handler = async (event, context) => {
           ...offering,
           source: 'offering'
         });
-        // ADD DEBUG LOGGING:
-        console.log('DEBUG: Added to resultsMap (offering):', offering.business_id, JSON.stringify(resultsMap.get(offering.business_id), null, 2));
+        console.log(`🔍 DEBUG: Added platform offering to results map: "${offering.title}" (ID: ${offering.id}, Business: ${offering.business_id})`);
       }
     });
     
@@ -366,6 +380,7 @@ Requirements:
           const destinations = businessesWithCoords.map(result => ({
             latitude: result.latitude,
             longitude: result.longitude,
+          console.log('🔍 DEBUG: Offering IDs to enrich:', offeringIds);
             businessId: result.business_id
           }));
           
@@ -392,6 +407,13 @@ Requirements:
                 distance: result.distance,
                 duration: result.duration
               });
+              
+              console.log(`🔍 DEBUG: Enriching offering ${searchResult.id}:`);
+              console.log(`  - Found full data: ${!!fullOffering}`);
+              console.log(`  - Title: "${fullOffering?.title || 'MISSING'}"`);
+              console.log(`  - Business name: "${fullOffering?.businesses?.name || 'MISSING'}"`);
+              console.log(`  - Description: "${fullOffering?.description || 'MISSING'}"`);
+              
             });
             
             console.log('📏 Distance map created with', distanceMap.size, 'entries');
@@ -399,8 +421,12 @@ Requirements:
             
             combinedResults = combinedResults.map(result => {
               const distanceData = distanceMap.get(result.business_id);
+                
+                console.log(`  - Final image URL: "${imageUrl}"`);
+                console.log(`  - Price: ${fullOffering.price_cents || 0} cents`);
               if (distanceData) {
-                console.log('📏 Updating distance for', result.name || result.business_name, ':', distanceData);
+                console.error(`❌ DEBUG: Full details not found for offering: ${searchResult.id} - This should not happen!`);
+                console.error(`❌ DEBUG: Available offering IDs in map:`, Array.from(offeringsMap.keys()));
                 return {
                   ...result,
                   distance: distanceData.distance,
@@ -412,7 +438,15 @@ Requirements:
             
             console.log('✅ Updated results with accurate distances');
           } else {
-            console.error('❌ Distance service returned failure:', distanceResponse.data);
+            console.log('🔍 DEBUG: Full offerings fetched from database:', fullOfferings?.length || 0);
+            fullOfferings?.forEach((offering, index) => {
+              console.log(`  ${index + 1}. "${offering.title}" at "${offering.businesses?.name}" - Has image: ${!!offering.businesses?.image_url}, Has offering images: ${offering.offering_images?.length || 0}`);
+            });
+            
+            console.log('✅ Successfully enriched', enrichedResults.length, 'offering results');
+            enrichedResults.forEach((result, index) => {
+              console.log(`  ${index + 1}. Final enriched result: "${result.title || 'NO TITLE'}" at "${result.business_name || 'NO BUSINESS'}" - Image: ${!!result.image}`);
+            });
           }
         } else {
           console.log('⚠️ No businesses have coordinates for distance calculation');
