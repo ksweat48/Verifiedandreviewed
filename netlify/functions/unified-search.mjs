@@ -129,7 +129,7 @@ export const handler = async (event, context) => {
         'search_offerings_by_vibe',
         {
           query_embedding: queryEmbedding,
-          match_threshold: 0.5, // Increased from 0.3 for more accurate matching
+          match_threshold: 0.4, // Balanced threshold for accuracy vs recall
           match_count: matchCount,
           user_latitude: latitude,
           user_longitude: longitude,
@@ -150,7 +150,7 @@ export const handler = async (event, context) => {
         });
         
         // Filter out results with very low similarity scores (stricter than RPC threshold)
-        const strictThreshold = 0.5; // Even stricter filtering on the function side
+        const strictThreshold = 0.4; // Balanced filtering on the function side
         const filteredOfferingResults = offeringResults.filter(result => {
           const hasGoodSimilarity = result.similarity >= strictThreshold;
           if (!hasGoodSimilarity) {
@@ -160,7 +160,7 @@ export const handler = async (event, context) => {
         });
         
         offeringResults = filteredOfferingResults;
-        console.log('✅ After strict similarity filtering (>= 0.5):', offeringResults.length, 'relevant offerings remain');
+        console.log('✅ After strict similarity filtering (>= 0.4):', offeringResults.length, 'relevant offerings remain');
       }
     } catch (error) {
       console.warn('⚠️ Offering search error:', error.message);
@@ -187,11 +187,12 @@ export const handler = async (event, context) => {
     console.log('📊 Platform offering results prepared:', combinedResults.length, 'unique results');
 
     // STEP 3: If we have fewer than 8 platform offerings, use AI to find businesses that serve what user wants
-    if (combinedResults.length < 8 && GOOGLE_PLACES_API_KEY) {
+    if (combinedResults.length < matchCount && GOOGLE_PLACES_API_KEY) {
       console.log('🤖 Step 3: Using AI to find businesses that serve what user is looking for...');
       
       try {
-        const slotsToFill = Math.min(7, matchCount - combinedResults.length);
+        const slotsToFill = matchCount - combinedResults.length;
+        console.log('🤖 DEBUG: Slots to fill with AI results:', slotsToFill);
         
         // Generate AI search queries focused on specific dishes/services
         const aiSystemPrompt = `You are a search query generator for Google Places API. Generate exactly ${slotsToFill} different search queries to find businesses that serve or offer what the user is looking for.
@@ -245,13 +246,17 @@ Requirements:
         if (toolCall && toolCall.function.name === 'generateSearchQueries') {
           const searchQueries = JSON.parse(toolCall.function.arguments).queries;
           console.log('🔍 Generated AI search queries for businesses that serve/offer:', query, '→', searchQueries);
+          console.log('🤖 DEBUG: AI-generated queries:', searchQueries);
 
           // Search Google Places for each query
           const searchLatitude = latitude || 37.7749;
           const searchLongitude = longitude || -122.4194;
           const searchRadius = 16093; // 10 miles in meters (16.09 km)
+          console.log('🗺️ DEBUG: Using search location:', { searchLatitude, searchLongitude, searchRadius });
+          
           const aiSearchPromises = searchQueries.map(async (searchQuery) => {
             try {
+              console.log('🔍 DEBUG: Searching Google Places for:', searchQuery);
               const placesResponse = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
                 params: {
                   query: searchQuery,
@@ -263,6 +268,11 @@ Requirements:
                 timeout: 5000
               });
 
+              console.log('🔍 DEBUG: Google Places response for', searchQuery, ':', {
+                status: placesResponse.data.status,
+                resultCount: placesResponse.data.results?.length || 0,
+                firstResult: placesResponse.data.results?.[0]?.name || 'None'
+              });
               if (placesResponse.data.status === 'OK' && placesResponse.data.results?.length > 0) {
                 const result = placesResponse.data.results.find(r => r.rating);
                 
@@ -285,7 +295,14 @@ Requirements:
 
                   const businessEmbedding = businessEmbeddingResponse.data[0].embedding;
                   const similarity = cosineSimilarity(queryEmbedding, businessEmbedding);
+                  
+                  console.log('🤖 DEBUG: AI result similarity for', result.name, ':', similarity.toFixed(3));
 
+                  // Only include AI results with reasonable similarity (0.3 threshold for AI results)
+                  if (similarity < 0.3) {
+                    console.log('🚫 DEBUG: Filtering out AI result with low similarity:', result.name, similarity.toFixed(3));
+                    return null;
+                  }
                   return {
                     id: `ai-${result.place_id}`,
                     business_id: `ai-${result.place_id}`,
@@ -329,6 +346,7 @@ Requirements:
                     isGoogleVerified: true,
                     price_cents: Math.floor(Math.random() * 2000) + 500,
                     currency: 'USD',
+                    similarity: similarity,
                     reviews: [{
                       text: `Great place for ${query}! They serve exactly what I was looking for.`,
                       author: "Google User",
@@ -345,11 +363,13 @@ Requirements:
 
           const aiResults = (await Promise.all(aiSearchPromises)).filter(Boolean);
           console.log('🤖 AI search found', aiResults.length, 'businesses that serve/offer:', query);
+          console.log('🤖 DEBUG: AI results details:', aiResults.map(r => ({ name: r.name, similarity: r.similarity?.toFixed(3) })));
 
           // Add AI results to combined results (only if not already present)
           aiResults.forEach(aiResult => {
             if (!resultsMap.has(aiResult.business_id)) {
               resultsMap.set(aiResult.business_id, aiResult);
+              console.log('🤖 DEBUG: Added AI result to map:', aiResult.name, 'with similarity:', aiResult.similarity?.toFixed(3));
             }
           });
 
