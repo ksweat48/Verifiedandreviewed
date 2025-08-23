@@ -113,6 +113,8 @@ export const handler = async (event, context) => {
     console.log('🧠 Generating embedding for query:', query);
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
+              price_cents: null,
+              currency: 'USD',
       input: query.trim(),
       encoding_format: 'float'
     });
