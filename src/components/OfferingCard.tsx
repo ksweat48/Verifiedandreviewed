@@ -311,3 +311,6 @@ const OfferingCard: React.FC<{
   );
 };
 
+
+
+export default OfferingCard
