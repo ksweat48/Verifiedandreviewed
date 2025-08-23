@@ -307,7 +307,6 @@ Requirements:
                     sentiment_score: 0, // No ratings for AI businesses
                     image_url: '/verified and reviewed logo-coral copy copy.png',
                     gallery_urls: [],
-                    similarity: Math.max(0.3, Math.min(1.0, similarity)),
                     source: 'ai_generated',
                     isPlatformBusiness: false,
                     isOpen: result.opening_hours?.open_now !== false,
@@ -499,8 +498,6 @@ Requirements:
       shortDescription: result.short_description || result.business_short_description
     }));
 
-    // ADD DEBUG LOGGING:
-    console.log('DEBUG: Final formattedResults sent to frontend:', JSON.stringify(formattedResults, null, 2));
 
     return {
       statusCode: 200,

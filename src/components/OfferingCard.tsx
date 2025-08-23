@@ -3,7 +3,6 @@ import * as Icons from 'lucide-react';
 import ReviewerProfile from './ReviewerProfile';
 import ImageGalleryPopup from './ImageGalleryPopup';
 import BusinessProfileModal from './BusinessProfileModal';
-import { getMatchPercentage } from '../utils/similarityUtils';
 import { getSentimentRating } from '../utils/displayUtils';
 
 interface ReviewImage {
@@ -53,10 +52,11 @@ interface BusinessCard {
   isPlatformBusiness: boolean;
   distance?: number;
   duration?: number;
-  similarity?: number; // Semantic search similarity score (0-1)
+  isGoogleVerified?: boolean;
+  placeId?: string;
 }
 
-const PlatformBusinessCard: React.FC<{
+const OfferingCard: React.FC<{
   business: BusinessCard;
   onRecommend: (business: BusinessCard) => void;
   onTakeMeThere: (business: BusinessCard) => void;
@@ -203,10 +203,10 @@ const PlatformBusinessCard: React.FC<{
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {/* Semantic Similarity Score - Only show if available and > 0 */}
-                {business.similarity && business.similarity > 0 && (
-                  <div className="bg-purple-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
-                    {getMatchPercentage(business.similarity)}% match
+                {/* Google Verified Badge for AI businesses */}
+                {business.isGoogleVerified && (
+                  <div className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
+                    Google
                   </div>
                 )}
                 
@@ -396,5 +396,3 @@ const PlatformBusinessCard: React.FC<{
     </>
   );
 };
-
-export default PlatformBusinessCard;

@@ -10,8 +10,7 @@ import { UserService } from '../services/userService';
 import { ActivityService } from '../services/activityService';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { useGeolocation } from '../hooks/useGeolocation';
-import PlatformBusinessCard from './PlatformBusinessCard';
-import AIBusinessCard from './AIBusinessCard';
+import OfferingCard from './OfferingCard';
 import SignupPrompt from './SignupPrompt';
 import AuthModal from './AuthModal';
 import { supabase } from '../services/supabaseClient';
@@ -484,18 +483,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   <div key={business.id || index} className="w-full max-w-sm mx-auto">
                     {/* Debug log to inspect business object */}
                     {console.log('🔍 DEBUG: Business object being passed to OfferingCard:', business)}
-                    {business.isPlatformBusiness || business.id?.startsWith('platform-') ? (
-                      <PlatformBusinessCard
-                        business={business}
-                        onRecommend={handleRecommendBusiness}
-                        onTakeMeThere={handleTakeMeThere}
-                      />
-                    ) : (
-                      <AIBusinessCard
-                        business={business}
-                        onRecommend={handleRecommendBusiness}
-                      />
-                    )}
+                    <OfferingCard
+                      business={business}
+                      onRecommend={handleRecommendBusiness}
+                      onTakeMeThere={handleTakeMeThere}
+                    />
                   </div>
                 ))}
               </div>
