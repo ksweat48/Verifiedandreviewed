@@ -36,6 +36,8 @@ interface BusinessCard {
   is_mobile_business?: boolean;
   phone_number?: string;
   is_verified?: boolean;
+  isGoogleVerified?: boolean;
+  placeId?: string;
   rating: {
     thumbsUp: number;
     thumbsDown?: number;
@@ -147,31 +149,35 @@ const OfferingCard: React.FC<{
 
   return (
     <>
-      <div className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 snap-start flex flex-col bg-white z-0 min-h-[calc(100vh-200px)] sm:min-h-[480px]" onClick={(e) => e.stopPropagation()}>
-        <div className="relative h-60 flex-shrink-0 cursor-pointer" onClick={handleBusinessClick}>
+      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200" onClick={(e) => e.stopPropagation()}>
+        {/* Offering Image */}
+        <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100 cursor-pointer" onClick={handleBusinessClick}>
           <img
             src={business.image}
-            alt={business.name}
-            className="w-full h-full object-cover"
+            alt={business.name || business.title}
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           />
           
-          <div className="absolute top-3 left-3 z-10">
-          </div>
-          <div className="absolute top-3 right-3 z-10">
-            <div className="flex gap-2">
-              <div className="bg-white text-purple-500 px-3 py-1 rounded-full text-sm font-poppins font-semibold">
-                Vibe
+          {/* Google Verified Badge - Top Left */}
+          {business.isGoogleVerified && (
+            <div className="absolute top-2 left-2">
+              <div className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
+                Google
               </div>
-              <div className={`px-3 py-1 rounded-full text-white text-sm font-poppins font-semibold ${
-                business.isOpen ? 'bg-green-500' : 'bg-red-500'
-              }`}>
-                {business.isOpen ? 'Open' : 'Closed'}
-              </div>
+            </div>
+          )}
+          
+          {/* Open/Closed Badge - Bottom Left */}
+          <div className="absolute bottom-2 left-2">
+            <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
+              business.isOpen ? 'bg-green-500' : 'bg-red-500'
+            }`}>
+              {business.isOpen ? 'OPEN' : 'CLOSED'}
             </div>
           </div>
 
-          {/* Favorite Button - Bottom Right */}
-          <div className="absolute bottom-3 right-3 z-10">
+          {/* Heart Icon - Top Right */}
+          <div className="absolute top-2 right-2">
             <button
               onClick={(e) => {
                 e.preventDefault();
@@ -184,174 +190,82 @@ const OfferingCard: React.FC<{
               <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
             </button>
           </div>
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-80"></div>
-          <div className="absolute bottom-0 left-0 right-0 p-2 text-white">
-            <h3 className="font-poppins text-base font-bold mb-1 text-shadow line-clamp-1 cursor-pointer" onClick={handleBusinessClick}>
-              {business.name}
-            </h3>
-            
-            <div className="flex items-center justify-between mb-0.5">
-              <div className="flex items-center">
-                <Icons.Clock className="h-3 w-3 mr-1" />
-                <span className="font-lora text-xs">{business.hours || 'Hours unavailable'}</span>
-                {business.distance && business.duration && (
-                  <span className="font-lora text-xs ml-2">• {business.distance.toFixed(1)} mi • {business.duration} min</span>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {/* Google Verified Badge for AI businesses */}
-                {business.isGoogleVerified && (
-                  <div className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
-                    Google
-                  </div>
-                )}
-                
-                <div className={`${sentimentRating.color} text-white px-3 py-1 rounded-full text-xs font-poppins font-semibold flex items-center shadow-md`}>
-                  <Icons.ThumbsUp className="h-3 w-3 mr-1 fill-current" />
-                  <span className="mr-1">{business.rating?.thumbsUp || 0}</span>
-                  <span className="mr-1">{business.rating?.thumbsDown ? `/${business.rating.thumbsDown}` : ''}</span>
-                  <span>{sentimentRating.text}</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
         
-        <div className="relative bg-neutral-50 rounded-lg p-4 flex-grow flex flex-col">
-            {business.reviews && business.reviews.length > 0 ? (
-              <div className="flex-grow">
-                {/* Review Images - 3 squares under main image */}
-                {business.reviews[currentReviewIndex]?.images && business.reviews[currentReviewIndex].images.length > 0 && (
-                  <div className="flex gap-1 mb-2">
-                    {business.reviews[currentReviewIndex].images.slice(0, 3).map((image, index) => (
-                      <img 
-                        key={index}
-                        src={image.url} 
-                        alt={image.alt || `Review image ${index + 1}`}
-                        className="w-[32%] aspect-square object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openImageGallery(index);
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-                
-                {/* Review content with GO button layout */}
-                <div className="flex items-end justify-between">
-                  <div className="flex-1 min-w-0 pr-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center cursor-pointer" onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}>
-                        <Icons.ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${business.reviews[currentReviewIndex]?.thumbsUp ? 'text-green-500 fill-current' : 'text-red-500'}`} />
-                        <span className="font-poppins text-xs font-semibold text-neutral-700">Review</span>
-                      </div>
-                      <span className="font-poppins text-xs text-neutral-500">
-                        {currentReviewIndex + 1} of {business.reviews.length}
-                      </span>
-                    </div>
-                    
-                    <div className="cursor-pointer" onClick={(e) => {e.stopPropagation(); setBusinessProfileOpen(true);}}>
-                      <p className="font-lora text-xs text-neutral-700 line-clamp-none break-words mb-1">
-                        "{business.reviews[currentReviewIndex]?.text || 'No review text available'}"
-                      </p>
-                      <div className="flex items-center mb-1">
-                        <div 
-                          className="w-6 h-6 rounded-full overflow-hidden mr-2 flex-shrink-0 cursor-pointer"
-                          onClick={(e) => {e.stopPropagation(); openReviewerProfile(e);}}
-                        >
-                          <img 
-                            src={business.reviews[currentReviewIndex]?.authorImage || "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100"} 
-                            alt={business.reviews[currentReviewIndex]?.author || 'Anonymous'} 
-                            className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-                          />
-                        </div>
-                        <p 
-                          className="font-poppins text-xs text-neutral-500 cursor-pointer hover:text-primary-500 transition-colors"
-                          onClick={(e) => {e.stopPropagation(); openReviewerProfile(e);}}
-                        >
-                          {business.reviews[currentReviewIndex]?.author || 'Anonymous'}
-                        </p>
-                      </div>
-                      
-                      {business.reviews.length > 1 && (
-                        <div className="flex space-x-2">
-                          <button onClick={() => prevReview()} className="text-neutral-400 hover:text-neutral-600 text-xs">←</button>
-                          <button onClick={() => nextReview()} className="text-neutral-400 hover:text-neutral-600 text-xs">→</button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex-shrink-0 self-end">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (business.is_virtual && business.website_url) {
-                          window.open(business.website_url, '_blank', 'noopener,noreferrer');
-                        } else if (business.is_mobile_business && business.phone_number) {
-                          window.open(business.website_url, '_blank', 'noopener,noreferrer');
-                        } else if (business.is_mobile_business && business.phone_number) {
-                          window.open(`tel:${business.phone_number}`, '_self');
-                        } else {
-                          onTakeMeThere(business);
-                        }
-                      }}
-                      className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
-                    >
-                      {business.is_virtual && business.website_url ? (
-                        <Icons.Globe className="h-4 w-4" />
-                      ) : business.is_mobile_business && business.phone_number ? (
-                        <Icons.Globe className="h-4 w-4" />
-                      ) : business.is_mobile_business && business.phone_number ? (
-                        <Icons.Phone className="h-4 w-4" />
-                      ) : (
-                        'GO'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-end justify-between flex-grow">
-                <div className="flex-1 min-w-0 pr-2">
-                  <p className="font-lora text-xs text-neutral-500 text-center py-4">No reviews available</p>
-                </div>
-                <div className="flex-shrink-0 self-end">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (business.is_virtual && business.website_url) {
-                        window.open(business.website_url, '_blank', 'noopener,noreferrer');
-                      } else if (business.is_mobile_business && business.phone_number) {
-                        window.open(business.website_url, '_blank', 'noopener,noreferrer');
-                      } else if (business.is_mobile_business && business.phone_number) {
-                        window.open(`tel:${business.phone_number}`, '_self');
-                      } else {
-                        onTakeMeThere(business);
-                      }
-                    }}
-                    className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg font-poppins font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
-                  >
-                    {business.is_virtual && business.website_url ? (
-                      <Icons.Globe className="h-4 w-4" />
-                    ) : business.is_mobile_business && business.phone_number ? (
-                      <Icons.Globe className="h-4 w-4" />
-                    ) : business.is_mobile_business && business.phone_number ? (
-                      <Icons.Phone className="h-4 w-4" />
-                    ) : (
-                      'GO'
-                    )}
-                  </button>
-                </div>
-              </div>
+        {/* Offering Details */}
+        <div className="space-y-2">
+          {/* Main Text: Offering name */}
+          <h6 className="font-poppins font-bold text-black text-sm line-clamp-1">
+            {business.title || business.name}
+          </h6>
+          
+          {/* Sub Text: "at [Business Name]" */}
+          <p className="font-lora text-xs text-black font-bold line-clamp-1">
+            at {business.business_name || business.name}
+          </p>
+          
+          {/* Description */}
+          {(business.description || business.short_description) && (
+            <p className="font-lora text-xs text-neutral-600 line-clamp-2">
+              {business.description || business.short_description}
+            </p>
+          )}
+          
+          {/* Price */}
+          {business.price_cents && (
+            <div className="flex items-center justify-between">
+              <span className="font-poppins font-bold text-primary-600 text-sm">
+                ${(business.price_cents / 100).toFixed(2)}
+              </span>
+            </div>
+          )}
+          
+          {/* Bottom Actions - Phone and Map */}
+          <div className="flex items-center justify-between gap-2 mt-2">
+            {/* Phone Icon - Left (conditional) */}
+            {business.phone_number && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(`tel:${business.phone_number}`, '_self');
+                }}
+                className="p-2 bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                title="Call business"
+              >
+                <Icons.Phone className="h-4 w-4" />
+              </button>
             )}
+            
+            <div className="flex-1"></div>
+            
+            {/* Map Icon - Right (always present) */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTakeMeThere(business);
+              }}
+              className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+              title="Get directions"
+            >
+              <Icons.MapPin className="h-4 w-4" />
+            </button>
+          </div>
+          
+          {/* Tags */}
+          {business.tags && business.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {business.tags.slice(0, 2).map((tag, index) => (
+                <span key={index} className="bg-neutral-200 text-neutral-700 px-2 py-0.5 rounded-full text-xs font-lora">
+                  {tag}
+                </span>
+              ))}
+              {business.tags.length > 2 && (
+                <span className="bg-neutral-200 text-neutral-700 px-2 py-0.5 rounded-full text-xs font-lora">
+                  +{business.tags.length - 2}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -397,5 +311,3 @@ const OfferingCard: React.FC<{
   );
 };
 
-
-export default OfferingCard
