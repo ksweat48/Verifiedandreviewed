@@ -307,10 +307,10 @@ Requirements:
                     id: `ai-${result.place_id}`,
                     business_id: `ai-${result.place_id}`,
                     offering_id: null,
-                    title: result.name,
+                    title: query, // Use the search query as the offering name
                     business_name: result.name,
                     name: result.name,
-                    description: `${result.name} serves ${query}. Found through intelligent search for businesses that offer what you're looking for.`,
+                    description: `${query} at ${result.name}. Found through intelligent search for businesses that offer what you're looking for.`,
                     short_description: `Serves ${query} - found through AI search`,
                     business_description: `Business that serves ${query} according to Google Places data and reviews`,
                     business_short_description: `Serves ${query}`,
