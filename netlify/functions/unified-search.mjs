@@ -375,9 +375,10 @@ Examples:
                     thumbs_up: 0,
                     thumbs_down: 0,
                     sentiment_score: 0,
-                    image_url: '/verified and reviewed logo-coral copy copy.png',
+                    image_url: null, // No image for AI-generated businesses
                     gallery_urls: [],
                     source: 'ai_generated',
+                    isAIGenerated: true, // Flag to identify AI-generated businesses
                     isPlatformBusiness: false,
                     isOpen: result.opening_hours?.open_now !== false,
                     distance: 999999,
@@ -385,7 +386,7 @@ Examples:
                     service_type: 'onsite',
                     placeId: result.place_id,
                     isGoogleVerified: true,
-                    price_cents: Math.floor(Math.random() * 2000) + 500,
+                    price_cents: 0, // No price for AI-generated businesses
                     currency: 'USD',
                     similarity: similarity,
                     reviews: [{

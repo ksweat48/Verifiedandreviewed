@@ -38,6 +38,7 @@ interface BusinessCard {
   is_verified?: boolean;
   isGoogleVerified?: boolean;
   placeId?: string;
+  isAIGenerated?: boolean;
   rating: {
     thumbsUp: number;
     thumbsDown?: number;
@@ -152,11 +153,19 @@ const OfferingCard: React.FC<{
       <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200" onClick={(e) => e.stopPropagation()}>
         {/* Offering Image */}
         <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100 cursor-pointer" onClick={handleBusinessClick}>
-          <img
-            src={business.image || business.image_url || '/verified and reviewed logo-coral copy copy.png'}
-            alt={business.name || business.title}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-          />
+          {business.isAIGenerated ? (
+            // AI-generated businesses show a placeholder instead of an image
+            <div className="w-full h-full bg-gradient-to-br from-purple-100 to-blue-100 flex flex-col items-center justify-center">
+              <Icons.Sparkles className="h-8 w-8 text-purple-500 mb-2" />
+              <span className="font-poppins text-xs font-semibold text-purple-700">AI Found</span>
+            </div>
+          ) : (
+            <img
+              src={business.image || business.image_url || '/verified and reviewed logo-coral copy copy.png'}
+              alt={business.name || business.title}
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            />
+          )}
           
           {/* Google Verified Badge - Top Left */}
           {business.isGoogleVerified && (
@@ -212,7 +221,7 @@ const OfferingCard: React.FC<{
           )}
           
           {/* Price */}
-          {business.price_cents && business.price_cents > 0 && (
+          {!business.isAIGenerated && business.price_cents && business.price_cents > 0 && (
             <div className="flex items-center justify-between">
               <span className="font-poppins font-bold text-primary-600 text-sm">
                 ${(business.price_cents / 100).toFixed(2)}
