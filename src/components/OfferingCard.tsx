@@ -152,54 +152,82 @@ const OfferingCard: React.FC<{
     <>
       <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200" onClick={(e) => e.stopPropagation()}>
         {/* Offering Image */}
-        <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100 cursor-pointer" onClick={handleBusinessClick}>
-          {business.isAIGenerated ? (
-            // AI-generated businesses show a placeholder instead of an image
-            <div className="w-full h-full bg-gradient-to-br from-purple-100 to-blue-100 flex flex-col items-center justify-center">
-              <Icons.Sparkles className="h-8 w-8 text-purple-500 mb-2" />
-              <span className="font-poppins text-xs font-semibold text-purple-700">AI Found</span>
+        {business.isAIGenerated ? (
+          // AI-generated businesses: compact header with badges
+          <div className="mb-3">
+            <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg p-3 mb-2 cursor-pointer" onClick={handleBusinessClick}>
+              <div className="flex items-center justify-center">
+                <Icons.Sparkles className="h-5 w-5 text-purple-500 mr-2" />
+                <span className="font-poppins text-sm font-semibold text-purple-700">AI Found</span>
+              </div>
             </div>
-          ) : (
+            
+            {/* Badges row for AI businesses */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {/* Google Verified Badge */}
+                {business.isGoogleVerified && (
+                  <div className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
+                    Google
+                  </div>
+                )}
+                
+                {/* Open/Closed Badge */}
+                <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
+                  business.isOpen ? 'bg-green-500' : 'bg-red-500'
+                }`}>
+                  {business.isOpen ? 'OPEN' : 'CLOSED'}
+                </div>
+              </div>
+              
+              {/* Heart Icon */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRecommend(business);
+                }}
+                className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
+                title="Add to favorites"
+              >
+                <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Platform businesses: keep existing image layout
+          <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100 cursor-pointer" onClick={handleBusinessClick}>
             <img
               src={business.image || business.image_url || '/verified and reviewed logo-coral copy copy.png'}
               alt={business.name || business.title}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
-          )}
-          
-          {/* Google Verified Badge - Top Left */}
-          {business.isGoogleVerified && (
-            <div className="absolute top-2 left-2">
-              <div className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs font-poppins font-semibold">
-                Google
+            
+            {/* Open/Closed Badge - Bottom Left */}
+            <div className="absolute bottom-2 left-2">
+              <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
+                business.isOpen ? 'bg-green-500' : 'bg-red-500'
+              }`}>
+                {business.isOpen ? 'OPEN' : 'CLOSED'}
               </div>
             </div>
-          )}
-          
-          {/* Open/Closed Badge - Bottom Left */}
-          <div className="absolute bottom-2 left-2">
-            <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
-              business.isOpen ? 'bg-green-500' : 'bg-red-500'
-            }`}>
-              {business.isOpen ? 'OPEN' : 'CLOSED'}
+            
+            {/* Heart Icon - Top Right */}
+            <div className="absolute top-2 right-2">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRecommend(business);
+                }}
+                className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
+                title="Add to favorites"
+              >
+                <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+              </button>
             </div>
           </div>
-
-          {/* Heart Icon - Top Right */}
-          <div className="absolute top-2 right-2">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onRecommend(business);
-              }}
-              className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
-              title="Add to favorites"
-            >
-              <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
-            </button>
-          </div>
-        </div>
+        )}
         
         {/* Offering Details */}
         <div className="space-y-2">
