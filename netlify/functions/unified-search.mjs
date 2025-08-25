@@ -303,17 +303,58 @@ Requirements:
                     console.log('🚫 DEBUG: Filtering out AI result with low similarity:', result.name, similarity.toFixed(3));
                     return null;
                   }
+
+                  // Generate dynamic offering name based on what this business likely offers
+                  console.log('🎯 Generating dynamic offering name for:', result.name);
+                  let dynamicOfferingName = query; // Fallback to original query
+                  
+                  try {
+                    const offeringNamePrompt = `Based on the user's search for "${query}" and this business "${result.name}" (types: ${result.types?.join(', ') || 'restaurant'}), generate ONE plausible menu item name that this business would likely offer related to the search.
+
+Rules:
+• Return ONLY the menu item name, nothing else
+• Make it specific and appetizing (e.g., "Grilled Salmon Burger", "Atlantic Salmon Sandwich", "Blackened Salmon Patty")
+• Consider the business type and name when crafting the item
+• Keep it under 4 words
+• Make it sound like something that would actually be on their menu
+
+Examples:
+- Search: "salmon burger" + Business: "Ocean Grill" → "Grilled Salmon Burger"
+- Search: "vegan pizza" + Business: "Green Garden Cafe" → "Garden Veggie Pizza"
+- Search: "chocolate cake" + Business: "Sweet Dreams Bakery" → "Triple Chocolate Cake"`;
+
+                    const offeringNameResponse = await openai.chat.completions.create({
+                      model: 'gpt-4o-mini',
+                      messages: [
+                        { role: 'user', content: offeringNamePrompt }
+                      ],
+                      temperature: 0.7,
+                      max_tokens: 20
+                    });
+
+                    const generatedName = offeringNameResponse.choices[0].message.content?.trim();
+                    if (generatedName && generatedName.length > 0 && generatedName.length < 50) {
+                      dynamicOfferingName = generatedName;
+                      console.log('✅ Generated dynamic offering name:', dynamicOfferingName);
+                    } else {
+                      console.warn('⚠️ Invalid generated offering name, using fallback');
+                    }
+                  } catch (offeringNameError) {
+                    console.warn('⚠️ Failed to generate dynamic offering name:', offeringNameError.message);
+                    // Keep fallback value
+                  }
+                  
                   return {
                     id: `ai-${result.place_id}`,
                     business_id: `ai-${result.place_id}`,
                     offering_id: null,
-                    title: query, // Use the search query as the offering name
+                    title: dynamicOfferingName, // Use the dynamically generated offering name
                     business_name: result.name,
                     name: result.name,
-                    description: `${query} at ${result.name}. Found through intelligent search for businesses that offer what you're looking for.`,
-                    short_description: `Serves ${query} - found through AI search`,
-                    business_description: `Business that serves ${query} according to Google Places data and reviews`,
-                    business_short_description: `Serves ${query}`,
+                    description: `${dynamicOfferingName} at ${result.name}. Found through intelligent search for businesses that offer what you're looking for.`,
+                    short_description: `Serves ${dynamicOfferingName} - found through AI search`,
+                    business_description: `Business that serves ${dynamicOfferingName} according to Google Places data and reviews`,
+                    business_short_description: `Serves ${dynamicOfferingName}`,
                     address: result.formatted_address,
                     location: result.vicinity || result.formatted_address,
                     latitude: result.geometry?.location?.lat,
@@ -348,7 +389,7 @@ Requirements:
                     currency: 'USD',
                     similarity: similarity,
                     reviews: [{
-                      text: `Great place for ${query}! They serve exactly what I was looking for.`,
+                      text: `Great place for ${dynamicOfferingName}! They serve exactly what I was looking for.`,
                       author: "Google User",
                       thumbsUp: true
                     }]
