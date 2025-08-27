@@ -456,14 +456,19 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         {/* Search Results */}
         <div className="pt-16 h-full overflow-hidden">
           {isSearching ? (
-            <div className="flex flex-col items-center justify-center h-full bg-white">
+            <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-slate-50 to-blue-50">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/20 border-t-white mx-auto mb-6"></div>
-                <p className="font-cinzel text-2xl font-bold text-neutral-900 animate-pulse">
+                <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-500 border-t-transparent mx-auto mb-6"></div>
+                <h3 className="font-cinzel text-2xl font-bold text-neutral-900 mb-2">
                   One Moment
-                </p>
+                </h3>
                 <p className="font-lora text-lg text-neutral-600 animate-pulse mt-2">
-                  Offerings In Progress
+                  Finding the perfect vibe for you...
+                </p>
+                <div className="mt-6 flex items-center justify-center space-x-2">
+                  <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </p>
               </div>
             </div>

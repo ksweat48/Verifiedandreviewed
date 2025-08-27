@@ -318,7 +318,22 @@ const ExploreArea = () => {
           {loading ? (
             // Loading skeletons
             [...Array(6)].map((_, index) => (
-              <div key={index} className="bg-neutral-100 rounded-lg h-64 animate-pulse"></div>
+              <div key={index} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 animate-pulse">
+                <div className="aspect-square mb-3 rounded-lg bg-neutral-200"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-neutral-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-neutral-200 rounded w-1/2"></div>
+                  <div className="h-3 bg-neutral-200 rounded w-full"></div>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="h-6 bg-neutral-200 rounded w-16"></div>
+                    <div className="flex gap-2">
+                      <div className="h-8 w-8 bg-neutral-200 rounded-lg"></div>
+                      <div className="h-8 w-8 bg-neutral-200 rounded-lg"></div>
+                      <div className="h-8 w-8 bg-neutral-200 rounded-lg"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))
           ) : (
             // Actual offering cards

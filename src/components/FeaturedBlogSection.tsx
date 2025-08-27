@@ -78,7 +78,57 @@ const FeaturedBlogSection = () => {
   // If no verified posts, use regular posts
   const postsToShow = formattedPosts.length > 0 ? formattedPosts : posts.map(formatPost).slice(0, 3);
 
-  if (loading || postsToShow.length === 0) {
+  if (loading) {
+    return (
+      <section className="py-8 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="h-6 w-32 bg-neutral-200 rounded animate-pulse"></div>
+            <div className="hidden md:flex items-center gap-2">
+              <div className="w-8 h-8 bg-neutral-200 rounded-full animate-pulse"></div>
+              <div className="w-8 h-8 bg-neutral-200 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          
+          {/* Desktop loading skeleton */}
+          <div className="hidden md:flex md:space-x-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl overflow-hidden shadow-sm border border-neutral-200 flex-1 animate-pulse">
+                <div className="flex p-4">
+                  <div className="w-24 h-24 bg-neutral-200 rounded-lg mr-4"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-neutral-200 rounded w-20"></div>
+                    <div className="h-4 bg-neutral-200 rounded w-full"></div>
+                    <div className="h-3 bg-neutral-200 rounded w-3/4"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Mobile loading skeleton */}
+          <div className="md:hidden">
+            <div className="flex overflow-x-auto gap-4 pb-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex-shrink-0 w-[85%] bg-white rounded-xl overflow-hidden shadow-sm border border-neutral-200 animate-pulse">
+                  <div className="flex p-4">
+                    <div className="w-20 h-20 bg-neutral-200 rounded-lg mr-3"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 bg-neutral-200 rounded w-16"></div>
+                      <div className="h-4 bg-neutral-200 rounded w-full"></div>
+                      <div className="h-3 bg-neutral-200 rounded w-2/3"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  
+  if (postsToShow.length === 0) {
     return null;
   }
 
