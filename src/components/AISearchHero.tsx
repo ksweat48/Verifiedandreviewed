@@ -469,7 +469,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                   <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </p>
+                </div>
               </div>
             </div>
           ) : searchResults.length === 0 ? (
