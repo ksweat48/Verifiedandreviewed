@@ -311,7 +311,7 @@ Requirements:
                   console.log('🤖 DEBUG: AI result similarity for', result.name, ':', similarity.toFixed(3));
 
                   // Only include AI results with reasonable similarity (0.3 threshold for AI results)
-                  if (similarity < 0.2) {
+                  if (similarity < 0.3) {
                     console.log('🚫 DEBUG: Filtering out AI result with low similarity:', result.name, similarity.toFixed(3));
                     return null;
                   }
