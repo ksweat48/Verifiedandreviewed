@@ -236,7 +236,9 @@ Requirements:
           const searchLongitude = longitude || -122.4194;
           const searchRadius = 16093; // 10 miles in meters (16.09 km)
           
-          const aiSearchPromises = searchQueries.map(async (searchQuery) => {
+          const allAIResults = [];
+          
+          for (const searchQuery of searchQueries) {
             try {
               const placesResponse = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
                 params: {
@@ -250,15 +252,14 @@ Requirements:
               });
 
               if (placesResponse.data.status === 'OK' && placesResponse.data.results?.length > 0) {
-                const result = placesResponse.data.results.find(r => r.rating);
-                
-                if (result) {
+                // Process ALL results from Google Places, not just the first one with rating
+                for (const placeResult of placesResponse.data.results) {
                   // Fetch additional details including phone number
                   let phoneNumber = null;
                   try {
                     const detailsResponse = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
                       params: {
-                        place_id: result.place_id,
+                        place_id: placeResult.place_id,
                         fields: 'formatted_phone_number,international_phone_number',
                         key: GOOGLE_PLACES_API_KEY
                       },
@@ -275,12 +276,12 @@ Requirements:
                   
                   // Generate embedding for this business
                   const businessText = [
-                    result.name,
+                    placeResult.name,
                     searchQuery,
                     `serves ${query}`,
                     `offers ${query}`,
-                    result.types ? result.types.join(' ') : '',
-                    `${result.rating} star rating`
+                    placeResult.types ? placeResult.types.join(' ') : '',
+                    placeResult.rating ? `${placeResult.rating} star rating` : ''
                   ].filter(Boolean).join(' ');
 
                   const businessEmbeddingResponse = await openai.embeddings.create({
@@ -294,14 +295,14 @@ Requirements:
                   
                   // Only include AI results with reasonable similarity (0.3 threshold for AI results)
                   if (similarity < 0.3) {
-                    return null;
+                    continue; // Skip this result and continue with next
                   }
 
                   // Generate dynamic offering name based on what this business likely offers
                   let dynamicOfferingName = query; // Fallback to original query
                   
                   try {
-                    const offeringNamePrompt = `Based on the user's search for "${query}" and this business "${result.name}" (types: ${result.types?.join(', ') || 'restaurant'}), generate ONE plausible menu item name that this business would likely offer related to the search.
+                    const offeringNamePrompt = `Based on the user's search for "${query}" and this business "${placeResult.name}" (types: ${placeResult.types?.join(', ') || 'restaurant'}), generate ONE plausible menu item name that this business would likely offer related to the search.
 
 Rules:
 • Return ONLY the menu item name, nothing else
@@ -332,26 +333,26 @@ Examples:
                     // Keep fallback value
                   }
                   
-                  return {
-                    id: `ai-${result.place_id}`,
-                    business_id: `ai-${result.place_id}`,
+                  allAIResults.push({
+                    id: `ai-${placeResult.place_id}`,
+                    business_id: `ai-${placeResult.place_id}`,
                     offering_id: null,
                     title: dynamicOfferingName, // Use the dynamically generated offering name
-                    business_name: result.name,
-                    name: result.name,
-                    description: `${dynamicOfferingName} at ${result.name}. Found through intelligent search for businesses that offer what you're looking for.`,
+                    business_name: placeResult.name,
+                    name: placeResult.name,
+                    description: `${dynamicOfferingName} at ${placeResult.name}. Found through intelligent search for businesses that offer what you're looking for.`,
                     short_description: `Serves ${dynamicOfferingName} - found through AI search`,
                     business_description: `Business that serves ${dynamicOfferingName} according to Google Places data and reviews`,
                     business_short_description: `Serves ${dynamicOfferingName}`,
-                    address: result.formatted_address,
-                    location: result.vicinity || result.formatted_address,
-                    latitude: result.geometry?.location?.lat,
-                    longitude: result.geometry?.location?.lng,
+                    address: placeResult.formatted_address,
+                    location: placeResult.vicinity || placeResult.formatted_address,
+                    latitude: placeResult.geometry?.location?.lat,
+                    longitude: placeResult.geometry?.location?.lng,
                     category: searchQuery,
                     business_category: searchQuery,
                     tags: [],
                     rating: null,
-                    hours: result.opening_hours?.weekday_text?.[0] || 'Hours not available',
+                    hours: placeResult.opening_hours?.weekday_text?.[0] || 'Hours not available',
                     phone_number: phoneNumber,
                     website_url: null,
                     social_media: [],
@@ -368,11 +369,11 @@ Examples:
                     source: 'ai_generated',
                     isAIGenerated: true, // Flag to identify AI-generated businesses
                     isPlatformBusiness: false,
-                    isOpen: result.opening_hours?.open_now !== false,
+                    isOpen: placeResult.opening_hours?.open_now !== false,
                     distance: 999999,
                     duration: 999999,
                     service_type: 'onsite',
-                    placeId: result.place_id,
+                    placeId: placeResult.place_id,
                     isGoogleVerified: true,
                     price_cents: 0, // No price for AI-generated businesses
                     currency: 'USD',
@@ -382,16 +383,22 @@ Examples:
                       author: "Google User",
                       thumbsUp: true
                     }]
-                  };
+                  });
+                  
+                  // Small delay to prevent rate limiting
+                  await new Promise(resolve => setTimeout(resolve, 200));
                 }
               }
             } catch (error) {
               console.warn(`⚠️ AI search failed for "${searchQuery}":`, error.message);
             }
-            return null;
-          });
+          }
 
-          aiResults = (await Promise.all(aiSearchPromises)).filter(Boolean);
+          // Sort all AI results by similarity and take the top slotsNeeded
+          aiResults = allAIResults
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, slotsNeeded);
+            
           console.log('🤖 AI search found', aiResults.length, 'businesses');
         }
       } catch (aiError) {
