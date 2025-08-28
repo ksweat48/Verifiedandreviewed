@@ -155,7 +155,7 @@ const OfferingCard: React.FC<{
         {business.isAIGenerated ? (
           // AI-generated businesses: compact header with badges
           <div className="mb-3">
-            <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg p-3 mb-2">
+            <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg p-3 mb-2 cursor-default">
               <div className="flex items-center justify-center">
                 <Icons.Sparkles className="h-5 w-5 text-purple-500 mr-2" />
                 <span className="font-poppins text-sm font-semibold text-purple-700">AI Found</span>
@@ -182,21 +182,6 @@ const OfferingCard: React.FC<{
               
               {/* Action Icons */}
               <div className="flex items-center gap-2">
-                {/* Phone Icon - Only show if phone number exists */}
-                {business.phone_number && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      window.open(`tel:${business.phone_number}`, '_self');
-                    }}
-                    className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
-                    title="Call business"
-                  >
-                    <Icons.Phone className="h-4 w-4 text-neutral-600 group-hover:text-green-500 transition-all duration-200" />
-                  </button>
-                )}
-                
                 {/* Heart Icon */}
                 <button
                   onClick={(e) => {
@@ -275,9 +260,9 @@ const OfferingCard: React.FC<{
             </div>
           )}
           
-          {/* Bottom Actions - Phone and Map */}
+          {/* Bottom Actions - Phone and Map for both AI and Platform */}
           <div className="flex items-center justify-between gap-2 mt-2">
-            {/* Phone Icon - Left (conditional) */}
+            {/* Phone Icon - Left (conditional for both AI and Platform) */}
             {business.phone_number && (
               <button
                 onClick={(e) => {
@@ -293,14 +278,14 @@ const OfferingCard: React.FC<{
             
             <div className="flex-1"></div>
             
-            {/* Map Icon - Right (always present) */}
+            {/* Map Icon - Right (always present, behavior differs for AI vs Platform) */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onTakeMeThere(business);
               }}
               className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center"
-              title="Get directions"
+              title={business.isAIGenerated ? "View Google Profile" : "Get directions"}
             >
               <Icons.MapPin className="h-4 w-4" />
             </button>

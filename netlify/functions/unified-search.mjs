@@ -129,7 +129,7 @@ export const handler = async (event, context) => {
         'search_offerings_by_vibe',
         {
           query_embedding: queryEmbedding,
-          match_threshold: 0.4, // Balanced threshold for accuracy vs recall
+          match_threshold: 0.1, // Lower threshold to include more platform offerings
           match_count: matchCount,
           user_latitude: latitude,
           user_longitude: longitude,
@@ -149,8 +149,8 @@ export const handler = async (event, context) => {
           console.log(`  ${index + 1}. Offering ID: ${result.id}, Similarity: ${result.similarity?.toFixed(3)}, Title: "${result.title || 'NO TITLE'}", Business: "${result.business_name || 'NO BUSINESS'}"`);
         });
         
-        // Filter out results with very low similarity scores (stricter than RPC threshold)
-        const strictThreshold = 0.4; // Balanced filtering on the function side
+        // Filter out results with very low similarity scores
+        const strictThreshold = 0.2; // Lower threshold to keep more platform offerings
         const filteredOfferingResults = offeringResults.filter(result => {
           const hasGoodSimilarity = result.similarity >= strictThreshold;
           if (!hasGoodSimilarity) {
@@ -160,7 +160,7 @@ export const handler = async (event, context) => {
         });
         
         offeringResults = filteredOfferingResults;
-        console.log('✅ After strict similarity filtering (>= 0.4):', offeringResults.length, 'relevant offerings remain');
+        console.log('✅ After strict similarity filtering (>= 0.2):', offeringResults.length, 'relevant offerings remain');
       }
     } catch (error) {
       console.warn('⚠️ Offering search error:', error.message);
@@ -179,7 +179,7 @@ export const handler = async (event, context) => {
           ...offering,
           source: 'offering'
         });
-        console.log(`🔍 DEBUG: Added platform offering to results map: "${offering.title}" (ID: ${offering.id}, Business: ${offering.business_id})`);
+        console.log(`🔍 DEBUG: Added platform offering to results map: "${offering.title}" (ID: ${offering.id}, Business: ${offering.business_id}, Similarity: ${offering.similarity?.toFixed(3)})`);
       }
     });
     
@@ -277,6 +277,28 @@ Requirements:
                 const result = placesResponse.data.results.find(r => r.rating);
                 
                 if (result) {
+                  // Fetch additional details including phone number
+                  let phoneNumber = null;
+                  try {
+                    console.log('📞 Fetching phone number for AI business:', result.name);
+                    const detailsResponse = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
+                      params: {
+                        place_id: result.place_id,
+                        fields: 'formatted_phone_number,international_phone_number',
+                        key: GOOGLE_PLACES_API_KEY
+                      },
+                      timeout: 3000
+                    });
+                    
+                    if (detailsResponse.data.status === 'OK' && detailsResponse.data.result) {
+                      phoneNumber = detailsResponse.data.result.formatted_phone_number || 
+                                   detailsResponse.data.result.international_phone_number;
+                      console.log('✅ Found phone number for', result.name, ':', phoneNumber);
+                    }
+                  } catch (phoneError) {
+                    console.warn('⚠️ Failed to fetch phone number for', result.name, ':', phoneError.message);
+                  }
+                  
                   // Generate embedding for this business
                   const businessText = [
                     result.name,
@@ -364,7 +386,7 @@ Examples:
                     tags: [],
                     rating: null,
                     hours: result.opening_hours?.weekday_text?.[0] || 'Hours not available',
-                    phone_number: null,
+                    phone_number: phoneNumber,
                     website_url: null,
                     social_media: [],
                     price_range: null,
@@ -697,31 +719,45 @@ Examples:
     // STEP 7: Sort and rank final results (platform offerings prioritized over AI businesses)
     console.log('🎯 Step 7: Sorting and ranking final results (platform offerings > AI businesses)...');
     
+    // DEBUG: Log sources before ranking
+    console.log('🔍 DEBUG: Sources before ranking:');
+    combinedResults.forEach((result, index) => {
+      console.log(`  ${index + 1}. Source: "${result.source}", Name: "${result.title || result.name}", Similarity: ${result.similarity?.toFixed(3) || 'N/A'}`);
+    });
+    
     const rankedResults = combinedResults
       .map(result => ({
         ...result,
         // Calculate composite score for ranking
         compositeScore: (
           0.45 * (result.similarity || 0.5) +
-          0.25 * (result.source === 'offering' ? 1 : 0.6) +
+          0.25 * (result.source === 'offering' ? 1 : 0.3) +
           0.20 * (result.isOpen ? 1 : 0) +
           0.10 * (result.distance && result.distance < 999999 ? (1 - Math.min(result.distance / 30, 1)) : 0)
         )
       }))
       .sort((a, b) => {
         // Primary sort: Source priority (platform offerings ALWAYS first)
-        const sourceOrder = { offering: 100, ai_generated: 1 };
+        const sourceOrder = { offering: 1000, ai_generated: 1 }; // Much higher priority for platform offerings
         const aSourcePriority = sourceOrder[a.source] || 0;
         const bSourcePriority = sourceOrder[b.source] || 0;
         
         if (aSourcePriority !== bSourcePriority) {
+          console.log(`🔍 DEBUG: Sorting by source priority - A: ${a.source} (${aSourcePriority}) vs B: ${b.source} (${bSourcePriority})`);
           return bSourcePriority - aSourcePriority;
         }
         
         // Secondary sort: Composite score
+        console.log(`🔍 DEBUG: Sorting by composite score - A: ${a.compositeScore?.toFixed(3)} vs B: ${b.compositeScore?.toFixed(3)}`);
         return b.compositeScore - a.compositeScore;
       })
       .slice(0, matchCount); // Limit final results
+
+    // DEBUG: Log final ranking results
+    console.log('🔍 DEBUG: Final ranked results:');
+    rankedResults.forEach((result, index) => {
+      console.log(`  ${index + 1}. [${result.source?.toUpperCase()}] "${result.title || result.name}" - Similarity: ${result.similarity?.toFixed(3) || 'N/A'}, Composite: ${result.compositeScore?.toFixed(3) || 'N/A'}`);
+    });
 
     // Calculate accurate source counts
     const finalSourceCounts = {
