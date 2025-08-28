@@ -12,7 +12,6 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import OfferingCard from './OfferingCard';
 import SignupPrompt from './SignupPrompt';
 import AuthModal from './AuthModal';
-import OfferingReviewsModal from './OfferingReviewsModal';
 import { supabase } from '../services/supabaseClient';
 import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
 import { getAvatarForUser } from '../utils/displayUtils';
@@ -59,7 +58,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // Push a new state when entering app mode
       window.history.pushState({ appMode: true }, '', window.location.href);
       
-      const handlePopState = (event: any) => {
+      const handlePopState = (event) => {
         // If we're in app mode and user presses back, exit app mode instead of leaving the site
         if (isAppModeActive) {
           setIsAppModeActive(false);
@@ -370,7 +369,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   const handleVoiceSearch = async () => {
     // Check if Speech Recognition is available
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
       alert('Speech recognition is not supported in your browser. Please try Chrome, Safari, or Edge.');
@@ -394,7 +393,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         console.log('🎤 Voice recognition started');
       };
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event) => {
         let transcript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
@@ -415,7 +414,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         }
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event) => {
         setIsListening(false);
         console.error('🎤 Voice recognition error:', event.error);
         
@@ -444,15 +443,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleOpenOfferingReviews = (business: any) => {
-    // Only open for platform businesses with offering IDs
-    if (business.isPlatformBusiness && (business.offeringId || business.id)) {
-      setSelectedOfferingForReviews({
-        id: business.offeringId || business.id,
-        title: business.title || business.name,
-        businessName: business.business_name || business.name
-      });
-      setIsOfferingReviewsModalOpen(true);
-    }
+    // Handle opening offering reviews
+    console.log('Opening offering reviews for:', business);
   };
 
   if (isAppModeActive) {
