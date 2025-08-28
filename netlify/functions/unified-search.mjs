@@ -55,7 +55,7 @@ const HIGH_RELEVANCE_PLATFORM_THRESHOLD = 0.5;
 const MIN_PLATFORM_RANKING_BOOST_SIMILARITY = 0.4;
 // Performance optimization constants
 const NUM_AI_QUERIES = 5; // Generate more diverse AI search queries
-const TOP_PLACES_RESULTS_TO_EMBED = 10; // Process more Google Places results per query
+const TOP_PLACES_RESULTS_TO_EMBED = 20; // Process more Google Places results per query
 const TARGET_PLATFORM_OFFERINGS = 10; // Maximum platform offerings to prioritize
 
 export const handler = async (event, context) => {
@@ -283,10 +283,10 @@ Requirements:
                   });
 
                   const businessEmbedding = businessEmbeddingResponse.data[0].embedding;
-                  const similarity = cosineSimilarity(queryEmbedding, businessEmbedding);
+                  const similarity = cosineSimilarity(queryEmbedding, businessEmbedding); // Keep original model for consistency
                   
                   // Only include AI results with reasonable similarity
-                  if (similarity < 0.3) {
+                  if (similarity < 0.25) {
                     continue;
                   }
 
