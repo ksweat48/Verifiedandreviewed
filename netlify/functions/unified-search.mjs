@@ -709,8 +709,8 @@ Examples:
         )
       }))
       .sort((a, b) => {
-        // Primary sort: Source priority (platform offerings > AI businesses)
-        const sourceOrder = { offering: 2, ai_generated: 1 };
+        // Primary sort: Source priority (platform offerings ALWAYS first)
+        const sourceOrder = { offering: 100, ai_generated: 1 };
         const aSourcePriority = sourceOrder[a.source] || 0;
         const bSourcePriority = sourceOrder[b.source] || 0;
         

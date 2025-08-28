@@ -155,7 +155,7 @@ const OfferingCard: React.FC<{
         {business.isAIGenerated ? (
           // AI-generated businesses: compact header with badges
           <div className="mb-3">
-            <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg p-3 mb-2 cursor-pointer" onClick={handleBusinessClick}>
+            <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg p-3 mb-2">
               <div className="flex items-center justify-center">
                 <Icons.Sparkles className="h-5 w-5 text-purple-500 mr-2" />
                 <span className="font-poppins text-sm font-semibold text-purple-700">AI Found</span>
@@ -180,18 +180,36 @@ const OfferingCard: React.FC<{
                 </div>
               </div>
               
-              {/* Heart Icon */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRecommend(business);
-                }}
-                className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
-                title="Add to favorites"
-              >
-                <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
-              </button>
+              {/* Action Icons */}
+              <div className="flex items-center gap-2">
+                {/* Phone Icon - Only show if phone number exists */}
+                {business.phone_number && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.open(`tel:${business.phone_number}`, '_self');
+                    }}
+                    className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
+                    title="Call business"
+                  >
+                    <Icons.Phone className="h-4 w-4 text-neutral-600 group-hover:text-green-500 transition-all duration-200" />
+                  </button>
+                )}
+                
+                {/* Heart Icon */}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onRecommend(business);
+                  }}
+                  className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
+                  title="Add to favorites"
+                >
+                  <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
+                </button>
+              </div>
             </div>
           </div>
         ) : (
