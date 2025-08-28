@@ -421,9 +421,18 @@ Examples:
 
           // Add AI results to combined results (only if not already present)
           aiResults.forEach(aiResult => {
-            if (!resultsMap.has(aiResult.business_id)) {
+            const existingEntry = resultsMap.get(aiResult.business_id);
+            if (!existingEntry) {
+              // No existing entry - safe to add AI result
               resultsMap.set(aiResult.business_id, aiResult);
               console.log('🤖 DEBUG: Added AI result to map:', aiResult.name, 'with similarity:', aiResult.similarity?.toFixed(3), '- SOURCE: ai_generated');
+            } else if (existingEntry.source !== 'offering') {
+              // Existing entry is not a platform offering - safe to replace
+              resultsMap.set(aiResult.business_id, aiResult);
+              console.log('🤖 DEBUG: Replaced non-platform entry with AI result:', aiResult.name, 'with similarity:', aiResult.similarity?.toFixed(3), '- SOURCE: ai_generated');
+            } else {
+              // Existing entry is a platform offering - DO NOT overwrite
+              console.log('🚫 DEBUG: Skipping AI result to preserve platform offering:', existingEntry.title || existingEntry.name, 'for business:', aiResult.name);
             }
           });
 
