@@ -2,6 +2,7 @@
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
+import { isBusinessOpen } from './utils/displayUtils.mjs';
 
 // Helper function to calculate cosine similarity between two vectors
 function cosineSimilarity(vecA, vecB) {
