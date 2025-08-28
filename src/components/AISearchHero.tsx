@@ -425,6 +425,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     setShowAuthModal(false);
   };
 
+  const handleOpenOfferingReviews = (business: any) => {
+    // Handle opening offering reviews
+    console.log('Opening offering reviews for:', business);
+  };
+
   if (isAppModeActive) {
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 z-40 overflow-hidden">
@@ -507,6 +512,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       onRecommend={handleRecommendBusiness}
                       onTakeMeThere={handleTakeMeThere}
                       onOpenOfferingReviews={!business.isAIGenerated ? handleOpenOfferingReviews : undefined}
+                    />
                   </div>
                 ))}
               </div>
@@ -521,6 +527,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           </div>
         )}
       </div>
+    );
         {/* Offering Reviews Modal - Only for Platform Offerings */}
   }
 
