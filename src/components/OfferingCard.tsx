@@ -3,8 +3,7 @@ import * as Icons from 'lucide-react';
 import ReviewerProfile from './ReviewerProfile';
 import ImageGalleryPopup from './ImageGalleryPopup';
 import BusinessProfileModal from './BusinessProfileModal';
-import { getSentimentRating } from '../utils/displayUtils';
-import { isBusinessOpen } from '../utils/displayUtils';
+import { getSentimentRating, isBusinessOpen } from '../utils/displayUtils';
 
 interface ReviewImage {
   url: string;
@@ -175,9 +174,9 @@ const OfferingCard: React.FC<{
                 
                 {/* Open/Closed Badge */}
                 <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
-                  business.isOpen ? 'bg-green-500' : 'bg-red-500'
+                  isBusinessOpen(business) ? 'bg-green-500' : 'bg-red-500'
                 }`}>
-                  {business.isOpen ? 'OPEN' : 'CLOSED'}
+                  {isBusinessOpen(business) ? 'OPEN' : 'CLOSED'}
                 </div>
               </div>
               

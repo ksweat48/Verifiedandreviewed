@@ -546,7 +546,7 @@ Requirements:
                 // Search metadata
                 similarity: searchResult.similarity,
                 isPlatformBusiness: true,
-                isOpen: true,
+                isOpen: isBusinessOpen(business),
                 distance: searchResult.distance_miles || 999999,
                 duration: 999999,
                 
@@ -562,7 +562,7 @@ Requirements:
                 ...searchResult,
                 source: 'offering',
                 isPlatformBusiness: true,
-                isOpen: true,
+                isOpen: false, // Default to closed if we can't determine
                 distance: 999999,
                 duration: 999999
               };
