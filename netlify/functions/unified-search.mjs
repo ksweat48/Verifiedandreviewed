@@ -709,6 +709,12 @@ Examples:
     // STEP 7: Sort and rank final results (platform offerings prioritized over AI businesses)
     console.log('🎯 Step 7: Sorting and ranking final results (platform offerings > AI businesses)...');
     
+    // DEBUG: Log all results before sorting with their source and key properties
+    console.log('🔍 DEBUG: ALL RESULTS BEFORE SORTING (' + combinedResults.length + ' total):');
+    combinedResults.forEach((result, index) => {
+      console.log(`  ${index + 1}. ID: "${result.id || 'NO_ID'}", Source: "${result.source || 'NO_SOURCE'}", Name/Title: "${result.title || result.name || 'NO_NAME'}", Business: "${result.business_name || result.name || 'NO_BUSINESS'}", Similarity: ${result.similarity?.toFixed(3) || 'N/A'}, isPlatformBusiness: ${result.isPlatformBusiness || false}`);
+    });
+    
     // DEBUG: Log sources before ranking
     console.log('🔍 DEBUG: Sources before ranking:');
     combinedResults.forEach((result, index) => {
