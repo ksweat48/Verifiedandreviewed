@@ -149,6 +149,12 @@ export const handler = async (event, context) => {
           console.log(`  ${index + 1}. Offering ID: ${result.id}, Similarity: ${result.similarity?.toFixed(3)}, Title: "${result.title || 'NO TITLE'}", Business: "${result.business_name || 'NO BUSINESS'}"`);
         });
         
+        // DEBUG: Log raw RPC results with similarity scores
+        console.log('🔍 DEBUG: Raw offering search results from RPC:');
+        offeringResults.forEach((result, index) => {
+          console.log(`  ${index + 1}. Offering ID: ${result.id}, Similarity: ${result.similarity?.toFixed(3)}, Title: "${result.title || 'NO TITLE'}", Business: "${result.business_name || 'NO BUSINESS'}"`);
+        });
+        
         // Keep ALL platform offerings - no similarity filtering
         console.log('✅ Keeping ALL platform offerings without similarity filtering:', offeringResults.length, 'offerings');
       }
