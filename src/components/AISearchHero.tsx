@@ -44,6 +44,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showFloatingSearchInput, setShowFloatingSearchInput] = useState(false);
+  const [isOfferingReviewsModalOpen, setIsOfferingReviewsModalOpen] = useState(false);
+  const [selectedOfferingForReviews, setSelectedOfferingForReviews] = useState<{
+    id: string;
+    title: string;
+    businessName: string;
+  } | null>(null);
   
   // Get pending reviews count for notification dot
   const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);

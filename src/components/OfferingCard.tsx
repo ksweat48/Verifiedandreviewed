@@ -4,6 +4,7 @@ import ReviewerProfile from './ReviewerProfile';
 import ImageGalleryPopup from './ImageGalleryPopup';
 import BusinessProfileModal from './BusinessProfileModal';
 import { getSentimentRating } from '../utils/displayUtils';
+import { isBusinessOpen } from '../utils/displayUtils';
 
 interface ReviewImage {
   url: string;
@@ -63,7 +64,6 @@ const OfferingCard: React.FC<{
   business: BusinessCard;
   onRecommend: (business: BusinessCard) => void;
   onTakeMeThere: (business: BusinessCard) => void;
-  onOpenOfferingReviews?: (offering: any, businessName: string) => void;
 }> = ({ business, onRecommend, onTakeMeThere }) => {
  // Debug: Log the business object and its reviews
  console.log("Card received reviews:", business.reviews);
