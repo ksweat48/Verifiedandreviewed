@@ -48,8 +48,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-// Minimum similarity threshold for platform offerings to receive priority boost
-const MIN_PLATFORM_SIMILARITY = 0.4;
+// High relevance threshold for platform offerings to be prioritized
+const HIGH_RELEVANCE_PLATFORM_THRESHOLD = 0.5;
+// Minimum similarity threshold for platform offerings to receive ranking boost
+const MIN_PLATFORM_RANKING_BOOST_SIMILARITY = 0.4;
 
 export const handler = async (event, context) => {
   // Handle CORS preflight
@@ -123,8 +125,8 @@ export const handler = async (event, context) => {
     const queryEmbedding = embeddingResponse.data[0].embedding;
     console.log('✅ Generated query embedding with dimensions:', queryEmbedding.length);
 
-    // STEP 1: Search offerings using semantic similarity
-    console.log('🔍 Step 1: Searching offerings with semantic similarity...');
+    // STAGE 1: Broad Platform Offering Search
+    console.log('🔍 Stage 1: Performing broad platform offering search...');
     let offeringResults = [];
     
     try {
@@ -132,8 +134,8 @@ export const handler = async (event, context) => {
         'search_offerings_by_vibe',
         {
           query_embedding: queryEmbedding,
-          match_threshold: 0.1, // Lower threshold to include more platform offerings
-          match_count: 30, // Get more candidates from database
+          match_threshold: 0.1, // Low threshold to gather wide range of candidates
+          match_count: 50, // Get many candidates for filtering
           user_latitude: latitude,
           user_longitude: longitude,
           max_distance_miles: 10.0
@@ -141,54 +143,43 @@ export const handler = async (event, context) => {
       );
 
       if (offeringError) {
-        console.warn('⚠️ Offering search failed:', offeringError.message);
+        console.warn('⚠️ Platform offering search failed:', offeringError.message);
       } else {
         offeringResults = offeringSearchResults || [];
-        console.log('✅ Found', offeringResults.length, 'offering matches');
+        console.log('✅ Found', offeringResults.length, 'platform offering candidates');
         
-        // DEBUG: Log raw RPC results with similarity scores
-        console.log('🔍 DEBUG: Raw offering search results from RPC:');
+        // DEBUG: Log all platform offering candidates
+        console.log('🔍 DEBUG: All platform offering candidates:');
         offeringResults.forEach((result, index) => {
-          console.log(`  ${index + 1}. Offering ID: ${result.id}, Similarity: ${result.similarity?.toFixed(3)}, Title: "${result.title || 'NO TITLE'}", Business: "${result.business_name || 'NO BUSINESS'}"`);
+          console.log(`  ${index + 1}. "${result.title || 'NO TITLE'}" at "${result.business_name || 'NO BUSINESS'}" - Similarity: ${result.similarity?.toFixed(3)}`);
         });
-        
-        // Keep ALL platform offerings - no similarity filtering
-        console.log('✅ Keeping ALL platform offerings without similarity filtering:', offeringResults.length, 'offerings');
       }
     } catch (error) {
-      console.warn('⚠️ Offering search error:', error.message);
+      console.warn('⚠️ Platform offering search error:', error.message);
     }
 
-    // STEP 2: Prepare platform offering results for combination with AI results
-    console.log('🔄 Step 2: Preparing platform offering results...');
+    // STAGE 2: Filter for Highly Relevant Platform Offerings
+    console.log('🔍 Stage 2: Filtering for highly relevant platform offerings...');
+    const highlyRelevantPlatformOfferings = offeringResults.filter(offering => 
+      offering.similarity >= HIGH_RELEVANCE_PLATFORM_THRESHOLD
+    );
     
-    // Use Map for deduplication with priority: Offerings > AI Results
-    const resultsMap = new Map();
-    
-    // Add platform offering results (highest priority)
-    offeringResults.forEach(offering => {
-      if (offering.business_id) {
-        resultsMap.set(offering.business_id, {
-          ...offering,
-          source: 'offering'
-        });
-        console.log(`🔍 DEBUG: Added platform offering to results map: "${offering.title}" (ID: ${offering.id}, Business: ${offering.business_id}, Similarity: ${offering.similarity?.toFixed(3)}) - SOURCE: offering`);
-      }
+    console.log(`✅ Found ${highlyRelevantPlatformOfferings.length} highly relevant platform offerings (similarity >= ${HIGH_RELEVANCE_PLATFORM_THRESHOLD}):`);
+    highlyRelevantPlatformOfferings.forEach((offering, index) => {
+      console.log(`  ${index + 1}. "${offering.title}" at "${offering.business_name}" - Similarity: ${offering.similarity?.toFixed(3)}`);
     });
     
-    let combinedResults = Array.from(resultsMap.values());
-    console.log('📊 Platform offering results prepared:', combinedResults.length, 'unique results');
-
-    // STEP 3: If we have fewer than 8 platform offerings, use AI to find businesses that serve what user wants
-    if (combinedResults.length < 8 && GOOGLE_PLACES_API_KEY) {
-      console.log('🤖 Step 3: Using AI to find businesses that serve what user is looking for...');
+    // STAGE 3: Conditional AI Search to Fill Remaining Slots
+    const slotsNeeded = Math.max(0, matchCount - highlyRelevantPlatformOfferings.length);
+    console.log(`🤖 Stage 3: Need ${slotsNeeded} more results to reach target of ${matchCount}`);
+    
+    let aiResults = [];
+    if (slotsNeeded > 0 && GOOGLE_PLACES_API_KEY) {
+      console.log('🤖 Performing AI search to fill remaining slots...');
       
       try {
-        const slotsToFill = matchCount - combinedResults.length; // Fill remaining slots up to matchCount
-        console.log('🤖 DEBUG: Slots to fill with AI results:', slotsToFill, '(out of', matchCount, 'total desired)');
-        
         // Generate AI search queries focused on specific dishes/services
-        const aiSystemPrompt = `You are a search query generator for Google Places API. Generate exactly ${slotsToFill} different search queries to find businesses that serve or offer what the user is looking for.
+        const aiSystemPrompt = `You are a search query generator for Google Places API. Generate exactly ${slotsNeeded} different search queries to find businesses that serve or offer what the user is looking for.
 
 Requirements:
 • Each query should be 2-4 words suitable for Google Places Text Search
@@ -214,8 +205,8 @@ Requirements:
                     type: "string",
                     description: "Google Places search query for businesses that serve/offer the requested item/service"
                   },
-                  minItems: slotsToFill,
-                  maxItems: slotsToFill
+                  minItems: slotsNeeded,
+                  maxItems: slotsNeeded
                 }
               },
               required: ["queries"]
@@ -238,18 +229,15 @@ Requirements:
         const toolCall = aiCompletion.choices[0].message.tool_calls?.[0];
         if (toolCall && toolCall.function.name === 'generateSearchQueries') {
           const searchQueries = JSON.parse(toolCall.function.arguments).queries;
-          console.log('🔍 Generated AI search queries for businesses that serve/offer:', query, '→', searchQueries);
-          console.log('🤖 DEBUG: AI-generated queries:', searchQueries);
+          console.log('🤖 Generated AI search queries:', searchQueries);
 
           // Search Google Places for each query
           const searchLatitude = latitude || 37.7749;
           const searchLongitude = longitude || -122.4194;
           const searchRadius = 16093; // 10 miles in meters (16.09 km)
-          console.log('🗺️ DEBUG: Using search location:', { searchLatitude, searchLongitude, searchRadius });
           
           const aiSearchPromises = searchQueries.map(async (searchQuery) => {
             try {
-              console.log('🔍 DEBUG: Searching Google Places for:', searchQuery);
               const placesResponse = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
                 params: {
                   query: searchQuery,
@@ -261,11 +249,6 @@ Requirements:
                 timeout: 5000
               });
 
-              console.log('🔍 DEBUG: Google Places response for', searchQuery, ':', {
-                status: placesResponse.data.status,
-                resultCount: placesResponse.data.results?.length || 0,
-                firstResult: placesResponse.data.results?.[0]?.name || 'None'
-              });
               if (placesResponse.data.status === 'OK' && placesResponse.data.results?.length > 0) {
                 const result = placesResponse.data.results.find(r => r.rating);
                 
@@ -273,7 +256,6 @@ Requirements:
                   // Fetch additional details including phone number
                   let phoneNumber = null;
                   try {
-                    console.log('📞 Fetching phone number for AI business:', result.name);
                     const detailsResponse = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
                       params: {
                         place_id: result.place_id,
@@ -286,10 +268,9 @@ Requirements:
                     if (detailsResponse.data.status === 'OK' && detailsResponse.data.result) {
                       phoneNumber = detailsResponse.data.result.formatted_phone_number || 
                                    detailsResponse.data.result.international_phone_number;
-                      console.log('✅ Found phone number for', result.name, ':', phoneNumber);
                     }
                   } catch (phoneError) {
-                    console.warn('⚠️ Failed to fetch phone number for', result.name, ':', phoneError.message);
+                    console.warn('⚠️ Failed to fetch phone number:', phoneError.message);
                   }
                   
                   // Generate embedding for this business
@@ -311,16 +292,12 @@ Requirements:
                   const businessEmbedding = businessEmbeddingResponse.data[0].embedding;
                   const similarity = cosineSimilarity(queryEmbedding, businessEmbedding);
                   
-                  console.log('🤖 DEBUG: AI result similarity for', result.name, ':', similarity.toFixed(3));
-
                   // Only include AI results with reasonable similarity (0.3 threshold for AI results)
                   if (similarity < 0.3) {
-                    console.log('🚫 DEBUG: Filtering out AI result with low similarity:', result.name, similarity.toFixed(3));
                     return null;
                   }
 
                   // Generate dynamic offering name based on what this business likely offers
-                  console.log('🎯 Generating dynamic offering name for:', result.name);
                   let dynamicOfferingName = query; // Fallback to original query
                   
                   try {
@@ -350,12 +327,8 @@ Examples:
                     const generatedName = offeringNameResponse.choices[0].message.content?.trim();
                     if (generatedName && generatedName.length > 0 && generatedName.length < 50) {
                       dynamicOfferingName = generatedName;
-                      console.log('✅ Generated dynamic offering name:', dynamicOfferingName);
-                    } else {
-                      console.warn('⚠️ Invalid generated offering name, using fallback');
                     }
                   } catch (offeringNameError) {
-                    console.warn('⚠️ Failed to generate dynamic offering name:', offeringNameError.message);
                     // Keep fallback value
                   }
                   
@@ -418,45 +391,54 @@ Examples:
             return null;
           });
 
-          const aiResults = (await Promise.all(aiSearchPromises)).filter(Boolean);
-          console.log('🤖 AI search found', aiResults.length, 'businesses that serve/offer:', query);
-          console.log('🤖 DEBUG: AI results details:', aiResults.map(r => ({ name: r.name, similarity: r.similarity?.toFixed(3) })));
-
-          // Add AI results to combined results (only if not already present)
-          aiResults.forEach(aiResult => {
-            const existingEntry = resultsMap.get(aiResult.business_id);
-            if (!existingEntry) {
-              // No existing entry - safe to add AI result
-              resultsMap.set(aiResult.business_id, aiResult);
-              console.log('🤖 DEBUG: Added AI result to map:', aiResult.name, 'with similarity:', aiResult.similarity?.toFixed(3), '- SOURCE: ai_generated');
-            } else if (existingEntry.source !== 'offering') {
-              // Existing entry is not a platform offering - safe to replace
-              resultsMap.set(aiResult.business_id, aiResult);
-              console.log('🤖 DEBUG: Replaced non-platform entry with AI result:', aiResult.name, 'with similarity:', aiResult.similarity?.toFixed(3), '- SOURCE: ai_generated');
-            } else {
-              // Existing entry is a platform offering - DO NOT overwrite
-              console.log('🚫 DEBUG: Skipping AI result to preserve platform offering:', existingEntry.title || existingEntry.name, 'for business:', aiResult.name);
-            }
-          });
-
-          combinedResults = Array.from(resultsMap.values());
-          console.log('📊 After adding AI businesses:', combinedResults.length, 'total results (platform offerings + AI businesses)');
+          aiResults = (await Promise.all(aiSearchPromises)).filter(Boolean);
+          console.log('🤖 AI search found', aiResults.length, 'businesses');
         }
       } catch (aiError) {
-        console.warn('⚠️ AI search step failed:', aiError.message);
+        console.warn('⚠️ AI search failed:', aiError.message);
       }
+    } else if (slotsNeeded === 0) {
+      console.log('✅ No AI search needed - sufficient highly relevant platform offerings found');
     }
 
-    // STEP 4: Enrich platform offering results with full details
+    // STAGE 4: Combine and Deduplicate Results
+    console.log('🔄 Stage 4: Combining and deduplicating results...');
+    
+    // Use Map for deduplication with priority: Platform Offerings > AI Results
+    const resultsMap = new Map();
+    
+    // Add highly relevant platform offerings first (highest priority)
+    highlyRelevantPlatformOfferings.forEach(offering => {
+      if (offering.business_id) {
+        resultsMap.set(offering.business_id, {
+          ...offering,
+          source: 'offering'
+        });
+        console.log(`✅ Added highly relevant platform offering: "${offering.title}" (similarity: ${offering.similarity?.toFixed(3)})`);
+      }
+    });
+    
+    // Add AI results only if no platform offering exists for that business
+    aiResults.forEach(aiResult => {
+      if (!resultsMap.has(aiResult.business_id)) {
+        resultsMap.set(aiResult.business_id, aiResult);
+        console.log(`✅ Added AI result: "${aiResult.name}" (similarity: ${aiResult.similarity?.toFixed(3)})`);
+      } else {
+        console.log(`🚫 Skipped AI result "${aiResult.name}" - platform offering exists for this business`);
+      }
+    });
+    
+    let combinedResults = Array.from(resultsMap.values());
+    console.log('📊 Combined results:', combinedResults.length, 'unique businesses');
+
+    // STAGE 5: Enrich Platform Offering Results with Full Details
     if (combinedResults.length > 0) {
-      console.log('🔄 Step 4: Enriching platform offering results with full details...');
+      console.log('🔄 Stage 5: Enriching platform offering results with full details...');
       
       const platformOfferingResults = combinedResults.filter(result => result.source === 'offering');
-      console.log('🔍 DEBUG: Platform offerings to enrich:', platformOfferingResults.length);
       
       if (platformOfferingResults.length > 0) {
         const offeringIds = platformOfferingResults.map(result => result.id);
-        console.log('🔍 DEBUG: Offering IDs to enrich:', offeringIds);
         
         // Fetch full offering details with business info and images
         const { data: fullOfferings, error: detailsError } = await supabase
@@ -502,11 +484,6 @@ Examples:
         if (detailsError) {
           console.error('❌ Error enriching results:', detailsError);
         } else {
-          console.log('🔍 DEBUG: Full offerings fetched from database:', fullOfferings?.length || 0);
-          fullOfferings?.forEach((offering, index) => {
-            console.log(`  ${index + 1}. "${offering.title}" at "${offering.businesses?.name}" - Has image: ${!!offering.businesses?.image_url}, Has offering images: ${offering.offering_images?.length || 0}`);
-          });
-          
           // Create a map for quick lookup
           const offeringsMap = new Map();
           if (fullOfferings) {
@@ -520,24 +497,14 @@ Examples:
             const fullOffering = offeringsMap.get(searchResult.id);
             if (fullOffering) {
               const business = fullOffering.businesses;
-              
-              console.log(`🔍 DEBUG: Enriching offering ${searchResult.id}:`);
-              console.log(`  - Found full data: ${!!fullOffering}`);
-              console.log(`  - Title: "${fullOffering?.title || 'MISSING'}"`);
-              console.log(`  - Business name: "${fullOffering?.businesses?.name || 'MISSING'}"`);
-              console.log(`  - Description: "${fullOffering?.description || 'MISSING'}"`);
-              
               // Get primary image or fallback
               const primaryImage = fullOffering.offering_images?.find(img => img.is_primary && img.approved);
               const fallbackImage = fullOffering.offering_images?.find(img => img.approved);
               const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
               
-              console.log(`  - Final image URL: "${imageUrl}"`);
-              console.log(`  - Price: ${fullOffering.price_cents || 0} cents`);
-
               // Transform to unified format
               return {
-                // Preserve the original source property - CRITICAL for sorting priority
+                // Preserve source for ranking
                 source: searchResult.source,
                 
                 // Offering data
@@ -601,10 +568,10 @@ Examples:
                 short_description: business.short_description
               };
             } else {
-              console.error(`❌ DEBUG: Full details not found for offering: ${searchResult.id} - This should not happen!`);
-              console.error(`❌ DEBUG: Available offering IDs in map:`, Array.from(offeringsMap.keys()));
+              console.warn(`⚠️ Full details not found for offering: ${searchResult.id}`);
               return {
                 ...searchResult,
+                source: 'offering',
                 isPlatformBusiness: true,
                 isOpen: true,
                 distance: 999999,
@@ -614,9 +581,6 @@ Examples:
           });
 
           console.log('✅ Successfully enriched', enrichedResults.length, 'offering results');
-          enrichedResults.forEach((result, index) => {
-            console.log(`  ${index + 1}. Final enriched result: "${result.title || 'NO TITLE'}" at "${result.business_name || 'NO BUSINESS'}" - Image: ${!!result.image}`);
-          });
 
           // Replace platform offerings in combined results with enriched versions
           const aiResults = combinedResults.filter(result => result.source === 'ai_generated');
@@ -625,17 +589,14 @@ Examples:
       }
     }
 
-    // STEP 5: Calculate distances if user location provided
+    // STAGE 6: Calculate Distances and Filter by Radius
     if (combinedResults.length > 0 && latitude && longitude) {
       try {
-        console.log('📏 Step 5: Calculating accurate distances for', combinedResults.length, 'results...');
-        console.log('📏 User location:', { latitude, longitude });
+        console.log('📏 Stage 6: Calculating distances for', combinedResults.length, 'results...');
         
         const businessesWithCoords = combinedResults.filter(result => 
           result.latitude && result.longitude
         );
-        
-        console.log('📏 Businesses with coordinates:', businessesWithCoords.length, 'out of', combinedResults.length);
         
         if (businessesWithCoords.length > 0) {
           const origin = { latitude, longitude };
@@ -645,21 +606,12 @@ Examples:
             businessId: result.business_id
           }));
           
-          console.log('📏 Calling distance calculation service with:', {
-            origin,
-            destinationCount: destinations.length,
-            destinations: destinations.slice(0, 3) // Log first 3 for debugging
-          });
-          
           const distanceResponse = await axios.post(`${process.env.URL || 'http://localhost:8888'}/.netlify/functions/get-business-distances`, {
             origin,
             destinations
           }, {
             timeout: 15000
           });
-          
-          console.log('📏 Distance service response status:', distanceResponse.status);
-          console.log('📏 Distance service response data:', distanceResponse.data);
           
           if (distanceResponse.data.success) {
             const distanceMap = new Map();
@@ -669,9 +621,6 @@ Examples:
                 duration: result.duration
               });
             });
-            
-            console.log('📏 Distance map created with', distanceMap.size, 'entries');
-            console.log('📏 Sample distance data:', Array.from(distanceMap.entries()).slice(0, 3));
             
             combinedResults = combinedResults.map(result => {
               const distanceData = distanceMap.get(result.business_id);
@@ -687,54 +636,34 @@ Examples:
             
             console.log('✅ Updated results with accurate distances');
           } else {
-            console.warn('⚠️ Distance calculation service failed:', distanceResponse.data);
+            console.warn('⚠️ Distance calculation failed');
           }
-        } else {
-          console.log('⚠️ No businesses have coordinates for distance calculation');
         }
       } catch (distanceError) {
-        console.error('❌ Distance calculation failed:', {
-          message: distanceError.message,
-          response: distanceError.response?.data,
-          status: distanceError.response?.status,
-          config: distanceError.config
-        });
+        console.warn('⚠️ Distance calculation error:', distanceError.message);
       }
     }
 
-    // STEP 6: Filter all results (platform offerings + AI businesses) by 10-mile radius
+    // Filter by 10-mile radius
     if (latitude && longitude) {
       const maxDistance = 10; // Define the max distance in miles (reduced from 30)
       combinedResults = combinedResults.filter(result => {
         // Keep results without distance data (fallback)
         if (!result.distance || result.distance === 999999) {
-          console.log('📏 Keeping result without distance data (may be filtered by Google Places radius):', result.name || result.business_name);
           return true;
         }
         // Filter by distance
         const withinRadius = result.distance <= maxDistance;
         if (!withinRadius) {
-          console.log('📏 Filtering out business beyond', maxDistance, 'miles:', result.name || result.business_name, 'at', result.distance, 'miles');
+          console.log('📏 Filtered out:', result.name || result.business_name, 'at', result.distance, 'miles');
         }
         return withinRadius;
       });
-      console.log(`📏 Final results within ${maxDistance} miles: ${combinedResults.length} businesses (platform offerings + AI businesses)`);
+      console.log(`📏 Results within ${maxDistance} miles: ${combinedResults.length} businesses`);
     }
 
-    // STEP 7: Sort and rank final results (platform offerings prioritized over AI businesses)
-    console.log('🎯 Step 7: Sorting and ranking final results (platform offerings > AI businesses)...');
-    
-    // DEBUG: Log all results before sorting with their source and key properties
-    console.log('🔍 DEBUG: ALL RESULTS BEFORE SORTING (' + combinedResults.length + ' total):');
-    combinedResults.forEach((result, index) => {
-      console.log(`  ${index + 1}. ID: "${result.id || 'NO_ID'}", Source: "${result.source || 'NO_SOURCE'}", Name/Title: "${result.title || result.name || 'NO_NAME'}", Business: "${result.business_name || result.name || 'NO_BUSINESS'}", Similarity: ${result.similarity?.toFixed(3) || 'N/A'}, isPlatformBusiness: ${result.isPlatformBusiness || false}`);
-    });
-    
-    // DEBUG: Log sources before ranking
-    console.log('🔍 DEBUG: Sources before ranking:');
-    combinedResults.forEach((result, index) => {
-      console.log(`  ${index + 1}. Source: "${result.source}", Name: "${result.title || result.name}", Similarity: ${result.similarity?.toFixed(3) || 'N/A'}`);
-    });
+    // STAGE 7: Final Ranking
+    console.log('🎯 Stage 7: Final ranking of', combinedResults.length, 'results...');
     
     const rankedResults = combinedResults
       .map(result => ({
@@ -742,55 +671,31 @@ Examples:
         // Calculate composite score for ranking
         compositeScore: (
           0.45 * (result.similarity || 0.5) +
-          // Conditional platform boost: only if it's an offering AND its similarity is above the threshold
-          0.25 * (result.source === 'offering' && result.similarity >= MIN_PLATFORM_SIMILARITY ? 1 : 0.1) +
+          // Platform boost for offerings that meet minimum ranking threshold
+          0.25 * (result.source === 'offering' && result.similarity >= MIN_PLATFORM_RANKING_BOOST_SIMILARITY ? 1 : 0.1) +
           0.20 * (result.isOpen ? 1 : 0) +
           0.10 * (result.distance && result.distance < 999999 ? (1 - Math.min(result.distance / 30, 1)) : 0)
         )
       }))
       .sort((a, b) => {
-        // PRIMARY SORT: Source priority - platform offerings ALWAYS first
-        const sourceOrder = { offering: 10000, ai_generated: 1 }; // Massive priority difference
-        const aSourcePriority = sourceOrder[a.source] || 0;
-        const bSourcePriority = sourceOrder[b.source] || 0;
-        
-        if (aSourcePriority !== bSourcePriority) {
-          console.log(`🔍 DEBUG: PRIORITY SORT - A: "${a.title || a.name}" [${a.source}] (${aSourcePriority}) vs B: "${b.title || b.name}" [${b.source}] (${bSourcePriority}) - Winner: ${aSourcePriority > bSourcePriority ? 'A' : 'B'}`);
-          return bSourcePriority - aSourcePriority;
-        }
-        
-        // SECONDARY SORT: Within same source type, sort by composite score
-        console.log(`🔍 DEBUG: COMPOSITE SORT (same source) - A: "${a.title || a.name}" (${a.compositeScore?.toFixed(3)}) vs B: "${b.title || b.name}" (${b.compositeScore?.toFixed(3)})`);
+        // Sort by composite score (includes platform boost for relevant offerings)
         return b.compositeScore - a.compositeScore;
       })
       .slice(0, matchCount); // Limit final results
 
-    // DEBUG: Log final ranking results
-    console.log('🔍 DEBUG: FINAL RANKED RESULTS (should show platform offerings first):');
+    // Log final ranking
+    console.log('🎯 Final ranked results:');
     rankedResults.forEach((result, index) => {
-      console.log(`  ${index + 1}. [${result.source?.toUpperCase()}] "${result.title || result.name}" - Similarity: ${result.similarity?.toFixed(3) || 'N/A'}, Composite: ${result.compositeScore?.toFixed(3) || 'N/A'}, Business: "${result.business_name || result.name}"`);
+      console.log(`  ${index + 1}. [${result.source?.toUpperCase()}] "${result.title || result.name}" at "${result.business_name || result.name}" - Similarity: ${result.similarity?.toFixed(3)}`);
     });
 
-    // DEBUG: Log each result's source property before final source counts
-    console.log('🔍 DEBUG: RANKED RESULTS SOURCE INSPECTION:');
-    rankedResults.forEach((result, index) => {
-      console.log(`  ${index + 1}. ID: "${result.id || 'NO_ID'}", Name: "${result.title || result.name || 'NO_NAME'}", Source: "${result.source || 'NO_SOURCE'}", Business: "${result.business_name || result.name || 'NO_BUSINESS'}"`);
-    });
-
-    // Calculate accurate source counts
+    // Calculate final source counts
     const finalSourceCounts = {
       platform_offerings: rankedResults.filter(r => r.source === 'offering').length,
       ai_generated: rankedResults.filter(r => r.source === 'ai_generated').length
     };
     
-    console.log('🎯 Final ranked results:', rankedResults.length, 'businesses (platform offerings + AI businesses)');
-    console.log('📊 Accurate result sources:', finalSourceCounts);
-    
-    // DEBUG: Log each final result with its source and key data
-    console.log('🔍 DEBUG: Final results breakdown:');
-    rankedResults.forEach((result, index) => {
-      console.log(`  ${index + 1}. [${result.source?.toUpperCase()}] "${result.title || result.name}" - Similarity: ${result.similarity?.toFixed(3) || 'N/A'}, Business: "${result.business_name || result.name}"`);
-    });
+    console.log('📊 Result sources:', finalSourceCounts);
 
     // Transform results to match expected frontend format
     const formattedResults = rankedResults.map(result => ({
