@@ -55,6 +55,7 @@ const MIN_PLATFORM_RANKING_BOOST_SIMILARITY = 0.4;
 // Performance optimization constants
 const NUM_AI_QUERIES = 2; // Limit AI search queries for performance
 const TOP_PLACES_RESULTS_TO_EMBED = 3; // Limit Google Places results processed per query
+const TARGET_PLATFORM_OFFERINGS = 10; // Maximum platform offerings to prioritize
 
 export const handler = async (event, context) => {
   // Handle CORS preflight
@@ -162,18 +163,20 @@ export const handler = async (event, context) => {
     }
 
     // STAGE 2: Filter for Highly Relevant Platform Offerings
-    console.log('🔍 Stage 2: Filtering for highly relevant platform offerings...');
-    const highlyRelevantPlatformOfferings = offeringResults.filter(offering => 
-      offering.similarity >= HIGH_RELEVANCE_PLATFORM_THRESHOLD
-    );
+    console.log('🔍 Stage 2: Selecting top platform offerings...');
+    // Sort all platform offerings by similarity and take the best ones that meet the threshold
+    const selectedPlatformOfferings = offeringResults
+      .filter(offering => offering.similarity >= matchThreshold)
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, TARGET_PLATFORM_OFFERINGS);
     
-    console.log(`✅ Found ${highlyRelevantPlatformOfferings.length} highly relevant platform offerings (similarity >= ${HIGH_RELEVANCE_PLATFORM_THRESHOLD}):`);
-    highlyRelevantPlatformOfferings.forEach((offering, index) => {
+    console.log(`✅ Selected ${selectedPlatformOfferings.length} top platform offerings (similarity >= ${matchThreshold}):`);
+    selectedPlatformOfferings.forEach((offering, index) => {
       console.log(`  ${index + 1}. "${offering.title}" at "${offering.business_name}" - Similarity: ${offering.similarity?.toFixed(3)}`);
     });
     
     // STAGE 3: Conditional AI Search to Fill Remaining Slots
-    const slotsNeeded = Math.max(0, matchCount - highlyRelevantPlatformOfferings.length);
+    const slotsNeeded = Math.max(0, matchCount - selectedPlatformOfferings.length);
     console.log(`🤖 Stage 3: Need ${slotsNeeded} more results to reach target of ${matchCount}`);
     
     let aiResults = [];
@@ -393,14 +396,14 @@ Requirements:
     // Use Map for deduplication with priority: Platform Offerings > AI Results
     const resultsMap = new Map();
     
-    // Add highly relevant platform offerings first (highest priority)
-    highlyRelevantPlatformOfferings.forEach(offering => {
+    // Add selected platform offerings first (highest priority)
+    selectedPlatformOfferings.forEach(offering => {
       if (offering.business_id) {
         resultsMap.set(offering.business_id, {
           ...offering,
           source: 'offering'
         });
-        console.log(`✅ Added highly relevant platform offering: "${offering.title}" (similarity: ${offering.similarity?.toFixed(3)})`);
+        console.log(`✅ Added platform offering: "${offering.title}" (similarity: ${offering.similarity?.toFixed(3)})`);
       }
     });
     
