@@ -224,7 +224,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         latitude: latitude,
         longitude: longitude,
         matchThreshold: 0.3,
-        matchCount: 15
+        matchCount: 10
       });
       
       if (searchResponse.success) {
