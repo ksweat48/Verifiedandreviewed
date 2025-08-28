@@ -767,6 +767,12 @@ Examples:
       console.log(`  ${index + 1}. [${result.source?.toUpperCase()}] "${result.title || result.name}" - Similarity: ${result.similarity?.toFixed(3) || 'N/A'}, Composite: ${result.compositeScore?.toFixed(3) || 'N/A'}, Business: "${result.business_name || result.name}"`);
     });
 
+    // DEBUG: Log each result's source property before final source counts
+    console.log('🔍 DEBUG: RANKED RESULTS SOURCE INSPECTION:');
+    rankedResults.forEach((result, index) => {
+      console.log(`  ${index + 1}. ID: "${result.id || 'NO_ID'}", Name: "${result.title || result.name || 'NO_NAME'}", Source: "${result.source || 'NO_SOURCE'}", Business: "${result.business_name || result.name || 'NO_BUSINESS'}"`);
+    });
+
     // Calculate accurate source counts
     const finalSourceCounts = {
       platform_offerings: rankedResults.filter(r => r.source === 'offering').length,
