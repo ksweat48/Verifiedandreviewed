@@ -286,7 +286,7 @@ Requirements:
                   const similarity = cosineSimilarity(queryEmbedding, businessEmbedding); // Keep original model for consistency
                   
                   // Only include AI results with reasonable similarity
-                  if (similarity < 0.1) {
+                  if (similarity < 0.0) {
                     continue;
                   }
 
