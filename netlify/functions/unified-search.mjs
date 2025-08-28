@@ -52,6 +52,9 @@ const corsHeaders = {
 const HIGH_RELEVANCE_PLATFORM_THRESHOLD = 0.5;
 // Minimum similarity threshold for platform offerings to receive ranking boost
 const MIN_PLATFORM_RANKING_BOOST_SIMILARITY = 0.4;
+// Performance optimization constants
+const NUM_AI_QUERIES = 3; // Limit AI search queries for performance
+const TOP_PLACES_RESULTS_TO_EMBED = 2; // Limit Google Places results processed per query
 
 export const handler = async (event, context) => {
   // Handle CORS preflight
@@ -179,7 +182,7 @@ export const handler = async (event, context) => {
       
       try {
         // Generate AI search queries focused on specific dishes/services
-        const aiSystemPrompt = `You are a search query generator for Google Places API. Generate exactly ${slotsNeeded} different search queries to find businesses that serve or offer what the user is looking for.
+        const aiSystemPrompt = `You are a search query generator for Google Places API. Generate exactly ${NUM_AI_QUERIES} different search queries to find businesses that serve or offer what the user is looking for.
 
 Requirements:
 • Each query should be 2-4 words suitable for Google Places Text Search
@@ -205,8 +208,8 @@ Requirements:
                     type: "string",
                     description: "Google Places search query for businesses that serve/offer the requested item/service"
                   },
-                  minItems: slotsNeeded,
-                  maxItems: slotsNeeded
+                  minItems: NUM_AI_QUERIES,
+                  maxItems: NUM_AI_QUERIES
                 }
               },
               required: ["queries"]
