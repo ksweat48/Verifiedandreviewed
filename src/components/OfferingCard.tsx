@@ -176,7 +176,7 @@ const OfferingCard: React.FC<{
                 
                 {/* Open/Closed Badge */}
                 <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
-                  isBusinessOpen(business) ? 'bg-green-500' : 'bg-red-500'
+                  business.isOpen ? 'bg-green-500' : 'bg-red-500'
                 }`}>
                   {isBusinessOpen(business) ? 'OPEN' : 'CLOSED'}
                 </div>
