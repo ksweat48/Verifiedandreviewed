@@ -443,15 +443,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleOpenOfferingReviews = (business: any) => {
-    // Only open for platform businesses with offering IDs
-    if (business.isPlatformBusiness && (business.offeringId || business.id)) {
-      setSelectedOfferingForReviews({
-        id: business.offeringId || business.id,
-        title: business.title || business.name,
-        businessName: business.business_name || business.name
-      });
-      setIsOfferingReviewsModalOpen(true);
-    }
+    // Handle opening offering reviews
+    console.log('Opening offering reviews for:', business);
   };
 
   if (isAppModeActive) {
