@@ -273,7 +273,7 @@ Requirements:
                   ].filter(Boolean).join(' ');
 
                   const businessEmbeddingResponse = await openai.embeddings.create({
-                    model: 'gpt-4o-mini', // Use faster model for embeddings
+                    model: 'text-embedding-3-small', // Keep original model for consistency
                     input: businessText,
                     encoding_format: 'float'
                   });
