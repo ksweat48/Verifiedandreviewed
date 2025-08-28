@@ -500,7 +500,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
             <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-20 w-20 border-4 border-white/30 border-t-white mx-auto mb-8"></div>
-                <h3 className="font-cinzel text-2xl font-bold text-neutral-900 mb-2">
                 <h3 className="font-cinzel text-3xl font-bold text-white mb-4">
                   One Moment
                 </h3>
@@ -578,7 +577,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         )}
       </div>
     );
-        {/* Offering Reviews Modal - Only for Platform Offerings */}
   }
 
   return (
