@@ -63,6 +63,7 @@ const OfferingCard: React.FC<{
   business: BusinessCard;
   onRecommend: (business: BusinessCard) => void;
   onTakeMeThere: (business: BusinessCard) => void;
+  onOpenOfferingReviews?: (offering: any, businessName: string) => void;
 }> = ({ business, onRecommend, onTakeMeThere }) => {
  // Debug: Log the business object and its reviews
  console.log("Card received reviews:", business.reviews);

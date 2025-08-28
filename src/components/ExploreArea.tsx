@@ -109,7 +109,7 @@ const ExploreArea = () => {
               sentimentScore: business.sentiment_score || 0
             },
             image: imageUrl,
-            isOpen: true, // Default to open for explore section
+            isOpen: isBusinessOpen(business), // Use actual business hours
             hours: business.hours || 'Hours unavailable',
             address: business.address || business.location || '',
             reviews: [], // Will be fetched separately if needed
