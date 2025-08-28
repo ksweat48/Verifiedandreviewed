@@ -48,6 +48,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
+// Minimum similarity threshold for platform offerings to receive priority boost
+const MIN_PLATFORM_SIMILARITY = 0.4;
+
 export const handler = async (event, context) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
@@ -739,7 +742,8 @@ Examples:
         // Calculate composite score for ranking
         compositeScore: (
           0.45 * (result.similarity || 0.5) +
-          0.25 * (result.source === 'offering' ? 1 : 0.1) +
+          // Conditional platform boost: only if it's an offering AND its similarity is above the threshold
+          0.25 * (result.source === 'offering' && result.similarity >= MIN_PLATFORM_SIMILARITY ? 1 : 0.1) +
           0.20 * (result.isOpen ? 1 : 0) +
           0.10 * (result.distance && result.distance < 999999 ? (1 - Math.min(result.distance / 30, 1)) : 0)
         )
