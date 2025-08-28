@@ -142,14 +142,3 @@ export const isBusinessOpen = (business: any): boolean => {
   // Default to closed if we can't parse the hours
   return false;
 };
-
-// Helper function to determine if business is currently open for AI-generated businesses
-export const isAIBusinessOpen = (business: any): boolean => {
-  // For AI-generated businesses from Google Places, use the opening_hours.open_now field
-  if (business.isAIGenerated && business.opening_hours !== undefined) {
-    return business.opening_hours.open_now !== false;
-  }
-  
-  // Fallback to regular business hours parsing
-  return isBusinessOpen(business);
-};

@@ -335,7 +335,7 @@ Requirements:
                     social_media: [],
                     price_range: null,
                     service_area: null,
-                    is_verified: false,
+ is_verified: false, // AI-generated businesses are not "verified" by our platform
                     is_mobile_business: false,
                     is_virtual: false,
                     thumbs_up: 0,
@@ -344,9 +344,9 @@ Requirements:
                     image_url: null,
                     gallery_urls: [],
                     source: 'ai_generated',
-                    isAIGenerated: true,
+ isAIGenerated: true, // Flag to indicate AI origin
                     isPlatformBusiness: false,
-                    isOpen: placeResult.opening_hours?.open_now !== false,
+ isOpen: true, // Always show AI-generated businesses as open
                     distance: 999999,
                     duration: 999999,
                     service_type: 'onsite',
