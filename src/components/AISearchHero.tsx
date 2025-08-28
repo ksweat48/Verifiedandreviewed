@@ -12,6 +12,7 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import OfferingCard from './OfferingCard';
 import SignupPrompt from './SignupPrompt';
 import AuthModal from './AuthModal';
+import OfferingReviewsModal from './OfferingReviewsModal';
 import { supabase } from '../services/supabaseClient';
 import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
 import { getAvatarForUser } from '../utils/displayUtils';
@@ -44,6 +45,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const [isOutOfCreditsModal, setIsOutOfCreditsModal] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showFloatingSearchInput, setShowFloatingSearchInput] = useState(false);
+  const [searchOfferingReviewCounts, setSearchOfferingReviewCounts] = useState<Record<string, number>>({});
+  const [isOfferingReviewsModalOpen, setIsOfferingReviewsModalOpen] = useState(false);
+  const [selectedOfferingForReviews, setSelectedOfferingForReviews] = useState<{
+    id: string;
+    title: string;
+    businessName: string;
+  } | null>(null);
   
   // Get pending reviews count for notification dot
   const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);
@@ -238,10 +246,24 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           .filter(Boolean);
         
         let allBusinessReviews: any[] = [];
+        const offeringReviewCounts: Record<string, number> = {};
+        
         if (platformBusinessIds.length > 0) {
           console.log('📦 Batch fetching reviews for', platformBusinessIds.length, 'platform businesses');
           allBusinessReviews = await ReviewService.getBusinessReviews(platformBusinessIds);
+          
+          // Calculate review counts for offerings
+          searchResponse.results.forEach(business => {
+            if (business.offeringId || business.id) {
+              const offeringId = business.offeringId || business.id;
+              const businessId = business.business_id || business.id;
+              const reviewsForBusiness = allBusinessReviews.filter(review => review.business_id === businessId);
+              offeringReviewCounts[offeringId] = reviewsForBusiness.length;
+            }
+          });
         }
+        
+        setSearchOfferingReviewCounts(offeringReviewCounts);
         
         // Create a map of business ID to reviews for quick lookup
         const reviewsMap = new Map();
@@ -426,8 +448,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleOpenOfferingReviews = (business: any) => {
-    // Handle opening offering reviews
-    console.log('Opening offering reviews for:', business);
+    // Only open for platform businesses with offering IDs
+    if (business.isPlatformBusiness && (business.offeringId || business.id)) {
+      setSelectedOfferingForReviews({
+        id: business.offeringId || business.id,
+        title: business.title || business.name,
+        businessName: business.business_name || business.name
+      });
+      setIsOfferingReviewsModalOpen(true);
+    }
   };
 
   if (isAppModeActive) {
@@ -489,16 +518,16 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               <div className="text-center">
                 <Search className="h-16 w-16 text-white/60 mx-auto mb-4" />
                 <h3 className="font-cinzel text-xl font-semibold text-white mb-2">
-                  No Vibes Found
+                  No Offerings Found
                 </h3>
                 <p className="font-lora text-white/80 mb-4">
-                  Try a different vibe search or check your spelling.
+                  Try a different search or check your spelling.
                 </p>
                 <button
                   onClick={handleBackToSearch}
                   className="font-poppins bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-lg font-semibold hover:bg-white/30 transition-colors duration-200 border border-white/30"
                 >
-                  Re-Vibe
+                  New Search
                 </button>
               </div>
             </div>
@@ -511,7 +540,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       business={business}
                       onRecommend={handleRecommendBusiness}
                       onTakeMeThere={handleTakeMeThere}
-                      onOpenOfferingReviews={!business.isAIGenerated ? handleOpenOfferingReviews : undefined}
+                      onOpenOfferingReviews={handleOpenOfferingReviews}
+                      offeringReviewCounts={searchOfferingReviewCounts}
                     />
                   </div>
                 ))}
@@ -520,6 +550,20 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           )}
         </div>
 
+        {/* Offering Reviews Modal */}
+        {selectedOfferingForReviews && (
+          <OfferingReviewsModal
+            isOpen={isOfferingReviewsModalOpen}
+            onClose={() => {
+              setIsOfferingReviewsModalOpen(false);
+              setSelectedOfferingForReviews(null);
+            }}
+            offeringId={selectedOfferingForReviews.id}
+            offeringTitle={selectedOfferingForReviews.title}
+            businessName={selectedOfferingForReviews.businessName}
+          />
+        )}
+
         {/* Back Toast */}
         {showBackToast && (
           <div className="back-toast">
@@ -527,7 +571,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           </div>
         )}
       </div>
-    );
         {/* Offering Reviews Modal - Only for Platform Offerings */}
   }
 

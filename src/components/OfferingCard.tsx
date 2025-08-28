@@ -63,7 +63,9 @@ const OfferingCard: React.FC<{
   business: BusinessCard;
   onRecommend: (business: BusinessCard) => void;
   onTakeMeThere: (business: BusinessCard) => void;
-}> = ({ business, onRecommend, onTakeMeThere }) => {
+  onOpenOfferingReviews?: (business: BusinessCard) => void;
+  offeringReviewCounts?: Record<string, number>;
+}> = ({ business, onRecommend, onTakeMeThere, onOpenOfferingReviews, offeringReviewCounts }) => {
  // Debug: Log the business object and its reviews
  console.log("Card received reviews:", business.reviews);
  console.log(`🎴 PlatformBusinessCard rendering: ${business.name}`);
@@ -209,9 +211,9 @@ const OfferingCard: React.FC<{
             {/* Open/Closed Badge - Bottom Left */}
             <div className="absolute bottom-2 left-2">
               <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
-                business.isOpen ? 'bg-green-500' : 'bg-red-500'
+                isBusinessOpen(business) ? 'bg-green-500' : 'bg-red-500'
               }`}>
-                {business.isOpen ? 'OPEN' : 'CLOSED'}
+                {isBusinessOpen(business) ? 'OPEN' : 'CLOSED'}
               </div>
             </div>
             
@@ -274,6 +276,28 @@ const OfferingCard: React.FC<{
               >
                 <Icons.Phone className="h-4 w-4" />
               </button>
+            )}
+            
+            {/* Review Icon - Center (only for platform businesses) */}
+            {business.isPlatformBusiness && onOpenOfferingReviews && (
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenOfferingReviews(business);
+                  }}
+                  className="p-2 bg-purple-100 hover:bg-purple-200 text-purple-600 hover:text-purple-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                  title="View reviews"
+                >
+                  <Icons.MessageSquare className="h-4 w-4" />
+                </button>
+                {/* Review Count Notification Badge */}
+                {offeringReviewCounts && business.offeringId && offeringReviewCounts[business.offeringId] > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                    {offeringReviewCounts[business.offeringId]}
+                  </span>
+                )}
+              </div>
             )}
             
             <div className="flex-1"></div>
