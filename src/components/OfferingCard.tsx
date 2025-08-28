@@ -178,7 +178,7 @@ const OfferingCard: React.FC<{
                 <div className={`px-2 py-1 rounded-full text-white text-xs font-poppins font-bold ${
                   business.isOpen ? 'bg-green-500' : 'bg-red-500'
                 }`}>
-                  {isBusinessOpen(business) ? 'OPEN' : 'CLOSED'}
+                  {business.isOpen ? 'OPEN' : 'CLOSED'}
                 </div>
               </div>
               
