@@ -511,11 +511,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                 </div>
-                
-                {/* Elegant progress indicator */}
-                <div className="mt-8 w-64 h-1 bg-white/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-primary-400 to-accent-400 rounded-full animate-pulse"></div>
-                </div>
               </div>
             </div>
           ) : searchResults.length === 0 ? (
