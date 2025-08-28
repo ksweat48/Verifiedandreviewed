@@ -46,8 +46,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showFloatingSearchInput, setShowFloatingSearchInput] = useState(false);
   const [searchOfferingReviewCounts, setSearchOfferingReviewCounts] = useState<Record<string, number>>({});
-  const [selectedOfferingForReviews, setSelectedOfferingForReviews] = useState<any>(null);
   const [isOfferingReviewsModalOpen, setIsOfferingReviewsModalOpen] = useState(false);
+  const [selectedOfferingForReviews, setSelectedOfferingForReviews] = useState<{
+    id: string;
+    title: string;
+    businessName: string;
+  } | null>(null);
   
   // Get pending reviews count for notification dot
   const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);
@@ -59,7 +63,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // Push a new state when entering app mode
       window.history.pushState({ appMode: true }, '', window.location.href);
       
-      const handlePopState = (event: any) => {
+      const handlePopState = (event) => {
         // If we're in app mode and user presses back, exit app mode instead of leaving the site
         if (isAppModeActive) {
           setIsAppModeActive(false);
@@ -370,7 +374,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
 
   const handleVoiceSearch = async () => {
     // Check if Speech Recognition is available
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
       alert('Speech recognition is not supported in your browser. Please try Chrome, Safari, or Edge.');
@@ -394,7 +398,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         console.log('🎤 Voice recognition started');
       };
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event) => {
         let transcript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
@@ -415,7 +419,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         }
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event) => {
         setIsListening(false);
         console.error('🎤 Voice recognition error:', event.error);
         
