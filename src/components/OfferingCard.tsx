@@ -263,7 +263,7 @@ const OfferingCard: React.FC<{
           )}
           
           {/* Bottom Actions - Phone and Map for both AI and Platform */}
-          <div className="flex items-center justify-between gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2">
             {/* Phone Icon - Left (conditional for both AI and Platform) */}
             {business.phone_number && (
               <button
@@ -279,6 +279,7 @@ const OfferingCard: React.FC<{
             )}
             
             {/* Review Icon - Center (only for platform businesses) */}
+            <div className="flex-1 flex justify-center">
             {business.isPlatformBusiness && onOpenOfferingReviews && (
               <div className="relative">
                 <button
@@ -299,8 +300,6 @@ const OfferingCard: React.FC<{
                 )}
               </div>
             )}
-            
-            <div className="flex-1"></div>
             
             {/* Map Icon - Right (always present, behavior differs for AI vs Platform) */}
             <button
@@ -328,6 +327,7 @@ const OfferingCard: React.FC<{
                   +{business.tags.length - 2}
                 </span>
               )}
+            </div>
             </div>
           )}
         </div>

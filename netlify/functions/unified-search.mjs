@@ -54,8 +54,8 @@ const HIGH_RELEVANCE_PLATFORM_THRESHOLD = 0.5;
 // Minimum similarity threshold for platform offerings to receive ranking boost
 const MIN_PLATFORM_RANKING_BOOST_SIMILARITY = 0.4;
 // Performance optimization constants
-const NUM_AI_QUERIES = 2; // Limit AI search queries for performance
-const TOP_PLACES_RESULTS_TO_EMBED = 3; // Limit Google Places results processed per query
+const NUM_AI_QUERIES = 5; // Generate more diverse AI search queries
+const TOP_PLACES_RESULTS_TO_EMBED = 10; // Process more Google Places results per query
 const TARGET_PLATFORM_OFFERINGS = 10; // Maximum platform offerings to prioritize
 
 export const handler = async (event, context) => {
