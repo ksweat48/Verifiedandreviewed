@@ -182,7 +182,8 @@ export const handler = async (event, context) => {
       
       try {
         const slotsToFill = Math.min(5, matchCount - combinedResults.length); // Limit AI results to 5 max
-        console.log('🤖 DEBUG: Slots to fill with AI results:', slotsToFill);
+        const slotsToFill = matchCount - combinedResults.length; // Fill remaining slots up to matchCount
+        console.log('🤖 DEBUG: Slots to fill with AI results:', slotsToFill, '(out of', matchCount, 'total desired)');
         
         // Generate AI search queries focused on specific dishes/services
         const aiSystemPrompt = `You are a search query generator for Google Places API. Generate exactly ${slotsToFill} different search queries to find businesses that serve or offer what the user is looking for.
