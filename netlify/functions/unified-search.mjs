@@ -53,7 +53,6 @@ const HIGH_RELEVANCE_PLATFORM_THRESHOLD = 0.5;
 // Minimum similarity threshold for platform offerings to receive ranking boost
 const MIN_PLATFORM_RANKING_BOOST_SIMILARITY = 0.4;
 // Performance optimization constants
-const NUM_AI_QUERIES = 3; // Limit AI search queries for performance
 const NUM_AI_QUERIES = 2; // Limit AI search queries for performance
 const TOP_PLACES_RESULTS_TO_EMBED = 3; // Limit Google Places results processed per query
 
@@ -274,7 +273,7 @@ Requirements:
                   ].filter(Boolean).join(' ');
 
                   const businessEmbeddingResponse = await openai.embeddings.create({
-                    model: 'text-embedding-3-small', // Keep original model for consistency
+                    model: 'gpt-4o-mini', // Use faster model for embeddings
                     input: businessText,
                     encoding_format: 'float'
                   });
@@ -368,12 +367,6 @@ Requirements:
               console.warn(`⚠️ AI search failed for "${searchQuery}":`, error.message);
               return [];
             }
-          });
-
-          // Execute all AI searches in parallel
-          const aiSearchResults = await Promise.all(aiSearchPromises);
-          const allAIResults = aiSearchResults.flat();
-          
           });
 
           // Execute all AI searches in parallel and flatten results
