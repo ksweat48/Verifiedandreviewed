@@ -54,7 +54,8 @@ const HIGH_RELEVANCE_PLATFORM_THRESHOLD = 0.5;
 const MIN_PLATFORM_RANKING_BOOST_SIMILARITY = 0.4;
 // Performance optimization constants
 const NUM_AI_QUERIES = 3; // Limit AI search queries for performance
-const TOP_PLACES_RESULTS_TO_EMBED = 2; // Limit Google Places results processed per query
+const NUM_AI_QUERIES = 2; // Limit AI search queries for performance
+const TOP_PLACES_RESULTS_TO_EMBED = 3; // Limit Google Places results processed per query
 
 export const handler = async (event, context) => {
   // Handle CORS preflight
@@ -239,9 +240,7 @@ Requirements:
           const searchLongitude = longitude || -122.4194;
           const searchRadius = 16093; // 10 miles in meters (16.09 km)
           
-          const allAIResults = [];
-          
-          for (const searchQuery of searchQueries) {
+          const aiSearchPromises = searchQueries.map(async (searchQuery) => {
             try {
               const placesResponse = await axios.get('https://maps.googleapis.com/maps/api/place/textsearch/json', {
                 params: {
@@ -251,32 +250,19 @@ Requirements:
                   type: 'establishment',
                   key: GOOGLE_PLACES_API_KEY
                 },
-                timeout: 5000
+                timeout: 3000 // Reduced timeout for faster response
               });
 
-              if (placesResponse.data.status === 'OK' && placesResponse.data.results?.length > 0) {
-                // Process ALL results from Google Places, not just the first one with rating
-                for (const placeResult of placesResponse.data.results) {
-                  // Fetch additional details including phone number
-                  let phoneNumber = null;
-                  try {
-                    const detailsResponse = await axios.get('https://maps.googleapis.com/maps/api/place/details/json', {
-                      params: {
-                        place_id: placeResult.place_id,
-                        fields: 'formatted_phone_number,international_phone_number',
-                        key: GOOGLE_PLACES_API_KEY
-                      },
-                      timeout: 3000
-                    });
-                    
-                    if (detailsResponse.data.status === 'OK' && detailsResponse.data.result) {
-                      phoneNumber = detailsResponse.data.result.formatted_phone_number || 
-                                   detailsResponse.data.result.international_phone_number;
-                    }
-                  } catch (phoneError) {
-                    console.warn('⚠️ Failed to fetch phone number:', phoneError.message);
-                  }
-                  
+              if (placesResponse.data.status !== 'OK' || !placesResponse.data.results?.length) {
+                return [];
+              }
+
+              // Process only the top N results for performance
+              const resultsToProcess = placesResponse.data.results.slice(0, TOP_PLACES_RESULTS_TO_EMBED);
+              const queryResults = [];
+
+              for (const placeResult of resultsToProcess) {
+                try {
                   // Generate embedding for this business
                   const businessText = [
                     placeResult.name,
@@ -288,7 +274,7 @@ Requirements:
                   ].filter(Boolean).join(' ');
 
                   const businessEmbeddingResponse = await openai.embeddings.create({
-                    model: 'text-embedding-3-small',
+                    model: 'text-embedding-3-small', // Keep original model for consistency
                     input: businessText,
                     encoding_format: 'float'
                   });
@@ -296,36 +282,21 @@ Requirements:
                   const businessEmbedding = businessEmbeddingResponse.data[0].embedding;
                   const similarity = cosineSimilarity(queryEmbedding, businessEmbedding);
                   
-                  // Only include AI results with reasonable similarity (0.3 threshold for AI results)
+                  // Only include AI results with reasonable similarity
                   if (similarity < 0.3) {
-                    continue; // Skip this result and continue with next
+                    continue;
                   }
 
-                  // Generate dynamic offering name based on what this business likely offers
-                  let dynamicOfferingName = query; // Fallback to original query
-                  
+                  // Generate dynamic offering name
+                  let dynamicOfferingName = query;
                   try {
-                    const offeringNamePrompt = `Based on the user's search for "${query}" and this business "${placeResult.name}" (types: ${placeResult.types?.join(', ') || 'restaurant'}), generate ONE plausible menu item name that this business would likely offer related to the search.
-
-Rules:
-• Return ONLY the menu item name, nothing else
-• Make it specific and appetizing (e.g., "Grilled Salmon Burger", "Atlantic Salmon Sandwich", "Blackened Salmon Patty")
-• Consider the business type and name when crafting the item
-• Keep it under 4 words
-• Make it sound like something that would actually be on their menu
-
-Examples:
-- Search: "salmon burger" + Business: "Ocean Grill" → "Grilled Salmon Burger"
-- Search: "vegan pizza" + Business: "Green Garden Cafe" → "Garden Veggie Pizza"
-- Search: "chocolate cake" + Business: "Sweet Dreams Bakery" → "Triple Chocolate Cake"`;
+                    const offeringNamePrompt = `Based on the user's search for "${query}" and this business "${placeResult.name}", generate ONE plausible menu item name (2-4 words max) that this business would likely offer. Return ONLY the item name.`;
 
                     const offeringNameResponse = await openai.chat.completions.create({
                       model: 'gpt-4o-mini',
-                      messages: [
-                        { role: 'user', content: offeringNamePrompt }
-                      ],
+                      messages: [{ role: 'user', content: offeringNamePrompt }],
                       temperature: 0.7,
-                      max_tokens: 20
+                      max_tokens: 15
                     });
 
                     const generatedName = offeringNameResponse.choices[0].message.content?.trim();
@@ -336,11 +307,11 @@ Examples:
                     // Keep fallback value
                   }
                   
-                  allAIResults.push({
+                  queryResults.push({
                     id: `ai-${placeResult.place_id}`,
                     business_id: `ai-${placeResult.place_id}`,
                     offering_id: null,
-                    title: dynamicOfferingName, // Use the dynamically generated offering name
+                    title: dynamicOfferingName,
                     business_name: placeResult.name,
                     name: placeResult.name,
                     description: `${dynamicOfferingName} at ${placeResult.name}. Found through intelligent search for businesses that offer what you're looking for.`,
@@ -356,7 +327,7 @@ Examples:
                     tags: [],
                     rating: null,
                     hours: placeResult.opening_hours?.weekday_text?.[0] || 'Hours not available',
-                    phone_number: phoneNumber,
+                    phone_number: null, // Removed phone lookup for performance
                     website_url: null,
                     social_media: [],
                     price_range: null,
@@ -367,10 +338,10 @@ Examples:
                     thumbs_up: 0,
                     thumbs_down: 0,
                     sentiment_score: 0,
-                    image_url: null, // No image for AI-generated businesses
+                    image_url: null,
                     gallery_urls: [],
                     source: 'ai_generated',
-                    isAIGenerated: true, // Flag to identify AI-generated businesses
+                    isAIGenerated: true,
                     isPlatformBusiness: false,
                     isOpen: placeResult.opening_hours?.open_now !== false,
                     distance: 999999,
@@ -378,7 +349,7 @@ Examples:
                     service_type: 'onsite',
                     placeId: placeResult.place_id,
                     isGoogleVerified: true,
-                    price_cents: 0, // No price for AI-generated businesses
+                    price_cents: 0,
                     currency: 'USD',
                     similarity: similarity,
                     reviews: [{
@@ -387,15 +358,27 @@ Examples:
                       thumbsUp: true
                     }]
                   });
-                  
-                  // Small delay to prevent rate limiting
-                  await new Promise(resolve => setTimeout(resolve, 200));
+                } catch (error) {
+                  console.warn(`⚠️ Error processing place result:`, error.message);
                 }
               }
+
+              return queryResults;
             } catch (error) {
               console.warn(`⚠️ AI search failed for "${searchQuery}":`, error.message);
+              return [];
             }
-          }
+          });
+
+          // Execute all AI searches in parallel
+          const aiSearchResults = await Promise.all(aiSearchPromises);
+          const allAIResults = aiSearchResults.flat();
+          
+          });
+
+          // Execute all AI searches in parallel and flatten results
+          const aiSearchResults = await Promise.all(aiSearchPromises);
+          const allAIResults = aiSearchResults.flat();
 
           // Sort all AI results by similarity and take the top slotsNeeded
           aiResults = allAIResults
