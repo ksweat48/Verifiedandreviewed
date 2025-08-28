@@ -534,6 +534,9 @@ Examples:
 
               // Transform to unified format
               return {
+                // Preserve the original source property - CRITICAL for sorting priority
+                source: searchResult.source,
+                
                 // Offering data
                 id: fullOffering.id,
                 title: fullOffering.title,
