@@ -12,7 +12,6 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import OfferingCard from './OfferingCard';
 import SignupPrompt from './SignupPrompt';
 import AuthModal from './AuthModal';
-import OfferingReviewsModal from './OfferingReviewsModal';
 import { supabase } from '../services/supabaseClient';
 import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
 import { getAvatarForUser } from '../utils/displayUtils';
@@ -46,12 +45,8 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showFloatingSearchInput, setShowFloatingSearchInput] = useState(false);
   const [searchOfferingReviewCounts, setSearchOfferingReviewCounts] = useState<Record<string, number>>({});
+  const [selectedOfferingForReviews, setSelectedOfferingForReviews] = useState<any>(null);
   const [isOfferingReviewsModalOpen, setIsOfferingReviewsModalOpen] = useState(false);
-  const [selectedOfferingForReviews, setSelectedOfferingForReviews] = useState<{
-    id: string;
-    title: string;
-    businessName: string;
-  } | null>(null);
   
   // Get pending reviews count for notification dot
   const { pendingReviewsCount, loading: loadingPendingReviews } = usePendingReviewsCount(currentUser?.id);
