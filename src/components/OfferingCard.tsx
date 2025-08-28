@@ -227,9 +227,9 @@ const OfferingCard: React.FC<{
                 }}
                 className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
                 title="Add to favorites"
-              >
+              business.isOpen ? 'bg-green-500' : 'bg-red-500'
                 <Icons.Heart className="h-4 w-4 text-neutral-600 group-hover:text-red-500 group-hover:fill-current transition-all duration-200" />
-              </button>
+              {business.isOpen ? 'OPEN' : 'CLOSED'}
             </div>
           </div>
         )}

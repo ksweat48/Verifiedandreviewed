@@ -346,7 +346,7 @@ Requirements:
                     source: 'ai_generated',
  isAIGenerated: true, // Flag to indicate AI origin
                     isPlatformBusiness: false,
- isOpen: true, // Always show AI-generated businesses as open
+                   isOpen: true, // AI businesses are always shown as open
                     distance: 999999,
                     duration: 999999,
                     service_type: 'onsite',
