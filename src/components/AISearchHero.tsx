@@ -497,19 +497,25 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         {/* Search Results */}
         <div className="pt-16 h-full overflow-hidden">
           {isSearching ? (
-            <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-slate-50 to-blue-50">
+            <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-500 border-t-transparent mx-auto mb-6"></div>
+                <div className="animate-spin rounded-full h-20 w-20 border-4 border-white/30 border-t-white mx-auto mb-8"></div>
                 <h3 className="font-cinzel text-2xl font-bold text-neutral-900 mb-2">
+                <h3 className="font-cinzel text-3xl font-bold text-white mb-4">
                   One Moment
                 </h3>
-                <p className="font-lora text-lg text-neutral-600 animate-pulse mt-2">
-                  Finding the perfect vibe for you...
+                <p className="font-lora text-xl text-white/80 animate-pulse">
+                  Finding the perfect offerings for you
                 </p>
-                <div className="mt-6 flex items-center justify-center space-x-2">
-                  <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="mt-8 flex items-center justify-center space-x-3">
+                  <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce"></div>
+                  <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                </div>
+                
+                {/* Elegant progress indicator */}
+                <div className="mt-8 w-64 h-1 bg-white/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-primary-400 to-accent-400 rounded-full animate-pulse"></div>
                 </div>
               </div>
             </div>
