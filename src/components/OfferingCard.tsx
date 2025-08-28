@@ -300,6 +300,7 @@ const OfferingCard: React.FC<{
                 )}
               </div>
             )}
+            </div>
             
             {/* Map Icon - Right (always present, behavior differs for AI vs Platform) */}
             <button
@@ -327,7 +328,6 @@ const OfferingCard: React.FC<{
                   +{business.tags.length - 2}
                 </span>
               )}
-            </div>
             </div>
           )}
         </div>
@@ -377,4 +377,4 @@ const OfferingCard: React.FC<{
 
 
 
-export default OfferingCard
+export default OfferingCard;
