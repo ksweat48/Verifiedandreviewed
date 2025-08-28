@@ -181,7 +181,6 @@ export const handler = async (event, context) => {
       console.log('🤖 Step 3: Using AI to find businesses that serve what user is looking for...');
       
       try {
-        const slotsToFill = Math.min(5, matchCount - combinedResults.length); // Limit AI results to 5 max
         const slotsToFill = matchCount - combinedResults.length; // Fill remaining slots up to matchCount
         console.log('🤖 DEBUG: Slots to fill with AI results:', slotsToFill, '(out of', matchCount, 'total desired)');
         
