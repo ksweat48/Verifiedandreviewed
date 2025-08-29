@@ -153,6 +153,18 @@ export const handler = async (event, context) => {
         offeringResults = offeringSearchResults || [];
         console.log('✅ Found', offeringResults.length, 'platform offering candidates');
         
+        // DEBUG: Log raw offering search results to check title field
+        console.log('🔍 DEBUG: Raw offering search results from Supabase RPC:');
+        offeringSearchResults?.forEach((result, index) => {
+          console.log(`  ${index + 1}. Raw result:`, {
+            id: result.id,
+            title: result.title,
+            business_name: result.business_name,
+            similarity: result.similarity,
+            allFields: Object.keys(result)
+          });
+        });
+        
         // DEBUG: Log all platform offering candidates
         console.log('🔍 DEBUG: All platform offering candidates:');
         offeringResults.forEach((result, index) => {
@@ -263,26 +275,6 @@ Requirements:
               // Log raw Google Places API results for this query
               console.log(`🔍 Google Places API results for "${searchQuery}":`, placesResponse.data.results.length, 'businesses found');
               console.log(`📋 Raw Google Places results for "${searchQuery}":`, placesResponse.data.results.map(place => ({
-                name: place.name,
-                formatted_address: place.formatted_address,
-                rating: place.rating,
-                types: place.types,
-                place_id: place.place_id
-              })));
-
-              // Log raw Google Places API results for this query
-              console.log(`🔍 Google Places API results for "${searchQuery}":`, placesResponse.data.results.length, 'businesses found');
-              console.log(`📋 Raw Google Places results for "${searchQuery}":`, placesResponse.data.results.map(place => ({
-                name: place.name,
-                formatted_address: place.formatted_address,
-                rating: place.rating,
-                types: place.types,
-                place_id: place.place_id
-              })));
-
-              // Log raw Google Places API results for this query
-              console.log(`🔍 Google Places API results for "${searchQuery}":`, response.data.results.length, 'businesses found');
-              console.log(`📋 Raw Google Places results for "${searchQuery}":`, response.data.results.map(place => ({
                 name: place.name,
                 formatted_address: place.formatted_address,
                 rating: place.rating,
