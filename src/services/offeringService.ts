@@ -482,6 +482,13 @@ export class OfferingService {
   // Get offerings for explore section (random/curated display)
   static async getExploreOfferings(limit: number = 6, userLatitude?: number, userLongitude?: number): Promise<any[]> {
     try {
+      console.log('🔍 DEBUG: getExploreOfferings called with:', { 
+        limit, 
+        userLatitude, 
+        userLongitude,
+        hasUserLocation: !!(userLatitude && userLongitude)
+      });
+      
       console.log('🔍 Fetching explore offerings with limit:', limit);
 
       const { data, error } = await supabase
@@ -534,6 +541,12 @@ export class OfferingService {
 
       console.log('✅ Fetched', data?.length || 0, 'explore offerings');
       
+      // Debug: Log business coordinates
+      console.log('🗺️ DEBUG: Business coordinates from Supabase:');
+      data?.forEach((offering, index) => {
+        console.log(`  ${index + 1}. ${offering.businesses.name}: lat=${offering.businesses.latitude}, lng=${offering.businesses.longitude}`);
+      });
+      
       let enrichedData = data || [];
       
       // Calculate distances if user location is provided
@@ -545,6 +558,8 @@ export class OfferingService {
             offering.businesses.latitude && offering.businesses.longitude
           );
           
+          console.log('🗺️ DEBUG: Businesses with coordinates:', businessesWithCoords.length, 'out of', enrichedData.length);
+          
           if (businessesWithCoords.length > 0) {
             const origin = { latitude: userLatitude, longitude: userLongitude };
             const destinations = businessesWithCoords.map(offering => ({
@@ -552,6 +567,12 @@ export class OfferingService {
               longitude: offering.businesses.longitude,
               businessId: offering.businesses.id
             }));
+            
+            console.log('🗺️ DEBUG: Distance calculation request:', {
+              origin,
+              destinationsCount: destinations.length,
+              destinations: destinations.slice(0, 2) // Log first 2 for brevity
+            });
             
             const response = await fetchWithTimeout('/.netlify/functions/get-business-distances', {
               method: 'POST',
@@ -562,8 +583,12 @@ export class OfferingService {
               timeout: 15000
             });
             
+            console.log('🗺️ DEBUG: Distance API response status:', response.ok, response.status);
+            
             if (response.ok) {
               const distanceData = await response.json();
+              console.log('🗺️ DEBUG: Distance API response data:', distanceData);
+              
               if (distanceData.success) {
                 // Create distance map
                 const distanceMap = new Map();
@@ -574,27 +599,46 @@ export class OfferingService {
                   });
                 });
                 
+                console.log('🗺️ DEBUG: Distance map created:', Array.from(distanceMap.entries()));
+                
                 // Update offerings with distances
                 enrichedData = enrichedData.map(offering => {
                   const distanceInfo = distanceMap.get(offering.businesses.id);
                   if (distanceInfo) {
+                    console.log(`🗺️ DEBUG: Adding distance ${distanceInfo.distance} to ${offering.businesses.name}`);
                     return {
                       ...offering,
                       distance: distanceInfo.distance,
                       duration: distanceInfo.duration
                     };
                   }
+                  console.log(`🗺️ DEBUG: No distance info found for ${offering.businesses.name} (ID: ${offering.businesses.id})`);
                   return offering;
                 });
                 
                 console.log('✅ Updated explore offerings with accurate distances');
+              } else {
+                console.error('❌ DEBUG: Distance API returned success=false:', distanceData);
               }
+            } else {
+              console.error('❌ DEBUG: Distance API request failed:', response.status, response.statusText);
             }
+          } else {
+            console.warn('⚠️ DEBUG: No businesses with coordinates found for distance calculation');
           }
         } catch (distanceError) {
           console.warn('⚠️ Distance calculation failed for explore offerings:', distanceError.message);
+          console.error('❌ DEBUG: Full distance error:', distanceError);
         }
+      } else {
+        console.log('🗺️ DEBUG: Skipping distance calculation - missing user location or no offerings');
       }
+      
+      console.log('📊 DEBUG: Final enriched data before return:', enrichedData.map(o => ({
+        name: o.businesses.name,
+        distance: o.distance,
+        hasDistance: o.distance !== undefined && o.distance !== 999999
+      })));
       
       return enrichedData;
     } catch (error) {

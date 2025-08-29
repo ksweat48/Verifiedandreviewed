@@ -71,11 +71,27 @@ const ExploreArea = () => {
   }, [refreshKey]);
 
   const loadNearbyBusinesses = async () => {
+    console.log('🔍 DEBUG: ExploreArea loadNearbyBusinesses called');
+    console.log('🗺️ DEBUG: Geolocation data:', { 
+      latitude, 
+      longitude, 
+      locationLoading, 
+      locationError 
+    });
+    
     setLoading(true);
     
     try {
       // Fetch platform offerings for explore section
       const offerings = await OfferingService.getExploreOfferings(6, latitude, longitude);
+      
+      console.log('📦 DEBUG: Received offerings from service:', offerings.length, 'items');
+      console.log('📊 DEBUG: First offering data:', offerings[0]);
+      console.log('🗺️ DEBUG: Distance values in offerings:', offerings.map(o => ({ 
+        name: o.businesses?.name || o.name, 
+        distance: o.distance,
+        hasDistance: o.distance !== undefined && o.distance !== 999999
+      })));
       
       let transformedBusinesses = [];
       
