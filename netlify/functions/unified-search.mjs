@@ -440,9 +440,10 @@ Requirements:
       if (offering.business_id) {
         resultsMap.set(offering.business_id, {
           ...offering,
-          source: 'offering'
+          source: 'offering',
+          title: offering.title || offering.business_name || 'Untitled Offering'
         });
-        console.log(`✅ Added platform offering: "${offering.title}" (similarity: ${offering.similarity?.toFixed(3)})`);
+        console.log(`✅ Added platform offering: "${offering.title || offering.business_name || 'Untitled'}" (similarity: ${offering.similarity?.toFixed(3)})`);
       }
     });
     
