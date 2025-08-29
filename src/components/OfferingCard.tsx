@@ -93,12 +93,14 @@ const OfferingCard: React.FC<{
   const sentimentRating = getSentimentRating(sentimentScore);
 
   const nextReview = () => {
+    if (!business.reviews || business.reviews.length === 0) return;
     if (business.reviews && business.reviews.length > 0) {
       setCurrentReviewIndex((prev) => (prev + 1) % business.reviews.length);
     }
   };
 
   const prevReview = () => {
+    if (!business.reviews || business.reviews.length === 0) return;
     if (business.reviews && business.reviews.length > 0) {
       setCurrentReviewIndex((prev) => (prev - 1 + business.reviews.length) % business.reviews.length);
     }
@@ -107,7 +109,7 @@ const OfferingCard: React.FC<{
   const openReviewerProfile = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (!business.reviews || business.reviews.length === 0) return;
+    if (!business.reviews || business.reviews.length === 0 || !business.reviews[currentReviewIndex]) return;
     
     const review = business.reviews[currentReviewIndex];
     
@@ -135,9 +137,10 @@ const OfferingCard: React.FC<{
 
   const openImageGallery = (imageIndex: number = 0) => {
     if (!business.reviews || 
+        business.reviews.length === 0 ||
         !business.reviews[currentReviewIndex] || 
         !business.reviews[currentReviewIndex].images || 
-        business.reviews[currentReviewIndex].images.length === 0) {
+        business.reviews[currentReviewIndex].images?.length === 0) {
       return;
     }
     
@@ -355,12 +358,13 @@ const OfferingCard: React.FC<{
       
       {/* Image Gallery Popup */}
       {business.reviews && 
+       business.reviews.length > 0 &&
        business.reviews[currentReviewIndex]?.images && 
-       business.reviews[currentReviewIndex].images.length > 0 && (
+       business.reviews[currentReviewIndex].images?.length > 0 && (
          <ImageGalleryPopup
            isOpen={galleryOpen}
            onClose={() => setGalleryOpen(false)}
-           images={business.reviews[currentReviewIndex].images || []}
+           images={business.reviews[currentReviewIndex]?.images || []}
            initialIndex={galleryInitialIndex}
          />
        )}
@@ -385,7 +389,5 @@ const OfferingCard: React.FC<{
     </>
   );
 };
-
-
 
 export default OfferingCard;
