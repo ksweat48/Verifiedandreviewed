@@ -98,6 +98,95 @@ export const handler = async (event, context) => {
 
     console.log('🔍 Unified search request:', { query, latitude, longitude, matchThreshold, matchCount });
 
+    // STAGE 0: Query Intent Classification
+    console.log('🧠 Stage 0: Analyzing query intent...');
+    let queryIntent = {
+      intent_type: 'broad_category',
+      main_item: null,
+      keywords: [],
+      confidence: 0.5
+    };
+    
+    try {
+      const intentPrompt = `Analyze this search query and determine if the user is looking for a SPECIFIC ITEM or a BROAD CATEGORY.
+
+Examples:
+- "veggie taco" = SPECIFIC ITEM (main_item: "taco", keywords: ["veggie", "vegetarian", "taco"])
+- "spicy ramen" = SPECIFIC ITEM (main_item: "ramen", keywords: ["spicy", "ramen", "noodles"])
+- "chocolate cake" = SPECIFIC ITEM (main_item: "cake", keywords: ["chocolate", "cake", "dessert"])
+- "veggie lunch options" = BROAD CATEGORY (keywords: ["veggie", "vegetarian", "lunch", "healthy"])
+- "cozy coffee shop" = BROAD CATEGORY (keywords: ["cozy", "coffee", "cafe", "atmosphere"])
+- "romantic dinner" = BROAD CATEGORY (keywords: ["romantic", "dinner", "date", "intimate"])
+
+Rules:
+- If query mentions a specific food item, dish, or product name → SPECIFIC ITEM
+- If query uses words like "options", "places", "spots", "vibes", or describes atmosphere → BROAD CATEGORY
+- Extract the main item name if specific (e.g., "taco", "ramen", "cake")
+- Always include relevant keywords for matching
+
+Query to analyze: "${query}"
+
+Respond with JSON only:`;
+
+      const intentTools = [{
+        type: "function",
+        function: {
+          name: "classifyQueryIntent",
+          description: "Classify search query intent and extract keywords",
+          parameters: {
+            type: "object",
+            properties: {
+              intent_type: {
+                type: "string",
+                enum: ["specific_item", "broad_category"],
+                description: "Whether user wants a specific item or broad category"
+              },
+              main_item: {
+                type: "string",
+                description: "The main item name if intent is specific_item, null otherwise"
+              },
+              keywords: {
+                type: "array",
+                items: { type: "string" },
+                description: "Relevant keywords for matching"
+              },
+              confidence: {
+                type: "number",
+                minimum: 0,
+                maximum: 1,
+                description: "Confidence in the classification (0-1)"
+              }
+            },
+            required: ["intent_type", "keywords", "confidence"]
+          }
+        }
+      }];
+
+      const intentCompletion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: intentPrompt }],
+        tools: intentTools,
+        tool_choice: { type: "function", function: { name: "classifyQueryIntent" } },
+        temperature: 0.1,
+        max_tokens: 200
+      });
+
+      const intentToolCall = intentCompletion.choices[0].message.tool_calls?.[0];
+      if (intentToolCall && intentToolCall.function.name === 'classifyQueryIntent') {
+        queryIntent = JSON.parse(intentToolCall.function.arguments);
+        console.log('🧠 Query intent classified:', queryIntent);
+      }
+    } catch (intentError) {
+      console.warn('⚠️ Intent classification failed, using default broad category:', intentError.message);
+    }
+
+    // Dynamic threshold adjustment based on intent
+    const dynamicMatchThreshold = queryIntent.intent_type === 'specific_item' 
+      ? Math.max(matchThreshold, 0.6) // Higher threshold for specific items
+      : matchThreshold; // Keep original threshold for broad categories
+    
+    console.log(`🎯 Using dynamic match threshold: ${dynamicMatchThreshold} (intent: ${queryIntent.intent_type})`);
+
     // Check required environment variables
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
@@ -139,7 +228,7 @@ export const handler = async (event, context) => {
         'search_offerings_by_vibe',
         {
           query_embedding: queryEmbedding,
-          match_threshold: 0.1, // Low threshold to gather wide range of candidates
+          match_threshold: queryIntent.intent_type === 'specific_item' ? 0.3 : 0.1, // Higher threshold for specific items
           match_count: 50, // Get many candidates for filtering
           user_latitude: latitude,
           user_longitude: longitude,
@@ -177,15 +266,53 @@ export const handler = async (event, context) => {
 
     // STAGE 2: Filter for Highly Relevant Platform Offerings
     console.log('🔍 Stage 2: Selecting top platform offerings...');
-    // Sort all platform offerings by similarity and take the best ones that meet the threshold
-    const selectedPlatformOfferings = offeringResults
-      .filter(offering => offering.similarity >= matchThreshold)
+    
+    // Apply intent-based filtering and ranking
+    let filteredOfferingResults = offeringResults;
+    
+    if (queryIntent.intent_type === 'specific_item' && queryIntent.main_item) {
+      console.log(`🎯 Applying specific item filtering for: "${queryIntent.main_item}"`);
+      
+      // For specific items, boost offerings that contain the main item or keywords in title/description
+      filteredOfferingResults = offeringResults.map(offering => {
+        const titleText = (offering.title || '').toLowerCase();
+        const descText = (offering.description || '').toLowerCase();
+        const businessNameText = (offering.business_name || '').toLowerCase();
+        const combinedText = `${titleText} ${descText} ${businessNameText}`;
+        
+        let specificityBoost = 0;
+        
+        // Check for main item match
+        if (queryIntent.main_item) {
+          const mainItemLower = queryIntent.main_item.toLowerCase();
+          if (titleText.includes(mainItemLower) || descText.includes(mainItemLower)) {
+            specificityBoost += 0.3; // Strong boost for main item match
+          }
+        }
+        
+        // Check for keyword matches
+        const keywordMatches = queryIntent.keywords.filter(keyword => 
+          combinedText.includes(keyword.toLowerCase())
+        ).length;
+        specificityBoost += (keywordMatches / queryIntent.keywords.length) * 0.2;
+        
+        return {
+          ...offering,
+          similarity: Math.min(1.0, offering.similarity + specificityBoost),
+          specificityBoost
+        };
+      });
+    }
+    
+    // Sort all platform offerings by similarity and take the best ones that meet the dynamic threshold
+    const selectedPlatformOfferings = filteredOfferingResults
+      .filter(offering => offering.similarity >= dynamicMatchThreshold)
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, TARGET_PLATFORM_OFFERINGS);
     
-    console.log(`✅ Selected ${selectedPlatformOfferings.length} top platform offerings (similarity >= ${matchThreshold}):`);
+    console.log(`✅ Selected ${selectedPlatformOfferings.length} top platform offerings (similarity >= ${dynamicMatchThreshold}):`);
     selectedPlatformOfferings.forEach((offering, index) => {
-      console.log(`  ${index + 1}. "${offering.title}" at "${offering.business_name}" - Similarity: ${offering.similarity?.toFixed(3)}`);
+      console.log(`  ${index + 1}. "${offering.title}" at "${offering.business_name}" - Similarity: ${offering.similarity?.toFixed(3)}${offering.specificityBoost ? ` (boosted +${offering.specificityBoost.toFixed(2)})` : ''}`);
     });
     
     // STAGE 3: Conditional AI Search to Fill Remaining Slots
@@ -411,15 +538,52 @@ Requirements:
           allAIResults.forEach((result, index) => {
             console.log(`  ${index + 1}. "${result.name}" - ${result.address} - Similarity: ${result.similarity?.toFixed(3)} - Source: ${result.source}`);
           });
-          // Sort all AI results by similarity and take the top slotsNeeded
-          aiResults = allAIResults
+          // Apply intent-based filtering to AI results
+          let filteredAIResults = allAIResults;
+          
+          if (queryIntent.intent_type === 'specific_item' && queryIntent.main_item) {
+            console.log(`🎯 Applying specific item filtering to AI results for: "${queryIntent.main_item}"`);
+            
+            filteredAIResults = allAIResults.map(result => {
+              const nameText = (result.name || '').toLowerCase();
+              const descText = (result.description || '').toLowerCase();
+              const titleText = (result.title || '').toLowerCase();
+              const combinedText = `${nameText} ${descText} ${titleText}`;
+              
+              let specificityBoost = 0;
+              
+              // Check for main item match
+              if (queryIntent.main_item) {
+                const mainItemLower = queryIntent.main_item.toLowerCase();
+                if (nameText.includes(mainItemLower) || descText.includes(mainItemLower) || titleText.includes(mainItemLower)) {
+                  specificityBoost += 0.3; // Strong boost for main item match
+                }
+              }
+              
+              // Check for keyword matches
+              const keywordMatches = queryIntent.keywords.filter(keyword => 
+                combinedText.includes(keyword.toLowerCase())
+              ).length;
+              specificityBoost += (keywordMatches / queryIntent.keywords.length) * 0.2;
+              
+              return {
+                ...result,
+                similarity: Math.min(1.0, result.similarity + specificityBoost),
+                specificityBoost
+              };
+            });
+          }
+          
+          // Sort AI results by similarity and filter by dynamic threshold, then take top slotsNeeded
+          aiResults = filteredAIResults
+            .filter(result => result.similarity >= dynamicMatchThreshold)
             .sort((a, b) => b.similarity - a.similarity)
             .slice(0, slotsNeeded);
             
           console.log('🤖 AI search found', aiResults.length, 'businesses');
           console.log('🎯 Final selected AI results:');
           aiResults.forEach((result, index) => {
-            console.log(`  ${index + 1}. "${result.name}" - ${result.address} - Similarity: ${result.similarity?.toFixed(3)}`);
+            console.log(`  ${index + 1}. "${result.name}" - ${result.address} - Similarity: ${result.similarity?.toFixed(3)}${result.specificityBoost ? ` (boosted +${result.specificityBoost.toFixed(2)})` : ''}`);
           });
         }
       } catch (aiError) {
@@ -697,11 +861,11 @@ Requirements:
     const rankedResults = combinedResults
       .map(result => ({
         ...result,
-        // Calculate composite score for ranking
+        // Calculate composite score for ranking with intent consideration
         compositeScore: (
-          0.45 * (result.similarity || 0.5) +
+          0.50 * (result.similarity || 0.5) + // Increased weight for similarity
           // Platform boost for offerings that meet minimum ranking threshold
-          0.25 * (result.source === 'offering' && result.similarity >= MIN_PLATFORM_RANKING_BOOST_SIMILARITY ? 1 : 0.1) +
+          0.20 * (result.source === 'offering' && result.similarity >= MIN_PLATFORM_RANKING_BOOST_SIMILARITY ? 1 : 0.1) +
           0.20 * (result.isOpen ? 1 : 0) +
           0.10 * (result.distance && result.distance < 999999 ? (1 - Math.min(result.distance / 30, 1)) : 0)
         )
@@ -713,9 +877,9 @@ Requirements:
       .slice(0, matchCount); // Limit final results
 
     // Log final ranking
-    console.log('🎯 Final ranked results:');
+    console.log(`🎯 Final ranked results (${queryIntent.intent_type} search):`);
     rankedResults.forEach((result, index) => {
-      console.log(`  ${index + 1}. [${result.source?.toUpperCase()}] "${result.title || result.name}" at "${result.business_name || result.name}" - Similarity: ${result.similarity?.toFixed(3)}`);
+      console.log(`  ${index + 1}. [${result.source?.toUpperCase()}] "${result.title || result.name}" at "${result.business_name || result.name}" - Similarity: ${result.similarity?.toFixed(3)} - Score: ${result.compositeScore?.toFixed(3)}`);
     });
 
     // Calculate final source counts
@@ -754,8 +918,9 @@ Requirements:
         query: query,
         matchCount: formattedResults.length,
         usedUnifiedSearch: true,
+        queryIntent: queryIntent,
         searchSources: finalSourceCounts,
-        matchThreshold: matchThreshold,
+        matchThreshold: dynamicMatchThreshold,
         timestamp: new Date().toISOString()
       })
     };
