@@ -675,7 +675,7 @@ Requirements:
 
     // Filter by 10-mile radius
     if (latitude && longitude) {
-      const maxDistance = 10; // Define the max distance in miles (reduced from 30)
+      const maxDistance = 15; // Define the max distance in miles
       combinedResults = combinedResults.filter(result => {
         // Keep results without distance data (fallback)
         if (!result.distance || result.distance === 999999) {
