@@ -271,6 +271,16 @@ Requirements:
               })));
 
               // Log raw Google Places API results for this query
+              console.log(`🔍 Google Places API results for "${searchQuery}":`, placesResponse.data.results.length, 'businesses found');
+              console.log(`📋 Raw Google Places results for "${searchQuery}":`, placesResponse.data.results.map(place => ({
+                name: place.name,
+                formatted_address: place.formatted_address,
+                rating: place.rating,
+                types: place.types,
+                place_id: place.place_id
+              })));
+
+              // Log raw Google Places API results for this query
               console.log(`🔍 Google Places API results for "${searchQuery}":`, response.data.results.length, 'businesses found');
               console.log(`📋 Raw Google Places results for "${searchQuery}":`, response.data.results.map(place => ({
                 name: place.name,
@@ -391,6 +401,12 @@ Requirements:
           // Execute all AI searches in parallel and flatten results
           const aiSearchResults = await Promise.all(aiSearchPromises);
           const allAIResults = aiSearchResults.flat();
+
+          // Log all AI results before sorting and filtering
+          console.log('🤖 All AI results before sorting (total:', allAIResults.length, 'businesses):');
+          allAIResults.forEach((result, index) => {
+            console.log(`  ${index + 1}. "${result.name}" - ${result.address} - Similarity: ${result.similarity?.toFixed(3)} - Source: ${result.source}`);
+          });
 
           // Log all AI results before sorting and filtering
           console.log('🤖 All AI results before sorting (total:', allAIResults.length, 'businesses):');
