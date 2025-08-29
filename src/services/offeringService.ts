@@ -480,7 +480,7 @@ export class OfferingService {
   }
 
   // Get offerings for explore section (random/curated display)
-  static async getExploreOfferings(limit: number = 6): Promise<any[]> {
+  static async getExploreOfferings(limit: number = 6, userLatitude?: number, userLongitude?: number): Promise<any[]> {
     try {
       console.log('🔍 Fetching explore offerings with limit:', limit);
 
@@ -533,7 +533,70 @@ export class OfferingService {
       }
 
       console.log('✅ Fetched', data?.length || 0, 'explore offerings');
-      return data || [];
+      
+      let enrichedData = data || [];
+      
+      // Calculate distances if user location is provided
+      if (userLatitude && userLongitude && enrichedData.length > 0) {
+        try {
+          console.log('📏 Calculating distances for explore offerings...');
+          
+          const businessesWithCoords = enrichedData.filter(offering => 
+            offering.businesses.latitude && offering.businesses.longitude
+          );
+          
+          if (businessesWithCoords.length > 0) {
+            const origin = { latitude: userLatitude, longitude: userLongitude };
+            const destinations = businessesWithCoords.map(offering => ({
+              latitude: offering.businesses.latitude,
+              longitude: offering.businesses.longitude,
+              businessId: offering.businesses.id
+            }));
+            
+            const response = await fetchWithTimeout('/.netlify/functions/get-business-distances', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ origin, destinations }),
+              timeout: 15000
+            });
+            
+            if (response.ok) {
+              const distanceData = await response.json();
+              if (distanceData.success) {
+                // Create distance map
+                const distanceMap = new Map();
+                distanceData.results.forEach(result => {
+                  distanceMap.set(result.businessId, {
+                    distance: result.distance,
+                    duration: result.duration
+                  });
+                });
+                
+                // Update offerings with distances
+                enrichedData = enrichedData.map(offering => {
+                  const distanceInfo = distanceMap.get(offering.businesses.id);
+                  if (distanceInfo) {
+                    return {
+                      ...offering,
+                      distance: distanceInfo.distance,
+                      duration: distanceInfo.duration
+                    };
+                  }
+                  return offering;
+                });
+                
+                console.log('✅ Updated explore offerings with accurate distances');
+              }
+            }
+          }
+        } catch (distanceError) {
+          console.warn('⚠️ Distance calculation failed for explore offerings:', distanceError.message);
+        }
+      }
+      
+      return enrichedData;
     } catch (error) {
       console.error('❌ Error in getExploreOfferings:', error);
       return [];

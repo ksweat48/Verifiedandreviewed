@@ -3,6 +3,7 @@ import { RefreshCw, Clock, ThumbsUp, MapPin, Navigation, Phone, Edit, Package } 
 import { MessageSquare } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useGeolocation } from '../hooks/useGeolocation';
 import { useNavigate } from 'react-router-dom';
 import BusinessProfileModal from './BusinessProfileModal';
 import LeaveReviewModal from './LeaveReviewModal';
@@ -48,6 +49,7 @@ interface Business {
 const ExploreArea = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const { latitude, longitude } = useGeolocation();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentReviewIndices, setCurrentReviewIndices] = useState<{ [key: string]: number }>({});
@@ -73,7 +75,7 @@ const ExploreArea = () => {
     
     try {
       // Fetch platform offerings for explore section
-      const offerings = await OfferingService.getExploreOfferings(6);
+      const offerings = await OfferingService.getExploreOfferings(6, latitude, longitude);
       
       let transformedBusinesses = [];
       
@@ -103,6 +105,7 @@ const ExploreArea = () => {
             longitude: business.longitude,
             created_at: business.created_at,
             updated_at: business.updated_at,
+            distance: offering.distance, // Include distance from offering service
             rating: {
               thumbsUp: business.thumbs_up || 0,
               thumbsDown: business.thumbs_down || 0,
