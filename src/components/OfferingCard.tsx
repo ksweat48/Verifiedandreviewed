@@ -66,18 +66,13 @@ const OfferingCard: React.FC<{
   onOpenOfferingReviews?: (business: BusinessCard) => void;
   offeringReviewCounts?: Record<string, number>;
 }> = ({ business, onRecommend, onTakeMeThere, onOpenOfferingReviews, offeringReviewCounts }) => {
- // Debug: Log the business object and its reviews
- console.log("Card received reviews:", business.reviews);
- console.log(`🎴 PlatformBusinessCard rendering: ${business.name}`);
- console.log("Card received reviews:", business.reviews);
- console.log(`🎴 Reviews array:`, business.reviews);
- console.log(`🎴 Reviews length: ${business.reviews?.length || 0}`);
- console.log(`🎴 Has reviews: ${business.reviews && business.reviews.length > 0}`);
- 
-  // ✅ Check if the reviews are still there before rendering
-  useEffect(() => {
-    console.log("🎴 PlatformBusinessCard received reviews:", business.reviews);
-  }, [business]);
+  // Debug: Log the business object structure for error diagnosis
+  console.log(`🎴 OfferingCard rendering: ${business.name || business.business_name || 'Unknown'}`);
+  console.log(`🔍 Full business object:`, JSON.stringify(business, null, 2));
+  console.log(`🔍 Business reviews:`, business.reviews);
+  console.log(`🔍 Business rating:`, business.rating);
+  console.log(`🔍 Business isAIGenerated:`, business.isAIGenerated);
+  console.log(`🔍 Business isPlatformBusiness:`, business.isPlatformBusiness);
   
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [reviewerProfileOpen, setReviewerProfileOpen] = useState(false);
@@ -256,9 +251,7 @@ const OfferingCard: React.FC<{
                 {business.description || business.short_description}
               </p>
             )
-          ) : (
-            {/* No description for AI businesses */}
-          )}
+          ) : null}
           
           {/* Distance Display */}
           {business.distance && business.distance !== 999999 && (
