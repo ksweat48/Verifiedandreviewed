@@ -54,8 +54,8 @@ const HIGH_RELEVANCE_PLATFORM_THRESHOLD = 0.5;
 // Minimum similarity threshold for platform offerings to receive ranking boost
 const MIN_PLATFORM_RANKING_BOOST_SIMILARITY = 0.4;
 // Performance optimization constants
-const NUM_AI_QUERIES = 5; // Generate more diverse AI search queries
-const TOP_PLACES_RESULTS_TO_EMBED = 10; // Process Google Places results per query
+const NUM_AI_QUERIES = 3; // Reduced from 5 to 3 for faster performance
+const TOP_PLACES_RESULTS_TO_EMBED = 3; // Reduced from 10 to 3 for faster performance
 const TARGET_PLATFORM_OFFERINGS = 10; // Maximum platform offerings to prioritize
 
 export const handler = async (event, context) => {
@@ -411,9 +411,9 @@ Requirements:
 
               // Process only the top N results for performance
               const resultsToProcess = placesResponse.data.results.slice(0, TOP_PLACES_RESULTS_TO_EMBED);
-              const queryResults = [];
-
-              for (const placeResult of resultsToProcess) {
+              
+              // Process all results in parallel for better performance
+              const embeddingPromises = resultsToProcess.map(async (placeResult) => {
                 try {
                   // Generate embedding for this business
                   const businessText = [
@@ -426,35 +426,18 @@ Requirements:
                   ].filter(Boolean).join(' ');
 
                   const businessEmbeddingResponse = await openai.embeddings.create({
-                    model: 'text-embedding-3-small', // Keep original model for consistency
+                    model: 'text-embedding-3-small',
                     input: businessText,
                     encoding_format: 'float'
                   });
 
                   const businessEmbedding = businessEmbeddingResponse.data[0].embedding;
-                  const similarity = cosineSimilarity(queryEmbedding, businessEmbedding); // Keep original model for consistency
+                  const similarity = cosineSimilarity(queryEmbedding, businessEmbedding);
                   
-                  // Generate dynamic offering name
-                  let dynamicOfferingName = query;
-                  try {
-                    const offeringNamePrompt = `Based on the user's search for "${query}" and this business "${placeResult.name}", generate ONE plausible menu item name (2-4 words max) that this business would likely offer. Return ONLY the item name.`;
-
-                    const offeringNameResponse = await openai.chat.completions.create({
-                      model: 'gpt-4o-mini',
-                      messages: [{ role: 'user', content: offeringNamePrompt }],
-                      temperature: 0.7,
-                      max_tokens: 15
-                    });
-
-                    const generatedName = offeringNameResponse.choices[0].message.content?.trim();
-                    if (generatedName && generatedName.length > 0 && generatedName.length < 50) {
-                      dynamicOfferingName = generatedName;
-                    }
-                  } catch (offeringNameError) {
-                    // Keep fallback value
-                  }
+                  // Use simplified offering name (no additional OpenAI call)
+                  const dynamicOfferingName = query.charAt(0).toUpperCase() + query.slice(1);
                   
-                  queryResults.push({
+                  return {
                     id: `ai-${placeResult.place_id}`,
                     business_id: `ai-${placeResult.place_id}`,
                     offering_id: null,
@@ -504,11 +487,15 @@ Requirements:
                       author: "Google User",
                       thumbsUp: true
                     }]
-                  });
+                  };
                 } catch (error) {
-                  console.warn(`⚠️ Error processing place result:`, error.message);
+                  console.warn(`⚠️ Error processing place result for ${placeResult.name}:`, error.message);
+                  return null;
                 }
-              }
+              });
+              
+              // Wait for all embeddings to complete in parallel
+              const queryResults = (await Promise.all(embeddingPromises)).filter(Boolean);
 
               return queryResults;
             } catch (error) {
