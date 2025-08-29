@@ -459,9 +459,15 @@ const ExploreArea = () => {
                             }
                             window.open(mapsUrl, '_blank', 'noopener,noreferrer');
                           }}
-                          className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                          className="px-2 py-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center gap-1"
                           title="Get directions"
                         >
+                          {/* Distance Display - Left of Map Icon */}
+                          {business.distance && business.distance !== 999999 && (
+                            <span className="font-lora text-xs text-blue-700 font-medium">
+                              {business.distance.toFixed(1)} mi
+                            </span>
+                          )}
                           <MapPin className="h-4 w-4" />
                         </button>
                       )}
