@@ -247,9 +247,20 @@ const OfferingCard: React.FC<{
           </p>
           
           {/* Description */}
-          {(business.description || business.short_description) && (
-            <p className="font-lora text-xs text-neutral-600 line-clamp-2">
-              {business.description || business.short_description}
+          {!business.isAIGenerated ? (
+            (business.description || business.short_description) && (
+              <p className="font-lora text-xs text-neutral-600 line-clamp-2">
+                {business.description || business.short_description}
+              </p>
+            )
+          ) : (
+            {/* No description for AI businesses */}
+          )}
+          
+          {/* Distance Display */}
+          {business.distance && business.distance !== 999999 && (
+            <p className="font-lora text-xs text-neutral-500">
+              {business.distance.toFixed(1)} mil.
             </p>
           )}
           
