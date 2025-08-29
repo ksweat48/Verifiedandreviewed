@@ -260,6 +260,16 @@ Requirements:
                 return [];
               }
 
+              // Log raw Google Places API results for this query
+              console.log(`🔍 Google Places API results for "${searchQuery}":`, response.data.results.length, 'businesses found');
+              console.log(`📋 Raw Google Places results for "${searchQuery}":`, response.data.results.map(place => ({
+                name: place.name,
+                formatted_address: place.formatted_address,
+                rating: place.rating,
+                types: place.types,
+                place_id: place.place_id
+              })));
+
               // Process only the top N results for performance
               const resultsToProcess = placesResponse.data.results.slice(0, TOP_PLACES_RESULTS_TO_EMBED);
               const queryResults = [];
@@ -372,12 +382,21 @@ Requirements:
           const aiSearchResults = await Promise.all(aiSearchPromises);
           const allAIResults = aiSearchResults.flat();
 
+          // Log all AI results before sorting and filtering
+          console.log('🤖 All AI results before sorting (total:', allAIResults.length, 'businesses):');
+          allAIResults.forEach((result, index) => {
+            console.log(`  ${index + 1}. "${result.name}" - ${result.address} - Similarity: ${result.similarity?.toFixed(3)} - Source: ${result.source}`);
+          });
           // Sort all AI results by similarity and take the top slotsNeeded
           aiResults = allAIResults
             .sort((a, b) => b.similarity - a.similarity)
             .slice(0, slotsNeeded);
             
           console.log('🤖 AI search found', aiResults.length, 'businesses');
+          console.log('🎯 Final selected AI results:');
+          aiResults.forEach((result, index) => {
+            console.log(`  ${index + 1}. "${result.name}" - ${result.address} - Similarity: ${result.similarity?.toFixed(3)}`);
+          });
         }
       } catch (aiError) {
         console.warn('⚠️ AI search failed:', aiError.message);
