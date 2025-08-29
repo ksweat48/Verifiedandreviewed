@@ -285,11 +285,6 @@ Requirements:
                   const businessEmbedding = businessEmbeddingResponse.data[0].embedding;
                   const similarity = cosineSimilarity(queryEmbedding, businessEmbedding); // Keep original model for consistency
                   
-                  // Only include AI results with reasonable similarity
-                  if (similarity < 0.0) {
-                    continue;
-                  }
-
                   // Generate dynamic offering name
                   let dynamicOfferingName = query;
                   try {
