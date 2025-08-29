@@ -253,13 +253,6 @@ const OfferingCard: React.FC<{
             )
           ) : null}
           
-          {/* Distance Display */}
-          {business.distance && business.distance !== 999999 && (
-            <p className="font-lora text-xs text-neutral-500">
-              {business.distance.toFixed(1)} mil.
-            </p>
-          )}
-          
           {/* Price */}
           {!business.isAIGenerated && business.price_cents && business.price_cents > 0 && (
             <div className="flex items-center justify-between">
@@ -315,9 +308,15 @@ const OfferingCard: React.FC<{
                 e.stopPropagation();
                 onTakeMeThere(business);
               }}
-              className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+              className="px-2 py-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center gap-1"
               title={business.isAIGenerated ? "View Google Profile" : "Get directions"}
             >
+              {/* Distance Display - Left of Map Icon */}
+              {business.distance && business.distance !== 999999 && (
+                <span className="font-lora text-xs text-blue-700 font-medium">
+                  {business.distance.toFixed(1)} mi
+                </span>
+              )}
               <Icons.MapPin className="h-4 w-4" />
             </button>
           </div>
