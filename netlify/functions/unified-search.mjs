@@ -106,23 +106,14 @@ export const handler = async (event, context) => {
       keywords: [],
       confidence: 0.5
     };
-    
     try {
       const intentPrompt = `Analyze this search query and determine if the user is looking for a SPECIFIC ITEM or a BROAD CATEGORY.
-
-Examples:
 - "veggie taco" = SPECIFIC ITEM (main_item: "taco", keywords: ["veggie", "vegetarian", "taco"])
 - "spicy ramen" = SPECIFIC ITEM (main_item: "ramen", keywords: ["spicy", "ramen", "noodles"])
 - "chocolate cake" = SPECIFIC ITEM (main_item: "cake", keywords: ["chocolate", "cake", "dessert"])
-- "veggie lunch options" = BROAD CATEGORY (keywords: ["veggie", "vegetarian", "lunch", "healthy"])
 - "cozy coffee shop" = BROAD CATEGORY (keywords: ["cozy", "coffee", "cafe", "atmosphere"])
 - "romantic dinner" = BROAD CATEGORY (keywords: ["romantic", "dinner", "date", "intimate"])
-
-Rules:
-- If query mentions a specific food item, dish, or product name → SPECIFIC ITEM
-- If query uses words like "options", "places", "spots", "vibes", or describes atmosphere → BROAD CATEGORY
 - Extract the main item name if specific (e.g., "taco", "ramen", "cake")
-- Always include relevant keywords for matching
 
 Query to analyze: "${query}"
 
