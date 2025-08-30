@@ -96,80 +96,177 @@ export const handler = async (event, context) => {
       };
     }
 
-    // Perform broad search to get all offerings that match ANY of the keywords
-    console.log('🔍 Performing broad keyword search on offerings...');
+    // Perform multiple targeted searches instead of complex OR query
+    console.log('🔍 Performing targeted keyword searches on offerings...');
     
-    // Build OR conditions for any keyword match - create individual conditions
-    const allConditions = [];
+    let allSearchResults = [];
     
-    mainKeywords.forEach(keyword => {
-      allConditions.push(`title.ilike.%${keyword}%`);
-      allConditions.push(`description.ilike.%${keyword}%`);
-      allConditions.push(`businesses.name.ilike.%${keyword}%`);
-      allConditions.push(`businesses.description.ilike.%${keyword}%`);
-      allConditions.push(`businesses.short_description.ilike.%${keyword}%`);
-    });
-    
-    const keywordConditions = allConditions.join(',');
-    
-    // Defensive cleanup: remove any leading/trailing parentheses that might cause parsing issues
-    const cleanedKeywordConditions = keywordConditions.replace(/^\(+|\)+$/g, '');
-    
-    console.log('🔍 Built keyword conditions:', cleanedKeywordConditions);
-
-    const { data: searchResults, error: searchError } = await supabase
-      .from('offerings')
-      .select(`
-        *,
-        businesses!inner (
-          id,
-          name,
-          address,
-          location,
-          category,
-          description,
-          short_description,
-          image_url,
-          gallery_urls,
-          hours,
-          days_closed,
-          phone_number,
-          website_url,
-          social_media,
-          price_range,
-          service_area,
-          is_verified,
-          is_mobile_business,
-          is_virtual,
-          latitude,
-          longitude,
-          thumbs_up,
-          thumbs_down,
-          sentiment_score,
-          is_visible_on_platform,
-          tags
-        ),
-        offering_images!left (
-          url,
-          source,
-          is_primary,
-          approved
-        )
-      `)
-      .eq('status', 'active')
-      .eq('businesses.is_visible_on_platform', true)
-      .or(cleanedKeywordConditions)
-      .limit(100) // Get more candidates for scoring and filtering
-      .order('created_at', { ascending: false });
-
-    if (searchError) {
-      console.error('❌ Keyword search error:', searchError);
-      throw new Error(`Keyword search failed: ${searchError.message}`);
+    // Search each keyword individually to avoid complex OR parsing issues
+    for (const keyword of mainKeywords) {
+      console.log(`🔍 Searching for keyword: "${keyword}"`);
+      
+      // Search in offering titles
+      const { data: titleResults, error: titleError } = await supabase
+        .from('offerings')
+        .select(`
+          *,
+          businesses!inner (
+            id,
+            name,
+            address,
+            location,
+            category,
+            description,
+            short_description,
+            image_url,
+            gallery_urls,
+            hours,
+            days_closed,
+            phone_number,
+            website_url,
+            social_media,
+            price_range,
+            service_area,
+            is_verified,
+            is_mobile_business,
+            is_virtual,
+            latitude,
+            longitude,
+            thumbs_up,
+            thumbs_down,
+            sentiment_score,
+            is_visible_on_platform,
+            tags
+          ),
+          offering_images!left (
+            url,
+            source,
+            is_primary,
+            approved
+          )
+        `)
+        .eq('status', 'active')
+        .eq('businesses.is_visible_on_platform', true)
+        .ilike('title', `%${keyword}%`)
+        .limit(50);
+      
+      if (!titleError && titleResults) {
+        allSearchResults.push(...titleResults);
+      }
+      
+      // Search in offering descriptions
+      const { data: descResults, error: descError } = await supabase
+        .from('offerings')
+        .select(`
+          *,
+          businesses!inner (
+            id,
+            name,
+            address,
+            location,
+            category,
+            description,
+            short_description,
+            image_url,
+            gallery_urls,
+            hours,
+            days_closed,
+            phone_number,
+            website_url,
+            social_media,
+            price_range,
+            service_area,
+            is_verified,
+            is_mobile_business,
+            is_virtual,
+            latitude,
+            longitude,
+            thumbs_up,
+            thumbs_down,
+            sentiment_score,
+            is_visible_on_platform,
+            tags
+          ),
+          offering_images!left (
+            url,
+            source,
+            is_primary,
+            approved
+          )
+        `)
+        .eq('status', 'active')
+        .eq('businesses.is_visible_on_platform', true)
+        .ilike('description', `%${keyword}%`)
+        .limit(50);
+      
+      if (!descError && descResults) {
+        allSearchResults.push(...descResults);
+      }
+      
+      // Search in business names
+      const { data: nameResults, error: nameError } = await supabase
+        .from('offerings')
+        .select(`
+          *,
+          businesses!inner (
+            id,
+            name,
+            address,
+            location,
+            category,
+            description,
+            short_description,
+            image_url,
+            gallery_urls,
+            hours,
+            days_closed,
+            phone_number,
+            website_url,
+            social_media,
+            price_range,
+            service_area,
+            is_verified,
+            is_mobile_business,
+            is_virtual,
+            latitude,
+            longitude,
+            thumbs_up,
+            thumbs_down,
+            sentiment_score,
+            is_visible_on_platform,
+            tags
+          ),
+          offering_images!left (
+            url,
+            source,
+            is_primary,
+            approved
+          )
+        `)
+        .eq('status', 'active')
+        .eq('businesses.is_visible_on_platform', true)
+        .ilike('businesses.name', `%${keyword}%`)
+        .limit(50);
+      
+      if (!nameError && nameResults) {
+        allSearchResults.push(...nameResults);
+      }
     }
+    
+    // Remove duplicates based on offering ID
+    const uniqueResults = [];
+    const seenIds = new Set();
+    
+    for (const result of allSearchResults) {
+      if (!seenIds.has(result.id)) {
+        seenIds.add(result.id);
+        uniqueResults.push(result);
+      }
+    }
+    
+    console.log('✅ Found', uniqueResults.length, 'unique offerings after deduplication');
+    const searchResults = uniqueResults;
 
-    console.log('✅ Found', searchResults?.length || 0, 'potential matches');
-
-    let enrichedResults = searchResults || [];
 
     // Score and categorize results based on keyword matches
     const scoredResults = enrichedResults.map(result => {
