@@ -1,31 +1,27 @@
-// New Unified Search Service for Platform Offerings and AI Business Offerings
+// Keyword-based search service for precise offering matching
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
-export class SemanticSearchService {
-  // Perform unified search combining platform offerings and AI businesses
-  static async searchByVibe(
+export class KeywordSearchService {
+  // Perform keyword-based search for offerings
+  static async searchOfferings(
     query: string,
     options: {
       latitude?: number;
       longitude?: number;
-      matchThreshold?: number;
       matchCount?: number;
     } = {}
   ): Promise<{
     success: boolean;
     results: any[];
     query: string;
-    usedUnifiedSearch: boolean;
-    searchSources?: {
-      platform_offerings: number;
-      ai_generated: number;
-    };
+    keywords: string[];
+    usedKeywordSearch: boolean;
     error?: string;
   }> {
     try {
-      console.log('🔍 Performing unified search for:', query);
+      console.log('🔍 Performing keyword search for:', query);
 
-      const response = await fetchWithTimeout('/.netlify/functions/unified-search', {
+      const response = await fetchWithTimeout('/.netlify/functions/keyword-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -34,10 +30,9 @@ export class SemanticSearchService {
           query: query.trim(),
           latitude: options.latitude,
           longitude: options.longitude,
-          matchThreshold: options.matchThreshold || 0.3,
-          matchCount: options.matchCount || 15
+          matchCount: options.matchCount || 10
         }),
-        timeout: 25000
+        timeout: 20000
       });
 
       if (!response.ok) {
@@ -46,8 +41,9 @@ export class SemanticSearchService {
             success: false,
             results: [],
             query,
-            usedUnifiedSearch: false,
-            error: 'Unified search service not available. Make sure to run "netlify dev" instead of "npm run dev".'
+            keywords: [],
+            usedKeywordSearch: false,
+            error: 'Keyword search service not available. Make sure to run "netlify dev" instead of "npm run dev".'
           };
         }
         
@@ -63,7 +59,8 @@ export class SemanticSearchService {
           success: false,
           results: [],
           query,
-          usedUnifiedSearch: false,
+          keywords: [],
+          usedKeywordSearch: false,
           error: errorMessage
         };
       }
@@ -72,33 +69,34 @@ export class SemanticSearchService {
       try {
         data = await response.json();
       } catch (jsonError) {
-        console.error('Failed to parse unified search response:', jsonError);
-        throw new Error('Invalid response from unified search service');
+        console.error('Failed to parse keyword search response:', jsonError);
+        throw new Error('Invalid response from keyword search service');
       }
       
       if (!data.success) {
-        throw new Error(data.message || 'Unified search failed');
+        throw new Error(data.message || 'Keyword search failed');
       }
 
-      console.log('✅ Unified search completed:', data.matchCount, 'results');
-      console.log('📊 Search sources:', data.searchSources);
+      console.log('✅ Keyword search completed:', data.matchCount, 'results');
+      console.log('🔍 Keywords used:', data.keywords);
 
       return {
         success: true,
         results: data.results || [],
         query: data.query,
-        usedUnifiedSearch: true,
-        searchSources: data.searchSources
+        keywords: data.keywords || [],
+        usedKeywordSearch: true
       };
 
     } catch (error) {
-      console.error('❌ Unified search error:', error);
+      console.error('❌ Keyword search error:', error);
       
       return {
         success: false,
         results: [],
         query,
-        usedUnifiedSearch: false,
+        keywords: [],
+        usedKeywordSearch: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }

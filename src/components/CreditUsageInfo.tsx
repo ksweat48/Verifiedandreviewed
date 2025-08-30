@@ -25,14 +25,14 @@ const CreditUsageInfo: React.FC<CreditUsageInfoProps> = ({ className = '' }) => 
       
       <div className="font-lora text-sm text-primary-700">
         <div className="flex justify-between">
-          <span>All searches (intelligent unified):</span>
+          <span>All searches (keyword-based):</span>
           <span className="font-semibold">2 credits</span>
         </div>
       </div>
       
       {isExpanded && (
         <div className="mt-3 pt-3 border-t border-primary-200 font-lora text-xs text-primary-600 space-y-2">
-          <p>Our intelligent search system automatically combines offerings, platform businesses, and AI suggestions for the best results.</p>
+          <p>Our keyword search system finds exact matches in offering titles and descriptions for precise results.</p>
           <p className="font-semibold">Earn credits by:</p>
           <ul className="space-y-1 pl-4">
             <li>• Reviews (2 credits each)</li>

@@ -3,7 +3,7 @@ import { Search, Zap, X, ArrowRight, Mic, LayoutDashboard } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ReviewService } from '../services/reviewService';
-import { SemanticSearchService } from '../services/semanticSearchService';
+import { KeywordSearchService } from '../services/keywordSearchService';
 import { CreditService } from '../services/creditService';
 import { UserService } from '../services/userService';
 import { ActivityService } from '../services/activityService';
@@ -199,25 +199,25 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // Hide floating search input when starting search
       setShowFloatingSearchInput(false);
       
-      // Set search type to unified
-      setSearchType('ai'); // Show as 'ai' since we're using the intelligent unified system
+      // Set search type to keyword
+      setSearchType('platform'); // Show as 'platform' since we're using keyword search on platform offerings
       
       // Log search activity if user is authenticated
       if (user) {
-        ActivityService.logSearch(user.id, searchTerm, 'unified');
+        ActivityService.logSearch(user.id, searchTerm, 'keyword');
       }
       
       // Track search event
       trackEvent('search_performed', {
         query: searchTerm,
-        search_type: 'intelligent_unified',
+        search_type: 'keyword_search',
         user_authenticated: !!user
       });
 
       // Deduct credits for unified search
-      const creditDeducted = await CreditService.deductSearchCredits(user.id, 'unified');
+      const creditDeducted = await CreditService.deductSearchCredits(user.id, 'keyword');
       if (!creditDeducted) {
-        console.warn('⚠️ Failed to deduct credits for intelligent search');
+        console.warn('⚠️ Failed to deduct credits for keyword search');
         setIsSearching(false);
         setIsAppModeActive(false);
         return;
@@ -226,22 +226,21 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       // Update local credits display
       setUserCredits(prev => Math.max(0, prev - 2));
       
-      // Perform unified search
-      console.log('🔍 Performing unified search...');
-      const searchResponse = await SemanticSearchService.searchByVibe(searchTerm, {
+      // Perform keyword search
+      console.log('🔍 Performing keyword search...');
+      const searchResponse = await KeywordSearchService.searchOfferings(searchTerm, {
         latitude: latitude,
         longitude: longitude,
-        matchThreshold: 0.3,
         matchCount: 10
       });
       
       if (searchResponse.success) {
-        console.log(`✅ Unified search completed: ${searchResponse.results.length} results`);
-        console.log('📊 Search sources:', searchResponse.searchSources);
+        console.log(`✅ Keyword search completed: ${searchResponse.results.length} results`);
+        console.log('🔍 Keywords used:', searchResponse.keywords);
         
         // Fetch reviews for all platform businesses in the results
         const platformBusinessIds = searchResponse.results
-          .filter(business => business.isPlatformBusiness || business.source === 'offering' || business.source === 'platform_business')
+          .filter(business => business.isPlatformBusiness)
           .map(business => business.id || business.business_id)
           .filter(Boolean);
         
@@ -291,14 +290,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           return {
             ...business,
             reviews: business.reviews || formattedReviews,
-            // Ensure compatibility fields
-            isPlatformBusiness: business.isPlatformBusiness || business.source === 'offering' || business.source === 'platform_business'
+            isPlatformBusiness: true // All results are platform offerings
           };
         });
         
         setSearchResults(enrichedResults);
       } else {
-        console.error('❌ Unified search failed:', searchResponse.error);
+        console.error('❌ Keyword search failed:', searchResponse.error);
         setSearchResults([]);
       }
       setIsAppModeActive(true);
@@ -506,7 +504,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   One Moment
                 </h3>
                 <p className="font-lora text-xl text-white/80 animate-pulse">
-                  Finding the perfect offerings for you
+                  Searching for exact matches
                 </p>
                 <div className="mt-8 flex items-center justify-center space-x-3">
                   <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce"></div>

@@ -288,7 +288,7 @@ export class CreditService {
   }
   
   // Check if user has enough credits for a search
-  static hasEnoughCreditsForSearch(userId: string, searchType: 'platform' | 'ai' | 'semantic' | 'unified' | 'intelligent'): Promise<boolean> {
+  static hasEnoughCreditsForSearch(userId: string, searchType: 'platform' | 'ai' | 'semantic' | 'keyword'): Promise<boolean> {
     return new Promise(async (resolve) => {
       const user = await UserService.getCurrentUser();
       if (!user) {
