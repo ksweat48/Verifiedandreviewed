@@ -309,7 +309,7 @@ const OfferingCard: React.FC<{
                 onTakeMeThere(business);
               }}
               className="px-2 py-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center gap-1"
-              title={business.isAIGenerated ? "View Google Profile" : "Get directions"}
+              title="Get directions"
             >
               {/* Distance Display - Left of Map Icon */}
               {business.distance && business.distance !== 999999 && (
