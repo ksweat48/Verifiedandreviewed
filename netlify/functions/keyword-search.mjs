@@ -1,4 +1,4 @@
-// Keyword-based search for offerings
+// Enhanced keyword-based search for offerings with tiered matching
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 
@@ -7,6 +7,17 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
+
+// Stop words to filter out from search queries
+const STOP_WORDS = [
+  'the', 'is', 'and', 'a', 'an', 'for', 'to', 'in', 'on', 'at', 'with', 'from', 'by', 
+  'about', 'as', 'but', 'can', 'do', 'has', 'have', 'he', 'her', 'his', 'how', 'if', 
+  'it', 'its', 'just', 'me', 'my', 'no', 'not', 'of', 'or', 'our', 'out', 'she', 'so', 
+  'some', 'than', 'that', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 
+  'those', 'through', 'up', 'us', 'very', 'was', 'we', 'what', 'when', 'where', 'which', 
+  'who', 'whom', 'why', 'will', 'you', 'your', 'find', 'near', 'best', 'good', 'top', 
+  'local', 'great', 'amazing', 'awesome', 'nice', 'cool', 'get', 'want', 'need', 'looking'
+];
 
 export const handler = async (event, context) => {
   // Handle CORS preflight
@@ -45,7 +56,7 @@ export const handler = async (event, context) => {
       };
     }
 
-    console.log('🔍 Keyword search request:', { query, latitude, longitude, matchCount });
+    console.log('🔍 Enhanced keyword search request:', { query, latitude, longitude, matchCount });
 
     // Check required environment variables
     const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
@@ -65,25 +76,35 @@ export const handler = async (event, context) => {
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Extract keywords from query
-    const keywords = query.trim().toLowerCase().split(/\s+/).filter(word => word.length > 2);
-    console.log('🔍 Extracted keywords:', keywords);
+    // Extract main keywords from query (filter out stop words and short words)
+    const allWords = query.trim().toLowerCase().split(/\s+/);
+    const mainKeywords = allWords.filter(word => 
+      word.length >= 3 && !STOP_WORDS.includes(word)
+    );
+    
+    console.log('🔍 Original query words:', allWords);
+    console.log('🔍 Filtered main keywords:', mainKeywords);
 
-    if (keywords.length === 0) {
+    if (mainKeywords.length === 0) {
       return {
         statusCode: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           error: 'No valid keywords found',
-          message: 'Please provide a more specific search query'
+          message: 'Please provide a more specific search query with meaningful words'
         })
       };
     }
 
-    // Build keyword search query
-    console.log('🔍 Performing keyword search on offerings...');
+    // Perform broad search to get all offerings that match ANY of the keywords
+    console.log('🔍 Performing broad keyword search on offerings...');
     
-    let queryBuilder = supabase
+    // Build OR conditions for any keyword match
+    const keywordConditions = mainKeywords.map(keyword => 
+      `title.ilike.%${keyword}%,description.ilike.%${keyword}%,businesses.name.ilike.%${keyword}%,businesses.description.ilike.%${keyword}%,businesses.short_description.ilike.%${keyword}%`
+    ).join(',');
+
+    const { data: searchResults, error: searchError } = await supabase
       .from('offerings')
       .select(`
         *,
@@ -112,7 +133,8 @@ export const handler = async (event, context) => {
           thumbs_up,
           thumbs_down,
           sentiment_score,
-          is_visible_on_platform
+          is_visible_on_platform,
+          tags
         ),
         offering_images!left (
           url,
@@ -122,18 +144,9 @@ export const handler = async (event, context) => {
         )
       `)
       .eq('status', 'active')
-      .eq('businesses.is_visible_on_platform', true);
-
-    // Build keyword matching conditions
-    // For each keyword, check if it appears in offering title, description, or business name/description
-    for (const keyword of keywords) {
-      queryBuilder = queryBuilder.or(
-        `title.ilike.%${keyword}%,description.ilike.%${keyword}%,businesses.name.ilike.%${keyword}%,businesses.description.ilike.%${keyword}%,businesses.short_description.ilike.%${keyword}%`
-      );
-    }
-
-    const { data: searchResults, error: searchError } = await queryBuilder
-      .limit(50) // Get more candidates for scoring
+      .eq('businesses.is_visible_on_platform', true)
+      .or(keywordConditions)
+      .limit(100) // Get more candidates for scoring and filtering
       .order('created_at', { ascending: false });
 
     if (searchError) {
@@ -141,12 +154,12 @@ export const handler = async (event, context) => {
       throw new Error(`Keyword search failed: ${searchError.message}`);
     }
 
-    console.log('✅ Found', searchResults?.length || 0, 'keyword matches');
+    console.log('✅ Found', searchResults?.length || 0, 'potential matches');
 
     let enrichedResults = searchResults || [];
 
-    // Score results based on keyword relevance
-    enrichedResults = enrichedResults.map(result => {
+    // Score and categorize results based on keyword matches
+    const scoredResults = enrichedResults.map(result => {
       const business = result.businesses;
       
       // Combine all searchable text
@@ -158,13 +171,15 @@ export const handler = async (event, context) => {
         business.short_description || ''
       ].join(' ').toLowerCase();
 
-      // Calculate keyword match score
+      // Calculate keyword matches and score
       let keywordScore = 0;
       let matchedKeywords = 0;
+      const foundKeywords = [];
       
-      for (const keyword of keywords) {
+      for (const keyword of mainKeywords) {
         if (searchableText.includes(keyword)) {
           matchedKeywords++;
+          foundKeywords.push(keyword);
           
           // Give higher score for matches in title vs description
           if ((result.title || '').toLowerCase().includes(keyword)) {
@@ -177,18 +192,12 @@ export const handler = async (event, context) => {
         }
       }
 
-      // Calculate percentage of keywords matched
-      const keywordMatchPercentage = matchedKeywords / keywords.length;
-      
-      // Only include results that match ALL keywords
-      const includeResult = keywordMatchPercentage === 1.0;
-
       return {
         ...result,
         keywordScore,
         matchedKeywords,
-        keywordMatchPercentage,
-        includeResult,
+        foundKeywords,
+        keywordMatchPercentage: matchedKeywords / mainKeywords.length,
         // Transform to expected format
         business_id: business.id,
         business_name: business.name,
@@ -240,16 +249,53 @@ export const handler = async (event, context) => {
       };
     });
 
-    // Filter to only include results that match ALL keywords
-    const filteredResults = enrichedResults.filter(result => result.includeResult);
-    console.log('✅ Filtered to', filteredResults.length, 'results matching all keywords');
+    // Group results by number of matched keywords (tiered matching)
+    const resultsByKeywordCount = {};
+    for (let i = mainKeywords.length; i >= 1; i--) {
+      resultsByKeywordCount[i] = scoredResults.filter(result => result.matchedKeywords === i);
+    }
+
+    console.log('📊 Results by keyword count:');
+    for (let i = mainKeywords.length; i >= 1; i--) {
+      console.log(`  ${i} keywords: ${resultsByKeywordCount[i].length} results`);
+    }
+
+    // Find the highest tier with results (tiered fallback)
+    let finalResults = [];
+    let usedKeywordTier = 0;
+    
+    for (let i = mainKeywords.length; i >= 1; i--) {
+      if (resultsByKeywordCount[i].length > 0) {
+        finalResults = resultsByKeywordCount[i];
+        usedKeywordTier = i;
+        console.log(`✅ Using ${i}-keyword matches: ${finalResults.length} results`);
+        break;
+      }
+    }
+
+    if (finalResults.length === 0) {
+      console.log('❌ No results found for any keyword combination');
+      return {
+        statusCode: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: true,
+          results: [],
+          query: query,
+          mainKeywords: mainKeywords,
+          usedKeywordTier: 0,
+          matchCount: 0,
+          message: 'No offerings found matching your search criteria'
+        })
+      };
+    }
 
     // Calculate distances if user location provided
-    if (filteredResults.length > 0 && latitude && longitude) {
+    if (finalResults.length > 0 && latitude && longitude) {
       try {
-        console.log('📏 Calculating distances for', filteredResults.length, 'offerings');
+        console.log('📏 Calculating distances for', finalResults.length, 'offerings');
         
-        const businessesWithCoords = filteredResults.filter(result => 
+        const businessesWithCoords = finalResults.filter(result => 
           result.latitude && result.longitude
         );
         
@@ -280,12 +326,16 @@ export const handler = async (event, context) => {
             });
             
             // Update results with distances
-            filteredResults.forEach(result => {
+            finalResults = finalResults.map(result => {
               const distanceInfo = distanceMap.get(result.business_id);
               if (distanceInfo) {
-                result.distance = distanceInfo.distance;
-                result.duration = distanceInfo.duration;
+                return {
+                  ...result,
+                  distance: distanceInfo.distance,
+                  duration: distanceInfo.duration
+                };
               }
+              return result;
             });
             
             console.log('✅ Updated offerings with accurate distances');
@@ -297,10 +347,9 @@ export const handler = async (event, context) => {
     }
 
     // Filter by 15-mile radius if location provided
-    let finalResults = filteredResults;
     if (latitude && longitude) {
       const maxDistance = 15;
-      finalResults = filteredResults.filter(result => {
+      finalResults = finalResults.filter(result => {
         if (!result.distance || result.distance === 999999) {
           return true; // Keep results without distance data
         }
@@ -309,7 +358,7 @@ export const handler = async (event, context) => {
       console.log(`📏 Results within ${maxDistance} miles: ${finalResults.length} offerings`);
     }
 
-    // Sort by keyword relevance score, then by distance
+    // Final sort: keyword score (desc), then distance (asc), then creation date (desc)
     finalResults.sort((a, b) => {
       // Primary sort: keyword score (higher is better)
       if (a.keywordScore !== b.keywordScore) {
@@ -328,9 +377,10 @@ export const handler = async (event, context) => {
     // Limit to requested count
     const limitedResults = finalResults.slice(0, matchCount);
 
-    console.log('🎯 Final keyword search results:');
+    console.log('🎯 Final enhanced keyword search results:');
     limitedResults.forEach((result, index) => {
-      console.log(`  ${index + 1}. "${result.title}" at "${result.business_name}" - Score: ${result.keywordScore} - Distance: ${result.distance}mi`);
+      console.log(`  ${index + 1}. "${result.title}" at "${result.business_name}" - Score: ${result.keywordScore} (${result.matchedKeywords}/${mainKeywords.length} keywords) - Distance: ${result.distance}mi`);
+      console.log(`     Found keywords: [${result.foundKeywords.join(', ')}]`);
     });
 
     return {
@@ -340,21 +390,22 @@ export const handler = async (event, context) => {
         success: true,
         results: limitedResults,
         query: query,
+        mainKeywords: mainKeywords,
+        usedKeywordTier: usedKeywordTier,
         matchCount: limitedResults.length,
-        keywords: keywords,
-        usedKeywordSearch: true,
+        message: `Found ${limitedResults.length} offerings matching ${usedKeywordTier} of ${mainKeywords.length} keywords`,
         timestamp: new Date().toISOString()
       })
     };
 
   } catch (error) {
-    console.error('❌ Keyword search error:', error);
+    console.error('❌ Enhanced keyword search error:', error);
     
     return {
       statusCode: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        error: 'Keyword search failed',
+        error: 'Enhanced keyword search failed',
         message: error.message,
         timestamp: new Date().toISOString()
       })

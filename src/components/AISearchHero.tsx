@@ -236,7 +236,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       
       if (searchResponse.success) {
         console.log(`✅ Keyword search completed: ${searchResponse.results.length} results`);
-        console.log('🔍 Keywords used:', searchResponse.keywords);
+        console.log('🔍 Main keywords used:', searchResponse.keywords);
         
         // Fetch reviews for all platform businesses in the results
         const platformBusinessIds = searchResponse.results

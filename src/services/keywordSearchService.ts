@@ -78,13 +78,14 @@ export class KeywordSearchService {
       }
 
       console.log('✅ Keyword search completed:', data.matchCount, 'results');
-      console.log('🔍 Keywords used:', data.keywords);
+      console.log('🔍 Main keywords used:', data.mainKeywords);
+      console.log('🔍 Used keyword tier:', data.usedKeywordTier, 'of', data.mainKeywords?.length);
 
       return {
         success: true,
         results: data.results || [],
         query: data.query,
-        keywords: data.keywords || [],
+        keywords: data.mainKeywords || [],
         usedKeywordSearch: true
       };
 
