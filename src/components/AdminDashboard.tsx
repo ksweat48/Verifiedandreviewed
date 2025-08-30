@@ -8,6 +8,7 @@ import { supabase } from '../services/supabaseClient';
 import EmbeddingGenerationTest from './EmbeddingGenerationTest';
 import OpenAIConnectionTest from './OpenAIConnectionTest';
 import OfferingManagementTest from './OfferingManagementTest';
+import GoogleBusinessProfileTest from './GoogleBusinessProfileTest';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -665,6 +666,7 @@ const AdminDashboard = () => {
         {/* Tools Tab */}
         {activeTab === 'tools' && (
           <div className="space-y-8">
+            <GoogleBusinessProfileTest />
             <OfferingManagementTest />
             <OpenAIConnectionTest />
             <EmbeddingGenerationTest />
