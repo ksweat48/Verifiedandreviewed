@@ -352,7 +352,15 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleTakeMeThere = (business: any) => {
-    // All businesses go directly to Google Maps for directions
+    // AI businesses go to Google Business Profile, others go to Google Maps directions
+    if (business.isAIGenerated && business.placeId) {
+      // For AI-generated businesses, open Google Business Profile
+      const profileUrl = `https://www.google.com/maps/place/?q=place_id:${business.placeId}`;
+      window.open(profileUrl, '_blank');
+      return;
+    }
+    
+    // For platform businesses, go directly to Google Maps for directions
     let mapsUrl;
     if (business.latitude && business.longitude) {
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
