@@ -107,17 +107,38 @@ export const handler = async (event, context) => {
       confidence: 0.5
     };
     try {
-      const intentPrompt = `Analyze this search query and determine if the user is looking for a SPECIFIC ITEM or a BROAD CATEGORY.
+      const intentPrompt = `You are an expert at classifying food and service search queries. Your job is to determine if the user wants a SPECIFIC ITEM/DISH or a BROAD CATEGORY/EXPERIENCE.
+
+CRITICAL RULES:
+1. ANY recognizable food item (with or without adjectives) = SPECIFIC ITEM
+2. Adjectives like "veggie", "spicy", "chocolate", "fried" do NOT change this - they're still specific items
+3. Only classify as BROAD CATEGORY if there's NO specific food item mentioned
+
+SPECIFIC ITEM examples (use high threshold 0.6+):
 - "veggie taco" = SPECIFIC ITEM (main_item: "taco", keywords: ["veggie", "vegetarian", "taco"])
+- "veggie burger" = SPECIFIC ITEM (main_item: "burger", keywords: ["veggie", "vegetarian", "burger"])
 - "spicy ramen" = SPECIFIC ITEM (main_item: "ramen", keywords: ["spicy", "ramen", "noodles"])
 - "chocolate cake" = SPECIFIC ITEM (main_item: "cake", keywords: ["chocolate", "cake", "dessert"])
+- "fried chicken" = SPECIFIC ITEM (main_item: "chicken", keywords: ["fried", "chicken"])
+- "fish tacos" = SPECIFIC ITEM (main_item: "tacos", keywords: ["fish", "tacos", "seafood"])
+- "fruit smoothie" = SPECIFIC ITEM (main_item: "smoothie", keywords: ["fruit", "smoothie", "drink"])
+- "pizza" = SPECIFIC ITEM (main_item: "pizza", keywords: ["pizza"])
+- "sushi" = SPECIFIC ITEM (main_item: "sushi", keywords: ["sushi", "japanese"])
+
+BROAD CATEGORY examples (use low threshold 0.3+):
 - "cozy coffee shop" = BROAD CATEGORY (keywords: ["cozy", "coffee", "cafe", "atmosphere"])
 - "romantic dinner" = BROAD CATEGORY (keywords: ["romantic", "dinner", "date", "intimate"])
-- Extract the main item name if specific (e.g., "taco", "ramen", "cake")
+- "healthy breakfast places" = BROAD CATEGORY (keywords: ["healthy", "breakfast", "places"])
+- "quick lunch spots" = BROAD CATEGORY (keywords: ["quick", "lunch", "spots"])
+- "family restaurants" = BROAD CATEGORY (keywords: ["family", "restaurants"])
+
+IMPORTANT: If you see ANY food item name (burger, taco, pizza, smoothie, etc.), classify as SPECIFIC ITEM regardless of adjectives.
 
 Query to analyze: "${query}"
 
-Respond with JSON only:`;
+Extract the main food item if present (e.g., "burger" from "veggie burger", "taco" from "fish taco").
+
+Respond with valid JSON only - no other text:`;
 
       const intentTools = [{
         type: "function",
@@ -165,18 +186,38 @@ Respond with JSON only:`;
       const intentToolCall = intentCompletion.choices[0].message.tool_calls?.[0];
       if (intentToolCall && intentToolCall.function.name === 'classifyQueryIntent') {
         queryIntent = JSON.parse(intentToolCall.function.arguments);
-        console.log('🧠 Query intent classified:', queryIntent);
+        console.log('🧠 ===== QUERY INTENT CLASSIFICATION RESULT =====');
+        console.log('🔍 Original query:', `"${query}"`);
+        console.log('🎯 Intent type:', queryIntent.intent_type);
+        console.log('🍔 Main item:', queryIntent.main_item || 'None');
+        console.log('🏷️ Keywords:', queryIntent.keywords);
+        console.log('📊 Confidence:', queryIntent.confidence);
+        console.log('🧠 ===============================================');
       }
     } catch (intentError) {
-      console.warn('⚠️ Intent classification failed, using default broad category:', intentError.message);
+      console.error('❌ Intent classification failed, using default broad category:', intentError.message);
+      console.log('🧠 ===== INTENT CLASSIFICATION FAILED =====');
+      console.log('🔍 Original query:', `"${query}"`);
+      console.log('🎯 Fallback intent type: broad_category');
+      console.log('📊 Fallback confidence: 0.5');
+      console.log('🧠 ========================================');
     }
 
     // Dynamic threshold adjustment based on intent
+    // THRESHOLD EXPLANATION:
+    // - For SPECIFIC ITEM queries: Use high threshold (0.6+) to ensure only highly relevant results
+    // - For BROAD CATEGORY queries: Use original threshold (0.3+) for exploratory searches
+    // - Similarity scores range from 0.0 (no match) to 1.0 (perfect match)
     const dynamicMatchThreshold = queryIntent.intent_type === 'specific_item' 
       ? Math.max(matchThreshold, 0.6) // Higher threshold for specific items
       : matchThreshold; // Keep original threshold for broad categories
     
-    console.log(`🎯 Using dynamic match threshold: ${dynamicMatchThreshold} (intent: ${queryIntent.intent_type})`);
+    console.log(`🎯 ===== THRESHOLD CALCULATION =====`);
+    console.log(`🔍 Base match threshold: ${matchThreshold}`);
+    console.log(`🎯 Intent type: ${queryIntent.intent_type}`);
+    console.log(`📊 Dynamic threshold: ${dynamicMatchThreshold}`);
+    console.log(`📈 Threshold range: 0.3 (broad) to 0.6+ (specific)`);
+    console.log(`🎯 =================================`);
 
     // Check required environment variables
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
