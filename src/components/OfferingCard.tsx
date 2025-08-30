@@ -151,8 +151,9 @@ const OfferingCard: React.FC<{
   const handleTakeMeThere = (business: BusinessCard) => {
     // AI businesses go to Google Business Profile, others go to Google Maps directions
     if (business.isAIGenerated && business.placeId) {
-      // For AI-generated businesses, open Google Business Profile
-      const profileUrl = `https://www.google.com/maps/place/?q=place_id:${business.placeId}`;
+      // For AI-generated businesses, use Google Search to avoid native app interception
+      const searchQuery = encodeURIComponent(`${business.name} ${business.address || business.location || ''}`);
+      const profileUrl = `https://www.google.com/search?q=${searchQuery}+place_id:${business.placeId}`;
       window.open(profileUrl, '_blank');
       return;
     }
