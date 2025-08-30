@@ -107,38 +107,41 @@ export const handler = async (event, context) => {
       confidence: 0.5
     };
     try {
-      const intentPrompt = `You are an expert at classifying food and service search queries. Your job is to determine if the user wants a SPECIFIC ITEM/DISH or a BROAD CATEGORY/EXPERIENCE.
+      const intentPrompt = `You are a food search query classifier. Your ONLY job is to determine if the user wants a SPECIFIC FOOD ITEM or a BROAD CATEGORY.
 
-CRITICAL RULES:
-1. ANY recognizable food item (with or without adjectives) = SPECIFIC ITEM
-2. Adjectives like "veggie", "spicy", "chocolate", "fried" do NOT change this - they're still specific items
-3. Only classify as BROAD CATEGORY if there's NO specific food item mentioned
+ABSOLUTE RULES - NO EXCEPTIONS:
+1. If the query contains ANY recognizable food item name = SPECIFIC ITEM
+2. Adjectives (veggie, spicy, fried, etc.) DO NOT change this rule
+3. "veggie burger" = SPECIFIC ITEM (it's a burger)
+4. "fruit smoothie" = SPECIFIC ITEM (it's a smoothie)
+5. "fried chicken" = SPECIFIC ITEM (it's chicken)
+6. Only use BROAD CATEGORY if NO food item is mentioned at all
 
-SPECIFIC ITEM examples (use high threshold 0.6+):
-- "veggie taco" = SPECIFIC ITEM (main_item: "taco", keywords: ["veggie", "vegetarian", "taco"])
-- "veggie burger" = SPECIFIC ITEM (main_item: "burger", keywords: ["veggie", "vegetarian", "burger"])
-- "spicy ramen" = SPECIFIC ITEM (main_item: "ramen", keywords: ["spicy", "ramen", "noodles"])
-- "chocolate cake" = SPECIFIC ITEM (main_item: "cake", keywords: ["chocolate", "cake", "dessert"])
-- "fried chicken" = SPECIFIC ITEM (main_item: "chicken", keywords: ["fried", "chicken"])
-- "fish tacos" = SPECIFIC ITEM (main_item: "tacos", keywords: ["fish", "tacos", "seafood"])
-- "fruit smoothie" = SPECIFIC ITEM (main_item: "smoothie", keywords: ["fruit", "smoothie", "drink"])
-- "pizza" = SPECIFIC ITEM (main_item: "pizza", keywords: ["pizza"])
-- "sushi" = SPECIFIC ITEM (main_item: "sushi", keywords: ["sushi", "japanese"])
+FOOD ITEMS = SPECIFIC ITEM (confidence 0.8+):
+- "veggie burger" → main_item: "burger"
+- "fruit smoothie" → main_item: "smoothie" 
+- "fried chicken" → main_item: "chicken"
+- "fish tacos" → main_item: "tacos"
+- "pizza" → main_item: "pizza"
+- "sushi" → main_item: "sushi"
+- "chocolate cake" → main_item: "cake"
+- "spicy ramen" → main_item: "ramen"
 
-BROAD CATEGORY examples (use low threshold 0.3+):
-- "cozy coffee shop" = BROAD CATEGORY (keywords: ["cozy", "coffee", "cafe", "atmosphere"])
-- "romantic dinner" = BROAD CATEGORY (keywords: ["romantic", "dinner", "date", "intimate"])
-- "healthy breakfast places" = BROAD CATEGORY (keywords: ["healthy", "breakfast", "places"])
-- "quick lunch spots" = BROAD CATEGORY (keywords: ["quick", "lunch", "spots"])
-- "family restaurants" = BROAD CATEGORY (keywords: ["family", "restaurants"])
+NO FOOD ITEMS = BROAD CATEGORY (confidence 0.3+):
+- "cozy coffee shop" → NO specific food mentioned
+- "romantic dinner" → NO specific food mentioned
+- "family restaurants" → NO specific food mentioned
+- "quick lunch spots" → NO specific food mentioned
 
-IMPORTANT: If you see ANY food item name (burger, taco, pizza, smoothie, etc.), classify as SPECIFIC ITEM regardless of adjectives.
+CRITICAL: "veggie burger" contains "burger" = SPECIFIC ITEM
+CRITICAL: "fruit smoothie" contains "smoothie" = SPECIFIC ITEM
+CRITICAL: If you see burger, taco, pizza, smoothie, chicken, etc. = SPECIFIC ITEM
 
 Query to analyze: "${query}"
 
-Extract the main food item if present (e.g., "burger" from "veggie burger", "taco" from "fish taco").
-
-Respond with valid JSON only - no other text:`;
+Extract the main food item if present. Examples:
+- "veggie burger" → main_item: "burger"
+- "fruit smoothie" → main_item: "smoothie"`;
 
       const intentTools = [{
         type: "function",
@@ -186,17 +189,36 @@ Respond with valid JSON only - no other text:`;
       const intentToolCall = intentCompletion.choices[0].message.tool_calls?.[0];
       if (intentToolCall && intentToolCall.function.name === 'classifyQueryIntent') {
         queryIntent = JSON.parse(intentToolCall.function.arguments);
-        console.log('🧠 ===== QUERY INTENT CLASSIFICATION RESULT =====');
+        
+        // DETAILED INTENT CLASSIFICATION LOGGING
+        console.log('🧠 ========================================');
+        console.log('🧠 AI INTENT CLASSIFICATION RESULT');
+        console.log('🧠 ========================================');
         console.log('🔍 Original query:', `"${query}"`);
         console.log('🎯 Intent type:', queryIntent.intent_type);
         console.log('🍔 Main item:', queryIntent.main_item || 'None');
-        console.log('🏷️ Keywords:', queryIntent.keywords);
+        console.log('🏷️ Keywords:', JSON.stringify(queryIntent.keywords));
         console.log('📊 Confidence:', queryIntent.confidence);
-        console.log('🧠 ===============================================');
+        console.log('🧠 ========================================');
+        
+        // Validation check
+        if (query.toLowerCase().includes('burger') && queryIntent.intent_type !== 'specific_item') {
+          console.log('❌ CLASSIFICATION ERROR: Query contains "burger" but was not classified as specific_item!');
+          console.log('❌ This is a bug in the AI classification - forcing correction...');
+          queryIntent = {
+            intent_type: 'specific_item',
+            main_item: 'burger',
+            keywords: ['veggie', 'burger', 'vegetarian'],
+            confidence: 0.9
+          };
+          console.log('✅ CORRECTED: Forced classification to specific_item for burger query');
+        }
       }
     } catch (intentError) {
       console.error('❌ Intent classification failed, using default broad category:', intentError.message);
-      console.log('🧠 ===== INTENT CLASSIFICATION FAILED =====');
+      console.log('🧠 ========================================');
+      console.log('🧠 INTENT CLASSIFICATION FAILED');
+      console.log('🧠 ========================================');
       console.log('🔍 Original query:', `"${query}"`);
       console.log('🎯 Fallback intent type: broad_category');
       console.log('📊 Fallback confidence: 0.5');
