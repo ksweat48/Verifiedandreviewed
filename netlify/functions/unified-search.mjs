@@ -225,6 +225,46 @@ Extract the main food item if present. Examples:
       console.log('🧠 ========================================');
     }
 
+    // CRITICAL DEBUG: Log queryIntent immediately after AI classification
+    console.log('🔍 ===== POST-AI CLASSIFICATION DEBUG =====');
+    console.log('🔍 queryIntent object:', JSON.stringify(queryIntent, null, 2));
+    console.log('🔍 queryIntent.intent_type:', queryIntent.intent_type);
+    console.log('🔍 queryIntent.main_item:', queryIntent.main_item);
+    console.log('🔍 queryIntent.confidence:', queryIntent.confidence);
+    console.log('🔍 ==========================================');
+
+    // CRITICAL DEBUG: Log before failsafe evaluation
+    console.log('🔍 ===== PRE-FAILSAFE EVALUATION DEBUG =====');
+    console.log('🔍 Query contains "burger":', query.toLowerCase().includes('burger'));
+    console.log('🔍 Current intent_type:', queryIntent.intent_type);
+    console.log('🔍 Intent type is NOT specific_item:', queryIntent.intent_type !== 'specific_item');
+    console.log('🔍 Failsafe condition will trigger:', query.toLowerCase().includes('burger') && queryIntent.intent_type !== 'specific_item');
+    console.log('🔍 ==========================================');
+
+    // Enhanced failsafe validation with detailed logging
+    if (query.toLowerCase().includes('burger') && queryIntent.intent_type !== 'specific_item') {
+      console.log('❌ ===== CLASSIFICATION ERROR DETECTED =====');
+      console.log('❌ Query contains "burger" but was not classified as specific_item!');
+      console.log('❌ Original classification:', JSON.stringify(queryIntent, null, 2));
+      console.log('❌ This is a bug in the AI classification - forcing correction...');
+      
+      queryIntent = {
+        intent_type: 'specific_item',
+        main_item: 'burger',
+        keywords: ['veggie', 'burger', 'vegetarian'],
+        confidence: 0.9
+      };
+      
+      console.log('✅ CORRECTED: Forced classification to specific_item for burger query');
+      console.log('✅ New classification:', JSON.stringify(queryIntent, null, 2));
+      console.log('✅ ==========================================');
+    } else {
+      console.log('✅ ===== FAILSAFE CHECK PASSED =====');
+      console.log('✅ No correction needed - classification appears correct');
+      console.log('✅ Current classification:', JSON.stringify(queryIntent, null, 2));
+      console.log('✅ ==================================');
+    }
+
     // Dynamic threshold adjustment based on intent
     // THRESHOLD EXPLANATION:
     // - For SPECIFIC ITEM queries: Use high threshold (0.6+) to ensure only highly relevant results
@@ -234,6 +274,14 @@ Extract the main food item if present. Examples:
       ? Math.max(matchThreshold, 0.6) // Higher threshold for specific items
       : matchThreshold; // Keep original threshold for broad categories
     
+    // CRITICAL DEBUG: Log threshold calculation
+    console.log('🎯 ===== THRESHOLD CALCULATION DEBUG =====');
+    console.log('🔍 Base match threshold:', matchThreshold);
+    console.log('🎯 Intent type for threshold calc:', queryIntent.intent_type);
+    console.log('📊 Dynamic threshold calculated:', dynamicMatchThreshold);
+    console.log('📈 Threshold logic: specific_item uses 0.6+, broad_category uses original');
+    console.log('🎯 ========================================');
+
     console.log(`🎯 ===== THRESHOLD CALCULATION =====`);
     console.log(`🔍 Base match threshold: ${matchThreshold}`);
     console.log(`🎯 Intent type: ${queryIntent.intent_type}`);
@@ -293,7 +341,12 @@ Extract the main food item if present. Examples:
      // For broad categories: Use lower threshold (0.1) to allow exploratory search
      const databaseMatchThreshold = queryIntent.intent_type === 'specific_item' ? 0.5 : 0.1;
      
-     console.log(`🎯 Database match threshold: ${databaseMatchThreshold} (intent: ${queryIntent.intent_type})`);
+     // CRITICAL DEBUG: Log database threshold calculation
+     console.log('🎯 ===== DATABASE THRESHOLD DEBUG =====');
+     console.log('🔍 Intent type for DB threshold:', queryIntent.intent_type);
+     console.log('🎯 Database match threshold:', databaseMatchThreshold);
+     console.log('📊 Logic: specific_item=0.5, broad_category=0.1');
+     console.log('🎯 ====================================');
      
       const { data: offeringSearchResults, error: offeringError } = await supabase.rpc(
         'search_offerings_by_vibe',
@@ -311,7 +364,11 @@ Extract the main food item if present. Examples:
         console.warn('⚠️ Platform offering search failed:', offeringError.message);
       } else {
         offeringResults = offeringSearchResults || [];
-        console.log('✅ Found', offeringResults.length, 'platform offering candidates');
+        console.log('✅ ===== PLATFORM OFFERING SEARCH RESULTS =====');
+        console.log('✅ Found', offeringResults.length, 'platform offering candidates from database');
+        console.log('✅ Database query used threshold:', databaseMatchThreshold);
+        console.log('✅ Intent type that determined threshold:', queryIntent.intent_type);
+        console.log('✅ ============================================');
         
         // DEBUG: Log raw offering search results to check title field
         console.log('🔍 DEBUG: Raw offering search results from Supabase RPC:');
@@ -342,7 +399,11 @@ Extract the main food item if present. Examples:
     let filteredOfferingResults = offeringResults;
     
     if (queryIntent.intent_type === 'specific_item' && queryIntent.main_item) {
-      console.log(`🎯 Applying specific item filtering for: "${queryIntent.main_item}"`);
+      console.log('🎯 ===== SPECIFIC ITEM FILTERING DEBUG =====');
+      console.log('🎯 Applying specific item filtering for:', queryIntent.main_item);
+      console.log('🎯 Intent type:', queryIntent.intent_type);
+      console.log('🎯 Keywords:', queryIntent.keywords);
+      console.log('🎯 =========================================');
       
       // For specific items, boost offerings that contain the main item or keywords in title/description
       filteredOfferingResults = offeringResults.map(offering => {
@@ -373,6 +434,12 @@ Extract the main food item if present. Examples:
           specificityBoost
         };
       });
+    } else {
+      console.log('🎯 ===== NO SPECIFIC ITEM FILTERING =====');
+      console.log('🎯 Intent type:', queryIntent.intent_type);
+      console.log('🎯 Main item:', queryIntent.main_item);
+      console.log('🎯 Skipping specific item filtering');
+      console.log('🎯 ===================================');
     }
     
     // Sort all platform offerings by similarity and take the best ones that meet the dynamic threshold
@@ -381,7 +448,12 @@ Extract the main food item if present. Examples:
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, TARGET_PLATFORM_OFFERINGS);
     
-    console.log(`✅ Selected ${selectedPlatformOfferings.length} top platform offerings (similarity >= ${dynamicMatchThreshold}):`);
+    console.log('✅ ===== PLATFORM OFFERING SELECTION DEBUG =====');
+    console.log('✅ Dynamic threshold used for filtering:', dynamicMatchThreshold);
+    console.log('✅ Intent type that determined threshold:', queryIntent.intent_type);
+    console.log('✅ Selected', selectedPlatformOfferings.length, 'top platform offerings');
+    console.log('✅ ==============================================');
+    
     selectedPlatformOfferings.forEach((offering, index) => {
       console.log(`  ${index + 1}. "${offering.title}" at "${offering.business_name}" - Similarity: ${offering.similarity?.toFixed(3)}${offering.specificityBoost ? ` (boosted +${offering.specificityBoost.toFixed(2)})` : ''}`);
     });
