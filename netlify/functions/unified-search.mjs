@@ -253,18 +253,35 @@ Respond with valid JSON only - no other text:`;
 
     // STAGE 1: Broad Platform Offering Search
     console.log('🔍 Stage 1: Performing broad platform offering search...');
+   
+   // Log the query intent classification result for debugging
+   console.log('🧠 ===== QUERY INTENT CLASSIFICATION RESULT =====');
+   console.log('🔍 Original query:', `"${query}"`);
+   console.log('🎯 Intent type:', queryIntent.intent_type);
+   console.log('🍔 Main item:', queryIntent.main_item || 'None');
+   console.log('🏷️ Keywords:', queryIntent.keywords);
+   console.log('📊 Confidence:', queryIntent.confidence);
+   console.log('🧠 ===============================================');
+   
     let offeringResults = [];
     
     try {
+     // Set database match threshold based on intent type
+     // For specific items: Use higher threshold (0.5) to get only relevant offerings from database
+     // For broad categories: Use lower threshold (0.1) to allow exploratory search
+     const databaseMatchThreshold = queryIntent.intent_type === 'specific_item' ? 0.5 : 0.1;
+     
+     console.log(`🎯 Database match threshold: ${databaseMatchThreshold} (intent: ${queryIntent.intent_type})`);
+     
       const { data: offeringSearchResults, error: offeringError } = await supabase.rpc(
         'search_offerings_by_vibe',
         {
           query_embedding: queryEmbedding,
-          match_threshold: queryIntent.intent_type === 'specific_item' ? 0.3 : 0.1, // Higher threshold for specific items
+         match_threshold: databaseMatchThreshold,
           match_count: 50, // Get many candidates for filtering
           user_latitude: latitude,
           user_longitude: longitude,
-          max_distance_miles: 10.0
+         max_distance_miles: 15.0
         }
       );
 
