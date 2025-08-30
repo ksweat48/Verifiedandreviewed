@@ -99,10 +99,20 @@ export const handler = async (event, context) => {
     // Perform broad search to get all offerings that match ANY of the keywords
     console.log('🔍 Performing broad keyword search on offerings...');
     
-    // Build OR conditions for any keyword match
-    const keywordConditions = mainKeywords.map(keyword => 
-      `title.ilike.%${keyword}%,description.ilike.%${keyword}%,businesses.name.ilike.%${keyword}%,businesses.description.ilike.%${keyword}%,businesses.short_description.ilike.%${keyword}%`
-    ).join(',');
+    // Build OR conditions for any keyword match - create individual conditions
+    const allConditions = [];
+    
+    mainKeywords.forEach(keyword => {
+      allConditions.push(`title.ilike.%${keyword}%`);
+      allConditions.push(`description.ilike.%${keyword}%`);
+      allConditions.push(`businesses.name.ilike.%${keyword}%`);
+      allConditions.push(`businesses.description.ilike.%${keyword}%`);
+      allConditions.push(`businesses.short_description.ilike.%${keyword}%`);
+    });
+    
+    const keywordConditions = allConditions.join(',');
+    
+    console.log('🔍 Built keyword conditions:', keywordConditions);
 
     const { data: searchResults, error: searchError } = await supabase
       .from('offerings')
