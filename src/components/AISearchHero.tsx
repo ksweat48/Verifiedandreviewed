@@ -352,24 +352,17 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleTakeMeThere = (business: any) => {
-    // Different behavior for AI vs Platform businesses
-    if (business.isAIGenerated && business.placeId) {
-      // For AI businesses: Open Google Business Profile
-      const googleProfileUrl = `https://www.google.com/maps/place/?q=place_id:${business.placeId}`;
-      window.open(googleProfileUrl, '_blank');
+    // All businesses go directly to Google Maps for directions
+    let mapsUrl;
+    if (business.latitude && business.longitude) {
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+    } else if (business.address) {
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
     } else {
-      // For Platform businesses: Navigate to location
-      let mapsUrl;
-      if (business.latitude && business.longitude) {
-        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
-      } else if (business.address) {
-        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
-      } else {
-        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name)}`;
-      }
-      
-      window.open(mapsUrl, '_blank');
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name)}`;
     }
+    
+    window.open(mapsUrl, '_blank');
   };
 
   const handleVoiceSearch = async () => {
