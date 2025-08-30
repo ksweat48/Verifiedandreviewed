@@ -148,6 +148,20 @@ const OfferingCard: React.FC<{
     setBusinessProfileOpen(true);
   };
 
+  const handleTakeMeThere = (business: BusinessCard) => {
+    // All businesses go directly to Google Maps for directions
+    let mapsUrl;
+    if (business.latitude && business.longitude) {
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+    } else if (business.address) {
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+    } else {
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name)}`;
+    }
+    
+    window.open(mapsUrl, '_blank');
+  };
+
   return (
     <>
       <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200" onClick={(e) => e.stopPropagation()}>
