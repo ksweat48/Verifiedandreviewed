@@ -112,7 +112,10 @@ export const handler = async (event, context) => {
     
     const keywordConditions = allConditions.join(',');
     
-    console.log('🔍 Built keyword conditions:', keywordConditions);
+    // Defensive cleanup: remove any leading/trailing parentheses that might cause parsing issues
+    const cleanedKeywordConditions = keywordConditions.replace(/^\(+|\)+$/g, '');
+    
+    console.log('🔍 Built keyword conditions:', cleanedKeywordConditions);
 
     const { data: searchResults, error: searchError } = await supabase
       .from('offerings')
@@ -155,7 +158,7 @@ export const handler = async (event, context) => {
       `)
       .eq('status', 'active')
       .eq('businesses.is_visible_on_platform', true)
-      .or(keywordConditions)
+      .or(cleanedKeywordConditions)
       .limit(100) // Get more candidates for scoring and filtering
       .order('created_at', { ascending: false });
 
