@@ -309,7 +309,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
             return (
               <div key={business.id} className="bg-white rounded-xl p-6 border border-neutral-200 hover:shadow-md transition-all duration-200">
                 {/* Business Header */}
-                <div className="flex items-center gap-4 mb-4">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
                   <div className="w-20 h-20 flex-shrink-0">
                     <img
                       src={business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'}
@@ -318,7 +318,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     />
                   </div>
                   
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3 className="font-poppins text-xl font-semibold text-neutral-900 mb-1">
                       {business.name}
                     </h3>
@@ -337,7 +337,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-neutral-600">
+                    <div className="flex items-center gap-2 text-sm text-neutral-600 flex-wrap">
                       <div className="flex items-center">
                         <Tag className="h-4 w-4 mr-1" />
                         <span className="font-lora">{business.category}</span>
