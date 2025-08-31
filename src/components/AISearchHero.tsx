@@ -238,6 +238,41 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         console.log(`✅ Keyword search completed: ${searchResponse.results.length} results`);
         console.log('🔍 Main keywords used:', searchResponse.keywords);
         
+        // Also perform AI business search to include AI-generated businesses
+        console.log('🤖 Performing AI business search...');
+        let aiBusinesses = [];
+        try {
+          const aiResponse = await fetch('/.netlify/functions/ai-search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              query: searchTerm,
+              latitude: latitude,
+              longitude: longitude,
+              matchCount: 5 // Get fewer AI results to balance with platform results
+            })
+          });
+          
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            if (aiData.success && aiData.businesses) {
+              aiBusinesses = aiData.businesses.map(business => ({
+                ...business,
+                isAIGenerated: true,
+                isPlatformBusiness: false,
+                source: 'ai'
+              }));
+              console.log(`✅ AI search completed: ${aiBusinesses.length} AI businesses found`);
+            }
+          } else {
+            console.warn('⚠️ AI search service not available');
+          }
+        } catch (aiError) {
+          console.warn('⚠️ AI search failed:', aiError);
+        }
+        
         // Fetch reviews for all platform businesses in the results
         const platformBusinessIds = searchResponse.results
           .filter(business => business.isPlatformBusiness)
@@ -294,7 +329,12 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           };
         });
         
-        setSearchResults(enrichedResults);
+        // Combine platform offerings and AI businesses
+        const combinedResults = [...enrichedPlatformResults, ...aiBusinesses];
+        
+        console.log(`🎯 Combined search results: ${enrichedPlatformResults.length} platform offerings + ${aiBusinesses.length} AI businesses = ${combinedResults.length} total`);
+        
+        setSearchResults(combinedResults);
       } else {
         console.error('❌ Keyword search failed:', searchResponse.error);
         setSearchResults([]);
