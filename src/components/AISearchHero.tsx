@@ -330,9 +330,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         });
         
         // Combine platform offerings and AI businesses
-        const combinedResults = [...enrichedPlatformResults, ...aiBusinesses];
+        const combinedResults = [...enrichedResults, ...aiBusinesses];
         
-        console.log(`🎯 Combined search results: ${enrichedPlatformResults.length} platform offerings + ${aiBusinesses.length} AI businesses = ${combinedResults.length} total`);
+        console.log(`🎯 Combined search results: ${enrichedResults.length} platform offerings + ${aiBusinesses.length} AI businesses = ${combinedResults.length} total`);
         
         setSearchResults(combinedResults);
       } else {
