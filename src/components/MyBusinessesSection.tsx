@@ -461,14 +461,14 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     <div className="bg-neutral-50 rounded-lg p-6 text-center">
                       <Package className="h-8 w-8 text-neutral-300 mx-auto mb-2" />
                       <h5 className="font-poppins font-semibold text-neutral-700 mb-1">
-                      <span className="hidden md:inline font-poppins text-sm text-neutral-600">
+                        No Offerings Yet
                       </h5>
                       <p className="font-lora text-sm text-neutral-600 mb-3">
-                  {totalPages > 1 && (
+                        Add offerings to showcase your products and services.
                       </p>
                       <button
                         onClick={() => navigate(`/manage-offerings?businessId=${business.id}`)}
-                        className="hidden md:flex p-1 rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
                       >
                         Add Offerings
                       </button>
@@ -509,86 +509,86 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                                 }`}>
                                   {isBusinessOpen(business) ? 'OPEN' : 'CLOSED'}
                                 </div>
+                              </div>
                             </div>
-                          </div>
-                          
-                          {/* Offering Details */}
-                          <div className="space-y-2">
-                            <h6 className="font-poppins font-bold text-black text-sm line-clamp-1">
-                              {offering.title}
-                            </h6>
                             
-                            <p className="font-lora text-xs text-black font-bold line-clamp-1">
-                              at {business.name}
-                            </p>
-                            
-                            {offering.description && (
-                              <p className="font-lora text-xs text-neutral-600 line-clamp-2">
-                                {offering.description}
+                            {/* Offering Details */}
+                            <div className="space-y-2">
+                              <h6 className="font-poppins font-bold text-black text-sm line-clamp-1">
+                                {offering.title}
+                              </h6>
+                              
+                              <p className="font-lora text-xs text-black font-bold line-clamp-1">
+                                at {business.name}
                               </p>
-                            )}
-                            
-                            <div className="flex items-center justify-between">
-                              <span className="font-poppins font-bold text-primary-600 text-sm">
-                                {formatPrice(offering.price_cents, offering.currency)}
-                              </span>
-                            </div>
-                            
-                            {/* Action Buttons - Phone, Reviews, Directions */}
-                            <div className="flex items-center justify-between gap-2 mt-2">
-                              {business.phone_number && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    window.open(`tel:${business.phone_number}`, '_self');
-                                  }}
-                                  className="p-2 bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-700 rounded-lg transition-all duration-200 flex items-center justify-center"
-                                  title="Call business"
-                                >
-                                  <Phone className="h-4 w-4" />
-                                </button>
+                              
+                              {offering.description && (
+                                <p className="font-lora text-xs text-neutral-600 line-clamp-2">
+                                  {offering.description}
+                                </p>
                               )}
                               
-                              {/* Review Icon with Notification Badge */}
-                              <div className="relative">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenOfferingReviews(offering, business.name);
-                                  }}
-                                  className="p-2 bg-purple-100 hover:bg-purple-200 text-purple-600 hover:text-purple-700 rounded-lg transition-all duration-200 flex items-center justify-center"
-                                  title="View reviews"
-                                >
-                                  <MessageSquare className="h-4 w-4" />
-                                </button>
-                                {/* Review Count Notification Badge */}
-                                {offeringReviewCounts[offering.id] > 0 && (
-                                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
-                                    {offeringReviewCounts[offering.id]}
-                                  </span>
-                                )}
+                              <div className="flex items-center justify-between">
+                                <span className="font-poppins font-bold text-primary-600 text-sm">
+                                  {formatPrice(offering.price_cents, offering.currency)}
+                                </span>
                               </div>
                               
-                              {business.address && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    let mapsUrl;
-                                    if (business.latitude && business.longitude) {
-                                      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
-                                    } else {
-                                      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
-                                    }
-                                    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
-                                  }}
-                                  className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center"
-                                  title="Get directions"
-                                >
-                                  <MapPin className="h-4 w-4" />
-                                </button>
-                              )}
-                            </div>
-                              
+                              {/* Action Buttons - Phone, Reviews, Directions */}
+                              <div className="flex items-center justify-between gap-2 mt-2">
+                                {business.phone_number && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(`tel:${business.phone_number}`, '_self');
+                                    }}
+                                    className="p-2 bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                                    title="Call business"
+                                  >
+                                    <Phone className="h-4 w-4" />
+                                  </button>
+                                )}
+                                
+                                {/* Review Icon with Notification Badge */}
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenOfferingReviews(offering, business.name);
+                                    }}
+                                    className="p-2 bg-purple-100 hover:bg-purple-200 text-purple-600 hover:text-purple-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                                    title="View reviews"
+                                  >
+                                    <MessageSquare className="h-4 w-4" />
+                                  </button>
+                                  {/* Review Count Notification Badge */}
+                                  {offeringReviewCounts[offering.id] > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                                      {offeringReviewCounts[offering.id]}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {business.address && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      let mapsUrl;
+                                      if (business.latitude && business.longitude) {
+                                        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`;
+                                      } else {
+                                        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`;
+                                      }
+                                      window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+                                    }}
+                                    className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-700 rounded-lg transition-all duration-200 flex items-center justify-center"
+                                    title="Get directions"
+                                  >
+                                    <MapPin className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                                
                               {offering.tags && offering.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                   {offering.tags.slice(0, 2).map((tag, index) => (
@@ -619,6 +619,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                         );
                       })}
                     </div>
+                  )}
                     
                     {/* Mobile Horizontal Scroll Arrows */}
                     <div className="flex justify-center items-center gap-4 mt-4 md:hidden">
@@ -644,7 +645,6 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     </div>
-                  )}
                 </div>
               </div>
             );
