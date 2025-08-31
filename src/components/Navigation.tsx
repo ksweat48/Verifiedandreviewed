@@ -102,7 +102,7 @@ const Navigation: React.FC<NavigationProps> = ({ isAppModeActive }) => {
                 alt="Verified & Reviewed" 
                 className="h-10 w-10 mr-3"
               />
-              <h1 className="font-cinzel text-lg font-semibold text-white">
+              <h1 className="font-cinzel text-sm sm:text-lg font-semibold text-white">
                 VERIFIED & REVIEWED
               </h1>
             </div>
