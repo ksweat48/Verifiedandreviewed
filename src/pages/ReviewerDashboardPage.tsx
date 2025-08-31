@@ -209,7 +209,7 @@ const ReviewerDashboardPage = () => {
             {/* Recent Activity */}
             {/* Review Level Progress */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col items-start mb-4">
                 <h3 className="font-poppins text-lg font-semibold text-neutral-900 flex items-center">
                   <Icons.Award className="h-5 w-5 mr-2 text-primary-500" />
                   Level Progress
