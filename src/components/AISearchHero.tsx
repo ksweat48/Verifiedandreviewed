@@ -436,36 +436,46 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
   };
 
   const handleRecommendBusiness = async (business: any) => {
+  const handleRecommendBusiness = async (business: any, offeringId?: string) => {
     if (!currentUser) {
       setShowSignupPrompt(true);
       return;
     }
 
     try {
-      // Save AI recommendation to favorites
-      const { error } = await supabase
-        .from('business_recommendations')
-        .insert({
-          name: business.name,
-          address: business.address || business.location || 'Address not available',
-          location: business.location || business.address || 'Location not available',
-          category: business.category || 'AI Generated',
-          description: `AI-generated business. ${business.description || business.short_description || ''}`,
-          image_url: business.image || '/verified and reviewed logo-coral copy copy.png',
-          recommended_by: currentUser.id,
-          status: 'pending',
-          created_at: new Date().toISOString()
-        });
+      let success = false;
       
-      const success = !error;
+      if (offeringId && business.isPlatformBusiness) {
+        // Save platform offering to favorites
+        success = await BusinessService.saveFavoritedOffering(offeringId, currentUser.id);
+      } else if (business.isAIGenerated) {
+        // Save AI business to favorites
+        const { error } = await supabase
+          .from('business_recommendations')
+          .insert({
+            name: business.name,
+            address: business.address || business.location || 'Address not available',
+            location: business.location || business.address || 'Location not available',
+            category: business.category || 'AI Generated',
+            description: `AI-generated business. ${business.description || business.short_description || ''}`,
+            image_url: business.image || '/verified and reviewed logo-coral copy copy.png',
+            recommended_by: currentUser.id,
+            status: 'pending',
+            created_at: new Date().toISOString()
+          });
+        
+        success = !error;
+      }
+      
       if (success) {
-        alert(`${business.name} has been saved to your favorites!`);
+        const itemName = business.title || business.name;
+        alert(`${itemName} has been saved to your favorites!`);
       } else {
-        alert('Failed to save business. Please try again.');
+        alert('Failed to save to favorites. Please try again.');
       }
     } catch (error) {
-      console.error('Error saving business:', error);
-      alert('Failed to save business. Please try again.');
+      console.error('Error saving to favorites:', error);
+      alert('Failed to save to favorites. Please try again.');
     }
   };
 

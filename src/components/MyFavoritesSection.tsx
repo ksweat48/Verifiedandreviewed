@@ -33,25 +33,49 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
   };
 
   const handleViewBusinessProfile = (business: any) => {
-    // Transform the business recommendation data to match Business type
-    const businessForModal = {
-      id: business.id,
-      name: business.name,
-      address: business.address || business.location,
-      location: business.location || business.address,
-      category: business.category || 'General',
-      tags: [],
-      description: business.description || '',
-      image_url: business.image_url || '/verified and reviewed logo-coral copy copy.png',
-      gallery_urls: [],
-      hours: 'Hours not available',
-      is_verified: false,
-      thumbs_up: 0,
-      thumbs_down: 0,
-      sentiment_score: 0,
-      created_at: business.created_at,
-      updated_at: business.created_at
-    };
+    let businessForModal;
+    
+    if (business.isPlatformOffering && business.businessId) {
+      // For platform offerings, use the linked business data
+      businessForModal = {
+        id: business.businessId,
+        name: business.businessName || business.name,
+        address: business.address,
+        location: business.location,
+        category: business.category || 'Platform Offering',
+        tags: [],
+        description: business.description || '',
+        image_url: business.image_url,
+        gallery_urls: [],
+        hours: 'Hours not available',
+        is_verified: true, // Platform offerings are verified
+        thumbs_up: 0,
+        thumbs_down: 0,
+        sentiment_score: 0,
+        created_at: business.created_at,
+        updated_at: business.created_at
+      };
+    } else {
+      // For AI businesses, use the recommendation data
+      businessForModal = {
+        id: business.id,
+        name: business.name,
+        address: business.address || business.location,
+        location: business.location || business.address,
+        category: business.category || 'General',
+        tags: [],
+        description: business.description || '',
+        image_url: business.isAIGenerated ? '/verified and reviewed logo-coral copy copy.png' : (business.image_url || '/verified and reviewed logo-coral copy copy.png'),
+        gallery_urls: [],
+        hours: 'Hours not available',
+        is_verified: false,
+        thumbs_up: 0,
+        thumbs_down: 0,
+        sentiment_score: 0,
+        created_at: business.created_at,
+        updated_at: business.created_at
+      };
+    }
     
     setSelectedBusinessForProfile(businessForModal);
     setIsBusinessProfileModalOpen(true);

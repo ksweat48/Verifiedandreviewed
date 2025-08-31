@@ -287,6 +287,7 @@ const ExploreArea = () => {
 
   // Handle favoriting platform businesses
   const handleFavoritePlatformBusiness = async (business: Business) => {
+  const handleFavoritePlatformBusiness = async (business: Business, offeringId?: string) => {
     if (!currentUser) {
       // Dispatch custom event to open auth modal
       const event = new CustomEvent('open-auth-modal', {
@@ -297,27 +298,36 @@ const ExploreArea = () => {
     }
 
     try {
-      // Transform platform business to recommendation format
-      const businessData = {
-        name: business.name,
-        address: business.address || business.location || 'Address not available',
-        location: business.location || business.address || 'Location not available',
-        category: business.category || 'Platform Business',
-        description: business.description || business.short_description || `Platform business: ${business.name}`,
-        image: business.image,
-        shortDescription: business.short_description || business.description,
-        rating: 5, // Default high rating for platform businesses
-        hours: business.hours,
-        isOpen: true,
-        reviews: business.reviews || [],
-        isPlatformBusiness: true,
-        tags: business.tags || [],
-        similarity: 0.9 // High similarity for platform businesses
-      };
+      let success = false;
+      
+      if (offeringId) {
+        // Save platform offering to favorites
+        success = await BusinessService.saveFavoritedOffering(offeringId, currentUser.id);
+      } else {
+        // Fallback to old method for businesses without offering ID
+        const businessData = {
+          name: business.name,
+          address: business.address || business.location || 'Address not available',
+          location: business.location || business.address || 'Location not available',
+          category: business.category || 'Platform Business',
+          description: business.description || business.short_description || `Platform business: ${business.name}`,
+          image: business.image,
+          shortDescription: business.short_description || business.description,
+          rating: 5,
+          hours: business.hours,
+          isOpen: true,
+          reviews: business.reviews || [],
+          isPlatformBusiness: true,
+          tags: business.tags || [],
+          similarity: 0.9
+        };
 
-      const success = await BusinessService.saveAIRecommendation(businessData, currentUser.id);
+        success = await BusinessService.saveAIRecommendation(businessData, currentUser.id);
+      }
+      
       if (success) {
-        alert(`${business.name} has been added to your favorites!`);
+        const itemName = business.offeringTitle || business.name;
+        alert(`${itemName} has been added to your favorites!`);
       } else {
         alert('Failed to add to favorites. Please try again.');
       }
@@ -407,7 +417,7 @@ const ExploreArea = () => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleFavoritePlatformBusiness(offering);
+                            handleFavoritePlatformBusiness(offering, offering.offeringId);
                           }}
                           className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
                           title="Add to favorites"

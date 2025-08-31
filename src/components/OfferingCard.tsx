@@ -61,7 +61,7 @@ interface BusinessCard {
 
 const OfferingCard: React.FC<{
   business: BusinessCard;
-  onRecommend: (business: BusinessCard) => void;
+  onRecommend: (business: BusinessCard, offeringId?: string) => void;
   onTakeMeThere: (business: BusinessCard) => void;
   onOpenOfferingReviews?: (business: BusinessCard) => void;
   offeringReviewCounts?: Record<string, number>;
@@ -210,7 +210,12 @@ const OfferingCard: React.FC<{
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    onRecommend(business);
+                    // Pass offeringId for platform businesses, just business for AI
+                    if (business.isPlatformBusiness && business.offeringId) {
+                      onRecommend(business, business.offeringId);
+                    } else {
+                      onRecommend(business);
+                    }
                   }}
                   className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
                   title="Add to favorites"
@@ -244,7 +249,12 @@ const OfferingCard: React.FC<{
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onRecommend(business);
+                  // Pass offeringId for platform businesses, just business for AI
+                  if (business.isPlatformBusiness && business.offeringId) {
+                    onRecommend(business, business.offeringId);
+                  } else {
+                    onRecommend(business);
+                  }
                 }}
                 className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
                 title="Add to favorites"

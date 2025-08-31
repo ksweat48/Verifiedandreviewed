@@ -453,6 +453,66 @@ export class BusinessService {
     }
   }
 
+  // Save favorited platform offering
+  static async saveFavoritedOffering(offeringId: string, userId: string): Promise<boolean> {
+    try {
+      // Fetch the offering details
+      const { OfferingService } = await import('./offeringService');
+      const offering = await OfferingService.getOfferingById(offeringId);
+      if (!offering) {
+        throw new Error('Offering not found');
+      }
+
+      // Fetch the business details
+      const business = await this.getBusinessById(offering.business_id);
+      if (!business) {
+        throw new Error('Business not found');
+      }
+
+      // Get primary image from offering
+      const primaryImage = offering.images?.find(img => img.is_primary && img.approved);
+      const fallbackImage = offering.images?.find(img => img.approved);
+      const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
+
+      // Check if already favorited
+      const { data: existingFavorite } = await supabase
+        .from('business_recommendations')
+        .select('id')
+        .eq('recommended_by', userId)
+        .eq('favorited_offering_id', offeringId)
+        .single();
+
+      if (existingFavorite) {
+        console.log('Offering already favorited by user');
+        return true;
+      }
+
+      // Insert favorited offering
+      const { error } = await supabase
+        .from('business_recommendations')
+        .insert({
+          name: offering.title,
+          address: business.address || business.location,
+          location: business.location || business.address,
+          category: 'Favorited Offering',
+          description: offering.description || business.short_description || business.description,
+          image_url: imageUrl,
+          recommended_by: userId,
+          status: 'approved',
+          favorited_offering_id: offeringId,
+          favorited_business_id: business.id,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      return true;
+    } catch (error) {
+      console.error('Error saving favorited offering:', error);
+      return false;
+    }
+  }
+
   // Recommend a business for verification
   static async recommendBusiness(businessData: {
     name: string;
@@ -487,28 +547,85 @@ export class BusinessService {
     try {
       const { data, error } = await supabase
         .from('business_recommendations')
-        .select('*')
+        .select(`
+          *,
+          offerings!left (
+            id,
+            title,
+            description,
+            price_cents,
+            currency,
+            service_type,
+            offering_images!left (
+              url,
+              is_primary,
+              approved
+            )
+          ),
+          businesses!left (
+            id,
+            name,
+            address,
+            location,
+            category,
+            description,
+            short_description,
+            image_url,
+            phone_number,
+            website_url,
+            hours,
+            is_verified
+          )
+        `)
         .eq('recommended_by', userId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      // Replace old mock images with Verified & Reviewed logo for AI-generated businesses only
       const updatedData = (data || []).map(business => {
-        // Check if this is an AI-generated business
-        const isAIGenerated = business.category === 'AI Generated' || 
-                             (business.description && business.description.includes('AI-generated business'));
-        
-        // Only replace image for AI-generated businesses with the old mock image
-        if (isAIGenerated && 
-            business.image_url === 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400') {
+        // Check if this is a favorited platform offering
+        if (business.favorited_offering_id && business.offerings && business.businesses) {
+          // This is a favorited platform offering
+          const offering = business.offerings;
+          const businessData = business.businesses;
+          
+          // Get primary image from offering
+          const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
+          const fallbackImage = offering.offering_images?.find(img => img.approved);
+          const imageUrl = primaryImage?.url || fallbackImage?.url || businessData.image_url || '/verified and reviewed logo-coral copy copy.png';
+          
+          return {
+            id: business.id,
+            name: offering.title,
+            address: businessData.address || businessData.location,
+            location: businessData.location || businessData.address,
+            category: 'Platform Offering',
+            description: offering.description || businessData.short_description,
+            image_url: imageUrl,
+            created_at: business.created_at,
+            isPlatformOffering: true,
+            isAIGenerated: false,
+            offeringId: offering.id,
+            businessId: businessData.id,
+            businessName: businessData.name,
+            price_cents: offering.price_cents,
+            currency: offering.currency,
+            service_type: offering.service_type
+          };
+        } else {
+          // This is an AI-generated business - remove thumbnail
+          const isAIGenerated = business.category === 'AI Generated' || 
+                               (business.description && business.description.includes('AI-generated business'));
+          
           return {
             ...business,
-            image_url: '/verified and reviewed logo-coral copy copy.png'
+            // Remove image for AI businesses in favorites
+            image_url: isAIGenerated ? '/verified and reviewed logo-coral copy copy.png' : business.image_url,
+            isAIGenerated: isAIGenerated,
+            isPlatformOffering: false
           };
         }
         
-        return business;
       });
       
       return updatedData;
