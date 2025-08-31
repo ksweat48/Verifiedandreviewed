@@ -267,9 +267,8 @@ export const handler = async (event, context) => {
     console.log('✅ Found', uniqueResults.length, 'unique offerings after deduplication');
     const searchResults = uniqueResults;
 
-
     // Score and categorize results based on keyword matches
-    const scoredResults = enrichedResults.map(result => {
+    const scoredResults = uniqueResults.map(result => {
       const business = result.businesses;
       
       // Combine all searchable text
