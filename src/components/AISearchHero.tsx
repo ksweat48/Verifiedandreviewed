@@ -468,13 +468,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       
       if (success) {
         const itemName = business.title || business.name;
-        alert(`${itemName} has been saved to your favorites!`);
+        showSuccess(`${itemName} has been saved to your favorites!`);
       } else {
-        alert('Failed to save to favorites. Please try again.');
+        showError('Failed to save to favorites. Please try again.');
       }
     } catch (error) {
       console.error('Error saving to favorites:', error);
-      alert('Failed to save to favorites. Please try again.');
+      showError('Failed to save to favorites. Please try again.');
     }
   };
 

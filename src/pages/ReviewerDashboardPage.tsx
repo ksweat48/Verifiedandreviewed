@@ -260,9 +260,17 @@ const ReviewerDashboardPage = () => {
           <MyFavoritesSection 
             businesses={favoritedAIBusinesses} 
             onRemoveFavorite={async (recommendationId) => {
+              console.log('🗑️ Dashboard: Removing favorite with ID:', recommendationId);
+              
               const success = await BusinessService.removeFavorite(recommendationId);
+              
               if (success) {
+                console.log('✅ Dashboard: Favorite removed successfully, updating local state');
                 setFavoritedAIBusinesses(prev => prev.filter(b => b.id !== recommendationId));
+                return; // Success - no error thrown
+              } else {
+                console.error('❌ Dashboard: BusinessService.removeFavorite returned false');
+                throw new Error('Database deletion failed');
               }
             }}
           />

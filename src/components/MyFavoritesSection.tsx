@@ -24,10 +24,16 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
 
     setRemovingId(recommendationId);
     try {
+      console.log('🗑️ Removing favorite:', { recommendationId, businessName });
+      
+      // Call the parent's onRemoveFavorite function which calls BusinessService.removeFavorite
       await onRemoveFavorite(recommendationId);
+      
+      console.log('✅ Favorite removed successfully');
+      showSuccess(`"${businessName}" removed from your favorites.`);
     } catch (error) {
       console.error('Error removing favorite:', error);
-      showError('Failed to remove favorite. Please try again.');
+      showError(`Failed to remove "${businessName}" from favorites. Please check your connection and try again.`);
     } finally {
       setRemovingId(null);
     }

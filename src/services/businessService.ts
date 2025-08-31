@@ -638,16 +638,28 @@ export class BusinessService {
   // Remove a favorite AI business
   static async removeFavorite(recommendationId: string): Promise<boolean> {
     try {
+      console.log('🗑️ Attempting to delete favorite with ID:', recommendationId);
+      
       const { error } = await supabase
         .from('business_recommendations')
         .delete()
         .eq('id', recommendationId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase delete error:', error);
+        throw error;
+      }
       
+      console.log('✅ Successfully deleted favorite from database');
       return true;
     } catch (error) {
-      console.error('Error removing favorite:', error);
+      console.error('❌ Error removing favorite:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint
+      });
       return false;
     }
   }
