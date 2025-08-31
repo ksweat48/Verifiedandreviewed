@@ -22,6 +22,54 @@ interface AISearchHeroProps {
   setIsAppModeActive: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+// Combined sorting algorithm for search results
+const sortSearchResults = (results: any[]): any[] => {
+  return results.sort((a, b) => {
+    // 1. Open businesses first (highest priority)
+    if (a.isOpen !== b.isOpen) {
+      return b.isOpen ? 1 : -1; // Open businesses come first
+    }
+    
+    // 2. Platform offerings over AI businesses (when open/closed status is same)
+    if (a.isPlatformBusiness !== b.isPlatformBusiness) {
+      return b.isPlatformBusiness ? 1 : -1; // Platform offerings come first
+    }
+    
+    // 3. Relevance score (higher is better)
+    const aRelevance = a.relevanceScore || 0;
+    const bRelevance = b.relevanceScore || 0;
+    if (Math.abs(aRelevance - bRelevance) > 0.1) { // Only sort by relevance if difference is significant
+      return bRelevance - aRelevance;
+    }
+    
+    // 4. Distance (closer is better)
+    const aDistance = a.distance || 999999;
+    const bDistance = b.distance || 999999;
+    return aDistance - bDistance;
+  });
+};
+
+// Normalize relevance scores to 0-1 scale for comparison
+const normalizeRelevanceScore = (business: any): number => {
+  if (business.isPlatformBusiness) {
+    // For platform offerings, use keywordMatchPercentage (already 0-1)
+    return business.keywordMatchPercentage || 0;
+  } else {
+    // For AI businesses, use similarity (already 0-1)
+    return business.similarity || 0;
+  }
+};
+
+// Ensure business has proper isOpen status
+const ensureOpenStatus = (business: any): any => {
+  // Import isBusinessOpen utility
+  const { isBusinessOpen } = require('../utils/displayUtils');
+  
+  return {
+    ...business,
+    isOpen: business.isOpen !== undefined ? business.isOpen : isBusinessOpen(business)
+  };
+};
 const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppModeActive }) => {
   const navigate = useNavigate();
   const { trackEvent } = useAnalytics();
@@ -332,9 +380,44 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         // Combine platform offerings and AI businesses
         const combinedResults = [...enrichedResults, ...aiBusinesses];
         
-        console.log(`🎯 Combined search results: ${enrichedResults.length} platform offerings + ${aiBusinesses.length} AI businesses = ${combinedResults.length} total`);
+        console.log(`🎯 Raw combined results: ${enrichedResults.length} platform offerings + ${aiBusinesses.length} AI businesses = ${combinedResults.length} total`);
         
-        setSearchResults(combinedResults);
+        // Prepare results for sorting
+        const resultsForSorting = combinedResults.map(business => {
+          // Ensure proper open/closed status
+          const businessWithOpenStatus = ensureOpenStatus(business);
+          
+          // Add normalized relevance score
+          const relevanceScore = normalizeRelevanceScore(businessWithOpenStatus);
+          
+          return {
+            ...businessWithOpenStatus,
+            relevanceScore
+          };
+        });
+        
+        // Filter to 15-mile radius if user location is available
+        const filteredResults = latitude && longitude 
+          ? resultsForSorting.filter(business => {
+              const distance = business.distance || 999999;
+              return distance <= 15; // 15-mile radius
+            })
+          : resultsForSorting;
+        
+        console.log(`📏 Results within 15-mile radius: ${filteredResults.length} businesses`);
+        
+        // Apply the combined sorting algorithm
+        const sortedResults = sortSearchResults(filteredResults);
+        
+        // Limit to top 10 results
+        const finalResults = sortedResults.slice(0, 10);
+        
+        console.log(`🎯 Final sorted results (top 10):`);
+        finalResults.forEach((business, index) => {
+          console.log(`  ${index + 1}. ${business.isOpen ? '🟢' : '🔴'} ${business.isPlatformBusiness ? '🏢' : '🤖'} "${business.title || business.name}" - Relevance: ${(business.relevanceScore * 100).toFixed(1)}% - Distance: ${business.distance?.toFixed(1) || '?'}mi`);
+        });
+        
+        setSearchResults(finalResults);
       } else {
         console.error('❌ Keyword search failed:', searchResponse.error);
         setSearchResults([]);

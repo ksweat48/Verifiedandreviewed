@@ -141,4 +141,3 @@ export const isBusinessOpen = (business: any): boolean => {
   
   // Default to closed if we can't parse the hours
   return false;
-};
