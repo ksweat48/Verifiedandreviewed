@@ -309,7 +309,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
             return (
               <div key={business.id} className="bg-white rounded-xl p-6 border border-neutral-200 hover:shadow-md transition-all duration-200">
                 {/* Business Header */}
-                <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-start gap-4 mb-4">
                   <div className="w-20 h-20 flex-shrink-0">
                     <img
                       src={business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400'}
@@ -318,12 +318,12 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     />
                   </div>
                   
-                  <div className="flex-1">
-                    <h3 className="font-poppins text-xl font-semibold text-neutral-900 mb-1">
+                  <div className="flex-1 min-w-0">
+                    {/* Top Row: Business Name and Status */}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+                      <h3 className="font-poppins text-xl font-semibold text-neutral-900 leading-tight">
                       {business.name}
                     </h3>
-                    
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <span className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
                         business.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                       }`}>
@@ -337,7 +337,8 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-neutral-600">
+                    {/* Bottom Row: Category and Address */}
+                    <div className="flex items-center gap-x-2 gap-y-1 text-sm text-neutral-600 flex-wrap">
                       <div className="flex items-center">
                         <Tag className="h-4 w-4 mr-1" />
                         <span className="font-lora">{business.category}</span>
@@ -350,7 +351,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                   </div>
                   
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-2">
+                  <div className="ml-auto flex-shrink-0 flex items-center gap-2">
                     <button
                       onClick={() => handleViewBusiness(business)}
                       className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
