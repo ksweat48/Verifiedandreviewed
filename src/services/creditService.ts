@@ -14,6 +14,9 @@ export class CreditService {
   // Deduct credits for a search
   static async deductSearchCredits(userId: string, searchType: 'platform' | 'ai' | 'semantic'): Promise<boolean> {
     try {
+      // Check for monthly credit distribution before deducting credits
+      await this.checkAndDistributeMonthlyCredits(userId);
+      
       const creditsToDeduct = 2; // All searches cost 2 credits regardless of type
       
       // Call the secure credit deduction function
@@ -42,6 +45,51 @@ export class CreditService {
       
     } catch (error) {
       console.error('Error deducting credits:', error);
+      return false;
+    }
+  }
+  
+  // Check and distribute monthly credits if user qualifies
+  static async checkAndDistributeMonthlyCredits(userId: string): Promise<boolean> {
+    try {
+      console.log('💰 Checking monthly credit eligibility for user:', userId);
+      
+      const response = await fetch('/.netlify/functions/distribute-monthly-credits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId
+        })
+      });
+
+      if (!response.ok) {
+        console.warn('⚠️ Monthly credit distribution service unavailable');
+        return false;
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.creditsAdded > 0) {
+        console.log('✅ Monthly credits distributed:', result.creditsAdded);
+        
+        // Trigger auth state change to refresh user data in UI
+        window.dispatchEvent(new Event('auth-state-changed'));
+        
+        // Show user notification
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            alert(`🎉 You received 100 free monthly credits! Your balance is now ${result.newCredits} credits.`);
+          }, 500);
+        }
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.warn('⚠️ Monthly credit check failed:', error);
       return false;
     }
   }

@@ -245,13 +245,16 @@ const CreditsManager: React.FC<CreditsManagerProps> = ({
             
             <div className="space-y-2 mb-4">
               <p className="font-lora text-sm text-green-800">
-                Earn 2 credits for each complete review that includes:
+                Earn 2 credits for each qualifying review:
               </p>
               <ul className="font-lora text-sm text-green-700 space-y-1 ml-4">
                 <li>• A thumbs up or down rating</li>
                 <li>• Written review text</li>
                 <li>• At least 3 photos</li>
               </ul>
+              <p className="font-lora text-xs text-green-600 mt-2">
+                Plus: Get 100 auto-credits monthly when balance drops below 10!
+              </p>
             </div>
             
             <button

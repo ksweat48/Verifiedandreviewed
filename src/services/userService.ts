@@ -209,6 +209,16 @@ export class UserService {
         
         const user = await this.getCurrentUser();
         
+        // Check for monthly credit distribution after successful login
+        if (user) {
+          try {
+            const { CreditService } = await import('./creditService');
+            await CreditService.checkAndDistributeMonthlyCredits(user.id);
+          } catch (error) {
+            console.warn('⚠️ Monthly credit check failed during login:', error);
+          }
+        }
+        
         return {
           success: true,
           token: data.session.access_token,
