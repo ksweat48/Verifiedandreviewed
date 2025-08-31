@@ -257,10 +257,17 @@ const OfferingCard: React.FC<{
         
         {/* Offering Details */}
         <div className="space-y-2">
-          {/* Main Text: Offering name */}
-          <h6 className="font-poppins font-bold text-black text-sm line-clamp-1">
-            {business.title || business.name || 'Untitled Offering'}
-          </h6>
+          {/* Main Text: Offering name with price inline */}
+          <div className="flex items-baseline justify-between">
+            <h6 className="font-poppins font-bold text-black text-sm line-clamp-1 flex-1 mr-2">
+              {business.title || business.name || 'Untitled Offering'}
+            </h6>
+            {!business.isAIGenerated && business.price_cents && business.price_cents > 0 && (
+              <span className="font-poppins font-bold text-primary-600 text-sm flex-shrink-0">
+                ${(business.price_cents / 100).toFixed(2)}
+              </span>
+            )}
+          </div>
           
           {/* Sub Text: "at [Business Name]" */}
           <p className="font-lora text-xs text-black font-bold line-clamp-1">
@@ -275,15 +282,6 @@ const OfferingCard: React.FC<{
               </p>
             )
           ) : null}
-          
-          {/* Price */}
-          {!business.isAIGenerated && business.price_cents && business.price_cents > 0 && (
-            <div className="flex items-center justify-between">
-              <span className="font-poppins font-bold text-primary-600 text-sm">
-                ${(business.price_cents / 100).toFixed(2)}
-              </span>
-            </div>
-          )}
           
           {/* Bottom Actions - Phone and Map for both AI and Platform */}
           <div className="flex items-center gap-2 mt-2">
