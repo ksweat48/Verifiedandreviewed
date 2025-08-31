@@ -435,7 +435,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     window.history.back();
   };
 
-  const handleRecommendBusiness = async (business: any) => {
   const handleRecommendBusiness = async (business: any, offeringId?: string) => {
     if (!currentUser) {
       setShowSignupPrompt(true);
