@@ -420,9 +420,14 @@ const ExploreArea = () => {
                   
                   {/* Offering Details */}
                   <div className="space-y-2">
-                    <h6 className="font-poppins font-bold text-black text-sm line-clamp-1">
-                      {offering.offeringTitle}
-                    </h6>
+                    <div className="flex items-baseline justify-between">
+                      <h6 className="font-poppins font-bold text-black text-sm line-clamp-1 flex-1 mr-2">
+                        {offering.offeringTitle}
+                      </h6>
+                      <span className="font-poppins font-bold text-primary-600 text-sm flex-shrink-0">
+                        {formatPrice(offering.priceCents, offering.currency)}
+                      </span>
+                    </div>
                     
                     <p className="font-lora text-xs text-black font-bold line-clamp-1">
                       at {business.name}
@@ -433,12 +438,6 @@ const ExploreArea = () => {
                         {offering.offeringDescription}
                       </p>
                     )}
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="font-poppins font-bold text-primary-600 text-sm">
-                        {formatPrice(offering.priceCents, offering.currency)}
-                      </span>
-                    </div>
                     
                     {/* Action Buttons - Phone, Reviews, Directions */}
                     <div className="flex items-center justify-between gap-2 mt-2">
