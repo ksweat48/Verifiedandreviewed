@@ -34,6 +34,9 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   } | null>(null);
   const [offeringPages, setOfferingPages] = useState<Record<string, number>>({});
   const [offeringReviewCounts, setOfferingReviewCounts] = useState<Record<string, number>>({});
+  const [canScrollLeft, setCanScrollLeft] = useState<Record<string, boolean>>({});
+  const [canScrollRight, setCanScrollRight] = useState<Record<string, boolean>>({});
+  const offeringsScrollRefs = React.useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   const OFFERINGS_PER_PAGE = 5;
 
@@ -244,6 +247,32 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
     return Math.ceil(offerings.length / OFFERINGS_PER_PAGE);
   };
 
+  // Check scroll position for horizontal scroll arrows
+  const checkScrollPosition = (businessId: string) => {
+    const container = offeringsScrollRefs.current.get(businessId);
+    if (container) {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      setCanScrollLeft(prev => ({ ...prev, [businessId]: scrollLeft > 0 }));
+      setCanScrollRight(prev => ({ ...prev, [businessId]: scrollLeft < scrollWidth - clientWidth - 1 }));
+    }
+  };
+
+  // Scroll offerings horizontally
+  const scrollOfferings = (businessId: string, direction: 'left' | 'right') => {
+    const container = offeringsScrollRefs.current.get(businessId);
+    if (container) {
+      const scrollAmount = container.clientWidth * 0.85; // Scroll by 85% of visible width
+      const newScrollLeft = direction === 'left' 
+        ? container.scrollLeft - scrollAmount
+        : container.scrollLeft + scrollAmount;
+      
+      container.scrollTo({
+        left: newScrollLeft,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 text-center">
@@ -432,20 +461,30 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                     <div className="bg-neutral-50 rounded-lg p-6 text-center">
                       <Package className="h-8 w-8 text-neutral-300 mx-auto mb-2" />
                       <h5 className="font-poppins font-semibold text-neutral-700 mb-1">
-                        No Offerings Yet
+                      <span className="hidden md:inline font-poppins text-sm text-neutral-600">
                       </h5>
                       <p className="font-lora text-sm text-neutral-600 mb-3">
-                        Add offerings to help customers find your services
+                  {totalPages > 1 && (
                       </p>
                       <button
                         onClick={() => navigate(`/manage-offerings?businessId=${business.id}`)}
-                        className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 text-sm"
+                        className="hidden md:flex p-1 rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Add Offerings
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div 
+                      ref={(el) => {
+                        offeringsScrollRefs.current.set(business.id, el);
+                        // Check scroll position when ref is set
+                        if (el) {
+                          setTimeout(() => checkScrollPosition(business.id), 100);
+                        }
+                      }}
+                      onScroll={() => checkScrollPosition(business.id)}
+                      className="flex overflow-x-auto scrollbar-hide snap-x gap-3 pb-4 md:grid md:grid-cols-2 lg:grid-cols-5 md:pb-0"
+                    >
                       {paginatedOfferings.map((offering) => {
                         const serviceTypeBadge = getServiceTypeBadge(offering.service_type);
                         // Get the primary image from offering_images, fallback to business image
@@ -454,7 +493,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                         const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
                         
                         return (
-                          <div key={offering.id} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200">
+                          <div key={offering.id} className="flex-shrink-0 w-[85vw] sm:w-auto md:w-auto snap-start bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200">
                             {/* Offering Image */}
                             <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100">
                               <img
@@ -579,6 +618,31 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                           </div>
                         );
                       })}
+                    </div>
+                    
+                    {/* Mobile Horizontal Scroll Arrows */}
+                    <div className="flex justify-center items-center gap-4 mt-4 md:hidden">
+                      <button
+                        onClick={() => scrollOfferings(business.id, 'left')}
+                        disabled={!canScrollLeft[business.id]}
+                        className="p-2 rounded-full bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        title="Scroll left"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      
+                      <span className="font-lora text-xs text-neutral-500 px-2">
+                        Swipe to view more
+                      </span>
+                      
+                      <button
+                        onClick={() => scrollOfferings(business.id, 'right')}
+                        disabled={!canScrollRight[business.id]}
+                        className="p-2 rounded-full bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        title="Scroll right"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
                     </div>
                   )}
                 </div>
