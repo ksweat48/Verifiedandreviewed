@@ -4,6 +4,8 @@ import Navigation from './components/Navigation';
 import ScrollToTop from './components/ScrollToTop';
 import Footer from './components/Footer';
 import { useActivityTracking } from './hooks/useActivityTracking';
+import ToastNotification from './components/ToastNotification';
+import { useToast } from './hooks/useToast';
 
 // Lazy load pages to reduce initial bundle size
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -19,6 +21,7 @@ const ManageOfferingsPage = lazy(() => import('./pages/ManageOfferingsPage'));
 function App() {
   const [isAppModeActive, setIsAppModeActive] = useState(false);
   const location = useLocation();
+  const { toast, hideToast, showSuccess, showError, showWarning, showInfo } = useToast();
   
   // Enable automatic activity tracking
   useActivityTracking();
@@ -46,10 +49,40 @@ function App() {
     };
   }, [isAppModeActive]);
   
+  // Make toast available globally
+  useEffect(() => {
+    const handleShowToast = (event: CustomEvent) => {
+      const { message, type } = event.detail;
+      if (type === 'success') {
+        showSuccess(message);
+      } else if (type === 'error') {
+        showError(message);
+      } else if (type === 'warning') {
+        showWarning(message);
+      } else {
+        showInfo(message);
+      }
+    };
+    
+    document.addEventListener('show-toast', handleShowToast as EventListener);
+    
+    return () => {
+      document.removeEventListener('show-toast', handleShowToast as EventListener);
+    };
+  }, []);
+  
   return (
     <div className="min-h-screen bg-neutral-50">
       <ScrollToTop />
       {!isAppModeActive && <Navigation isAppModeActive={isAppModeActive} />}
+      
+      {/* Toast Notification */}
+      <ToastNotification
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
       
       <Suspense fallback={
         <div className="min-h-[30vh] flex items-center justify-center">

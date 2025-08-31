@@ -1,5 +1,6 @@
 import { UserService } from './userService';
 import { supabase } from './supabaseClient';
+import { showSuccess, showInfo } from '../utils/toast';
 
 export interface CreditTransaction {
   id: string;
@@ -80,7 +81,7 @@ export class CreditService {
         // Show user notification
         if (typeof window !== 'undefined') {
           setTimeout(() => {
-            alert(`🎉 You received 100 free monthly credits! Your balance is now ${result.newCredits} credits.`);
+            showSuccess(`🎉 You received 100 free monthly credits! Your balance is now ${result.newCredits} credits.`);
           }, 500);
         }
         

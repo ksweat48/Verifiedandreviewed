@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import * as Icons from 'lucide-react';
 import BusinessProfileModal from './BusinessProfileModal';
 import type { Business } from '../services/supabaseClient';
+import { showError } from '../utils/toast';
 
 interface MyFavoritesSectionProps {
   businesses: any[];
@@ -26,7 +27,7 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
       await onRemoveFavorite(recommendationId);
     } catch (error) {
       console.error('Error removing favorite:', error);
-      alert('Failed to remove favorite. Please try again.');
+      showError('Failed to remove favorite. Please try again.');
     } finally {
       setRemovingId(null);
     }

@@ -172,7 +172,7 @@ const SinglePostPage = () => {
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle comment submission here
-    alert('Comment submitted! (This is a demo - comments would be saved to WordPress)');
+    showSuccess('Comment submitted! (This is a demo - comments would be saved to WordPress)');
     setComment('');
     setCommentName('');
     setCommentEmail('');
@@ -187,7 +187,7 @@ const SinglePostPage = () => {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      showSuccess('Link copied to clipboard!');
     }
   };
 

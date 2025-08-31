@@ -6,6 +6,7 @@ import { UserService } from '../services/userService';
 import { ActivityService } from '../services/activityService';
 import { BusinessService } from '../services/businessService';
 import { useModalControl } from '../hooks/useModalControl';
+import { showError } from '../utils/toast';
 
 interface ReviewImage {
   file: File;
@@ -265,7 +266,7 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
         
       } catch (error) {
         console.error('Error submitting review:', error);
-        alert('Failed to submit review. Please try again.');
+        showError('Failed to submit review. Please try again.');
         setIsSubmitting(false);
       }
     };

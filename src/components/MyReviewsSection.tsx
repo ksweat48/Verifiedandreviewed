@@ -6,6 +6,7 @@ import { BusinessService } from '../services/businessService';
 import BusinessProfileModal from './BusinessProfileModal';
 import LeaveReviewModal from './LeaveReviewModal';
 import type { Business } from '../services/supabaseClient';
+import { showSuccess, showError } from '../utils/toast';
 
 interface UserReview {
   id: string;
@@ -104,7 +105,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
       setIsBusinessProfileModalOpen(true);
     } catch (error) {
       console.error('Error viewing review:', error);
-      alert('Failed to load business details. Please try again.');
+      showError('Failed to load business details. Please try again.');
     }
   };
 
@@ -125,13 +126,13 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
       if (success) {
         // Remove the review from local state
         setLocalReviews(prev => prev.filter(review => review.id !== reviewId));
-        alert('Review deleted successfully');
+        showSuccess('Review deleted successfully');
       } else {
         throw new Error('Delete operation failed');
       }
     } catch (error) {
       console.error('Error deleting review:', error);
-      alert('Failed to delete review. Please try again.');
+      showError('Failed to delete review. Please try again.');
     } finally {
       setDeletingReviewId(null);
     }

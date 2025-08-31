@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle, Star, Users, Award, Shield, Heart } from 'lucide-react';
+import { showInfo } from '../utils/toast';
 
 const AboutPage = () => {
   const stats = [
@@ -225,10 +226,16 @@ const AboutPage = () => {
             Have a question, suggestion, or want to recommend a place for us to review?
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="font-poppins bg-primary-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200">
+            <button 
+              onClick={() => showInfo('Contact form coming soon! We\'re working on making it easier to reach us.')}
+              className="font-poppins bg-primary-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
+            >
               Contact Us
             </button>
-            <button className="font-poppins border-2 border-neutral-300 text-neutral-700 px-8 py-3 rounded-lg font-semibold hover:border-primary-500 hover:text-primary-500 transition-colors duration-200">
+            <button 
+              onClick={() => showInfo('Business suggestion feature coming soon! We\'d love to hear your recommendations.')}
+              className="font-poppins border-2 border-neutral-300 text-neutral-700 px-8 py-3 rounded-lg font-semibold hover:border-primary-500 hover:text-primary-500 transition-colors duration-200"
+            >
               Suggest a Place
             </button>
           </div>

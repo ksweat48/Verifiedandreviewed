@@ -11,6 +11,7 @@ import type { Business } from '../services/supabaseClient';
 import OfferingReviewsModal from './OfferingReviewsModal';
 import { ReviewService } from '../services/reviewService';
 import { getServiceTypeBadge, formatPrice } from '../utils/displayUtils';
+import { showError } from '../utils/toast';
 
 interface MyBusinessesSectionProps {
   user: User;

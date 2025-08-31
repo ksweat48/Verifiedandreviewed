@@ -6,6 +6,7 @@ import { BusinessService } from '../services/businessService';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabaseClient';
 import { resizeImage } from '../utils/imageResizer';
+import { showError, showSuccess } from '../utils/toast';
 
 interface OfferingData {
   id?: string;
@@ -204,7 +205,7 @@ export default function ManageOfferingsPage() {
 
   const handleSaveOfferingToLocalState = () => {
     if (!newOffering.name.trim() || !newOffering.short_description.trim() || newOffering.price <= 0) {
-      alert('Please fill in all required fields for the offering (Name, Short Description, Price).');
+      showError('Please fill in all required fields for the offering (Name, Short Description, Price).');
       return;
     }
 
@@ -279,7 +280,6 @@ export default function ManageOfferingsPage() {
   };
 
   const handleSaveOfferings = async () => {
-    alert('🚀 Saving process initiated! Check console for detailed logs.');
     console.log('🚀 DEBUG: handleSaveOfferings function called');
     
     if (!businessId) return;
@@ -392,7 +392,7 @@ export default function ManageOfferingsPage() {
       navigate('/dashboard');
     } catch (error) {
       console.error('Error saving offerings:', error);
-      alert(`Error saving offerings: ${error instanceof Error ? error.message : 'Please try again.'}`);
+      showError(`Error saving offerings: ${error instanceof Error ? error.message : 'Please try again.'}`);
     } finally {
       setIsSaving(false);
     }

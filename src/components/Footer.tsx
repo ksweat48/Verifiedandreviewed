@@ -1,14 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { showInfo } from '../utils/toast';
 
 const Footer: React.FC = () => {
   const navigate = useNavigate();
   
   const footerLinks = [
     { name: 'Blog', action: () => navigate('/blog') },
-    { name: 'Privacy Policy', action: () => alert('Privacy Policy - Coming Soon') },
-    { name: 'Terms of Service', action: () => alert('Terms of Service - Coming Soon') },
-    { name: 'Contact Us', action: () => alert('Contact form coming soon!') }
+    { name: 'Privacy Policy', action: () => showInfo('Privacy Policy - Coming Soon') },
+    { name: 'Terms of Service', action: () => showInfo('Terms of Service - Coming Soon') },
+    { name: 'Contact Us', action: () => showInfo('Contact form coming soon!') }
   ];
 
   return (

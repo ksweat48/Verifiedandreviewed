@@ -94,7 +94,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
       icon: Icons.Mail,
       label: 'Contact Us',
       action: () => {
-        alert('Contact form coming soon!');
+        showInfo('Contact form coming soon!');
         setIsOpen(false);
       }
     },
@@ -102,7 +102,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
       icon: Icons.Shield,
       label: 'Privacy Policy',
       action: () => {
-        alert('Privacy Policy - Coming Soon');
+        showInfo('Privacy Policy - Coming Soon');
         setIsOpen(false);
       }
     },
@@ -110,7 +110,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
       icon: Icons.FileText,
       label: 'Terms of Use',
       action: () => {
-        alert('Terms of Service - Coming Soon');
+        showInfo('Terms of Service - Coming Soon');
         setIsOpen(false);
       }
     },

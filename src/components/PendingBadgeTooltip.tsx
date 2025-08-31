@@ -62,6 +62,8 @@ const PendingBadgeTooltip: React.FC<PendingBadgeTooltipProps> = ({
         setIsVisible(false);
       }, 2000);
       
+      showSuccess(`Thank you for recommending ${businessName} for verification!`);
+      
       if (onRecommend) {
         onRecommend();
       }

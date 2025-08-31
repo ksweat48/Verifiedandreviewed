@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { supabase } from '../services/supabaseClient';
 import { resizeImage } from '../utils/imageResizer';
+import { showError, showSuccess } from '../utils/toast';
 
 interface UploadedImage {
   file: File | null;
@@ -114,7 +115,7 @@ export default function AddBusinessPage() {
       
       // Show user-friendly error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Image upload failed: ${errorMessage}. Please check the browser console for more details.`);
+      showError(`Image upload failed: ${errorMessage}. Please check the browser console for more details.`);
       return null;
     }
   };
@@ -347,7 +348,7 @@ export default function AddBusinessPage() {
       }
     } catch (error) {
       console.error('Error saving business:', error);
-      alert(`Error saving business: ${error instanceof Error ? error.message : 'Please try again.'}`);
+      showError(`Error saving business: ${error instanceof Error ? error.message : 'Please try again.'}`);
     } finally {
       setIsSubmitting(false);
     }
