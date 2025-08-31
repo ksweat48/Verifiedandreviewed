@@ -15,7 +15,7 @@ import AuthModal from './AuthModal';
 import OfferingReviewsModal from './OfferingReviewsModal';
 import { supabase } from '../services/supabaseClient';
 import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
-import { getAvatarForUser } from '../utils/displayUtils';
+import { getAvatarForUser, isBusinessOpen } from '../utils/displayUtils';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -62,9 +62,6 @@ const normalizeRelevanceScore = (business: any): number => {
 
 // Ensure business has proper isOpen status
 const ensureOpenStatus = (business: any): any => {
-  // Import isBusinessOpen utility
-  const { isBusinessOpen } = require('../utils/displayUtils');
-  
   return {
     ...business,
     isOpen: business.isOpen !== undefined ? business.isOpen : isBusinessOpen(business)
