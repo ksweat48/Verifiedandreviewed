@@ -352,6 +352,43 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
 
                 {/* Offerings Section */}
                 <div className="border-t border-neutral-200 pt-4">
+                  {/* Action Buttons */}
+                  <div className="flex justify-end items-center gap-2 mb-4">
+                    <button
+                      onClick={() => handleViewBusiness(business)}
+                      className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                      title="View Business"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => navigate(`/manage-offerings?businessId=${business.id}`)}
+                      className="p-2 text-neutral-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200"
+                      title="Manage Offerings"
+                    >
+                      <Menu className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEditBusiness(business)}
+                      className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
+                      title="Edit Business"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBusiness(business.id)}
+                      className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                      title="Delete Business"
+                      disabled={deletingBusinessId === business.id}
+                    >
+                      {deletingBusinessId === business.id ? (
+                        <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-poppins text-lg font-semibold text-neutral-900 flex items-center">
                       <Package className="h-5 w-5 mr-2 text-primary-500" />
@@ -544,43 +581,6 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                       })}
                     </div>
                   )}
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex justify-end items-center gap-2 mt-4">
-                  <button
-                    onClick={() => handleViewBusiness(business)}
-                    className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-                    title="View Business"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => navigate(`/manage-offerings?businessId=${business.id}`)}
-                    className="p-2 text-neutral-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200"
-                    title="Manage Offerings"
-                  >
-                    <Menu className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleEditBusiness(business)}
-                    className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
-                    title="Edit Business"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteBusiness(business.id)}
-                    className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                    title="Delete Business"
-                    disabled={deletingBusinessId === business.id}
-                  >
-                    {deletingBusinessId === business.id ? (
-                      <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </button>
                 </div>
               </div>
             );
