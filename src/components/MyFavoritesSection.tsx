@@ -94,7 +94,7 @@ const MyFavoritesSection: React.FC<MyFavoritesSectionProps> = ({
   };
 
   return (
-    <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-cinzel text-2xl font-bold text-neutral-900 flex items-center">
           <Icons.Heart className="h-6 w-6 mr-3 text-red-500" />
