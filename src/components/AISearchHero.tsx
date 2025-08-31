@@ -16,6 +16,7 @@ import OfferingReviewsModal from './OfferingReviewsModal';
 import { supabase } from '../services/supabaseClient';
 import { usePendingReviewsCount } from '../hooks/usePendingReviewsCount';
 import { getAvatarForUser, isBusinessOpen } from '../utils/displayUtils';
+import { showSuccess, showError } from '../utils/toast';
 
 interface AISearchHeroProps {
   isAppModeActive: boolean;
@@ -468,13 +469,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       
       if (success) {
         const itemName = business.title || business.name;
-        showSuccess(`${itemName} has been saved to your favorites!`);
+        alert(`${itemName} has been saved to your favorites!`);
       } else {
-        showError('Failed to save to favorites. Please try again.');
+        alert('Failed to save to favorites. Please try again.');
       }
     } catch (error) {
       console.error('Error saving to favorites:', error);
-      showError('Failed to save to favorites. Please try again.');
+      alert('Failed to save to favorites. Please try again.');
     }
   };
 
