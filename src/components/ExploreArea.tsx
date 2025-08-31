@@ -327,13 +327,13 @@ const ExploreArea = () => {
       
       if (success) {
         const itemName = business.offeringTitle || business.name;
-        alert(`${itemName} has been added to your favorites!`);
+        showSuccess(`${itemName} has been added to your favorites!`);
       } else {
-        alert('Failed to add to favorites. Please try again.');
+        showError('Failed to add to favorites. Please try again.');
       }
     } catch (error) {
       console.error('Error adding platform business to favorites:', error);
-      alert('Failed to add to favorites. Please try again.');
+      showError('Failed to add to favorites. Please try again.');
     }
   };
 
