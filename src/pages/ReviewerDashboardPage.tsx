@@ -214,14 +214,6 @@ const ReviewerDashboardPage = () => {
                   <Icons.Award className="h-5 w-5 mr-2 text-primary-500" />
                   Level Progress
                 </h3>
-                <div className="flex items-center gap-2">
-                  <div className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-poppins font-semibold">
-                    Level {user.level}
-                  </div>
-                  <div className="bg-accent-100 text-accent-700 px-3 py-1 rounded-full text-sm font-poppins font-semibold">
-                    {formatCredits(user.credits, user.role)} credits
-                  </div>
-                </div>
               </div>
               
               <div className="space-y-4">
