@@ -296,7 +296,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               query: searchTerm,
               latitude: latitude,
               longitude: longitude,
-              matchCount: 5 // Get fewer AI results to balance with platform results
+             matchCount: 15 // Get more AI results to fill remaining slots after platform offerings
             })
           });
           
