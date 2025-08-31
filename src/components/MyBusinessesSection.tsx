@@ -268,7 +268,7 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   }
 
   return (
-    <div className="space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="font-cinzel text-xl sm:text-2xl font-bold text-neutral-900"> 
           My Businesses ({businesses.length})
