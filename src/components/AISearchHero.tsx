@@ -708,6 +708,64 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
     <>
       {/* Hero Section */}
       <section className="relative bg-white pt-4">
+        {/* Desktop Search Bar - Always Visible */}
+        <div className="hidden lg:block max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center mb-8">
+            <h1 className="font-cinzel text-4xl md:text-5xl font-bold text-neutral-900 mb-4">
+              Find Your Perfect Vibe
+            </h1>
+            <p className="font-lora text-xl text-neutral-600">
+              Discover amazing experiences near you
+            </p>
+          </div>
+          
+          <div className="bg-white rounded-2xl shadow-lg border border-neutral-200 p-6">
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-6 w-6 text-neutral-400" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder="What are you hungry for? Try 'vegan pancakes', 'stew chicken', 'tacos'..."
+                  className="w-full pl-12 pr-4 py-4 border border-neutral-200 rounded-xl font-lora text-lg text-neutral-900 placeholder-neutral-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              
+              <button
+                onClick={handleVoiceSearch}
+                disabled={isListening}
+                className="p-4 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-xl transition-colors duration-200 disabled:opacity-50"
+                title="Voice search"
+              >
+                <Mic className={`h-6 w-6 ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
+              </button>
+              
+              <button
+                onClick={() => handleSearch(searchQuery)}
+                disabled={!searchQuery.trim() || isSearching}
+                className="bg-gradient-to-r from-primary-500 to-accent-500 text-white py-4 px-8 rounded-xl font-poppins font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                <Search className="h-6 w-6 mr-2" />
+                {isSearching ? 'Searching...' : 'Search'}
+              </button>
+            </div>
+            
+            {currentUser && (
+              <div className="flex items-center justify-center mt-4">
+                <div className="bg-primary-50 rounded-lg px-4 py-2 flex items-center">
+                  <Zap className="h-5 w-5 mr-2 text-primary-500" />
+                  <span className="font-poppins text-primary-700">
+                    You have {userCredits} credits • 2 credits per search
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Credits Display - Top Left */}
         {currentUser && !isAppModeActive && (
           <div className="absolute top-4 left-4 z-20 flex items-center bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-neutral-200">
@@ -746,7 +804,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         )}
 
         {/* Minimal Header Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center py-4 px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 flex flex-col items-center justify-center py-4 px-4 sm:px-6 lg:px-8 lg:hidden">
           {!isAppModeActive && (
             <div className="relative mb-6">
               <h1 className="font-cinzel text-3xl md:text-4xl font-bold text-neutral-900 text-center">
@@ -762,7 +820,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       {!isAppModeActive && (
         <button
           onClick={() => setShowFloatingSearchInput(true)}
-          className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
+          className="lg:hidden fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
           title="Search for experiences"
         >
           <Search className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
