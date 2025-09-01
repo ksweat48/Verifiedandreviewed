@@ -848,6 +848,11 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                   title="Voice search"
                 >
                   <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Signup Prompt Modal */}
@@ -896,7 +901,13 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
       {showAuthModal && (
         <AuthModal
           isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          mode={authMode}
+          onAuthSuccess={handleAuthSuccess}
+        />
       )}
     </>
   );
 };
+
+export default AISearchHero;
