@@ -160,8 +160,8 @@ const ReviewerDashboardPage = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
+        {/* Overview Tab */}
+        <div className={`space-y-6 ${activeTab === 'overview' ? 'block' : 'hidden'}`}>
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200">
@@ -251,13 +251,14 @@ const ReviewerDashboardPage = () => {
 
             <RecentActivitySection />
           </div>
-        )}
 
-        {activeTab === 'reviews' && (
+        {/* Reviews Tab */}
+        <div className={`${activeTab === 'reviews' ? 'block' : 'hidden'}`}>
           <MyReviewsSection reviews={userReviews} />
-        )}
+        </div>
 
-        {activeTab === 'favorites' && (
+        {/* Favorites Tab */}
+        <div className={`${activeTab === 'favorites' ? 'block' : 'hidden'}`}>
           <MyFavoritesSection 
             businesses={favoritedAIBusinesses} 
             onRemoveFavorite={async (recommendationId) => {
@@ -275,14 +276,15 @@ const ReviewerDashboardPage = () => {
               }
             }}
           />
-        )}
+        </div>
 
-        {activeTab === 'businesses' && (
+        {/* Businesses Tab */}
+        <div className={`${activeTab === 'businesses' ? 'block' : 'hidden'}`}>
           <MyBusinessesSection user={user} />
-        )}
+        </div>
 
-        {activeTab === 'credits' && (
-          <div className="space-y-6">
+        {/* Credits Tab */}
+        <div className={`space-y-6 ${activeTab === 'credits' ? 'block' : 'hidden'}`}>
             <CreditsManager 
               currentCredits={user.credits || 0}
              userRole={user.role}
@@ -298,7 +300,7 @@ const ReviewerDashboardPage = () => {
               userName={user.name} 
             />
           </div>
-        )}
+        </div>
       </div>
 
       {/* Floating Home Button */}

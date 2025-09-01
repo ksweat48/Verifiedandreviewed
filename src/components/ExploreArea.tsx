@@ -92,8 +92,8 @@ const ExploreArea = () => {
     setLoading(true);
     
     try {
-      // Fetch a larger pool of platform offerings for explore section
-      const offerings = await OfferingService.getExploreOfferings(100, latitude, longitude);
+      // Fetch optimized number of platform offerings for explore section
+      const offerings = await OfferingService.getExploreOfferings(15, latitude, longitude);
       
       console.log('📦 DEBUG: Received offerings from service:', offerings.length, 'items');
       console.log('📊 DEBUG: First offering data:', offerings[0]);
