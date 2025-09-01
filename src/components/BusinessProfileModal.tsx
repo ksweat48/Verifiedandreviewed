@@ -55,16 +55,6 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
     const fetchBusinessOfferings = async () => {
       if (!isOpen || !business?.id) return;
       
-      // Debug: Log the business object received by the modal
-      console.log('🖼️ DEBUG: BusinessProfileModal received business object:', {
-        businessId: business.id,
-        businessName: business.name,
-        imageUrl: business.image_url,
-        imageUrlType: typeof business.image_url,
-        imageUrlLength: business.image_url?.length,
-        fullBusinessObject: business
-      });
-      
       // Log business view activity when modal opens
       try {
         const user = await UserService.getCurrentUser();
