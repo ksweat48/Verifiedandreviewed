@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { AISearchHero } from '../components/AISearchHero';
+import AISearchHero from '../components/AISearchHero';
 
 const FeaturedBlogSection = lazy(() => import('../components/FeaturedBlogSection'));
 const ExploreArea = lazy(() => import('../components/ExploreArea'));
