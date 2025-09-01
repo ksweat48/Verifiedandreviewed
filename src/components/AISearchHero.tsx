@@ -855,7 +855,7 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                 <div className="flex items-center justify-center bg-neutral-50 rounded-lg px-3 py-2">
                   <Zap className="h-4 w-4 mr-2 text-primary-500" />
                   <span className="font-poppins text-sm font-semibold text-neutral-700">
-                    {userCredits} credits
+                    {currentUser.role === 'administrator' && userCredits >= 999999 ? '∞' : userCredits} credits
                   </span>
                 </div>
               )}
