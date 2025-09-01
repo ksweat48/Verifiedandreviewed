@@ -688,6 +688,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
               setIsOfferingReviewsModalOpen(false);
               setSelectedOfferingForReviews(null);
             }}
+            offeringId={selectedOfferingForReviews.id}
+            offeringTitle={selectedOfferingForReviews.title}
+            businessName={selectedOfferingForReviews.businessName}
+          />
         )}
       </div>
     );
