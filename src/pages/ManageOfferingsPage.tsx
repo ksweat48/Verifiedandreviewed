@@ -455,9 +455,6 @@ export default function ManageOfferingsPage() {
                   <h1 className="font-cinzel text-2xl font-bold text-neutral-900">
                     {business.name}
                   </h1>
-                  <p className="font-lora text-neutral-600">
-                    Manage your menu offerings
-                  </p>
                 </div>
               </div>
             </div>
