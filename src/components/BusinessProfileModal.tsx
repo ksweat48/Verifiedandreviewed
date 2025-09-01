@@ -526,50 +526,46 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
         
         {/* Footer with Action Buttons */}
         <div className="border-t border-neutral-200 p-4 sm:p-6 bg-neutral-50 rounded-b-2xl">
-          <div className="flex flex-wrap gap-4 justify-center">
+          <div className="flex items-center justify-center gap-4">
             {business.is_virtual && business.website_url ? (
               <a
                 href={business.website_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center"
+                className="font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white p-4 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
               >
-                <Icons.Globe className="h-5 w-5 mr-2" />
-                VISIT WEBSITE
+                <Icons.Globe className="h-5 w-5" />
               </a>
             ) : business.is_mobile_business && business.phone_number ? (
               <a
                 href={`tel:${business.phone_number}`}
-                className="font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center"
+                className="font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white p-4 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
               >
-                <Icons.Phone className="h-5 w-5 mr-2" />
-                CALL NOW
+                <Icons.Phone className="h-5 w-5" />
               </a>
             ) : (
               <button
                 onClick={handleTakeMeThere}
-                className="font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center"
+                className="font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white p-4 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center"
               >
-                <Icons.Navigation className="h-5 w-5 mr-2" />
-                GO
+                <Icons.Navigation className="h-5 w-5" />
               </button>
             )}
             
             {business.phone_number && (
               <a
                 href={`tel:${business.phone_number}`}
-                className="font-poppins bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors duration-200 flex items-center"
+                className="font-poppins bg-green-500 text-white p-4 rounded-lg font-semibold hover:bg-green-600 transition-colors duration-200 flex items-center justify-center"
               >
-                <Icons.Phone className="h-5 w-5 mr-2" />
-                Call
+                <Icons.Phone className="h-5 w-5" />
               </a>
             )}
             
             <button
               onClick={onClose}
-              className="font-poppins border border-neutral-300 text-neutral-700 px-6 py-3 rounded-lg font-semibold hover:bg-neutral-100 transition-colors duration-200"
+              className="font-poppins border border-neutral-300 text-neutral-700 p-4 rounded-lg font-semibold hover:bg-neutral-100 transition-colors duration-200 flex items-center justify-center"
             >
-              Close
+              <Icons.X className="h-5 w-5" />
             </button>
           </div>
         </div>
