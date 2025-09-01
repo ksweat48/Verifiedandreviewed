@@ -92,8 +92,8 @@ const ExploreArea = () => {
     setLoading(true);
     
     try {
-      // Fetch platform offerings for explore section
-      const offerings = await OfferingService.getExploreOfferings(6, latitude, longitude);
+      // Fetch a larger pool of platform offerings for explore section
+      const offerings = await OfferingService.getExploreOfferings(100, latitude, longitude);
       
       console.log('📦 DEBUG: Received offerings from service:', offerings.length, 'items');
       console.log('📊 DEBUG: First offering data:', offerings[0]);
@@ -154,6 +154,27 @@ const ExploreArea = () => {
             offering_images: offering.offering_images
           };
         });
+        
+        // Filter by 10-mile radius if user location is available
+        if (latitude && longitude) {
+          const MAX_DISTANCE_MILES = 10;
+          transformedBusinesses = transformedBusinesses.filter(business => {
+            return typeof business.distance === 'number' && business.distance <= MAX_DISTANCE_MILES;
+          });
+          console.log(`📏 Businesses within ${MAX_DISTANCE_MILES} miles: ${transformedBusinesses.length}`);
+        }
+        
+        // Randomly shuffle the filtered businesses
+        for (let i = transformedBusinesses.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [transformedBusinesses[i], transformedBusinesses[j]] = [transformedBusinesses[j], transformedBusinesses[i]];
+        }
+        
+        // Select the first 10 (or fewer if not enough available)
+        const DISPLAY_COUNT = 10;
+        transformedBusinesses = transformedBusinesses.slice(0, DISPLAY_COUNT);
+        
+        console.log(`🎲 Randomly selected ${transformedBusinesses.length} businesses for display`);
         
         // Fetch review counts for all offerings
         const offeringIds = transformedBusinesses.map(b => b.offeringId).filter(Boolean);
