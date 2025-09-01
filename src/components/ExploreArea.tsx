@@ -387,7 +387,10 @@ const ExploreArea = () => {
               return (
                 <div key={offering.offeringId} className="bg-neutral-50 rounded-lg p-3 border border-neutral-200 hover:shadow-sm transition-all duration-200">
                   {/* Offering Image */}
-                  <div className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100">
+                  <div 
+                    className="relative aspect-square mb-3 rounded-lg overflow-hidden bg-neutral-100 cursor-pointer"
+                    onClick={() => openBusinessProfile(offering)}
+                  >
                     <img
                       src={imageUrl}
                       alt={offering.offeringTitle}
