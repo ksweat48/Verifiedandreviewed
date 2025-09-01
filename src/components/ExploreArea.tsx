@@ -117,15 +117,6 @@ const ExploreArea = () => {
           return null;
         }
         
-        // Debug: Log the business image_url directly from the database
-        console.log('🖼️ DEBUG: ExploreArea - Business image_url from DB:', {
-          businessId: business.id,
-          businessName: business.name,
-          businessImageUrl: business.image_url,
-          businessImageUrlType: typeof business.image_url,
-          businessImageUrlLength: business.image_url?.length
-        });
-        
         // Get primary image or fallback
         const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
         const fallbackImage = offering.offering_images?.find(img => img.approved);
