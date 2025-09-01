@@ -480,7 +480,7 @@ export class OfferingService {
   }
 
   // Get offerings for explore section (random/curated display)
-  static async getExploreOfferings(limit: number = 100, userLatitude?: number, userLongitude?: number): Promise<any[]> {
+  static async getExploreOfferings(limit: number = 15, userLatitude?: number, userLongitude?: number): Promise<any[]> {
     try {
       console.log('🔍 DEBUG: getExploreOfferings called with:', { 
         limit, 
