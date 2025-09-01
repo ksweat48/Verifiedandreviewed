@@ -684,7 +684,10 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
         {isOfferingReviewsModalOpen && selectedOfferingForReviews && (
           <OfferingReviewsModal
             isOpen={isOfferingReviewsModalOpen}
-            onClose={() => setIsOfferingReviewsModalOpen(false)}
+            onClose={() => {
+              setIsOfferingReviewsModalOpen(false);
+              setSelectedOfferingForReviews(null);
+            }}
             offeringId={selectedOfferingForReviews.id}
             offeringTitle={selectedOfferingForReviews.title}
             businessName={selectedOfferingForReviews.businessName}
