@@ -77,12 +77,9 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
       
       setLoadingOfferings(true);
       try {
-        console.log('🔍 Fetching offerings for business:', business.id);
         const offerings = await OfferingService.getBusinessOfferings(business.id);
-        console.log('✅ Fetched', offerings.length, 'offerings for business');
         setBusinessOfferings(offerings);
       } catch (error) {
-        console.error('❌ Error fetching business offerings:', error);
         setBusinessOfferings([]);
       } finally {
         setLoadingOfferings(false);

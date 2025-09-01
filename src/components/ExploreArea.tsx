@@ -99,16 +99,6 @@ const ExploreArea = () => {
       console.log('📊 DEBUG: First offering data:', offerings[0]);
       console.log('🗺️ DEBUG: Distance values in offerings:', offerings.map(o => ({ 
         name: o.businesses?.name || o.name, 
-        distance: o.distance,
-        hasDistance: o.distance !== undefined && o.distance !== 999999
-      })));
-      
-      let transformedBusinesses = [];
-      
-      if (offerings.length > 0) {
-        transformedBusinesses = offerings.map(offering => {
-          const business = offering.businesses;
-          
           // Get primary image or fallback
           const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
           const fallbackImage = offering.offering_images?.find(img => img.approved);
@@ -138,7 +128,7 @@ const ExploreArea = () => {
               sentimentScore: business.sentiment_score || 0
             },
             image: imageUrl, // Keep this for the offering card display
-            image_url: business.image_url, // Add the business's main image for the modal
+            image_url: business.image_url, // Business's main image for the modal
             isOpen: isBusinessOpen(business), // Use actual business hours
             hours: business.hours || 'Hours unavailable',
             address: business.address || business.location || '',
