@@ -138,6 +138,8 @@ const OfferingCard: React.FC<{
   const handleBusinessClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     
+    const businessForModal = {
+      ...business,
       // ALWAYS use the business image, never the offering image
       image_url: business.image_url || '/verified and reviewed logo-coral copy copy.png',
       gallery_urls: business.gallery_urls || business.businesses?.gallery_urls || [],
