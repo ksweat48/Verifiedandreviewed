@@ -125,11 +125,6 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
       >
         {/* Header with Cover Image */}
         <div className="relative h-64">
-          {console.log(`🖼️ DEBUG: About to render business image:`, {
-            imageUrl: business.image_url,
-            fallbackUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800',
-            finalUrl: business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800'
-          })}
           <img
             src={business.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800'}
             alt={business.name}

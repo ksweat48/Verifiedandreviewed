@@ -109,16 +109,6 @@ const ExploreArea = () => {
         transformedBusinesses = offerings.map(offering => {
           const business = offering.businesses;
           
-          // Debug: Log the business image URL from Supabase
-          console.log(`🖼️ DEBUG: Business image from Supabase for "${business.name}":`, {
-            businessId: business.id,
-            businessName: business.name,
-            businessImageUrl: business.image_url,
-            businessImageUrlType: typeof business.image_url,
-            businessImageUrlLength: business.image_url ? business.image_url.length : 0,
-            fullBusinessObject: business
-          });
-          
           // Get primary image or fallback
           const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
           const fallbackImage = offering.offering_images?.find(img => img.approved);
