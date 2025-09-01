@@ -672,7 +672,27 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       onTakeMeThere={handleTakeMeThere}
                       onOpenOfferingReviews={handleOpenOfferingReviews}
                       offeringReviewCounts={searchOfferingReviewCounts}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Offering Reviews Modal */}
+        {isOfferingReviewsModalOpen && selectedOfferingForReviews && (
+          <OfferingReviewsModal
+            isOpen={isOfferingReviewsModalOpen}
+            onClose={() => {
+              setIsOfferingReviewsModalOpen(false);
+              setSelectedOfferingForReviews(null);
+            }}
+            offeringId={selectedOfferingForReviews.id}
+            offeringTitle={selectedOfferingForReviews.title}
+            businessName={selectedOfferingForReviews.businessName}
+          />
+        )}
       </div>
     );
   }
