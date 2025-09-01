@@ -435,7 +435,7 @@ export default function ManageOfferingsPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-neutral-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+          <div>
             <div className="flex items-center">
               <button
                 onClick={() => navigate('/dashboard')}
@@ -458,11 +458,15 @@ export default function ManageOfferingsPage() {
                 </div>
               </div>
             </div>
-            
+          </div>
+          
+          {/* Edit Business Button - Full Width Row */}
+          <div className="mt-4">
             <button
               onClick={() => navigate(`/add-business?edit=${businessId}`)}
-              className="font-poppins bg-neutral-100 text-neutral-700 px-4 py-2 rounded-lg font-semibold hover:bg-neutral-200 transition-colors duration-200"
+              className="w-full font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white p-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center"
             >
+              <Edit className="h-5 w-5 mr-2" />
               Edit Business Info
             </button>
           </div>
