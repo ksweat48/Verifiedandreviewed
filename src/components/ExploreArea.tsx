@@ -99,96 +99,113 @@ const ExploreArea = () => {
       console.log('📊 DEBUG: First offering data:', offerings[0]);
       console.log('🗺️ DEBUG: Distance values in offerings:', offerings.map(o => ({ 
         name: o.businesses?.name || o.name, 
-          // Get primary image or fallback
-          const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
-          const fallbackImage = offering.offering_images?.find(img => img.approved);
-          const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
-          
-          return {
-            id: business.id,
-            name: business.name,
-            category: business.category,
-            description: business.description,
-            short_description: business.short_description,
-            phone_number: business.phone_number,
-            website_url: business.website_url,
-            social_media: business.social_media || [],
-            price_range: business.price_range,
-            service_area: business.service_area,
-            days_closed: business.days_closed,
-            owner_user_id: business.owner_user_id,
-            latitude: business.latitude,
-            longitude: business.longitude,
-            created_at: business.created_at,
-            updated_at: business.updated_at,
-            distance: offering.distance, // Include distance from offering service
-            rating: {
-              thumbsUp: business.thumbs_up || 0,
-              thumbsDown: business.thumbs_down || 0,
-              sentimentScore: business.sentiment_score || 0
-            },
-            image: imageUrl, // Keep this for the offering card display
-            image_url: business.image_url, // Business's main image for the modal
-            isOpen: isBusinessOpen(business), // Use actual business hours
-            hours: business.hours || 'Hours unavailable',
-            address: business.address || business.location || '',
-            reviews: [], // Will be fetched separately if needed
-            isPlatformBusiness: true, // All offerings are platform businesses
-            tags: business.tags || [],
-            // Add offering-specific data
-            offeringId: offering.id,
-            offeringTitle: offering.title,
-            offeringDescription: offering.description,
-            serviceType: offering.service_type,
-            priceCents: offering.price_cents,
-            currency: offering.currency,
-            offering_images: offering.offering_images
-          };
+        distance: o.distance 
+      })));
+      
+      if (offerings.length === 0) {
+        console.log('📦 DEBUG: No offerings returned from service');
+        setBusinesses([]);
+        return;
+      }
+      
+      // Transform offerings into business objects for the UI
+      let transformedBusinesses = offerings.map(offering => {
+        const business = offering.businesses;
+        
+        if (!business) {
+          console.warn('⚠️ Offering missing business data:', offering);
+          return null;
+        }
+        
+        // Get primary image or fallback
+        const primaryImage = offering.offering_images?.find(img => img.is_primary && img.approved);
+        const fallbackImage = offering.offering_images?.find(img => img.approved);
+        const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
+        
+        return {
+          id: business.id,
+          name: business.name,
+          category: business.category,
+          description: business.description,
+          short_description: business.short_description,
+          phone_number: business.phone_number,
+          website_url: business.website_url,
+          social_media: business.social_media || [],
+          price_range: business.price_range,
+          service_area: business.service_area,
+          days_closed: business.days_closed,
+          owner_user_id: business.owner_user_id,
+          latitude: business.latitude,
+          longitude: business.longitude,
+          created_at: business.created_at,
+          updated_at: business.updated_at,
+          distance: offering.distance, // Include distance from offering service
+          rating: {
+            thumbsUp: business.thumbs_up || 0,
+            thumbsDown: business.thumbs_down || 0,
+            sentimentScore: business.sentiment_score || 0
+          },
+          image: imageUrl, // Keep this for the offering card display
+          image_url: business.image_url, // Business's main image for the modal
+          isOpen: isBusinessOpen(business), // Use actual business hours
+          hours: business.hours || 'Hours unavailable',
+          address: business.address || business.location || '',
+          reviews: [], // Will be fetched separately if needed
+          isPlatformBusiness: true, // All offerings are platform businesses
+          tags: business.tags || [],
+          // Add offering-specific data
+          offeringId: offering.id,
+          offeringTitle: offering.title,
+          offeringDescription: offering.description,
+          serviceType: offering.service_type,
+          priceCents: offering.price_cents,
+          currency: offering.currency,
+          offering_images: offering.offering_images
+        };
+      }).filter(Boolean); // Remove null entries
+      
+      // Filter by 10-mile radius if user location is available
+      if (latitude && longitude) {
+        const MAX_DISTANCE_MILES = 10;
+        transformedBusinesses = transformedBusinesses.filter(business => {
+          return typeof business.distance === 'number' && business.distance <= MAX_DISTANCE_MILES;
         });
-        
-        // Filter by 10-mile radius if user location is available
-        if (latitude && longitude) {
-          const MAX_DISTANCE_MILES = 10;
-          transformedBusinesses = transformedBusinesses.filter(business => {
-            return typeof business.distance === 'number' && business.distance <= MAX_DISTANCE_MILES;
+        console.log(`📏 Businesses within ${MAX_DISTANCE_MILES} miles: ${transformedBusinesses.length}`);
+      }
+      
+      // Randomly shuffle the filtered businesses
+      for (let i = transformedBusinesses.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [transformedBusinesses[i], transformedBusinesses[j]] = [transformedBusinesses[j], transformedBusinesses[i]];
+      }
+      
+      // Select the first 10 (or fewer if not enough available)
+      const DISPLAY_COUNT = 10;
+      transformedBusinesses = transformedBusinesses.slice(0, DISPLAY_COUNT);
+      
+      console.log(`🎲 Randomly selected ${transformedBusinesses.length} businesses for display`);
+      
+      // Fetch review counts for all offerings
+      const offeringIds = transformedBusinesses.map(b => b.offeringId).filter(Boolean);
+      if (offeringIds.length > 0) {
+        try {
+          const reviewCounts: Record<string, number> = {};
+          
+          // Fetch reviews for all offerings concurrently
+          const reviewPromises = offeringIds.map(async (offeringId) => {
+            try {
+              const reviews = await ReviewService.getReviewsForOffering(offeringId);
+              reviewCounts[offeringId] = reviews.length;
+            } catch (error) {
+              console.error(`Error fetching reviews for offering ${offeringId}:`, error);
+              reviewCounts[offeringId] = 0;
+            }
           });
-          console.log(`📏 Businesses within ${MAX_DISTANCE_MILES} miles: ${transformedBusinesses.length}`);
-        }
-        
-        // Randomly shuffle the filtered businesses
-        for (let i = transformedBusinesses.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [transformedBusinesses[i], transformedBusinesses[j]] = [transformedBusinesses[j], transformedBusinesses[i]];
-        }
-        
-        // Select the first 10 (or fewer if not enough available)
-        const DISPLAY_COUNT = 10;
-        transformedBusinesses = transformedBusinesses.slice(0, DISPLAY_COUNT);
-        
-        console.log(`🎲 Randomly selected ${transformedBusinesses.length} businesses for display`);
-        
-        // Fetch review counts for all offerings
-        const offeringIds = transformedBusinesses.map(b => b.offeringId).filter(Boolean);
-        if (offeringIds.length > 0) {
-          try {
-            const reviewCounts: Record<string, number> = {};
-            
-            // Fetch reviews for all offerings concurrently
-            const reviewPromises = offeringIds.map(async (offeringId) => {
-              try {
-                const reviews = await ReviewService.getReviewsForOffering(offeringId);
-                reviewCounts[offeringId] = reviews.length;
-              } catch (error) {
-                console.error(`Error fetching reviews for offering ${offeringId}:`, error);
-                reviewCounts[offeringId] = 0;
-              }
-            });
-            
-            await Promise.all(reviewPromises);
-            setOfferingReviewCounts(reviewCounts);
-          } catch (error) {
-            console.error('Error fetching offering review counts:', error);
-          }
+          
+          await Promise.all(reviewPromises);
+          setOfferingReviewCounts(reviewCounts);
+        } catch (error) {
+          console.error('Error fetching offering review counts:', error);
         }
       }
       
