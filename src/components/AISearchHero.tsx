@@ -694,12 +694,6 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
           />
         )}
       </div>
-    </>
-  );
-};
-
-export default AISearchHero;
-      </div>
     );
   }
 
