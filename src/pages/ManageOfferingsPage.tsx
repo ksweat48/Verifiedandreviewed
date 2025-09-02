@@ -132,7 +132,6 @@ export default function ManageOfferingsPage() {
           short_description: offering.description || '',
           image_file: null,
           image_url: offering.images?.[0]?.url || '',
-          price: (offering.price_cents || 0) / 100,
           currency: offering.currency || 'USD',
         }));
         setOfferings(formattedOfferings);
@@ -203,8 +202,8 @@ export default function ManageOfferingsPage() {
   };
 
   const handleSaveOfferingToLocalState = () => {
-    if (!newOffering.name.trim() || !newOffering.short_description.trim()) {
-      showError('Please fill in all required fields for the offering (Name, Short Description).');
+    if (!newOffering.name.trim() || !newOffering.short_description.trim() || newOffering.price <= 0) {
+      showError('Please fill in all required fields for the offering (Name, Short Description, Price).');
       return;
     }
 

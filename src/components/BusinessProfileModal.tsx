@@ -254,9 +254,6 @@ const BusinessProfileModal: React.FC<BusinessProfileModalProps> = ({
                               </p>
                             )}
                             <div className="flex items-center justify-between">
-                              <span className="font-poppins font-bold text-primary-600 text-sm">
-                                {formatPrice(offering.price_cents, offering.currency)}
-                              </span>
                             </div>
                             {offering.tags && offering.tags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">

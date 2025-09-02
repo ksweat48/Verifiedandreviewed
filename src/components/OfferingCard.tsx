@@ -290,11 +290,6 @@ const OfferingCard: React.FC<{
             <h6 className="font-poppins font-bold text-black text-sm line-clamp-1 flex-1 mr-2">
               {business.title || business.name || 'Untitled Offering'}
             </h6>
-            {!business.isAIGenerated && business.price_cents && business.price_cents > 0 && (
-              <span className="font-poppins font-bold text-primary-600 text-sm flex-shrink-0">
-                ${(business.price_cents / 100).toFixed(2)}
-              </span>
-            )}
           </div>
           
           {/* Sub Text: "at [Business Name]" */}

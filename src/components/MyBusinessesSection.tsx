@@ -555,9 +555,6 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
                               )}
                               
                               <div className="flex items-center justify-between mb-3">
-                                <span className="font-poppins font-bold text-primary-600">
-                                  {formatPrice(offering.price_cents, offering.currency)}
-                                </span>
                                 <div className="flex items-center text-neutral-500">
                                   <MessageSquare className="h-4 w-4 mr-1" />
                                   <span className="font-lora text-sm">{reviewCount}</span>
