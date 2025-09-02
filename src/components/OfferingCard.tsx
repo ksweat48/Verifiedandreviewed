@@ -150,8 +150,6 @@ const OfferingCard: React.FC<{
       social_media: business.social_media || business.businesses?.social_media || [],
       price_range: business.price_range || business.businesses?.price_range,
       service_area: business.service_area || business.businesses?.service_area,
-      // Use the business image URL that was set in ExploreArea
-      image_url: business.image_url || '/verified and reviewed logo-coral copy copy.png',
       thumbs_up: business.thumbs_up || business.businesses?.thumbs_up || business.rating?.thumbsUp,
       thumbs_down: business.thumbs_down || business.businesses?.thumbs_down || business.rating?.thumbsDown,
       sentiment_score: business.sentiment_score || business.businesses?.sentiment_score || business.rating?.sentimentScore,
@@ -252,7 +250,6 @@ const OfferingCard: React.FC<{
               src={business.image || business.image_url || '/verified and reviewed logo-coral copy copy.png'}
               alt={business.name || business.title}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-              loading="lazy"
               loading="lazy"
             />
             
