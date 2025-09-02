@@ -303,7 +303,6 @@ const ReviewerDashboardPage = () => {
         </div>
       </div>
 
-      </div>
 
       <button
         onClick={() => navigate('/')}
