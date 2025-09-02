@@ -93,7 +93,7 @@ const ExploreArea = () => {
     
     try {
       // Fetch optimized number of platform offerings for explore section
-      const offerings = await OfferingService.getExploreOfferings(15, latitude, longitude);
+      const offerings = await OfferingService.getExploreOfferings(10, latitude, longitude);
       
       console.log('📦 DEBUG: Received offerings from service:', offerings.length, 'items');
       console.log('📊 DEBUG: First offering data:', offerings[0]);
@@ -424,6 +424,7 @@ const ExploreArea = () => {
                       src={imageUrl}
                       alt={offering.offeringTitle}
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
                     />
                     
                     {/* Open/Closed Overlay - Bottom Left */}
