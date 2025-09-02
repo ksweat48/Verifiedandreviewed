@@ -274,3 +274,6 @@ const ExploreArea = () => {
       // Priority 3: Use business name as fallback
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
       console.log('🗺️ DEBUG: Using business name for maps URL:', business.name.trim());
+    }
+  }
+}
