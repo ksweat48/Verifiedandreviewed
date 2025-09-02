@@ -233,3 +233,4 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
   };
 
   // Helper function to determine if business is currently open
+}
