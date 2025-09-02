@@ -406,7 +406,6 @@ const ExploreArea = () => {
             // Actual offering cards
             businesses.map((offering) => {
               // 'offering' here is already the transformed business object from loadNearbyBusinesses
-                loading="lazy"
               const business = offering;
               
               // Get the primary image from offering_images (from original Supabase query), fallback to business image
