@@ -274,8 +274,183 @@ const ExploreArea = () => {
       // Priority 3: Use business name as fallback
       mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.name.trim())}`;
       console.log('🗺️ DEBUG: Using business name for maps URL:', business.name.trim());
+    } else {
+      console.error('🗺️ DEBUG: No valid location data found for business');
+      showError('Unable to get directions - no location data available');
+      return;
     }
+    
+    console.log('🗺️ DEBUG: Final maps URL:', mapsUrl);
+    window.open(mapsUrl, '_blank');
   }
+
+  const handleRecommendBusiness = async (business: Business, offeringId?: string) => {
+    if (!currentUser) {
+      // Show signup prompt for unauthenticated users
+      return;
+    }
+
+    try {
+      let success = false;
+      
+      if (offeringId && business.isPlatformBusiness) {
+        // Save platform offering to favorites
+        success = await BusinessService.saveFavoritedOffering(offeringId, currentUser.id);
+      } else if (business.isAIGenerated) {
+        // Save AI business to favorites
+        const { error } = await supabase
+          .from('business_recommendations')
+          .insert({
+            name: business.name,
+            address: business.address || business.location || 'Address not available',
+            location: business.location || business.address || 'Location not available',
+            category: business.category || 'AI Generated',
+            description: `AI-generated business. ${business.description || business.short_description || ''}`,
+            image_url: business.image || '/verified and reviewed logo-coral copy copy.png',
+            recommended_by: currentUser.id,
+            status: 'pending',
+            created_at: new Date().toISOString()
+          });
+        
+        success = !error;
+      }
+      
+      if (success) {
+        const itemName = business.offeringTitle || business.name;
+        showSuccess(`${itemName} has been saved to your favorites!`);
+      } else {
+        showError('Failed to save to favorites. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving to favorites:', error);
+      showError('Failed to save to favorites. Please try again.');
+    }
+  };
+
+  const handleOpenOfferingReviews = (business: Business) => {
+    // Only open for platform businesses with offering IDs
+    if (business.isPlatformBusiness && (business.offeringId || business.id)) {
+      setSelectedOfferingForReviews({
+        id: business.offeringId || business.id,
+        title: business.offeringTitle || business.name,
+        businessName: business.name
+      });
+      setIsOfferingReviewsModalOpen(true);
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="h-8 w-48 bg-neutral-200 rounded mx-auto mb-4 animate-pulse"></div>
+            <div className="h-4 w-64 bg-neutral-200 rounded mx-auto animate-pulse"></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <div key={i} className="bg-white rounded-2xl p-4 shadow-sm border border-neutral-200 animate-pulse">
+                <div className="aspect-square bg-neutral-200 rounded-lg mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-neutral-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-neutral-200 rounded w-1/2"></div>
+                  <div className="h-3 bg-neutral-200 rounded w-full"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="py-16 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-12">
+          <div className="text-center flex-1">
+            <h2 className="font-cinzel text-3xl font-bold text-neutral-900 mb-4">
+              Explore Local Offerings
+            </h2>
+            <p className="font-lora text-lg text-neutral-600 max-w-2xl mx-auto">
+              Discover amazing local businesses and their offerings near you
+            </p>
+          </div>
+          
+          <button
+            onClick={handleRefresh}
+            className="p-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-full transition-colors duration-200 flex-shrink-0"
+            title="Refresh offerings"
+          >
+            <RefreshCw className="h-5 w-5" />
+          </button>
+        </div>
+
+        {businesses.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Package className="h-10 w-10 text-neutral-400" />
+            </div>
+            <h3 className="font-poppins text-xl font-semibold text-neutral-700 mb-2">
+              No offerings found
+            </h3>
+            <p className="font-lora text-neutral-600 mb-6">
+              {locationError 
+                ? 'Unable to get your location. Please enable location services to see nearby offerings.'
+                : 'No local offerings available at the moment. Try refreshing or check back later.'
+              }
+            </p>
+            <button
+              onClick={handleRefresh}
+              className="font-poppins bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {businesses.map((business) => (
+              <OfferingCard
+                key={business.id}
+                business={business}
+                onRecommend={handleRecommendBusiness}
+                onTakeMeThere={handleTakeMeThere}
+                onOpenOfferingReviews={handleOpenOfferingReviews}
+                offeringReviewCounts={offeringReviewCounts}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Business Profile Modal */}
+      <BusinessProfileModal
+        isOpen={businessProfileOpen}
+        onClose={() => setBusinessProfileOpen(false)}
+        business={selectedBusinessForProfile}
+      />
+
+      {/* Leave Review Modal */}
+      <LeaveReviewModal
+        isOpen={leaveReviewModalOpen}
+        onClose={() => setLeaveReviewModalOpen(false)}
+        business={selectedBusinessForReview}
+        onSubmitReview={() => {}}
+      />
+
+      {/* Offering Reviews Modal */}
+      <OfferingReviewsModal
+        isOpen={isOfferingReviewsModalOpen}
+        onClose={() => {
+          setIsOfferingReviewsModalOpen(false);
+          setSelectedOfferingForReviews(null);
+        }}
+        offeringId={selectedOfferingForReviews?.id || ''}
+        offeringTitle={selectedOfferingForReviews?.title || ''}
+        businessName={selectedOfferingForReviews?.businessName || ''}
+      />
+    </section>
+  );
 }
 
 export default ExploreArea;
