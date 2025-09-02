@@ -212,11 +212,13 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
             .from('user_reviews')
             .insert({
               user_id: user.id,
-              business_id: business.id,
+              offering_id: business.offeringId || null,
+              business_id: business.businessId || business.id,
               review_text: reviewText,
               rating: numericRating,
               image_urls: imageUrls,
-              status: 'approved'
+              status: 'approved',
+              is_visible: true
             })
             .select('*')
             .single();
@@ -226,10 +228,10 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
           
           // Also create a business rating entry to update thumbs up/down counts
           const isThumbsUp = numericRating >= 4;
-          await BusinessService.rateBusiness(business.id, user.id, isThumbsUp);
+          await BusinessService.rateBusiness(business.businessId || business.id, user.id, isThumbsUp);
           
           // Log review submission activity
-          ActivityService.logReviewSubmit(user.id, business.id, business.name);
+          ActivityService.logReviewSubmit(user.id, business.businessId || business.id, business.businessName || business.name);
         }
 
         // Check if review qualifies for credit reward (only for new reviews)
@@ -249,7 +251,8 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
 
         // Call the original onSubmitReview for any additional handling
         onSubmitReview({
-          businessId: reviewToEdit ? reviewToEdit.businessId : business.id,
+          businessId: reviewToEdit ? reviewToEdit.businessId : (business.businessId || business.id),
+          offeringId: business.offeringId,
           rating,
           text: reviewText,
           images: images.map(img => img.file).filter(Boolean) as File[]
