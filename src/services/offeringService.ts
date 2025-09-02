@@ -508,6 +508,7 @@ export class OfferingService {
           price_cents,
           currency,
           service_type,
+          created_at,
           businesses!inner (
             id,
             name,
