@@ -13,7 +13,6 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [pendingReviews, setPendingReviews] = useState<any[]>([]);
-  const [allReviews, setAllReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -125,6 +124,9 @@ const AdminDashboard = () => {
     const success = await ReviewService.rejectReview(reviewId);
     if (success) {
       setPendingReviews(prev => prev.filter(r => r.id !== reviewId));
+      setAllReviews(prev => prev.map(r => 
+        r.id === reviewId ? { ...r, status: 'rejected', is_visible: false } : r
+      ));
     }
   };
 
