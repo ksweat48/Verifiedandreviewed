@@ -275,6 +275,51 @@ export class BusinessService {
     }
   }
 
+  // Record an offering visit (when user clicks call/map on an offering)
+  static async recordOfferingVisit(
+    offeringId: string, 
+    businessId: string, 
+    userId: string
+  ): Promise<boolean> {
+    try {
+      console.log('📍 Recording offering visit:', { offeringId, businessId, userId });
+      
+      // Check if visit already exists for this offering
+      const { data: existingVisit } = await supabase
+        .from('business_visits')
+        .select('id')
+        .eq('offering_id', offeringId)
+        .eq('user_id', userId)
+        .single();
+      
+      if (existingVisit) {
+        console.log('📍 Offering visit already recorded');
+        return true; // Already recorded
+      }
+      
+      const { error } = await supabase
+        .from('business_visits')
+        .insert({
+          offering_id: offeringId,
+          business_id: businessId,
+          user_id: userId,
+          visited_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+      
+      console.log('✅ Offering visit recorded successfully');
+      
+      // Dispatch event to update notification count
+      window.dispatchEvent(new CustomEvent('offering-visit-recorded'));
+      
+      return true;
+    } catch (error) {
+      console.error('Error recording offering visit:', error);
+      return false;
+    }
+  }
+
   // Rate a business (thumbs up/down)
   static async rateBusiness(
     businessId: string, 

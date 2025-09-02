@@ -318,6 +318,26 @@ const OfferingCard: React.FC<{
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  // Record offering visit for platform businesses
+                  const recordVisit = async () => {
+                    if (business.isPlatformBusiness && business.offeringId) {
+                      try {
+                        const user = await UserService.getCurrentUser();
+                        if (user) {
+                          await BusinessService.recordOfferingVisit(
+                            business.offeringId,
+                            business.business_id || business.id,
+                            user.id
+                          );
+                          showSuccess('Visit recorded! Check your dashboard activity for review opportunities.');
+                        }
+                      } catch (error) {
+                        console.error('Error recording offering visit:', error);
+                      }
+                    }
+                  };
+                  
+                  recordVisit();
                   window.open(`tel:${business.phone_number}`, '_self');
                 }}
                 className="p-2 bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-700 rounded-lg transition-all duration-200 flex items-center justify-center"

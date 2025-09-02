@@ -14,35 +14,37 @@ export const usePendingReviewsCount = (userId: string | undefined) => {
 
       setLoading(true);
       try {
-        // Fetch all businesses visited by the user
-        const { data: visits, error: visitsError } = await supabase
+        // Fetch all offerings visited by the user
+        const { data: offeringVisits, error: visitsError } = await supabase
           .from('business_visits')
-          .select('business_id')
+          .select('offering_id, business_id')
+          .not('offering_id', 'is', null)
           .eq('user_id', userId);
 
         if (visitsError) throw visitsError;
 
-        const visitedBusinessIds = visits?.map(visit => visit.business_id) || [];
+        const visitedOfferingIds = offeringVisits?.map(visit => visit.offering_id) || [];
 
-        if (visitedBusinessIds.length === 0) {
+        if (visitedOfferingIds.length === 0) {
           setPendingReviewsCount(0);
           setLoading(false);
           return;
         }
 
-        // Fetch all reviews submitted by the user
+        // Fetch all offering reviews submitted by the user
         const { data: reviews, error: reviewsError } = await supabase
           .from('user_reviews')
-          .select('business_id')
+          .select('offering_id')
+          .not('offering_id', 'is', null)
           .eq('user_id', userId);
 
         if (reviewsError) throw reviewsError;
 
-        const reviewedBusinessIds = new Set((reviews || []).map(review => review.business_id));
+        const reviewedOfferingIds = new Set((reviews || []).map(review => review.offering_id));
 
-        // Filter visited businesses to find those not yet reviewed
-        const unreviewedVisits = visitedBusinessIds.filter(
-          businessId => !reviewedBusinessIds.has(businessId)
+        // Filter visited offerings to find those not yet reviewed
+        const unreviewedVisits = visitedOfferingIds.filter(
+          offeringId => !reviewedOfferingIds.has(offeringId)
         );
 
         setPendingReviewsCount(unreviewedVisits.length);
@@ -56,15 +58,17 @@ export const usePendingReviewsCount = (userId: string | undefined) => {
 
     fetchPendingReviews();
 
-    // Listen for updates to visited businesses or reviews
+    // Listen for updates to visited offerings or reviews
     const handleUpdate = () => {
       fetchPendingReviews();
     };
 
     window.addEventListener('visited-businesses-updated', handleUpdate);
+    window.addEventListener('offering-visit-recorded', handleUpdate);
     
     return () => {
       window.removeEventListener('visited-businesses-updated', handleUpdate);
+      window.removeEventListener('offering-visit-recorded', handleUpdate);
     };
   }, [userId]);
 
