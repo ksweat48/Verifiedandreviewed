@@ -105,7 +105,7 @@ export const isBusinessOpen = (business: any): boolean => {
   }
   
   // Try to parse time ranges like "9AM - 5PM" or "Monday - Friday 9AM - 5PM"
-  const timeMatch = hours.match(/(\d{1,2}):?(\d{0,2})\s*(am|pm)?\s*-\s*(\d{1,2}):?(\d{0,2})\s*(am|pm)/i);
+  const timeMatch = hours.match(new RegExp('(\\d{1,2}):?(\\d{0,2})\\s*(am|pm)?\\s*-\\s*(\\d{1,2}):?(\\d{0,2})\\s*(am|pm)', 'i'));
   
   if (timeMatch) {
     const [, startHour, startMin = '0', startPeriod, endHour, endMin = '0', endPeriod] = timeMatch;
