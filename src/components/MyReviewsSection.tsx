@@ -14,7 +14,7 @@ interface UserReview {
   businessName: string;
   location: string;
   rating: number;
-  status: 'published' | 'pending' | 'draft' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected';
   isVerified: boolean;
   publishDate: string;
   views: number;

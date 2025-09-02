@@ -13,6 +13,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [pendingReviews, setPendingReviews] = useState<any[]>([]);
+  const [allReviews, setAllReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
