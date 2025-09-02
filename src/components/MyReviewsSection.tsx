@@ -47,7 +47,9 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   // Use the reviews prop directly instead of localReviews for filtering
   const completedReviews = reviews.filter(review => {
     console.log('🔍 DEBUG: Checking review:', review.id, 'status:', review.status, 'typeof:', typeof review.status);
-    const isValidStatus = review.status === 'approved'; // Only show approved reviews
+    const isValidStatus = review.status === 'published' || 
+                         review.status === 'pending' || 
+                         review.status === 'approved';
     console.log('🔍 DEBUG: Status check result for', review.id, ':', isValidStatus);
     return isValidStatus;
   });
@@ -181,18 +183,11 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
               {/* Status and Rating - Line 2 */}
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <div className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
-                  review.status === 'published' 
-                    ? 'bg-green-100 text-green-700' 
-                    : review.status === 'approved'
+                  review.status === 'approved' 
                     ? 'bg-green-100 text-green-700'
-                    : review.status === 'pending'
-                    ? 'bg-yellow-100 text-yellow-700'
                     : 'bg-gray-100 text-gray-700'
                 }`}>
-                  {review.status === 'published' ? 'Approved' :
-                   review.status === 'approved' ? 'Approved' :
-                   review.status === 'pending' ? 'Pending' : 
-                   'Draft'}
+                  {review.status === 'approved' ? 'Published' : 'Draft'}
                 </div>
                 
                 {review.rating >= 4 ? (

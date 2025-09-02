@@ -13,8 +13,8 @@ export interface UserReview {
 }
 
 export class ReviewService {
-  // Get all pending reviews for admin approval
-  static async getPendingReviews(): Promise<UserReview[]> {
+  // Get all reviews for admin visibility management
+  static async getAllReviews(): Promise<UserReview[]> {
     try {
       const { data, error } = await supabase
         .from('user_reviews')
@@ -48,7 +48,7 @@ export class ReviewService {
       const { error } = await supabase
         .from('user_reviews')
         .update({ 
-          status: 'approved',
+          is_visible: isVisible,
           updated_at: new Date().toISOString()
         })
         .eq('id', reviewId);
@@ -56,26 +56,7 @@ export class ReviewService {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error approving review:', error);
-      return false;
-    }
-  }
-
-  // Reject a review
-  static async rejectReview(reviewId: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('user_reviews')
-        .update({ 
-          status: 'rejected',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', reviewId);
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error rejecting review:', error);
+      console.error('Error toggling review visibility:', error);
       return false;
     }
   }
@@ -179,17 +160,28 @@ export class ReviewService {
               name,
               location
             )
+          ),
+          offerings!left (
+            id,
+            title,
+            businesses!inner (
+              id,
+              name,
+              location
+            )
           )
         `)
-        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       console.log('Supabase query result for user reviews:', data);
       if (error) throw error;
       return data || [];
-    } catch (error) {
+      console.error('Error fetching all reviews:', error);
       console.error('Error fetching user reviews:', error);
       return [];
     }
   }
 }
+  // Toggle review visibility
+  static async toggleReviewVisibility(reviewId: string, isVisible: boolean): Promise<boolean> {
+  }
