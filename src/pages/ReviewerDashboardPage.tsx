@@ -303,7 +303,6 @@ const ReviewerDashboardPage = () => {
         </div>
       </div>
 
-      {/* Floating Home Button */}
       <button
         onClick={() => navigate('/')}
         className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 flex items-center justify-center group"
