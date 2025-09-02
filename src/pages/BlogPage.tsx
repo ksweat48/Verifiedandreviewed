@@ -4,7 +4,7 @@ import { Search, Filter, ChevronLeft, ChevronRight, MapPin, Calendar, ArrowRight
 import { useWordPressPosts } from '../hooks/useWordPress';
 import { WordPressPost } from '../types/wordpress';
 // Lazy load components
-const PendingBadgeTooltip = lazy(() => import('../components/PendingBadgeTooltip'));
+const PendingBadgeTooltip = lazy(() => import('../components/PendingBadgeTooltip').then(module => ({ default: module.default })));
 
 
 interface BlogPageProps {
