@@ -12,6 +12,8 @@ import OfferingReviewsModal from './OfferingReviewsModal';
 import { ReviewService } from '../services/reviewService';
 import { getServiceTypeBadge, formatPrice } from '../utils/displayUtils';
 import { showError } from '../utils/toast';
+import { UserService } from '../services/userService';
+import { showSuccess } from '../utils/toast';
 
 interface MyBusinessesSectionProps {
   user: User;

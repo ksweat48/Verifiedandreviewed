@@ -452,6 +452,26 @@ const ExploreArea = () => {
                             e.stopPropagation();
                             handleFavoritePlatformBusiness(offering, offering.offeringId);
                           }}
+                        // Record offering visit for platform businesses
+                        const recordVisit = async () => {
+                          if (offering.isPlatformBusiness && offering.offeringId) {
+                            try {
+                              const user = await UserService.getCurrentUser();
+                              if (user) {
+                                await BusinessService.recordOfferingVisit(
+                                  offering.offeringId,
+                                  offering.id,
+                                  user.id
+                                );
+                                showSuccess('Visit recorded! Check your dashboard activity for review opportunities.');
+                              }
+                            } catch (error) {
+                              console.error('Error recording offering visit:', error);
+                            }
+                          }
+                        };
+                        
+                        recordVisit();
                           className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white hover:scale-110 transition-all duration-200 group"
                           title="Add to favorites"
                         >
@@ -477,6 +497,27 @@ const ExploreArea = () => {
                     </p>
                     
                     {offering.offeringDescription && (
+                        // Record offering visit for platform businesses
+                        const recordVisit = async () => {
+                          if (offering.isPlatformBusiness && offering.offeringId) {
+                            try {
+                              const user = await UserService.getCurrentUser();
+                              if (user) {
+                                await BusinessService.recordOfferingVisit(
+                                  offering.offeringId,
+                                  offering.id,
+                                  user.id
+                                );
+                                showSuccess('Visit recorded! Check your dashboard activity for review opportunities.');
+                              }
+                            } catch (error) {
+                              console.error('Error recording offering visit:', error);
+                            }
+                          }
+                        };
+                        
+                        recordVisit();
+                        
                       <p className="font-lora text-xs text-neutral-600 line-clamp-2">
                         {offering.offeringDescription}
                       </p>
