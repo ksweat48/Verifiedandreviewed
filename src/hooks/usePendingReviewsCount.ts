@@ -17,7 +17,7 @@ export const usePendingReviewsCount = (userId: string | undefined) => {
         // Fetch all offerings visited by the user
         const { data: offeringVisits, error: visitsError } = await supabase
           .from('business_visits')
-          .select('offering_id, business_id')
+          .select('offering_id')
           .not('offering_id', 'is', null)
           .eq('user_id', userId);
 
