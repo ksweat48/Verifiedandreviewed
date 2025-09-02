@@ -32,15 +32,25 @@ const RecentActivitySection: React.FC = () => {
   
   // Listen for visited businesses updates
   useEffect(() => {
+    const handleUpdate = () => {
+      if (user) {
+        fetchVisitedBusinesses();
+      }
+    };
+    
     const handleVisitedBusinessesUpdate = () => {
       if (user) {
         fetchVisitedBusinesses();
       }
     };
     
+    window.addEventListener('visited-businesses-updated', handleUpdate);
+    window.addEventListener('offering-visit-recorded', handleUpdate);
     window.addEventListener('visited-businesses-updated', handleVisitedBusinessesUpdate);
     
     return () => {
+      window.removeEventListener('visited-businesses-updated', handleUpdate);
+      window.removeEventListener('offering-visit-recorded', handleUpdate);
       window.removeEventListener('visited-businesses-updated', handleVisitedBusinessesUpdate);
     };
   }, [user]);
@@ -50,52 +60,64 @@ const RecentActivitySection: React.FC = () => {
     
     setLoading(true);
     try {
-      // Fetch user's visited businesses with business details
-      const { data: visitsData, error: visitsError } = await supabase
-        .from('business_visits')
+      // Fetch user's visited offerings with offering and business details
+      const { data: offeringVisitsData, error: offeringVisitsError } = await supabase
+        .from('offering_visits')
         .select(`
-          id,
+          offering_id,
           visited_at,
-          business_id,
           businesses!inner (
             id,
             name,
             image_url,
             address
+          ),
+          offerings!inner (
+            id,
+            title,
+            description,
+            price_cents,
+            currency
           )
         `)
         .eq('user_id', user.id)
+        .not('offering_id', 'is', null)
         .order('visited_at', { ascending: false });
       
-      if (visitsError) throw visitsError;
+      if (offeringVisitsError) throw offeringVisitsError;
       
-      // Fetch user's reviews separately
+      // Fetch user's offering reviews separately
       const { data: userReviewsData, error: reviewsError } = await supabase
         .from('user_reviews')
-        .select('business_id, rating')
-        .eq('user_id', user.id);
+        .select('offering_id, rating')
+        .eq('user_id', user.id)
+        .not('offering_id', 'is', null);
       
       if (reviewsError) throw reviewsError;
       
-      if (visitsData) {
-        // Create a map of business_id to review data for quick lookup
+      if (offeringVisitsData) {
+        // Create a map of offering_id to review data for quick lookup
         const reviewsMap = new Map();
         if (userReviewsData) {
           userReviewsData.forEach(review => {
-            reviewsMap.set(review.business_id, review);
+            reviewsMap.set(review.offering_id, review);
           });
         }
         
-        const formattedBusinesses: VisitedBusiness[] = visitsData.map(visit => {
-          const review = reviewsMap.get(visit.business_id);
+        const formattedBusinesses: VisitedBusiness[] = offeringVisitsData.map(visit => {
+          const review = reviewsMap.get(visit.offering_id);
           return {
-          id: visit.businesses.id,
-          name: visit.businesses.name,
-          image: visit.businesses.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
-          address: visit.businesses.address || 'No address available',
-          visitDate: new Date(visit.visited_at).toLocaleDateString(),
-          hasReviewed: !!review,
-          rating: review ? review.rating : undefined
+            id: visit.offering_id, // Use offering ID as the primary identifier
+            name: `${visit.offerings.title} at ${visit.businesses.name}`,
+            image: visit.businesses.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=400',
+            address: visit.businesses.address || 'No address available',
+            visitDate: new Date(visit.visited_at).toLocaleDateString(),
+            hasReviewed: !!review,
+            rating: review ? review.rating : undefined,
+            offeringId: visit.offering_id,
+            businessId: visit.businesses.id,
+            businessName: visit.businesses.name,
+            offeringTitle: visit.offerings.title
           };
         });
         
@@ -235,17 +257,7 @@ const RecentActivitySection: React.FC = () => {
         <LeaveReviewModal
           isOpen={reviewModalOpen}
           onClose={() => setReviewModalOpen(false)}
-          business={{
-            id: selectedBusiness.id,
-            name: selectedBusiness.name,
-            image: selectedBusiness.image,
-            address: selectedBusiness.address,
-            visitDate: selectedBusiness.visitDate,
-            offeringId: selectedBusiness.offeringId,
-            businessId: selectedBusiness.businessId,
-            businessName: selectedBusiness.businessName,
-            offeringTitle: selectedBusiness.offeringTitle
-          }}
+          business={selectedBusiness}
           onSubmitReview={handleSubmitReview}
         />
       )}
