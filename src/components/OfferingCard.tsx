@@ -379,17 +379,25 @@ const OfferingCard: React.FC<{
                 const recordVisit = async () => {
                   if (business.isPlatformBusiness && business.offeringId) {
                     try {
+                      const { UserService } = await import('../services/userService');
+                      const { BusinessService } = await import('../services/businessService');
+                      const { showSuccess } = await import('../utils/toast');
+                      
                       const user = await UserService.getCurrentUser();
                       if (user) {
                         await BusinessService.recordOfferingVisit(
-                          business.offeringId,
-                          business.business_id || business.id,
-                          user.id
-                        );
-                        showSuccess('Visit recorded! Check your dashboard activity for review opportunities.');
-                      }
-                    } catch (error) {
-                      console.error('Error recording offering visit:', error);
+                    const { UserService } = await import('../services/userService');
+                    const { BusinessService } = await import('../services/businessService');
+                    const { showSuccess } = await import('../utils/toast');
+                    
+                    const user = await UserService.getCurrentUser();
+                    if (user) {
+                      await BusinessService.recordOfferingVisit(
+                        business.offeringId,
+                        business.business_id || business.id,
+                        user.id
+                      );
+                      showSuccess('Visit recorded! Check your dashboard activity for review opportunities.');
                     }
                   }
                 };
