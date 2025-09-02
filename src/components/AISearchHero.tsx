@@ -672,7 +672,9 @@ const AISearchHero: React.FC<AISearchHeroProps> = ({ isAppModeActive, setIsAppMo
                       onTakeMeThere={handleTakeMeThere}
                       onOpenOfferingReviews={handleOpenOfferingReviews}
                       offeringReviewCounts={searchOfferingReviewCounts}
+                     searchQueryText={lastSearchQuery}
                     />
+                   searchQueryText=""
                   </div>
                 ))}
               </div>
