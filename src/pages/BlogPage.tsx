@@ -1,10 +1,9 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Filter, ChevronLeft, ChevronRight, MapPin, Calendar, ArrowRight, Star, Info, Shield } from 'lucide-react';
 import { useWordPressPosts } from '../hooks/useWordPress';
 import { WordPressPost } from '../types/wordpress';
-// Lazy load components
-const PendingBadgeTooltip = lazy(() => import('../components/PendingBadgeTooltip').then(module => ({ default: module.default })));
+import PendingBadgeTooltip from '../components/PendingBadgeTooltip';
 
 
 interface BlogPageProps {
@@ -287,17 +286,11 @@ const BlogPage: React.FC<BlogPageProps> = ({ verified = false }) => {
                                 <span className="font-poppins text-xs font-bold">VERIFIED</span>
                               </div>
                             ) : (
-                              <Suspense fallback={
-                                <div className="bg-yellow-500 text-white rounded-full px-3 py-1 flex items-center">
-                                  <span className="font-poppins text-xs font-bold">PENDING</span>
-                                </div>
-                              }>
-                                <PendingBadgeTooltip
-                                  postId={post.id}
-                                  postSlug={post.slug}
-                                  businessName={post.businessName}
-                                />
-                              </Suspense>
+                              <PendingBadgeTooltip
+                                postId={post.id}
+                                postSlug={post.slug}
+                                businessName={post.businessName}
+                              />
                             )}
                           </div>
                         </div>
