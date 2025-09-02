@@ -288,7 +288,10 @@ const OfferingCard: React.FC<{
           {/* Main Text: Offering name with price inline */}
           <div className="flex items-baseline justify-between">
             <h6 className="font-poppins font-bold text-black text-sm line-clamp-1 flex-1 mr-2">
-              {business.offeringTitle || business.title || 'Untitled Offering'}
+             {business.isAIGenerated && searchQueryText 
+               ? `Serves ${searchQueryText}` 
+               : (business.offeringTitle || business.title || 'Untitled Offering')
+             }
             </h6>
           </div>
           
