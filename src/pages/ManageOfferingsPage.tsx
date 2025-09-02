@@ -203,8 +203,8 @@ export default function ManageOfferingsPage() {
   };
 
   const handleSaveOfferingToLocalState = () => {
-    if (!newOffering.name.trim() || !newOffering.short_description.trim() || newOffering.price <= 0) {
-      showError('Please fill in all required fields for the offering (Name, Short Description, Price).');
+    if (!newOffering.name.trim() || !newOffering.short_description.trim()) {
+      showError('Please fill in all required fields for the offering (Name, Short Description).');
       return;
     }
 
