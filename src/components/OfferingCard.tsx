@@ -250,7 +250,6 @@ const OfferingCard: React.FC<{
               src={business.image || business.image_url || '/verified and reviewed logo-coral copy copy.png'}
               alt={business.name || business.title}
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-              loading="lazy"
             />
             
             {/* Open/Closed Badge - Bottom Left */}
