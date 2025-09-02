@@ -124,9 +124,6 @@ const AdminDashboard = () => {
     const success = await ReviewService.rejectReview(reviewId);
     if (success) {
       setPendingReviews(prev => prev.filter(r => r.id !== reviewId));
-      setAllReviews(prev => prev.map(r => 
-        r.id === reviewId ? { ...r, status: 'rejected', is_visible: false } : r
-      ));
     }
   };
 
@@ -142,6 +139,15 @@ const AdminDashboard = () => {
           ? prev.verifiedBusinesses - 1 
           : prev.verifiedBusinesses + 1
       }));
+    }
+  };
+
+  const handleToggleReviewVisibility = async (reviewId: string, isVisible: boolean) => {
+    const success = await ReviewService.toggleReviewVisibility(reviewId, !isVisible);
+    if (success) {
+      setAllReviews(prev => prev.map(r => 
+        r.id === reviewId ? { ...r, is_visible: !isVisible } : r
+      ));
     }
   };
 
