@@ -235,7 +235,17 @@ const RecentActivitySection: React.FC = () => {
         <LeaveReviewModal
           isOpen={reviewModalOpen}
           onClose={() => setReviewModalOpen(false)}
-          business={selectedBusiness}
+          business={{
+            id: selectedBusiness.id,
+            name: selectedBusiness.name,
+            image: selectedBusiness.image,
+            address: selectedBusiness.address,
+            visitDate: selectedBusiness.visitDate,
+            offeringId: selectedBusiness.offeringId,
+            businessId: selectedBusiness.businessId,
+            businessName: selectedBusiness.businessName,
+            offeringTitle: selectedBusiness.offeringTitle
+          }}
           onSubmitReview={handleSubmitReview}
         />
       )}
