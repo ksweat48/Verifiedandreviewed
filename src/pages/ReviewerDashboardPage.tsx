@@ -299,7 +299,6 @@ const ReviewerDashboardPage = () => {
               userId={parseInt(user.id)} 
               userName={user.name} 
             />
-          </div>
         </div>
       </div>
 
