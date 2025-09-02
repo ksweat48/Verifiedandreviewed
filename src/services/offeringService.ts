@@ -480,8 +480,16 @@ export class OfferingService {
   }
 
   // Get offerings for explore section (random/curated display)
-  static async getExploreOfferings(limit: number = 15, userLatitude?: number, userLongitude?: number): Promise<any[]> {
+  static async getExploreOfferings(limit: number = 10, userLatitude?: number, userLongitude?: number): Promise<any[]> {
     try {
+      // Check cache first
+      const cacheKey = `explore_offerings_${limit}_${userLatitude}_${userLongitude}`;
+      const cached = this.getCachedData(cacheKey);
+      if (cached) {
+        console.log('✅ Returning cached explore offerings');
+        return cached;
+      }
+      
       console.log('🔍 DEBUG: getExploreOfferings called with:', { 
         limit, 
         userLatitude, 
@@ -494,27 +502,22 @@ export class OfferingService {
       const { data, error } = await supabase
         .from('offerings')
         .select(`
-          *,
+          id,
+          title,
+          description,
+          price_cents,
+          currency,
+          service_type,
           businesses!inner (
             id,
             name,
             address,
             location,
             category,
-            description,
-            short_description,
             image_url,
-            gallery_urls,
             hours,
             days_closed,
             phone_number,
-            website_url,
-            social_media,
-            price_range,
-            service_area,
-            is_verified,
-            is_mobile_business,
-            is_virtual,
             latitude,
             longitude,
             thumbs_up,
@@ -524,7 +527,6 @@ export class OfferingService {
           ),
           offering_images!left (
             url,
-            source,
             is_primary,
             approved
           )
@@ -639,10 +641,47 @@ export class OfferingService {
         hasDistance: o.distance !== undefined && o.distance !== 999999
       })));
       
+      // Cache the results for 60 seconds
+      this.setCachedData(cacheKey, enrichedData, 60000);
+      
       return enrichedData;
     } catch (error) {
       console.error('❌ Error in getExploreOfferings:', error);
       return [];
+    }
+  }
+
+  // Simple in-memory cache for explore offerings
+  private static cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+  private static getCachedData(key: string): any | null {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+    
+    const now = Date.now();
+    if (now - cached.timestamp > cached.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return cached.data;
+  }
+
+  private static setCachedData(key: string, data: any, ttl: number): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl
+    });
+    
+    // Clean up expired entries periodically
+    if (this.cache.size > 10) {
+      const now = Date.now();
+      for (const [cacheKey, cached] of this.cache.entries()) {
+        if (now - cached.timestamp > cached.ttl) {
+          this.cache.delete(cacheKey);
+        }
+      }
     }
   }
 
