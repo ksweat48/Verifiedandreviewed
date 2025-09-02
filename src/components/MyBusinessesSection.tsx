@@ -224,4 +224,320 @@ const MyBusinessesSection: React.FC<MyBusinessesSectionProps> = ({ user }) => {
       await BusinessService.deleteBusiness(businessId);
       setBusinesses(prev => prev.filter(business => business.id !== businessId));
     } catch (err) {
-      console.error('
+      console.error('Error deleting business:', err);
+      showError('Failed to delete business. Please try again.');
+    } finally {
+      setDeletingBusinessId(null);
+    }
+  };
+
+  const handleManageOfferings = (businessId: string) => {
+    navigate(`/manage-offerings?businessId=${businessId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 bg-neutral-200 rounded w-1/3"></div>
+          <div className="h-20 bg-neutral-200 rounded"></div>
+          <div className="h-20 bg-neutral-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="font-cinzel text-2xl font-bold text-neutral-900">
+          My Businesses ({businesses.length})
+        </h2>
+        <button
+          onClick={handleAddBusiness}
+          className="font-poppins bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 py-2 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Business
+        </button>
+      </div>
+
+      {businesses.length === 0 ? (
+        <div className="bg-neutral-50 rounded-xl p-8 text-center">
+          <Building className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
+          <h3 className="font-poppins text-lg font-semibold text-neutral-700 mb-2">
+            No Businesses Yet
+          </h3>
+          <p className="font-lora text-neutral-600 mb-6">
+            Add your first business to start managing offerings and reviews.
+          </p>
+          <button
+            onClick={handleAddBusiness}
+            className="font-poppins bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
+          >
+            Add Your First Business
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {businesses.map((business) => (
+            <div key={business.id} className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200">
+              {/* Business Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  {business.image_url && (
+                    <img
+                      src={business.image_url}
+                      alt={business.name}
+                      className="w-16 h-16 rounded-lg object-cover mr-4"
+                    />
+                  )}
+                  <div>
+                    <h3 className="font-poppins text-xl font-semibold text-neutral-900">
+                      {business.name}
+                    </h3>
+                    <div className="flex items-center gap-4 mt-1">
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 text-neutral-500 mr-1" />
+                        <span className="font-lora text-sm text-neutral-600">
+                          {business.location || business.address}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <Tag className="h-4 w-4 text-neutral-500 mr-1" />
+                        <span className="font-lora text-sm text-neutral-600">
+                          {business.category}
+                        </span>
+                      </div>
+                      <div className={`px-2 py-1 rounded-full text-xs font-poppins font-semibold ${
+                        isBusinessOpen(business) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {isBusinessOpen(business) ? 'Open' : 'Closed'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Business Actions */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleViewBusiness(business)}
+                    className="p-2 text-neutral-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                    title="View business profile"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleEditBusiness(business)}
+                    className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
+                    title="Edit business"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleManageOfferings(business.id)}
+                    className="p-2 text-neutral-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors duration-200"
+                    title="Manage offerings"
+                  >
+                    <Package className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteBusiness(business.id)}
+                    disabled={deletingBusinessId === business.id}
+                    className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                    title="Delete business"
+                  >
+                    {deletingBusinessId === business.id ? (
+                      <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Business Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-2">
+                  {business.short_description && (
+                    <p className="font-lora text-neutral-700">
+                      {business.short_description}
+                    </p>
+                  )}
+                  {business.hours && (
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 text-neutral-500 mr-2" />
+                      <span className="font-lora text-sm text-neutral-600">
+                        {business.hours}
+                      </span>
+                    </div>
+                  )}
+                  {business.phone_number && (
+                    <div className="flex items-center">
+                      <Phone className="h-4 w-4 text-neutral-500 mr-2" />
+                      <span className="font-lora text-sm text-neutral-600">
+                        {business.phone_number}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-lora text-sm text-neutral-600">Sentiment:</span>
+                    <div className="flex items-center">
+                      <ThumbsUp className="h-4 w-4 text-green-500 mr-1" />
+                      <span className="font-poppins text-sm font-semibold text-green-600">
+                        {business.thumbs_up || 0}
+                      </span>
+                      <ThumbsDown className="h-4 w-4 text-red-500 ml-2 mr-1" />
+                      <span className="font-poppins text-sm font-semibold text-red-600">
+                        {business.thumbs_down || 0}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="font-lora text-sm text-neutral-600">Score:</span>
+                    <span className="font-poppins text-sm font-semibold text-primary-600">
+                      {business.sentiment_score || 0}/100
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Offerings Section */}
+              <div className="border-t border-neutral-200 pt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-poppins text-lg font-semibold text-neutral-900 flex items-center">
+                    <Package className="h-5 w-5 mr-2 text-primary-500" />
+                    Offerings ({business.offerings?.length || 0})
+                  </h4>
+                  <button
+                    onClick={() => handleManageOfferings(business.id)}
+                    className="font-poppins bg-primary-500 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:bg-primary-600 transition-colors duration-200"
+                  >
+                    Manage
+                  </button>
+                </div>
+                
+                {loadingOfferings[business.id] ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent"></div>
+                  </div>
+                ) : business.offerings && business.offerings.length > 0 ? (
+                  <div className="space-y-3">
+                    {business.offerings.map((offering) => {
+                      const primaryImage = offering.images?.find(img => img.is_primary && img.approved);
+                      const fallbackImage = offering.images?.find(img => img.approved);
+                      const imageUrl = primaryImage?.url || fallbackImage?.url || business.image_url || '/verified and reviewed logo-coral copy copy.png';
+                      const serviceTypeBadge = getServiceTypeBadge(offering.service_type);
+                      const offeringRating = getOfferingRating(offering.id);
+                      const reviewCount = offeringReviewCounts[offering.id] || 0;
+                      
+                      return (
+                        <div key={offering.id} className="bg-neutral-50 rounded-lg p-4 border border-neutral-200 hover:shadow-sm transition-all duration-200">
+                          <div className="flex items-center gap-4">
+                            <img
+                              src={imageUrl}
+                              alt={offering.title}
+                              className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-2">
+                                <h5 className="font-poppins font-semibold text-neutral-900 line-clamp-1">
+                                  {offering.title}
+                                </h5>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleOpenOfferingReviews(offering, business.name)}
+                                    className="relative p-1.5 text-neutral-400 hover:text-purple-500 hover:bg-purple-50 rounded-full transition-all duration-200"
+                                    title="View reviews"
+                                  >
+                                    <MessageSquare className="h-4 w-4" />
+                                    {reviewCount > 0 && (
+                                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                                        {reviewCount}
+                                      </span>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => handleEditOffering(business.id, offering.id)}
+                                    className="p-1.5 text-neutral-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all duration-200"
+                                    title="Edit offering"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`${serviceTypeBadge.color} px-2 py-0.5 rounded-full text-xs font-poppins font-semibold`}>
+                                  {serviceTypeBadge.label}
+                                </span>
+                                {offering.price_cents && offering.price_cents > 0 && (
+                                  <span className="font-poppins font-bold text-primary-600 text-sm">
+                                    {formatPrice(offering.price_cents, offering.currency)}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {offering.description && (
+                                <p className="font-lora text-sm text-neutral-600 line-clamp-2">
+                                  {offering.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-neutral-50 rounded-lg p-6 text-center">
+                    <Package className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
+                    <h4 className="font-poppins font-semibold text-neutral-700 mb-2">
+                      No Offerings Yet
+                    </h4>
+                    <p className="font-lora text-sm text-neutral-600 mb-4">
+                      Add offerings to help customers find your business.
+                    </p>
+                    <button
+                      onClick={() => handleManageOfferings(business.id)}
+                      className="font-poppins bg-primary-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
+                    >
+                      Add Offerings
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Business Profile Modal */}
+      <BusinessProfileModal
+        isOpen={isBusinessProfileModalOpen}
+        onClose={() => setIsBusinessProfileModalOpen(false)}
+        business={selectedBusinessForProfile}
+      />
+
+      {/* Offering Reviews Modal */}
+      {isOfferingReviewsModalOpen && selectedOfferingForReviews && (
+        <OfferingReviewsModal
+          isOpen={isOfferingReviewsModalOpen}
+          onClose={() => {
+            setIsOfferingReviewsModalOpen(false);
+            setSelectedOfferingForReviews(null);
+          }}
+          offeringId={selectedOfferingForReviews.id}
+          offeringTitle={selectedOfferingForReviews.title}
+          businessName={selectedOfferingForReviews.businessName}
+        />
+      )}
+    </div>
+  );
+};
+
+export default MyBusinessesSection;
