@@ -7,6 +7,7 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import { useNavigate } from 'react-router-dom';
 import BusinessProfileModal from './BusinessProfileModal';
 import LeaveReviewModal from './LeaveReviewModal';
+import OfferingCard from './OfferingCard';
 import { BusinessService } from '../services/businessService';
 import { ReviewService } from '../services/reviewService';
 import { OfferingService } from '../services/offeringService';
