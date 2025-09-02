@@ -43,7 +43,6 @@ export default function ManageOfferingsPage() {
     short_description: '',
     image_file: null,
     image_url: '',
-    price: 0,
     currency: 'USD',
   });
   const [newOfferingImagePreview, setNewOfferingImagePreview] = useState<string | null>(null);
