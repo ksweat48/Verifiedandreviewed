@@ -13,6 +13,62 @@ export interface UserReview {
 }
 
 export class ReviewService {
+  // Toggle review visibility (for admin use)
+  static async toggleReviewVisibility(reviewId: string, isVisible: boolean): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('user_reviews')
+        .update({ 
+          is_visible: isVisible,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', reviewId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error toggling review visibility:', error);
+      return false;
+    }
+  }
+
+  // Get all reviews for admin management
+  static async getAllReviews(): Promise<UserReview[]> {
+    try {
+      const { data, error } = await supabase
+        .from('user_reviews')
+        .select(`
+          *,
+          profiles!inner (
+            id,
+            name,
+            email
+          ),
+          businesses!left (
+            id,
+            name,
+            location
+          ),
+          offerings!left (
+            id,
+            title,
+            businesses!inner (
+              id,
+              name,
+              location
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching all reviews:', error);
+      return [];
+    }
+  }
+
   // Get all reviews for admin visibility management
   static async getAllReviews(): Promise<UserReview[]> {
     try {

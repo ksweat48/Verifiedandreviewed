@@ -62,7 +62,7 @@ const RecentActivitySection: React.FC = () => {
     try {
       // Fetch user's visited offerings with offering and business details
       const { data: offeringVisitsData, error: offeringVisitsError } = await supabase
-        .from('offering_visits')
+        .from('business_visits')
         .select(`
           offering_id,
           visited_at,

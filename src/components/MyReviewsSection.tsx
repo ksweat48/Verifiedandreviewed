@@ -47,9 +47,7 @@ const MyReviewsSection: React.FC<MyReviewsSectionProps> = ({ reviews }) => {
   // Use the reviews prop directly instead of localReviews for filtering
   const completedReviews = reviews.filter(review => {
     console.log('🔍 DEBUG: Checking review:', review.id, 'status:', review.status, 'typeof:', typeof review.status);
-    const isValidStatus = review.status === 'published' || 
-                         review.status === 'pending' || 
-                         review.status === 'approved';
+    const isValidStatus = review.status === 'approved';
     console.log('🔍 DEBUG: Status check result for', review.id, ':', isValidStatus);
     return isValidStatus;
   });

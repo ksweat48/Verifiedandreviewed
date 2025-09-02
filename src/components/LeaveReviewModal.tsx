@@ -194,6 +194,7 @@ const LeaveReviewModal: React.FC<LeaveReviewModalProps> = ({
               rating: numericRating,
               image_urls: imageUrls,
               status: 'approved',
+              is_visible: true,
               updated_at: new Date().toISOString()
             })
             .eq('id', reviewToEdit.id)
