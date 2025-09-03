@@ -175,6 +175,7 @@ const ExploreArea = () => {
             ...business,
             isWithinPreferredRadius: distance <= PREFERRED_RADIUS_MILES
           };
+        });
         
         // Sort by preferred radius first, then by distance
         transformedBusinesses.sort((a, b) => {
@@ -301,7 +302,7 @@ const ExploreArea = () => {
     
     console.log('🗺️ DEBUG: Final maps URL:', mapsUrl);
     window.open(mapsUrl, '_blank');
-  }
+  };
 
   const handleRecommendBusiness = async (business: Business, offeringId?: string) => {
     if (!currentUser) {
@@ -459,6 +460,6 @@ const ExploreArea = () => {
       />
     </section>
   );
-}
+};
 
 export default ExploreArea;
